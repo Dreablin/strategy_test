@@ -2,10 +2,10 @@
 
 ## Current Status
 
-- **Phase:** 1. Project Foundation
-- **Next Task:** T09 — Implement ResourceManager
-- **Last Completed:** T08 — Add resource manager tests
-- **Total Progress:** 8 / 42
+- **Phase:** 2. Resources & Top Bar
+- **Next Task:** T10 — Add tick scheduler tests
+- **Last Completed:** T09 — Implement ResourceManager
+- **Total Progress:** 9 / 42
 
 ---
 
@@ -24,7 +24,7 @@
 ### Phase 2 — Resources & Top Bar
 
 - [x] **T08**: Write `tests/test_resources.py` covering: initial values, `add` increments, `has`/`try_spend` for cost dicts, `try_spend` returns False & does not deduct on insufficient funds, non-negative invariants. Tests must FAIL.
-- [ ] **T09**: Implement `src/game/resources.py` (`ResourceManager`). Run tests — must PASS.
+- [x] **T09**: Implement `src/game/resources.py` (`ResourceManager`). Run tests — must PASS.
 - [ ] **T10**: Write `tests/test_tick.py` covering `TickScheduler.update(now_ms)`: returns True exactly once per 10_000 ms boundary; returns False otherwise. Tests must FAIL.
 - [ ] **T11**: Implement `src/game/tick.py` (`TickScheduler`). Run tests — must PASS.
 - [ ] **T12**: Implement `src/game/assets.py` — pure-pygame procedural factory: `grass_tile()`, `tree_tile()`, `building_sprite(b_type, level)`, `worker_dot(w_type)`, `resource_icon(name)`. Returns cached `pygame.Surface`. Add a tiny smoke test `tests/test_assets.py` checking each function returns a non-empty Surface (uses `SDL_VIDEODRIVER=dummy`). Tests must PASS after implementation.

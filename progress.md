@@ -2,10 +2,10 @@
 
 ## Current Status
 
-- **Phase:** 2. Resources & Top Bar
-- **Next Task:** T14 — Add world module tests
-- **Last Completed:** T13 — Implement top bar UI
-- **Total Progress:** 13 / 42
+- **Phase:** 3. World & Rendering
+- **Next Task:** T15 — Implement World grid and occupancy
+- **Last Completed:** T14 — Add world module tests
+- **Total Progress:** 14 / 42
 
 ---
 
@@ -32,7 +32,7 @@
 
 ### Phase 3 — World & Rendering
 
-- [ ] **T14**: Write `tests/test_world.py` covering: grid is 32×32, `is_in_grass(gx,gy)` correct, `mark_occupied`/`is_occupied`/`free` work, footprint occupancy spans all tiles. Tests must FAIL.
+- [x] **T14**: Write `tests/test_world.py` covering: grid is 32×32, `is_in_grass(gx,gy)` correct, `mark_occupied`/`is_occupied`/`free` work, footprint occupancy spans all tiles. Tests must FAIL.
 - [ ] **T15**: Implement `src/game/world.py` (`World` with grid + occupancy bitmap + grass/tree zones). Run tests — must PASS.
 - [ ] **T16**: Implement `src/game/render.py` — `Renderer.draw_world(surface, world)` draws grass diamonds for every in-grass tile and tree borders outside grass. Smoke check by running main loop briefly under dummy driver.
 - [ ] **T17**: Wire `World` + `Renderer` into `main.py` so launching the game shows the grass field with tree borders. Visual confirmation only (no test).

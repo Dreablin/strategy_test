@@ -25,7 +25,7 @@ def main() -> int:
     resources = ResourceManager()
     registry = BuildingRegistry(world)
     placement = PlacementController(world, registry, resources)
-    worker_manager = WorkerManager()
+    worker_manager = WorkerManager(resources, registry)
     game_input = GameInput(world, registry, resources, placement, worker_manager)
 
     running = True
@@ -41,6 +41,7 @@ def main() -> int:
 
             screen.fill((20, 24, 22))
             Renderer.draw_world(screen, world)
+            Renderer.draw_workers(screen, world, registry, worker_manager)
             TopBar.draw(screen, resources)
             BottomBar.draw(screen, resources)
             placement.draw(screen)

@@ -3,9 +3,11 @@
 import pygame
 
 from game.assets import grass_tile, tree_tile
+from game.buildings.registry import BuildingRegistry
 from game.config import TILE_H, TILE_W
 from game.iso import world_to_screen
 from game.world import World
+from game.workers import WorkerManager, building_center_tile
 
 _TREE_RING_TILES = 2
 
@@ -53,3 +55,43 @@ class Renderer:
             sx, sy = world_to_screen(gx, gy)
             tile = g_tile if in_grass else t_tile
             surface.blit(tile, (origin_x + sx, origin_y + sy))
+
+    @staticmethod
+    def worker_grid_positions(
+        registry: BuildingRegistry, worker_manager: WorkerManager
+    ) -> list[tuple[str, tuple[int, int]]]:
+        """Grid positions for worker dots: assigned center, idle stack near Town Hall, orphan tile."""
+        town_hall = next((b for b in registry.all() if b.type_tag == "TOWN_HALL"), None)
+        th_center = building_center_tile(town_hall) if town_hall is not None else (0, 0)
+        out: list[tuple[str, tuple[int, int]]] = []
+        idle_i = 0
+        for worker in worker_manager.workers():
+            if worker.assigned_building is not None:
+                out.append((worker.type_tag, building_center_tile(worker.assigned_building)))
+                continue
+            if town_hall is not None and worker.stand_tile in ((0, 0), th_center):
+                out.append((worker.type_tag, (th_center[0] + 1 + idle_i, th_center[1])))
+                idle_i += 1
+                continue
+            out.append((worker.type_tag, worker.stand_tile))
+        return out
+
+    @staticmethod
+    def draw_workers(
+        surface: pygame.Surface,
+        world: World,
+        registry: BuildingRegistry,
+        worker_manager: WorkerManager,
+    ) -> None:
+        """Draw worker dots at grid positions returned by `worker_grid_positions`."""
+        from game.assets import worker_dot
+
+        ox, oy = Renderer.map_origin(surface, world)
+        positions = Renderer.worker_grid_positions(registry, worker_manager)
+        positions.sort(key=lambda item: sum(item[1]))
+        for worker_type, (gx, gy) in positions:
+            sx, sy = world_to_screen(gx, gy)
+            dot = worker_dot(worker_type)
+            px = ox + sx + TILE_W // 2 - dot.get_width() // 2
+            py = oy + sy + TILE_H // 2 - dot.get_height() // 2
+            surface.blit(dot, (px, py))

@@ -9,6 +9,7 @@ from game.buildings.stone_mine import StoneMine
 from game.buildings.town_hall import TownHall
 from game.buildings.registry import BuildingRegistry
 from game.world import World
+from game.workers import Worker, WorkerManager
 
 
 @pytest.fixture
@@ -86,6 +87,18 @@ def test_demolish_clears_world_occupancy(registry: BuildingRegistry, world: Worl
     registry.demolish(b)
     assert registry.at(5, 5) is None
     assert not world.is_occupied(5, 5)
+
+
+def test_demolish_with_worker_manager_notifies_before_removal(registry: BuildingRegistry) -> None:
+    camp = registry.place(LumberCamp, (12, 12))
+    wm = WorkerManager()
+    w = Worker("LUMBERJACK")
+    wm.add_worker(w)
+    wm.assign_to_building(w, camp)
+    registry.demolish(camp, wm)
+    assert camp not in registry.all()
+    assert w.idle
+    assert w.stand_tile == (13, 13)
 
 
 def test_all_lists_placed_buildings(registry: BuildingRegistry) -> None:

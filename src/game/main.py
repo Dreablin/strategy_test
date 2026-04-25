@@ -11,6 +11,7 @@ from game.ui.bottom_bar import BottomBar
 from game.ui.placement import PlacementController
 from game.ui.top_bar import TopBar
 from game.world import World
+from game.workers import WorkerManager
 
 
 def main() -> int:
@@ -24,7 +25,8 @@ def main() -> int:
     resources = ResourceManager()
     registry = BuildingRegistry(world)
     placement = PlacementController(world, registry, resources)
-    game_input = GameInput(world, registry, resources, placement)
+    worker_manager = WorkerManager()
+    game_input = GameInput(world, registry, resources, placement, worker_manager)
 
     running = True
     try:

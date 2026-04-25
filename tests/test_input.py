@@ -11,6 +11,7 @@ from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT
 from game.ui.building_panel import BuildingPanel
 from game.ui.placement import PlacementController
 from game.world import World
+from game.workers import WorkerManager
 
 from game.config import TILE_H, TILE_W
 from game.iso import world_to_screen
@@ -43,7 +44,7 @@ def test_map_click_opens_panel_for_building() -> None:
     registry.place(LumberCamp, (14, 14))
     resources = ResourceManager()
     placement = PlacementController(world, registry, resources)
-    inp = GameInput(world, registry, resources, placement)
+    inp = GameInput(world, registry, resources, placement, WorkerManager())
     pos = _tile_center(surface, world, 14, 14)
     inp.handle(surface, pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=pos))
     assert inp.panel_building is not None
@@ -57,7 +58,7 @@ def test_outside_panel_click_closes() -> None:
     registry.place(LumberCamp, (10, 10))
     resources = ResourceManager()
     placement = PlacementController(world, registry, resources)
-    inp = GameInput(world, registry, resources, placement)
+    inp = GameInput(world, registry, resources, placement, WorkerManager())
     inp.handle(
         surface,
         pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=_tile_center(surface, world, 10, 10)),
@@ -87,7 +88,7 @@ def test_close_button_closes_panel() -> None:
     registry.place(LumberCamp, (8, 8))
     resources = ResourceManager()
     placement = PlacementController(world, registry, resources)
-    inp = GameInput(world, registry, resources, placement)
+    inp = GameInput(world, registry, resources, placement, WorkerManager())
     b = registry.all()[0]
     inp.handle(
         surface,
@@ -106,7 +107,7 @@ def test_escape_closes_panel() -> None:
     registry.place(LumberCamp, (5, 5))
     resources = ResourceManager()
     placement = PlacementController(world, registry, resources)
-    inp = GameInput(world, registry, resources, placement)
+    inp = GameInput(world, registry, resources, placement, WorkerManager())
     inp.handle(
         surface,
         pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=_tile_center(surface, world, 5, 5)),
@@ -122,7 +123,7 @@ def test_build_menu_select_closes_panel() -> None:
     registry.place(LumberCamp, (6, 6))
     resources = ResourceManager()
     placement = PlacementController(world, registry, resources)
-    inp = GameInput(world, registry, resources, placement)
+    inp = GameInput(world, registry, resources, placement, WorkerManager())
     inp.handle(
         surface,
         pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=_tile_center(surface, world, 6, 6)),

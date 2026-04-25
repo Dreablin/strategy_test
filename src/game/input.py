@@ -13,6 +13,7 @@ from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT, BottomBar
 from game.ui.building_panel import BuildingPanel
 from game.ui.placement import PlacementController
 from game.world import World
+from game.workers import WorkerManager
 
 # Matches `TopBar` strip; clicks above this are HUD, not map.
 TOP_BAR_HEIGHT = 48
@@ -34,7 +35,7 @@ def _on_map(surface: pygame.Surface, pos: tuple[int, int]) -> bool:
 class GameInput:
     """Owns building panel selection; delegates placement and bottom bar where appropriate."""
 
-    __slots__ = ("_panel", "_placement", "_registry", "_resources", "_world")
+    __slots__ = ("_panel", "_placement", "_registry", "_resources", "_worker_manager", "_world")
 
     def __init__(
         self,
@@ -42,12 +43,19 @@ class GameInput:
         registry: BuildingRegistry,
         resources: ResourceManager,
         placement: PlacementController,
+        worker_manager: WorkerManager,
     ) -> None:
         self._world = world
         self._registry = registry
         self._resources = resources
         self._placement = placement
+        self._worker_manager = worker_manager
         self._panel: Building | None = None
+
+    def _panel_worker_assigned(self) -> bool:
+        if self._panel is None:
+            return False
+        return self._worker_manager.is_staffed(self._panel)
 
     @property
     def panel_building(self) -> Building | None:
@@ -94,7 +102,7 @@ class GameInput:
             surface,
             self._panel,
             self._resources,
-            worker_assigned=False,
+            worker_assigned=self._panel_worker_assigned(),
         )
 
     def _handle_map_left_click(self, surface: pygame.Surface, pos: tuple[int, int]) -> None:
@@ -105,11 +113,12 @@ class GameInput:
         gx, gy = screen_to_grid(surface, self._world, pos)
 
         if self._panel is not None:
+            wa = self._panel_worker_assigned()
             layout = BuildingPanel.layout(
                 surface,
                 self._panel,
                 self._resources,
-                worker_assigned=False,
+                worker_assigned=wa,
             )
             if layout.frame.collidepoint(pos):
                 action = BuildingPanel.click_action(
@@ -117,12 +126,24 @@ class GameInput:
                     pos,
                     self._panel,
                     self._resources,
-                    worker_assigned=False,
+                    worker_assigned=wa,
                 )
                 if action == "close":
                     self._panel = None
                 elif action == "upgrade" and self._panel is not None:
-                    self._registry.upgrade_building(self._panel, self._resources)
+                    if self._registry.upgrade_building(self._panel, self._resources):
+                        self._registry.sync_resources_per_cycle(
+                            self._resources,
+                            staffed_buildings=self._worker_manager.staffed_buildings(),
+                        )
+                elif action == "demolish" and self._panel is not None:
+                    b = self._panel
+                    self._registry.demolish(b, self._worker_manager)
+                    self._panel = None
+                    self._registry.sync_resources_per_cycle(
+                        self._resources,
+                        staffed_buildings=self._worker_manager.staffed_buildings(),
+                    )
                 return
 
             self._panel = None

@@ -10,6 +10,7 @@ from game.buildings.base import Building
 from game.buildings.costs import upgrade_cost
 from game.resources import ResourceManager
 from game.world import World
+from game.workers import WorkerManager
 
 
 def _min_chebyshev_between_footprints(
@@ -80,9 +81,11 @@ class BuildingRegistry:
         self._buildings.append(inst)
         return inst
 
-    def demolish(self, building: Building) -> None:
+    def demolish(self, building: Building, worker_manager: WorkerManager | None = None) -> None:
         if building not in self._buildings:
             raise ValueError("unknown building")
+        if worker_manager is not None:
+            worker_manager.notify_demolished(building)
         pos = building.grid_pos
         if pos is None:
             raise ValueError("building has no grid position")

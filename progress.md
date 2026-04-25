@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 2. Resources & Top Bar
-- **Next Task:** T10 — Add tick scheduler tests
-- **Last Completed:** T09 — Implement ResourceManager
-- **Total Progress:** 9 / 42
+- **Next Task:** T11 — Implement TickScheduler
+- **Last Completed:** T10 — Add tick scheduler tests
+- **Total Progress:** 10 / 42
 
 ---
 
@@ -25,7 +25,7 @@
 
 - [x] **T08**: Write `tests/test_resources.py` covering: initial values, `add` increments, `has`/`try_spend` for cost dicts, `try_spend` returns False & does not deduct on insufficient funds, non-negative invariants. Tests must FAIL.
 - [x] **T09**: Implement `src/game/resources.py` (`ResourceManager`). Run tests — must PASS.
-- [ ] **T10**: Write `tests/test_tick.py` covering `TickScheduler.update(now_ms)`: returns True exactly once per 10_000 ms boundary; returns False otherwise. Tests must FAIL.
+- [x] **T10**: Write `tests/test_tick.py` covering `TickScheduler.update(now_ms)`: returns True exactly once per 10_000 ms boundary; returns False otherwise. Tests must FAIL.
 - [ ] **T11**: Implement `src/game/tick.py` (`TickScheduler`). Run tests — must PASS.
 - [ ] **T12**: Implement `src/game/assets.py` — pure-pygame procedural factory: `grass_tile()`, `tree_tile()`, `building_sprite(b_type, level)`, `worker_dot(w_type)`, `resource_icon(name)`. Returns cached `pygame.Surface`. Add a tiny smoke test `tests/test_assets.py` checking each function returns a non-empty Surface (uses `SDL_VIDEODRIVER=dummy`). Tests must PASS after implementation.
 - [ ] **T13**: Implement `src/game/ui/top_bar.py` — `TopBar.draw(surface, resources)` renders the 4 resources in a 48 px strip using `assets.resource_icon` and current `amount` and `(+income)`. Manual smoke check: `python -c "from game.ui.top_bar import TopBar; print('ok')"`.

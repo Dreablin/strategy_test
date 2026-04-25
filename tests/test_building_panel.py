@@ -1,0 +1,66 @@
+"""Building modal panel layout and click routing."""
+
+import pygame
+
+from game.buildings.lumber_camp import LumberCamp
+from game.buildings.town_hall import TownHall
+from game.resources import ResourceManager
+from game.ui.building_panel import BuildingPanel
+
+
+def test_building_panel_close_click() -> None:
+    surface = pygame.Surface((640, 480))
+    building = LumberCamp(level=2, grid_pos=(4, 4))
+    resources = ResourceManager()
+    layout = BuildingPanel.layout(surface, building, resources, worker_assigned=False)
+    cx, cy = layout.close.center
+    assert BuildingPanel.click_action(surface, (cx, cy), building, resources, worker_assigned=False) == "close"
+
+
+def test_building_panel_demolish_click() -> None:
+    surface = pygame.Surface((640, 480))
+    building = LumberCamp(level=1, grid_pos=(4, 4))
+    resources = ResourceManager()
+    layout = BuildingPanel.layout(surface, building, resources, worker_assigned=False)
+    assert layout.demolish is not None
+    cx, cy = layout.demolish.center
+    assert BuildingPanel.click_action(surface, (cx, cy), building, resources, worker_assigned=False) == "demolish"
+
+
+def test_building_panel_upgrade_disabled_when_poor() -> None:
+    surface = pygame.Surface((640, 480))
+    building = LumberCamp(level=1, grid_pos=(4, 4))
+    resources = ResourceManager()
+    assert resources.try_spend({"wood": 200})
+    layout = BuildingPanel.layout(surface, building, resources, worker_assigned=False)
+    assert layout.upgrade is not None
+    assert layout.upgrade_enabled is False
+    cx, cy = layout.upgrade.center
+    assert BuildingPanel.click_action(surface, (cx, cy), building, resources, worker_assigned=False) is None
+
+
+def test_building_panel_upgrade_click_when_affordable() -> None:
+    surface = pygame.Surface((640, 480))
+    building = LumberCamp(level=1, grid_pos=(4, 4))
+    resources = ResourceManager()
+    layout = BuildingPanel.layout(surface, building, resources, worker_assigned=False)
+    assert layout.upgrade is not None
+    assert layout.upgrade_enabled is True
+    cx, cy = layout.upgrade.center
+    assert BuildingPanel.click_action(surface, (cx, cy), building, resources, worker_assigned=False) == "upgrade"
+
+
+def test_building_panel_draw_smoke() -> None:
+    surface = pygame.Surface((800, 600))
+    building = LumberCamp(level=3, grid_pos=(2, 2))
+    resources = ResourceManager()
+    BuildingPanel.draw(surface, building, resources, worker_assigned=True)
+    assert surface.get_at((400, 300)) != (0, 0, 0, 255)
+
+
+def test_town_hall_panel_no_upgrade_button() -> None:
+    surface = pygame.Surface((640, 480))
+    building = TownHall(level=1, grid_pos=(10, 10))
+    resources = ResourceManager()
+    layout = BuildingPanel.layout(surface, building, resources, worker_assigned=False)
+    assert layout.upgrade is None

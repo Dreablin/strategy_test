@@ -2,10 +2,10 @@
 
 ## Current Status
 
-- **Phase:** 5. Building Panel & Actions
-- **Next Task:** T31 — Write worker manager tests (RED)
-- **Last Completed:** T30 — Implement town hall panel UI
-- **Total Progress:** 30 / 42
+- **Phase:** 6. Workers
+- **Next Task:** T32 — Implement WorkerManager hire and reassign_all (GREEN)
+- **Last Completed:** T31 — Worker manager tests written (RED until T32)
+- **Total Progress:** 31 / 42
 
 ---
 
@@ -66,7 +66,7 @@
 
 ### Phase 6 — Workers
 
-- [ ] **T31**: Write `tests/test_workers.py` covering: `hire` deducts 50 food and returns Worker; `hire` returns None when insufficient food and does not deduct; `reassign_all` matches one idle worker per free building of correct type; type mismatch never assigned; demolition leaves worker on tile and idle; subsequent reassignment moves them when a slot opens. Tests must FAIL.
+- [x] **T31**: Write `tests/test_workers.py` covering: `hire` deducts 50 food and returns Worker; `hire` returns None when insufficient food and does not deduct; `reassign_all` matches one idle worker per free building of correct type; type mismatch never assigned; demolition leaves worker on tile and idle; subsequent reassignment moves them when a slot opens. Tests must FAIL.
 - [ ] **T32**: Implement `src/game/workers.py` (`Worker`, `WorkerManager` with `hire`, `reassign_all`, `idle`). Run tests — must PASS.
 - [ ] **T33**: Wire WorkerManager into game state: every place/demolish/hire/upgrade calls `reassign_all()`; hire button in town hall panel calls `WorkerManager.hire(type)`.
 - [ ] **T34**: Render workers on screen: assigned workers as a colored dot at building center; idle workers stacked next to Town Hall; demolition-orphaned workers at the former center tile (until reassigned).

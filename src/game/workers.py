@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from game.buildings.base import Building
+from game.config import WORKER_HIRE_COST
+from game.resources import ResourceManager
 
 
 def building_center_tile(building: Building) -> tuple[int, int]:
@@ -28,11 +32,17 @@ class Worker:
 
 
 class WorkerManager:
-    """Tracks workers; notifies assignments when a staffed building is demolished."""
+    """Tracks workers; notifies assignments when a staffed building is demolished (PRD F-WORK)."""
 
-    __slots__ = ("_workers",)
+    __slots__ = ("_registry", "_resources", "_workers")
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        resources: ResourceManager | None = None,
+        registry: Any | None = None,
+    ) -> None:
+        self._resources = resources
+        self._registry = registry
         self._workers: list[Worker] = []
 
     def add_worker(self, worker: Worker) -> None:
@@ -40,6 +50,10 @@ class WorkerManager:
 
     def workers(self) -> tuple[Worker, ...]:
         return tuple(self._workers)
+
+    def idle(self) -> list[Worker]:
+        """Idle workers (PRD ``WorkerManager.idle``)."""
+        return [w for w in self._workers if w.idle]
 
     def assign_to_building(self, worker: Worker, building: Building) -> None:
         worker.assigned_building = building
@@ -52,6 +66,14 @@ class WorkerManager:
     def staffed_buildings(self) -> set[Building]:
         return {w.assigned_building for w in self._workers if w.assigned_building is not None}
 
+    def hire(self, worker_type: str) -> Worker | None:
+        """Hire a worker for 50 food; ``None`` if unaffordable (T32: create + spawn at Town Hall)."""
+        if self._resources is None or self._registry is None:
+            return None
+        if not self._resources.has(WORKER_HIRE_COST):
+            return None
+        return None
+
     def notify_demolished(self, building: Building) -> None:
         """Park former workers on the demolished building's center tile (idle)."""
         cx, cy = building_center_tile(building)
@@ -62,5 +84,5 @@ class WorkerManager:
                 w.stand_tile = (cx, cy)
 
     def reassign_all(self) -> None:
-        """Match idle workers to free buildings (implemented in T32/T33)."""
+        """Match idle workers to free buildings (T32)."""
         return

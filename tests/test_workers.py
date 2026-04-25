@@ -1,7 +1,12 @@
-"""Worker manager: demolition orphans workers on the former building center (PRD F-DEMO-02)."""
+"""Worker manager: hire, reassign, demolition (PRD F-WORK / F-DEMO)."""
 
+from game.buildings.farm import Farm
+from game.buildings.iron_mine import IronMine
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.registry import BuildingRegistry
+from game.buildings.town_hall import TownHall
+from game.config import WORKER_HIRE_COST
+from game.resources import ResourceManager
 from game.world import World
 from game.workers import Worker, WorkerManager, building_center_tile
 
@@ -41,3 +46,105 @@ def test_demolition_does_not_affect_other_workers() -> None:
     registry.demolish(a, wm)
     assert w1.idle and w1.assigned_building is None
     assert not w2.idle and w2.assigned_building is b
+
+
+def test_hire_deducts_50_food_and_returns_worker() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, (16, 16))
+    wm = WorkerManager(resources, registry)
+    food_before = resources.get("food")
+    w = wm.hire("LUMBERJACK")
+    assert w is not None
+    assert w.type_tag == "LUMBERJACK"
+    assert resources.get("food") == food_before - WORKER_HIRE_COST["food"]
+
+
+def test_hire_returns_none_when_insufficient_food_and_does_not_deduct() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, (16, 16))
+    while resources.get("food") >= WORKER_HIRE_COST["food"]:
+        assert resources.try_spend({"food": 1})
+    food_before = resources.get("food")
+    wm = WorkerManager(resources, registry)
+    assert wm.hire("LUMBERJACK") is None
+    assert resources.get("food") == food_before
+
+
+def test_reassign_all_assigns_one_idle_lumberjack_to_empty_lumber_camp() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, (16, 16))
+    camp = registry.place(LumberCamp, (10, 10))
+    wm = WorkerManager(resources, registry)
+    wm.add_worker(Worker("LUMBERJACK"))
+    wm.reassign_all()
+    assert wm.is_staffed(camp)
+    w = wm.workers()[0]
+    assert not w.idle
+    assert w.assigned_building is camp
+
+
+def test_reassign_all_does_not_assign_stonecutter_to_lumber_camp() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, (16, 16))
+    registry.place(LumberCamp, (10, 10))
+    wm = WorkerManager(resources, registry)
+    w = Worker("STONECUTTER")
+    wm.add_worker(w)
+    wm.reassign_all()
+    assert w.idle
+    assert w.assigned_building is None
+
+
+def test_demolish_then_reassign_moves_worker_to_new_matching_building() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, (16, 16))
+    camp1 = registry.place(LumberCamp, (8, 8))
+    camp2 = registry.place(LumberCamp, (22, 22))
+    wm = WorkerManager(resources, registry)
+    w = Worker("LUMBERJACK")
+    wm.add_worker(w)
+    wm.assign_to_building(w, camp1)
+    registry.demolish(camp1, wm)
+    assert w.idle
+    assert w.stand_tile == building_center_tile(camp1)
+    wm.reassign_all()
+    assert w.assigned_building is camp2
+    assert not w.idle
+
+
+def test_reassign_all_assigns_farmer_to_empty_farm() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, (16, 16))
+    registry.place(LumberCamp, (4, 4))
+    farm = registry.place(Farm, (24, 24))
+    mine = registry.place(IronMine, (10, 20))
+    wm = WorkerManager(resources, registry)
+    wm.add_worker(Worker("FARMER"))
+    wm.reassign_all()
+    assert wm.is_staffed(farm)
+    assert not wm.is_staffed(mine)
+
+
+def test_reassign_all_assigns_miner_to_empty_iron_mine() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, (16, 16))
+    registry.place(Farm, (4, 4))
+    mine = registry.place(IronMine, (24, 24))
+    wm = WorkerManager(resources, registry)
+    wm.add_worker(Worker("MINER"))
+    wm.reassign_all()
+    assert wm.is_staffed(mine)

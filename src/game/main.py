@@ -3,6 +3,8 @@
 import pygame
 
 from game.config import WINDOW_SIZE
+from game.render import Renderer
+from game.world import World
 
 
 def main() -> int:
@@ -12,6 +14,7 @@ def main() -> int:
     screen = pygame.display.set_mode(WINDOW_SIZE)
     pygame.display.set_caption("Isometric Strategy")
 
+    world = World()
     running = True
     try:
         while running:
@@ -19,7 +22,8 @@ def main() -> int:
                 if event.type == pygame.QUIT:
                     running = False
 
-            screen.fill((24, 24, 24))
+            screen.fill((20, 24, 22))
+            Renderer.draw_world(screen, world)
             pygame.display.flip()
             clock.tick(60)
     finally:

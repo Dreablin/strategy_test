@@ -1,0 +1,25 @@
+# Ralph-loop runtime state
+.cursor/ralph/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+
+# Build artifacts
+build/
+dist/
+*.spec.bak
+
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+
+# Virtualenvs
+.venv/
+venv/
+env/

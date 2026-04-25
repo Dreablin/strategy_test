@@ -1,0 +1,22 @@
+---
+description: Python coding conventions for the Isometric Strategy Game
+globs: ["src/**/*.py", "tests/**/*.py"]
+alwaysApply: false
+---
+
+# Python conventions
+
+- Python 3.12; type hints on public functions and dataclass fields.
+- Prefer `dataclasses` for simple value-objects (Building, Worker).
+- Use `enum.Enum` for `BuildingType` / `WorkerType`.
+- Constants live in `src/game/config.py`; never duplicate.
+- Pure logic (resources, costs, world, registry, workers, tick) must not
+  import `pygame` — keeps it trivially unit-testable.
+- UI / rendering modules may import `pygame`; tests for them rely on
+  `SDL_VIDEODRIVER=dummy` from `tests/conftest.py`.
+- Use `pathlib.Path` over `os.path`.
+- Prefer composition over inheritance except where the PRD spells out a class
+  hierarchy (Building base + 5 subclasses).
+- Tests: one behavior per test, descriptive names (`test_upgrade_cost_at_level_5_includes_stone`). Use `pytest.mark.parametrize` for level tables.
+- No `print` in production code; use `logging.getLogger(__name__)`.
+- Keep functions ≤ 30 lines when reasonable.

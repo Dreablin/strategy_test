@@ -1,0 +1,407 @@
+# PRD — Isometric Economy Strategy Game
+
+## 1. Overview
+
+### Problem
+A standalone, lightweight isometric economy strategy game playable on Windows 11
+without any prerequisite installation. The player builds a town, harvests four
+resources (food, wood, stone, iron), hires workers, and upgrades buildings.
+
+### Solution
+A self-contained Python game packaged with PyInstaller into a single `.exe`.
+Pure 2D isometric rendering done with Pygame primitives — no external assets,
+no game engine, no save/load, no main menu. Game starts immediately and runs
+until the player closes the window, releasing all OS resources cleanly.
+
+### Target user
+A solo player on Windows 11 who wants a simple, focused economy-builder
+session (5–30 minutes) with no installation friction.
+
+---
+
+## 2. Technology Stack
+
+| Component                | Technology              | Rationale                                                 |
+|--------------------------|-------------------------|-----------------------------------------------------------|
+| Language                 | Python 3.12             | Fast iteration, rich stdlib, easy to test                 |
+| Rendering / Input        | pygame 2.5.2            | Mature 2D library, single dependency, MIT-friendly        |
+| Tests                    | pytest 8.x              | Standard, fast, supports headless via `SDL_VIDEODRIVER`   |
+| Packaging                | PyInstaller 6.x         | Produces single Windows `.exe`, no install required       |
+| Lint / Format (optional) | ruff                    | Single tool, fast                                         |
+| Assets                   | Procedural (Pygame draw)| No binary files; reproducible; ralph-loop friendly        |
+
+### Project directory tree
+
+```
+game/
+├── PRD.md                       # this file (read-only for agent)
+├── prompt.md                    # ralph turn prompt
+├── progress.md                  # task tracker (agent's persistent memory)
+├── README.md                    # how to run / build
+├── requirements.txt             # runtime + dev dependencies
+├── pyproject.toml               # pytest + ruff config
+├── build_exe.bat                # PyInstaller one-shot script
+├── game.spec                    # PyInstaller spec (generated/edited)
+├── .gitignore
+├── .cursor/
+│   └── rules/
+│       ├── ralph-loop.mdc
+│       └── python.mdc
+├── src/
+│   └── game/
+│       ├── __init__.py
+│       ├── main.py              # entry point: pygame window, game loop
+│       ├── config.py            # all constants
+│       ├── iso.py               # world ↔ screen isometric transforms
+│       ├── assets.py            # procedural sprite/icon factory
+│       ├── resources.py         # ResourceManager (food/wood/stone/iron)
+│       ├── world.py             # grid, occupancy, grass/tree zones
+│       ├── tick.py              # 10-second cycle scheduler
+│       ├── buildings/
+│       │   ├── __init__.py
+│       │   ├── base.py          # Building base class
+│       │   ├── town_hall.py
+│       │   ├── lumber_camp.py
+│       │   ├── stone_mine.py
+│       │   ├── iron_mine.py
+│       │   ├── farm.py
+│       │   ├── costs.py         # upgrade-cost formulas
+│       │   └── registry.py      # BuildingRegistry, placement validation
+│       ├── workers.py           # Worker, WorkerManager, assignment
+│       ├── ui/
+│       │   ├── __init__.py
+│       │   ├── top_bar.py       # resources + per-cycle income
+│       │   ├── bottom_bar.py    # building selection menu
+│       │   ├── placement.py     # mouse-follow contour, click to place
+│       │   ├── building_panel.py# modal: info / demolish / upgrade
+│       │   └── town_hall_panel.py # extends building_panel: hire workers
+│       ├── render.py            # main scene renderer
+│       └── input.py             # mouse/keyboard event router
+└── tests/
+    ├── __init__.py
+    ├── conftest.py              # SDL_VIDEODRIVER=dummy, fixtures
+    ├── test_config.py
+    ├── test_iso.py
+    ├── test_resources.py
+    ├── test_world.py
+    ├── test_costs.py
+    ├── test_buildings.py
+    ├── test_registry.py
+    ├── test_workers.py
+    ├── test_tick.py
+    └── test_production.py
+```
+
+---
+
+## 3. Functional Requirements
+
+### F-WIN — Window & Lifecycle
+
+- **F-WIN-01 (MUST):** On launch, open a single 1280×720 (or larger if monitor is bigger; never larger than primary monitor) windowed pygame window titled `"Isometric Strategy"`. Game starts immediately — no menus.
+- **F-WIN-02 (MUST):** The game loop runs at 60 FPS with `pygame.time.Clock`.
+- **F-WIN-03 (MUST):** When the player closes the window (X button, Alt-F4, or `pygame.QUIT` event), `pygame.quit()` is called, all worker threads (if any) are joined, and the process exits with code `0`. No background processes remain.
+
+### F-RES — Resources
+
+- **F-RES-01 (MUST):** Track 4 resources: `food`, `wood`, `stone`, `iron`. All non-negative integers.
+- **F-RES-02 (MUST):** Initial values: `food=200`, `wood=200`, `stone=0`, `iron=0`.
+- **F-RES-03 (MUST):** ResourceManager exposes `get(name)`, `add(name, n)`, `try_spend(cost: dict) -> bool`, `has(cost: dict) -> bool`.
+- **F-RES-04 (MUST):** Per-cycle income (computed from active buildings + workers) is exposed for UI as a dict.
+
+```python
+class ResourceManager:
+    def get(self, name: str) -> int: ...
+    def add(self, name: str, amount: int) -> None: ...
+    def has(self, cost: Mapping[str, int]) -> bool: ...
+    def try_spend(self, cost: Mapping[str, int]) -> bool: ...
+    @property
+    def per_cycle(self) -> dict[str, int]: ...
+```
+
+### F-TICK — Cycle System
+
+- **F-TICK-01 (MUST):** A cycle lasts exactly **10 seconds** of wall-clock game time (using `pygame.time.get_ticks()`).
+- **F-TICK-02 (MUST):** On each cycle tick, every working building (with assigned worker) produces `5 × level` units of its resource, added atomically.
+
+### F-ISO — Isometric Projection
+
+- **F-ISO-01 (MUST):** Tile size 64×32 (classic 2:1 diamond). Camera fixed; no zoom, no rotation, no pan.
+- **F-ISO-02 (MUST):** `iso.world_to_screen(gx, gy)` and `iso.screen_to_world(px, py)` are inverses (rounded to int grid).
+
+### F-WORLD — World
+
+- **F-WORLD-01 (MUST):** A 32×32 tile playable grass field, centered on screen.
+- **F-WORLD-02 (MUST):** A decorative tree border drawn outside the playable area (≥2 tiles thick on each side). Trees are visual only — they are not harvestable entities.
+- **F-WORLD-03 (MUST):** Town Hall is placed at grid (16,16) on game start.
+
+### F-BLD — Buildings (general)
+
+- **F-BLD-01 (MUST):** Five building types: `TOWN_HALL`, `LUMBER_CAMP`, `STONE_MINE`, `IRON_MINE`, `FARM`.
+- **F-BLD-02 (MUST):** Each non–town-hall building occupies a 2×2 tile footprint. Town Hall is 3×3.
+- **F-BLD-03 (MUST):** Maximum building level is **10** for non–town-hall, **fixed at 1** for Town Hall (cannot upgrade, cannot demolish, cannot build a second one).
+- **F-BLD-04 (MUST):** Build cost (= cost to construct level 1):
+  - LUMBER_CAMP, STONE_MINE, IRON_MINE, FARM: `wood=100`.
+- **F-BLD-05 (MUST):** Upgrade cost from level *L* → *L+1* (L ≥ 1):
+  - `wood = 100 × (L + 1)`
+  - `stone = 200 × (L + 1 - 4)` if `L + 1 ≥ 5`, else 0  (so level 5 costs +200 stone, level 6 +400, …, level 10 +1200)
+  - `iron  = 300 × (L + 1 - 6)` if `L + 1 ≥ 7`, else 0  (so level 7 costs +300 iron, level 8 +600, …, level 10 +1200)
+  - **Decision/Interpretation note (recorded in progress.md):** the user wrote "первый уровень здания (постройка) стоит 100 дерева, каждый следующий требует на 100 дерева больше". We interpret this strictly as: *to reach level L you spend `100 × L` wood*; level 5 additionally adds stone; level 7 additionally adds iron. The `+200 per level` for stone and `+300 per level` for iron mirror the wood pattern.
+- **F-BLD-06 (MUST):** Production per cycle for resource-buildings with a worker assigned: `5 × level` of the building's resource.
+- **F-BLD-07 (MUST):** Each new building starts with **no worker**.
+
+```python
+class Building:
+    type: BuildingType
+    level: int                          # 1..10 (TownHall locked at 1)
+    grid_pos: tuple[int, int]           # top-left tile
+    footprint: tuple[int, int]          # (w, h) in tiles
+    worker: Optional["Worker"]          # None when empty
+    def income(self) -> dict[str, int]: ...
+    def upgrade_cost(self) -> dict[str, int]: ...
+    def can_upgrade(self) -> bool: ...
+```
+
+### F-PLACE — Placement Rules
+
+- **F-PLACE-01 (MUST):** When the player selects a building from the bottom bar, a translucent contour follows the mouse on the isometric grid.
+- **F-PLACE-02 (MUST):** The contour is **green** when placement is valid, **red** when invalid.
+- **F-PLACE-03 (MUST):** Placement is **invalid** if any of:
+  - Footprint extends outside the playable grass field.
+  - Footprint overlaps an existing building's footprint.
+  - The closest distance (in tiles, Chebyshev) from any tile of the new footprint to any tile of an existing building's footprint is `< ceil(0.5 × max(footprint_w, footprint_h))` of the **new** building. (i.e. ≥ 50 % of building's linear size separation.)
+- **F-PLACE-04 (MUST):** Left-click on a valid spot deducts the build cost (only `wood=100`) and places the building. If the player has insufficient resources, no placement happens and the contour stays red.
+- **F-PLACE-05 (MUST):** Right-click or `Esc` cancels placement mode.
+- **F-PLACE-06 (MUST):** A second Town Hall can never be placed (the Town Hall option is not in the bottom bar).
+
+### F-UI-TOP — Top Bar
+
+- **F-UI-TOP-01 (MUST):** Fixed top strip (height 48 px). Shows 4 resource entries left-to-right:
+  `[icon] amount  (+income/cycle)`
+- **F-UI-TOP-02 (MUST):** `amount` updates every frame; `+income` updates whenever buildings/workers change.
+
+```
++--------------------------------------------------------------+
+| 🍞 200 (+0)   🪵 200 (+5)   🪨 0 (+0)   ⛓ 0 (+0)            |
++--------------------------------------------------------------+
+```
+
+### F-UI-BOT — Bottom Bar (build menu)
+
+- **F-UI-BOT-01 (MUST):** Fixed bottom strip (height 96 px). Shows 4 build buttons (Lumber, Stone, Iron, Farm) with icon + name + cost (`100 wood`).
+- **F-UI-BOT-02 (MUST):** Clicking a button enters placement mode for that building.
+- **F-UI-BOT-03 (MUST):** A button is greyed out (not clickable) if the player cannot afford 100 wood.
+
+```
++--------------------------------------------------------------+
+| [Lumber 100🪵] [Stone 100🪵] [Iron 100🪵] [Farm 100🪵]      |
++--------------------------------------------------------------+
+```
+
+### F-UI-PANEL — Building Info Panel (modal)
+
+- **F-UI-PANEL-01 (MUST):** Left-click on an existing building (when not in placement mode) opens a centered modal panel.
+- **F-UI-PANEL-02 (MUST):** Panel shows:
+  - Building name + current level (`"Lumber Camp — Lv 3"`)
+  - One-line description (e.g. `"Lumberjack chops trees for wood."`)
+  - Per-cycle income (`"+15 wood / 10 s"`)
+  - Worker status (`"Worker: assigned"` / `"Worker: empty"`)
+  - **Upgrade** button with cost text (`"Upgrade to Lv 4 — 400 wood"`); disabled when level=10 or insufficient resources.
+  - **Demolish** button (red).
+  - Close [×] in top-right corner.
+- **F-UI-PANEL-03 (MUST):** Town Hall panel: same layout but **no Demolish**, **no Upgrade**, plus a "Hire Workers" section with one button per worker type (cost `50 food` each). Hire button is disabled if `food < 50`.
+- **F-UI-PANEL-04 (MUST):** Closing the panel (× or Esc) returns to normal view.
+
+```
++----------------------------+
+| Lumber Camp — Lv 3   [×]   |
+| Lumberjack chops trees.    |
+| Income: +15 wood / 10 s    |
+| Worker: assigned           |
+| [ Upgrade — 400 wood ]     |
+| [ Demolish ]               |
++----------------------------+
+```
+
+### F-DEMO — Demolish
+
+- **F-DEMO-01 (MUST):** Demolishing removes the building from the registry. No refund.
+- **F-DEMO-02 (MUST):** If the demolished building had a worker, that worker becomes **idle** and visually stands at the building's former center tile until reassigned.
+
+### F-UPG — Upgrade
+
+- **F-UPG-01 (MUST):** Upgrade deducts the resources (per F-BLD-05) and increments `level` by 1.
+- **F-UPG-02 (MUST):** Income is recalculated immediately; next cycle reflects new level.
+
+### F-WORK — Workers
+
+- **F-WORK-01 (MUST):** Four worker types: `LUMBERJACK`, `STONECUTTER`, `MINER`, `FARMER`. Each works only in the matching building type (Lumberjack ↔ Lumber Camp, Farmer ↔ Farm, etc.).
+- **F-WORK-02 (MUST):** Hiring is initiated from the Town Hall panel; cost is **50 food**. On success, food is deducted and a new idle worker is spawned at the Town Hall.
+- **F-WORK-03 (MUST):** Assignment rule: at every state change (worker hired, building built, building demolished, building reassigned), the WorkerManager runs:
+  ```
+  for each idle worker W of type T:
+      find any building B of matching type with no worker
+      if found:  assign W to B; W is no longer idle
+      else:      W remains idle, standing near Town Hall
+  ```
+- **F-WORK-04 (MUST):** Movement is **instant** (teleport) — no path-finding required. The visual position is just at the building's center for assigned workers, near Town Hall for idle workers.
+- **F-WORK-05 (MUST):** Workers are visualized as a small colored dot/figure on top of their assigned building (or on the demolished tile if the building was destroyed).
+- **F-WORK-06 (MUST):** The Town Hall does not consume a worker slot itself.
+
+### F-PROD — Production
+
+- **F-PROD-01 (MUST):** Every 10 s, for every building with an assigned worker:
+  `resources[building.resource] += 5 × building.level`
+- **F-PROD-02 (MUST):** Production is atomic per-tick (no fractional accumulation between ticks).
+
+### F-INPUT — Input
+
+- **F-INPUT-01 (MUST):** Mouse: left-click = primary action; right-click / Esc = cancel placement / close panel.
+- **F-INPUT-02 (MUST):** No keyboard shortcuts beyond Esc are required.
+
+---
+
+## 4. Non-Functional Requirements
+
+| ID        | Category       | Requirement                                                                                   |
+|-----------|----------------|-----------------------------------------------------------------------------------------------|
+| NFR-PERF-01 | Performance  | Game must hold ≥ 55 FPS with up to 100 buildings + 100 workers on a 5-year-old laptop iGPU.   |
+| NFR-PERF-02 | Performance  | Memory footprint < 250 MB during play.                                                        |
+| NFR-REL-01  | Reliability  | No unhandled exceptions during a 10-minute play session reach the user; all logged to stderr. |
+| NFR-REL-02  | Cleanup      | On window close, `pygame.quit()` called, no zombie processes, no leaked file handles.         |
+| NFR-EXT-01  | Extensibility| Adding a new resource-building type = one subclass + one entry in the bottom-bar config.      |
+| NFR-START-01| Startup      | From double-click on `.exe` to interactive game ≤ 3 seconds on warm SSD.                      |
+| NFR-FILE-01 | Filesystem   | Game writes no files unless absolutely necessary; if writing, only inside its own folder.     |
+| NFR-OS-01   | Portability  | Game `.exe` runs on Windows 11 with no preinstalled software (other than what ships with OS).|
+
+---
+
+## 5. Testing Requirements
+
+### Test infrastructure
+
+- `tests/conftest.py` sets `os.environ["SDL_VIDEODRIVER"] = "dummy"` before importing pygame, allowing UI/asset tests to run headless on CI / in ralph-loop.
+- pytest discovers `tests/test_*.py`. Run with `pytest -q`.
+- Coverage target: ≥ 85 % on non-UI modules (`config`, `iso`, `resources`, `world`, `buildings/*`, `workers`, `tick`).
+
+### Test → coverage map
+
+| Test file              | Covers                                                                |
+|------------------------|-----------------------------------------------------------------------|
+| `test_config.py`       | constants present, sane ranges                                        |
+| `test_iso.py`          | `world_to_screen`/`screen_to_world` round-trip                        |
+| `test_resources.py`    | add/spend/has/initial values                                          |
+| `test_world.py`        | grid bounds, grass/tree zones, occupancy                              |
+| `test_costs.py`        | upgrade cost formula at L1..L10 (incl. stone@5+, iron@7+)             |
+| `test_buildings.py`    | each subclass: type, footprint, income, level cap                     |
+| `test_registry.py`     | placement valid/invalid, distance rule, second-town-hall rejected     |
+| `test_workers.py`      | hire deducts food, idle queue, type-matched assignment                |
+| `test_tick.py`         | 10-second tick boundary, callback called once per cycle               |
+| `test_production.py`   | end-to-end: building + worker → resource added per cycle              |
+
+---
+
+## 6. API Specification
+
+This is a single-process desktop app — no HTTP API. Internal module APIs:
+
+### `game.resources`
+```python
+ResourceManager()
+  .get(name) -> int
+  .add(name, n) -> None
+  .has(cost: Mapping[str,int]) -> bool
+  .try_spend(cost: Mapping[str,int]) -> bool
+  .per_cycle: dict[str,int]            # property, recomputed by registry/workers
+```
+
+### `game.buildings.costs`
+```python
+build_cost(building_type) -> dict[str,int]            # always {"wood":100}
+upgrade_cost(current_level: int) -> dict[str,int]     # for level current+1
+```
+
+### `game.buildings.registry`
+```python
+BuildingRegistry(world)
+  .can_place(b_type, grid_pos) -> bool
+  .place(b_type, grid_pos) -> Building
+  .demolish(building) -> None
+  .at(grid_pos) -> Optional[Building]
+  .all() -> list[Building]
+```
+
+### `game.workers`
+```python
+WorkerManager(resources, registry)
+  .hire(worker_type) -> Optional[Worker]   # None if not enough food
+  .reassign_all() -> None                  # called after any placement/demolish/hire
+  .idle() -> list[Worker]
+```
+
+### `game.tick`
+```python
+TickScheduler(period_ms=10_000)
+  .update(now_ms) -> bool                  # True iff a tick fired this frame
+```
+
+---
+
+## 7. Implementation Tasks
+
+The full ordered task list is the source of truth in `progress.md`. Summary:
+
+| Phase                          | Tasks    |
+|--------------------------------|----------|
+| 1. Project foundation          | T01–T07  |
+| 2. Resources & top bar         | T08–T11  |
+| 3. World & rendering           | T12–T15  |
+| 4. Buildings & placement       | T16–T25  |
+| 5. Building panel & actions    | T26–T30  |
+| 6. Workers                     | T31–T36  |
+| 7. Production, polish, package | T37–T42  |
+
+42 atomic tasks total. See `progress.md`.
+
+---
+
+## 8. Dependencies
+
+`requirements.txt`:
+
+```
+pygame==2.5.2
+pytest==8.3.3
+pyinstaller==6.10.0
+ruff==0.6.9
+```
+
+No other runtime dependencies. PyInstaller bundles pygame + Python interpreter
+into the final `.exe`, so the end user needs nothing preinstalled.
+
+---
+
+## 9. Out of Scope
+
+- Save / load, main menu, options screen, audio, music, sound effects.
+- Pathfinding, animated worker movement (workers teleport).
+- Combat, enemies, fog of war, day/night cycle.
+- Multiplayer, networking.
+- Localization (English only in UI).
+- Mod support.
+- Camera zoom / rotation / panning (camera is fixed).
+- Tree harvesting (trees are decorative).
+- Mac / Linux builds.
+
+---
+
+## 10. Glossary
+
+| Term            | Meaning                                                               |
+|-----------------|------------------------------------------------------------------------|
+| Cycle / Tick    | A 10-second game-clock interval that triggers production.            |
+| Footprint       | The set of tiles a building occupies on the grid.                    |
+| Grass field     | The 32×32 playable interior; only place buildings can be placed.     |
+| Idle worker     | A hired worker without a building assigned; stands near Town Hall or on its former tile after demolition. |
+| Income          | Resources added to the player per single cycle.                       |
+| Town Hall       | The single mandatory starting building; can hire workers; cannot be upgraded, demolished, or duplicated. |

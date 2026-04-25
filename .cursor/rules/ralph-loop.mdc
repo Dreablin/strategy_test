@@ -1,0 +1,56 @@
+---
+description: Ralph-loop project rules for the Isometric Strategy Game (Pygame)
+alwaysApply: true
+---
+
+# Project: Isometric Economy Strategy Game (Python + Pygame)
+
+A standalone, isometric, top-down economy strategy game packaged as a single
+Windows `.exe`. No engine, no main menu, no save/load. Pure Pygame + procedural
+assets. See `PRD.md` for the full spec; it is read-only.
+
+## Per-turn workflow
+
+1. Read `progress.md`; pick the **first** `- [ ]` task. That is the only task
+   for this turn.
+2. Read the relevant section of `PRD.md`. **Never edit `PRD.md`.**
+3. Apply TDD:
+   - *Test* tasks: write failing tests, run `pytest -q`, confirm RED.
+   - *Implementation* tasks: write code, run `pytest -q`, confirm GREEN
+     (the targeted tests AND the full suite).
+   - *UI/packaging* tasks (no test counterpart): smoke-check via
+     `python -c "import game.<module>"` or run main with
+     `SDL_VIDEODRIVER=dummy` for ~2 seconds.
+4. Update `progress.md`: flip `[ ]` → `[x]`; bump *Current Status* (Phase,
+   Next Task, Last Completed, Total Progress).
+5. Commit:
+   `git add -A && git commit -m "feat: T{XX} - {short description}"`.
+6. If every task is `[x]`, output exactly `<promise>ALL_TASKS_COMPLETE</promise>`
+   and stop.
+
+## Critical rules
+
+- **One task per turn.** Do not greedily merge tasks.
+- **Never skip tests.** Tests must run and pass before committing an
+  implementation task.
+- **Never modify `PRD.md`** — it is the contract.
+- If stuck on the same task **3 turns in a row**, mark it `- [!]`, add a row to
+  *Issues & Blockers* in `progress.md`, and move on.
+- Workers teleport (no pathfinding). Cycle = exactly 10 000 ms. Camera is
+  fixed (no zoom/rotation/pan). Keep these invariants.
+- All graphics are procedural via `src/game/assets.py` — never add binary asset
+  files to the repo.
+
+## Code standards (Python / Pygame)
+
+- Python 3.12. Type hints on public functions / methods.
+- One concept per module; keep modules under ~250 lines.
+- No global state outside `config.py`. Pass `ResourceManager`, `World`,
+  `BuildingRegistry`, `WorkerManager` explicitly.
+- All UI rendering goes through `src/game/render.py` or `src/game/ui/*.py`.
+- Tests headless: `tests/conftest.py` sets `SDL_VIDEODRIVER=dummy` before
+  importing pygame. Never call `pygame.display.set_mode` from a unit test
+  unless that test explicitly needs it.
+- Keep imports relative-to-package: `from game.config import TICK_MS`.
+- Run `ruff check src tests` before committing if introducing new files.
+- `pygame.quit()` MUST be called in a `finally:` block in `main.py`.

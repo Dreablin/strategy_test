@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 4. Buildings & Placement
-- **Next Task:** T18 — Add building upgrade cost tests
-- **Last Completed:** T17 — Wire world renderer into main
-- **Total Progress:** 17 / 42
+- **Next Task:** T19 — Implement building cost helpers
+- **Last Completed:** T18 — Add building upgrade cost tests
+- **Total Progress:** 18 / 42
 
 ---
 
@@ -39,7 +39,7 @@
 
 ### Phase 4 — Buildings & Placement
 
-- [ ] **T18**: Write `tests/test_costs.py` covering `upgrade_cost(L)` for L=1..10. Specifically:
+- [x] **T18**: Write `tests/test_costs.py` covering `upgrade_cost(L)` for L=1..10. Specifically:
    - L→2: `{wood:200}`
    - L→4: `{wood:400}`
    - L→5: `{wood:500, stone:200}`

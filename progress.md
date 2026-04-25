@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 7. Production, Polish, Package
-- **Next Task:** T38 — Implement production loop (`game.loop` or `main.py`)
-- **Last Completed:** T37 — End-to-end production tests added (RED)
-- **Total Progress:** 37 / 42
+- **Next Task:** T39 — Verify shutdown and add shutdown test
+- **Last Completed:** T38 — Implement production loop with tick scheduler
+- **Total Progress:** 38 / 42
 
 ---
 
@@ -76,7 +76,7 @@
 ### Phase 7 — Production, Polish, Package
 
 - [x] **T37**: Write `tests/test_production.py` end-to-end (no display): create World+Registry+WorkerManager+ResourceManager, place Lumber Camp + hire+assign a worker, fire one tick → wood increased by 5; upgrade to L3 → next tick adds 15. Tests must FAIL initially.
-- [ ] **T38**: Implement production loop in `main.py` (or `game/loop.py`): on tick, sum `5×level` per building with worker → `resources.add(...)`. Run tests — must PASS.
+- [x] **T38**: Implement production loop in `main.py` (or `game/loop.py`): on tick, sum `5×level` per building with worker → `resources.add(...)`. Run tests — must PASS.
 - [ ] **T39**: Verify clean shutdown: in `main.py` ensure `pygame.quit()` runs in a `finally:` block; no daemon threads are spawned (or all are joined). Add `tests/test_shutdown.py` that imports main, runs `main()` in a thread for 1 s with QUIT event injected, and asserts the thread exits within 2 s.
 - [ ] **T40**: Polish — verify FPS counter (debug-only) stays ≥55 with 50 buildings + 50 workers in a stress fixture. Optional perf sanity test.
 - [ ] **T41**: Add `game.spec` and `build_exe.bat` for PyInstaller (`pyinstaller --onefile --noconsole -n IsometricStrategy src/game/main.py`). Document the command in `README.md`. Smoke check: `dir build_exe.bat` (no actual exe build required in CI).

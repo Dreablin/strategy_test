@@ -5,8 +5,10 @@ import pygame
 from game.buildings.registry import BuildingRegistry
 from game.config import WINDOW_SIZE
 from game.input import GameInput
+from game.loop import apply_production_tick
 from game.render import Renderer
 from game.resources import ResourceManager
+from game.tick import TickScheduler
 from game.ui.bottom_bar import BottomBar
 from game.ui.placement import PlacementController
 from game.ui.top_bar import TopBar
@@ -27,6 +29,7 @@ def main() -> int:
     placement = PlacementController(world, registry, resources)
     worker_manager = WorkerManager(resources, registry)
     game_input = GameInput(world, registry, resources, placement, worker_manager)
+    scheduler = TickScheduler()
 
     running = True
     try:
@@ -38,6 +41,12 @@ def main() -> int:
                     game_input.update_placement_hover(screen, event.pos)
                 else:
                     game_input.handle(screen, event)
+
+            if scheduler.update(pygame.time.get_ticks()):
+                apply_production_tick(registry, resources, worker_manager)
+                registry.sync_resources_per_cycle(
+                    resources, staffed_buildings=worker_manager.staffed_buildings()
+                )
 
             screen.fill((20, 24, 22))
             Renderer.draw_world(screen, world)

@@ -1,0 +1,65 @@
+You are preparing a project for the Cursor Ralph Loop plugin (cursor/plugins/ralph-loop).
+Create the following files based on the user's project description.
+
+=== FILE 1: PRD.md ===
+
+Full product requirements document. Sections:
+1. Overview (problem, solution, target user)
+2. Technology Stack (tables: component | technology | rationale) + project directory tree
+3. Functional Requirements (grouped by feature, IDs like F-UPLOAD-01, MUST/SHOULD language, include ABC/interface code snippets and ASCII UI mockups)
+4. Non-Functional Requirements (performance, reliability, extensibility, startup)
+5. Testing Requirements (test file → coverage table, test infrastructure)
+6. API Specification (endpoints by domain)
+7. Implementation Tasks — summary table only, pointing to progress.md as source of truth
+8. Dependencies (full package list with versions)
+9. Out of Scope
+10. Glossary
+
+This file is read-only for the agent. Keep under 30KB.
+
+=== FILE 2: prompt.md ===
+
+Short (10-20 lines) action prompt repeated every turn. Must contain:
+- Read progress.md → find next [ ] task
+- Read PRD.md → understand requirements
+- TDD steps: write tests → run (fail) → implement → run (pass) → full suite
+- Update progress.md: mark [x], update Current Status
+- Commit: git add -A && git commit -m "feat: T{XX} - {description}"
+- Completion signal: If ALL tasks [x], output <promise>ALL_TASKS_COMPLETE</promise>
+
+=== FILE 3: progress.md ===
+
+Agent's persistent memory. Structure:
+- Current Status block: Phase, Next Task, Last Completed, Total Progress (N / M)
+- Task Log: all tasks as `- [ ] **T{XX}**: description` grouped by phase
+- Decisions Log: empty table (Date | Task | Decision | Rationale)
+- Issues & Blockers: empty table (Date | Task | Issue | Status)
+- Notes section
+
+Tasks must be atomic (one per turn), testable, ordered by dependency.
+Group into 3-5 phases. Include separate tasks for implementation and tests.
+Typical project: 20-60 tasks.
+
+=== FILE 4: .cursor/rules/ralph-loop.mdc ===
+
+YAML frontmatter: description, alwaysApply: true
+Body: project-specific agent rules. Must include:
+- One-line project identity
+- Per-turn workflow (read progress → read PRD → TDD → update → commit → promise if done)
+- Critical rules (one task per turn, all tests pass, never skip tests, stuck 3x → mark [!], don't modify PRD.md)
+- Code standards for the project's tech stack (concise)
+Keep under 3KB.
+
+=== FILE 5 (optional): .cursor/rules/[tech].mdc ===
+
+Scoped rules for specific file types. Frontmatter: description, globs: [...], alwaysApply: false.
+Only create if project has distinct tech domains (e.g., Python backend + JS frontend).
+
+=== .gitignore additions ===
+
+Add: .cursor/ralph/
+Add: any runtime data directories (e.g., data/)
+
+=== Startup command (include in output as a note) ===
+
+Start a ralph loop: @prompt.md --completion-promise "ALL_TASKS_COMPLETE" --max-iterations [1.5-2x task count]

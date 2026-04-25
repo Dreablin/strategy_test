@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 5. Building Panel & Actions
-- **Next Task:** T30 — Implement town hall panel UI
-- **Last Completed:** T29 — Implement demolish action and worker idle hooks
-- **Total Progress:** 29 / 42
+- **Next Task:** T31 — Write worker manager tests (RED)
+- **Last Completed:** T30 — Implement town hall panel UI
+- **Total Progress:** 30 / 42
 
 ---
 
@@ -62,7 +62,7 @@
 - [x] **T27**: Implement click-on-building → opens BuildingPanel; clicking outside or [×] closes it. Wire into `input.py`.
 - [x] **T28**: Implement Upgrade action: deducts `upgrade_cost(level)`, increments level, recomputes `per_cycle` income. Disabled at level 10 or insufficient resources. Add a regression test in `test_buildings.py`.
 - [x] **T29**: Implement Demolish action: removes building from registry, sets any worker to idle and parks them on the former center tile. Add regression test in `test_registry.py` and `test_workers.py`.
-- [ ] **T30**: Implement `src/game/ui/town_hall_panel.py` extending BuildingPanel: hide Upgrade and Demolish, show "Hire Workers" section with one button per worker type costing 50 food. Disabled when food < 50.
+- [x] **T30**: Implement `src/game/ui/town_hall_panel.py` extending BuildingPanel: hide Upgrade and Demolish, show "Hire Workers" section with one button per worker type costing 50 food. Disabled when food < 50.
 
 ### Phase 6 — Workers
 

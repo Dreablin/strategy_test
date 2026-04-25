@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 7. Production, Polish, Package
-- **Next Task:** T37 — Add end-to-end production test (RED)
-- **Last Completed:** T36 — Manual integration check completed
-- **Total Progress:** 36 / 42
+- **Next Task:** T38 — Implement production loop (`game.loop` or `main.py`)
+- **Last Completed:** T37 — End-to-end production tests added (RED)
+- **Total Progress:** 37 / 42
 
 ---
 
@@ -75,7 +75,7 @@
 
 ### Phase 7 — Production, Polish, Package
 
-- [ ] **T37**: Write `tests/test_production.py` end-to-end (no display): create World+Registry+WorkerManager+ResourceManager, place Lumber Camp + hire+assign a worker, fire one tick → wood increased by 5; upgrade to L3 → next tick adds 15. Tests must FAIL initially.
+- [x] **T37**: Write `tests/test_production.py` end-to-end (no display): create World+Registry+WorkerManager+ResourceManager, place Lumber Camp + hire+assign a worker, fire one tick → wood increased by 5; upgrade to L3 → next tick adds 15. Tests must FAIL initially.
 - [ ] **T38**: Implement production loop in `main.py` (or `game/loop.py`): on tick, sum `5×level` per building with worker → `resources.add(...)`. Run tests — must PASS.
 - [ ] **T39**: Verify clean shutdown: in `main.py` ensure `pygame.quit()` runs in a `finally:` block; no daemon threads are spawned (or all are joined). Add `tests/test_shutdown.py` that imports main, runs `main()` in a thread for 1 s with QUIT event injected, and asserts the thread exits within 2 s.
 - [ ] **T40**: Polish — verify FPS counter (debug-only) stays ≥55 with 50 buildings + 50 workers in a stress fixture. Optional perf sanity test.

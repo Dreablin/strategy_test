@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 1. Project Foundation
-- **Next Task:** T04 — Implement config constants module
-- **Last Completed:** T03 — Add config constant tests
-- **Total Progress:** 3 / 42
+- **Next Task:** T05 — Add isometric transform tests
+- **Last Completed:** T04 — Implement config constants module
+- **Total Progress:** 4 / 42
 
 ---
 
@@ -16,7 +16,7 @@
 - [x] **T01**: Create project skeleton — `src/game/`, `tests/`, `requirements.txt` (pygame 2.5.2, pytest 8.3.3, pyinstaller 6.10.0, ruff 0.6.9), `pyproject.toml` (pytest config: `testpaths=["tests"]`), `.gitignore` (add `.cursor/ralph/`, `__pycache__/`, `*.pyc`, `build/`, `dist/`, `*.spec.bak`), empty `README.md` placeholder, empty `src/game/__init__.py` and `tests/__init__.py`. Verify `pip install -r requirements.txt` succeeds and `pytest -q` runs (0 tests, exits 0).
 - [x] **T02**: Write `tests/conftest.py` setting `os.environ["SDL_VIDEODRIVER"]="dummy"` BEFORE any pygame import; add a `pygame_initialized` autouse fixture that calls `pygame.init()` / `pygame.quit()` per session. Verify with `pytest -q` (still 0 tests, exits 0).
 - [x] **T03**: Write `tests/test_config.py` asserting required constants exist with sane values: `TICK_MS == 10_000`, `TILE_W == 64`, `TILE_H == 32`, `GRID_SIZE == 32`, `INITIAL_RESOURCES == {"food":200,"wood":200,"stone":0,"iron":0}`, `WORKER_HIRE_COST == {"food":50}`, `BUILD_COST_WOOD == 100`, `MAX_LEVEL == 10`, `WINDOW_SIZE == (1280, 720)`. Tests must FAIL (module not yet implemented).
-- [ ] **T04**: Implement `src/game/config.py` with all constants from T03. Run `pytest tests/test_config.py -q` — must PASS.
+- [x] **T04**: Implement `src/game/config.py` with all constants from T03. Run `pytest tests/test_config.py -q` — must PASS.
 - [ ] **T05**: Write `tests/test_iso.py` covering `world_to_screen` and `screen_to_world` round-trip for grid points (0,0), (1,0), (0,1), (5,7), (31,31). Tests must FAIL.
 - [ ] **T06**: Implement `src/game/iso.py` with classic 2:1 isometric transform using `TILE_W=64`, `TILE_H=32`. `screen_to_world` returns int grid coords. Run tests — must PASS.
 - [ ] **T07**: Implement `src/game/main.py` with a clean `def main()` that opens a 1280×720 pygame window titled "Isometric Strategy", runs a 60 FPS loop until QUIT, then `pygame.quit()` and `return`. Smoke-test with `SDL_VIDEODRIVER=dummy timeout 2 python -m game.main || true` (exits cleanly).

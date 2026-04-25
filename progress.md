@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 5. Building Panel & Actions
-- **Next Task:** T27 — Wire building click to panel via input.py
-- **Last Completed:** T26 — Implement building panel UI
-- **Total Progress:** 26 / 42
+- **Next Task:** T28 — Implement upgrade action and regression test
+- **Last Completed:** T27 — Wire building click to panel via input.py
+- **Total Progress:** 27 / 42
 
 ---
 
@@ -59,7 +59,7 @@
 ### Phase 5 — Building Panel & Actions
 
 - [x] **T26**: Implement `src/game/ui/building_panel.py` — modal panel: name, level, description, income, worker status, Upgrade button (with cost), Demolish button, [×] close. Layout per PRD §3 F-UI-PANEL. Manual smoke check.
-- [ ] **T27**: Implement click-on-building → opens BuildingPanel; clicking outside or [×] closes it. Wire into `input.py`.
+- [x] **T27**: Implement click-on-building → opens BuildingPanel; clicking outside or [×] closes it. Wire into `input.py`.
 - [ ] **T28**: Implement Upgrade action: deducts `upgrade_cost(level)`, increments level, recomputes `per_cycle` income. Disabled at level 10 or insufficient resources. Add a regression test in `test_buildings.py`.
 - [ ] **T29**: Implement Demolish action: removes building from registry, sets any worker to idle and parks them on the former center tile. Add regression test in `test_registry.py` and `test_workers.py`.
 - [ ] **T30**: Implement `src/game/ui/town_hall_panel.py` extending BuildingPanel: hide Upgrade and Demolish, show "Hire Workers" section with one button per worker type costing 50 food. Disabled when food < 50.

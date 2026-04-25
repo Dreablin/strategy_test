@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 1. Project Foundation
-- **Next Task:** T08 — Add resource manager tests
-- **Last Completed:** T07 — Implement main game loop skeleton
-- **Total Progress:** 7 / 42
+- **Next Task:** T09 — Implement ResourceManager
+- **Last Completed:** T08 — Add resource manager tests
+- **Total Progress:** 8 / 42
 
 ---
 
@@ -23,7 +23,7 @@
 
 ### Phase 2 — Resources & Top Bar
 
-- [ ] **T08**: Write `tests/test_resources.py` covering: initial values, `add` increments, `has`/`try_spend` for cost dicts, `try_spend` returns False & does not deduct on insufficient funds, non-negative invariants. Tests must FAIL.
+- [x] **T08**: Write `tests/test_resources.py` covering: initial values, `add` increments, `has`/`try_spend` for cost dicts, `try_spend` returns False & does not deduct on insufficient funds, non-negative invariants. Tests must FAIL.
 - [ ] **T09**: Implement `src/game/resources.py` (`ResourceManager`). Run tests — must PASS.
 - [ ] **T10**: Write `tests/test_tick.py` covering `TickScheduler.update(now_ms)`: returns True exactly once per 10_000 ms boundary; returns False otherwise. Tests must FAIL.
 - [ ] **T11**: Implement `src/game/tick.py` (`TickScheduler`). Run tests — must PASS.

@@ -6,12 +6,14 @@ import pygame
 
 from game.buildings.base import Building
 from game.buildings.registry import BuildingRegistry
+from game.buildings.town_hall import TownHall
 from game.iso import screen_to_world
 from game.render import Renderer
 from game.resources import ResourceManager
 from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT, BottomBar
 from game.ui.building_panel import BuildingPanel
 from game.ui.placement import PlacementController
+from game.ui.town_hall_panel import TownHallPanel
 from game.world import World
 from game.workers import WorkerManager
 
@@ -57,6 +59,13 @@ class GameInput:
             return False
         return self._worker_manager.is_staffed(self._panel)
 
+    def _sync_assignments(self) -> None:
+        self._worker_manager.reassign_all()
+        self._registry.sync_resources_per_cycle(
+            self._resources,
+            staffed_buildings=self._worker_manager.staffed_buildings(),
+        )
+
     @property
     def panel_building(self) -> Building | None:
         """Building shown in the modal, or ``None`` if the panel is closed."""
@@ -98,6 +107,15 @@ class GameInput:
         self._sync_panel_stale()
         if self._panel is None:
             return
+        if self._panel.type_tag == "TOWN_HALL":
+            assert isinstance(self._panel, TownHall)
+            TownHallPanel.draw(
+                surface,
+                self._panel,
+                self._resources,
+                worker_assigned=self._panel_worker_assigned(),
+            )
+            return
         BuildingPanel.draw(
             surface,
             self._panel,
@@ -107,13 +125,39 @@ class GameInput:
 
     def _handle_map_left_click(self, surface: pygame.Surface, pos: tuple[int, int]) -> None:
         if self._placement.pending_type is not None:
-            self._placement.try_place(surface, pos)
+            if self._placement.try_place(surface, pos):
+                self._sync_assignments()
             return
 
         gx, gy = screen_to_grid(surface, self._world, pos)
 
         if self._panel is not None:
             wa = self._panel_worker_assigned()
+            if self._panel.type_tag == "TOWN_HALL":
+                assert isinstance(self._panel, TownHall)
+                layout = TownHallPanel.layout(
+                    surface,
+                    self._panel,
+                    self._resources,
+                    worker_assigned=wa,
+                )
+                action = None
+                if layout.frame.collidepoint(pos):
+                    action = TownHallPanel.click_action(
+                        surface,
+                        pos,
+                        self._panel,
+                        self._resources,
+                        worker_assigned=wa,
+                    )
+                if action == "close":
+                    self._panel = None
+                    return
+                if action is not None and action.startswith("hire:"):
+                    worker_type = action.split(":", 1)[1]
+                    if self._worker_manager.hire(worker_type) is not None:
+                        self._sync_assignments()
+                    return
             layout = BuildingPanel.layout(
                 surface,
                 self._panel,
@@ -132,18 +176,12 @@ class GameInput:
                     self._panel = None
                 elif action == "upgrade" and self._panel is not None:
                     if self._registry.upgrade_building(self._panel, self._resources):
-                        self._registry.sync_resources_per_cycle(
-                            self._resources,
-                            staffed_buildings=self._worker_manager.staffed_buildings(),
-                        )
+                        self._sync_assignments()
                 elif action == "demolish" and self._panel is not None:
                     b = self._panel
                     self._registry.demolish(b, self._worker_manager)
                     self._panel = None
-                    self._registry.sync_resources_per_cycle(
-                        self._resources,
-                        staffed_buildings=self._worker_manager.staffed_buildings(),
-                    )
+                    self._sync_assignments()
                 return
 
             self._panel = None

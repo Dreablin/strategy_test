@@ -4,14 +4,16 @@ import pygame
 
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.registry import BuildingRegistry
+from game.buildings.town_hall import TownHall
 from game.input import TOP_BAR_HEIGHT, GameInput, screen_to_grid
 from game.render import Renderer
 from game.resources import ResourceManager
 from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT
 from game.ui.building_panel import BuildingPanel
 from game.ui.placement import PlacementController
+from game.ui.town_hall_panel import TownHallPanel
 from game.world import World
-from game.workers import WorkerManager
+from game.workers import Worker, WorkerManager
 
 from game.config import TILE_H, TILE_W
 from game.iso import world_to_screen
@@ -131,3 +133,49 @@ def test_build_menu_select_closes_panel() -> None:
     inp.handle(surface, pygame.event.Event(BUILD_MENU_SELECT, building_type="FARM"))
     assert inp.panel_building is None
     assert placement.pending_type is not None
+
+
+def test_place_calls_reassign_all_and_assigns_idle_worker() -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    placement = PlacementController(world, registry, resources)
+    workers = WorkerManager(resources, registry)
+    workers.add_worker(Worker("LUMBERJACK"))
+    inp = GameInput(world, registry, resources, placement, workers)
+    inp.handle(surface, pygame.event.Event(BUILD_MENU_SELECT, building_type="LUMBER_CAMP"))
+    inp.handle(
+        surface,
+        pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=_tile_center(surface, world, 10, 10)),
+    )
+    all_b = registry.all()
+    assert len(all_b) == 1
+    placed = all_b[0]
+    assert workers.is_staffed(placed)
+
+
+def test_town_hall_hire_button_calls_worker_manager_hire() -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World()
+    registry = BuildingRegistry(world)
+    town_hall = registry.place(TownHall, (16, 16))
+    camp = registry.place(LumberCamp, (10, 10))
+    resources = ResourceManager()
+    placement = PlacementController(world, registry, resources)
+    workers = WorkerManager(resources, registry)
+    inp = GameInput(world, registry, resources, placement, workers)
+    inp.handle(
+        surface,
+        pygame.event.Event(
+            pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=_tile_center(surface, world, 16, 16)
+        ),
+    )
+    layout = TownHallPanel.layout(surface, town_hall, resources, worker_assigned=False)
+    _, hire_button = layout.hire_buttons[0]
+    inp.handle(
+        surface,
+        pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=hire_button.center),
+    )
+    assert len(workers.workers()) == 1
+    assert workers.is_staffed(camp)

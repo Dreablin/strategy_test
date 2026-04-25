@@ -82,20 +82,21 @@ class PlacementController:
         gx, gy = screen_to_world(mx - ox, my - oy)
         self._hover = (gx, gy)
 
-    def try_place(self, surface: pygame.Surface, screen_pos: tuple[int, int]) -> None:
+    def try_place(self, surface: pygame.Surface, screen_pos: tuple[int, int]) -> bool:
         if self._pending is None:
-            return
+            return False
         self.update_hover(surface, screen_pos)
         if self._hover is None:
-            return
+            return False
         gx, gy = self._hover
         cls = self._pending
         if not self._registry.can_place(cls, (gx, gy)):
-            return
+            return False
         cost = build_cost(cls.type_tag)
         if not self._resources.try_spend(cost):
-            return
+            return False
         self._registry.place(cls, (gx, gy))
+        return True
 
     def draw(self, surface: pygame.Surface) -> None:
         if self._pending is None or self._hover is None:

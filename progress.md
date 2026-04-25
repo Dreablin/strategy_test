@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 6. Workers
-- **Next Task:** T33 — Wire WorkerManager into game actions
-- **Last Completed:** T32 — Implement WorkerManager hire/reassign/idle
-- **Total Progress:** 32 / 42
+- **Next Task:** T34 — Render workers on map
+- **Last Completed:** T33 — Wire WorkerManager into game actions
+- **Total Progress:** 33 / 42
 
 ---
 
@@ -68,7 +68,7 @@
 
 - [x] **T31**: Write `tests/test_workers.py` covering: `hire` deducts 50 food and returns Worker; `hire` returns None when insufficient food and does not deduct; `reassign_all` matches one idle worker per free building of correct type; type mismatch never assigned; demolition leaves worker on tile and idle; subsequent reassignment moves them when a slot opens. Tests must FAIL.
 - [x] **T32**: Implement `src/game/workers.py` (`Worker`, `WorkerManager` with `hire`, `reassign_all`, `idle`). Run tests — must PASS.
-- [ ] **T33**: Wire WorkerManager into game state: every place/demolish/hire/upgrade calls `reassign_all()`; hire button in town hall panel calls `WorkerManager.hire(type)`.
+- [x] **T33**: Wire WorkerManager into game state: every place/demolish/hire/upgrade calls `reassign_all()`; hire button in town hall panel calls `WorkerManager.hire(type)`.
 - [ ] **T34**: Render workers on screen: assigned workers as a colored dot at building center; idle workers stacked next to Town Hall; demolition-orphaned workers at the former center tile (until reassigned).
 - [ ] **T35**: Update Top Bar's `+income` to reflect current production (sum of `5×level` over buildings with workers). Add regression test in `test_production.py` (placeholder file).
 - [ ] **T36**: Manual integration check: launch game, build a Lumber Camp, hire a Lumberjack from Town Hall, observe assignment and visual placement.

@@ -35,6 +35,12 @@ class WorkerManager:
     """Tracks workers; notifies assignments when a staffed building is demolished (PRD F-WORK)."""
 
     __slots__ = ("_registry", "_resources", "_workers")
+    _WORKER_TO_BUILDING: dict[str, str] = {
+        "LUMBERJACK": "LUMBER_CAMP",
+        "STONECUTTER": "STONE_MINE",
+        "MINER": "IRON_MINE",
+        "FARMER": "FARM",
+    }
 
     def __init__(
         self,
@@ -67,12 +73,18 @@ class WorkerManager:
         return {w.assigned_building for w in self._workers if w.assigned_building is not None}
 
     def hire(self, worker_type: str) -> Worker | None:
-        """Hire a worker for 50 food; ``None`` if unaffordable (T32: create + spawn at Town Hall)."""
+        """Hire a worker for 50 food; ``None`` if unaffordable."""
         if self._resources is None or self._registry is None:
             return None
-        if not self._resources.has(WORKER_HIRE_COST):
+        if worker_type not in self._WORKER_TO_BUILDING:
             return None
-        return None
+        if not self._resources.try_spend(WORKER_HIRE_COST):
+            return None
+        town_hall = next((b for b in self._registry.all() if b.type_tag == "TOWN_HALL"), None)
+        stand = building_center_tile(town_hall) if town_hall is not None else (0, 0)
+        worker = Worker(worker_type, stand_tile=stand)
+        self._workers.append(worker)
+        return worker
 
     def notify_demolished(self, building: Building) -> None:
         """Park former workers on the demolished building's center tile (idle)."""
@@ -84,5 +96,20 @@ class WorkerManager:
                 w.stand_tile = (cx, cy)
 
     def reassign_all(self) -> None:
-        """Match idle workers to free buildings (T32)."""
-        return
+        """Assign one idle worker per free matching building."""
+        if self._registry is None:
+            return
+        for worker in [w for w in self._workers if w.idle]:
+            want = self._WORKER_TO_BUILDING.get(worker.type_tag)
+            if want is None:
+                continue
+            target = next(
+                (
+                    b
+                    for b in self._registry.all()
+                    if b.type_tag == want and not self.is_staffed(b)
+                ),
+                None,
+            )
+            if target is not None:
+                self.assign_to_building(worker, target)

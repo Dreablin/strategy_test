@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 1. Project Foundation
-- **Next Task:** T07 — Implement main game loop skeleton
-- **Last Completed:** T06 — Implement isometric transforms
-- **Total Progress:** 6 / 42
+- **Next Task:** T08 — Add resource manager tests
+- **Last Completed:** T07 — Implement main game loop skeleton
+- **Total Progress:** 7 / 42
 
 ---
 
@@ -19,7 +19,7 @@
 - [x] **T04**: Implement `src/game/config.py` with all constants from T03. Run `pytest tests/test_config.py -q` — must PASS.
 - [x] **T05**: Write `tests/test_iso.py` covering `world_to_screen` and `screen_to_world` round-trip for grid points (0,0), (1,0), (0,1), (5,7), (31,31). Tests must FAIL.
 - [x] **T06**: Implement `src/game/iso.py` with classic 2:1 isometric transform using `TILE_W=64`, `TILE_H=32`. `screen_to_world` returns int grid coords. Run tests — must PASS.
-- [ ] **T07**: Implement `src/game/main.py` with a clean `def main()` that opens a 1280×720 pygame window titled "Isometric Strategy", runs a 60 FPS loop until QUIT, then `pygame.quit()` and `return`. Smoke-test with `SDL_VIDEODRIVER=dummy timeout 2 python -m game.main || true` (exits cleanly).
+- [x] **T07**: Implement `src/game/main.py` with a clean `def main()` that opens a 1280×720 pygame window titled "Isometric Strategy", runs a 60 FPS loop until QUIT, then `pygame.quit()` and `return`. Smoke-test with `SDL_VIDEODRIVER=dummy timeout 2 python -m game.main || true` (exits cleanly).
 
 ### Phase 2 — Resources & Top Bar
 

@@ -33,6 +33,10 @@ class ResourceManager:
             self._amounts[k] = self._amounts.get(k, 0) - v
         return True
 
+    def set_per_cycle_totals(self, totals: Mapping[str, int]) -> None:
+        """Replace per-cycle UI totals (from staffed production; PRD F-RES-04 / F-PROD)."""
+        self._per_cycle = {k: max(0, int(totals.get(k, 0))) for k in _RESOURCE_NAMES}
+
     @property
     def per_cycle(self) -> dict[str, int]:
         return dict(self._per_cycle)

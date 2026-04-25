@@ -121,6 +121,8 @@ class GameInput:
                 )
                 if action == "close":
                     self._panel = None
+                elif action == "upgrade" and self._panel is not None:
+                    self._registry.upgrade_building(self._panel, self._resources)
                 return
 
             self._panel = None

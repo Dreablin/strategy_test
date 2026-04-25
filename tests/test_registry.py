@@ -1,0 +1,95 @@
+"""Tests for BuildingRegistry placement rules and occupancy."""
+
+import math
+
+import pytest
+
+from game.buildings.lumber_camp import LumberCamp
+from game.buildings.stone_mine import StoneMine
+from game.buildings.town_hall import TownHall
+from game.buildings.registry import BuildingRegistry
+from game.world import World
+
+
+@pytest.fixture
+def world() -> World:
+    return World()
+
+
+@pytest.fixture
+def registry(world: World) -> BuildingRegistry:
+    return BuildingRegistry(world)
+
+
+def _min_chebyshev_between_footprints(
+    ax: int, ay: int, aw: int, ah: int, bx: int, by: int, bw: int, bh: int
+) -> int:
+    best = 10**9
+    for gx in range(ax, ax + aw):
+        for gy in range(ay, ay + ah):
+            for gx2 in range(bx, bx + bw):
+                for gy2 in range(by, by + bh):
+                    d = max(abs(gx - gx2), abs(gy - gy2))
+                    best = min(best, d)
+    return best
+
+
+def test_cannot_place_footprint_outside_grass(registry: BuildingRegistry) -> None:
+    assert not registry.can_place(LumberCamp, (31, 0))
+    assert not registry.can_place(LumberCamp, (0, 31))
+
+
+def test_cannot_place_overlapping_buildings(registry: BuildingRegistry) -> None:
+    assert registry.can_place(LumberCamp, (10, 10))
+    registry.place(LumberCamp, (10, 10))
+    assert not registry.can_place(StoneMine, (10, 10))
+    assert not registry.can_place(StoneMine, (11, 11))
+
+
+def test_distance_rule_uses_new_building_max_footprint(registry: BuildingRegistry) -> None:
+    """F-PLACE-03: reject when min Chebyshev gap < ceil(0.5 * max(new_w, new_h))."""
+    registry.place(LumberCamp, (10, 10))
+    lw, lh = LumberCamp.footprint
+    sep = math.ceil(0.5 * max(TownHall.footprint))
+
+    bad_x, bad_y = 12, 12
+    assert (
+        _min_chebyshev_between_footprints(
+            bad_x, bad_y, *TownHall.footprint, 10, 10, lw, lh
+        )
+        < sep
+    )
+    assert not registry.can_place(TownHall, (bad_x, bad_y))
+
+    good_x, good_y = 13, 13
+    assert (
+        _min_chebyshev_between_footprints(
+            good_x, good_y, *TownHall.footprint, 10, 10, lw, lh
+        )
+        >= sep
+    )
+    assert registry.can_place(TownHall, (good_x, good_y))
+
+
+def test_second_town_hall_always_rejected(registry: BuildingRegistry) -> None:
+    assert registry.can_place(TownHall, (16, 16))
+    registry.place(TownHall, (16, 16))
+    assert not registry.can_place(TownHall, (0, 0))
+    assert not registry.can_place(TownHall, (10, 10))
+
+
+def test_demolish_clears_world_occupancy(registry: BuildingRegistry, world: World) -> None:
+    registry.place(LumberCamp, (5, 5))
+    assert world.is_occupied(5, 5)
+    b = registry.at(5, 5)
+    assert b is not None
+    registry.demolish(b)
+    assert registry.at(5, 5) is None
+    assert not world.is_occupied(5, 5)
+
+
+def test_all_lists_placed_buildings(registry: BuildingRegistry) -> None:
+    registry.place(LumberCamp, (4, 4))
+    registry.place(StoneMine, (20, 20))
+    all_b = registry.all()
+    assert len(all_b) == 2

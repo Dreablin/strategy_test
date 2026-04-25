@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 4. Buildings & Placement
-- **Next Task:** T22 — Add building registry tests
-- **Last Completed:** T21 — Implement building subclasses
-- **Total Progress:** 21 / 42
+- **Next Task:** T23 — Implement BuildingRegistry
+- **Last Completed:** T22 — Add building registry tests
+- **Total Progress:** 22 / 42
 
 ---
 
@@ -51,7 +51,7 @@
 - [x] **T19**: Implement `src/game/buildings/costs.py` (`build_cost`, `upgrade_cost`). Run tests — must PASS.
 - [x] **T20**: Write `tests/test_buildings.py` covering each subclass: type tag, footprint (2×2 for resource, 3×3 for TownHall), `income(level)` = `5×level` of correct resource, TownHall income empty, level cap enforcement. Tests must FAIL.
 - [x] **T21**: Implement `src/game/buildings/base.py` + `town_hall.py`, `lumber_camp.py`, `stone_mine.py`, `iron_mine.py`, `farm.py`. Run tests — must PASS.
-- [ ] **T22**: Write `tests/test_registry.py` covering: cannot place outside grass; cannot overlap; distance rule rejects placement closer than ceil(0.5×max_dim) tiles; second TownHall rejected; `demolish` clears occupancy. Tests must FAIL.
+- [x] **T22**: Write `tests/test_registry.py` covering: cannot place outside grass; cannot overlap; distance rule rejects placement closer than ceil(0.5×max_dim) tiles; second TownHall rejected; `demolish` clears occupancy. Tests must FAIL.
 - [ ] **T23**: Implement `src/game/buildings/registry.py` (`BuildingRegistry` with `can_place`, `place`, `demolish`, `at`, `all`). Run tests — must PASS.
 - [ ] **T24**: Implement `src/game/ui/bottom_bar.py` — 96 px strip with 4 build buttons (Lumber, Stone, Iron, Farm) showing icon + name + "100🪵". Greyed when insufficient wood. Click → emits selection event.
 - [ ] **T25**: Implement `src/game/ui/placement.py` — placement controller: snaps mouse to grid, draws translucent contour green/red, left-click places (delegates to registry, deducts wood), right-click/Esc cancels.

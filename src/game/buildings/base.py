@@ -12,13 +12,14 @@ class Building:
     footprint: ClassVar[tuple[int, int]] = (2, 2)
     income_resource: ClassVar[str | None] = None
 
-    __slots__ = ("level",)
+    __slots__ = ("level", "grid_pos")
 
-    def __init__(self, level: int = 1) -> None:
+    def __init__(self, level: int = 1, grid_pos: tuple[int, int] | None = None) -> None:
         mx = type(self).max_level()
         if level < 1 or level > mx:
             raise ValueError(f"level must be between 1 and {mx} inclusive")
         self.level = level
+        self.grid_pos = grid_pos
 
     @classmethod
     def max_level(cls) -> int:

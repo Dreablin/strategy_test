@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 6. Workers
-- **Next Task:** T35 — Update Top Bar per-cycle income from staffed buildings
-- **Last Completed:** T34 — Render workers on map
-- **Total Progress:** 34 / 42
+- **Next Task:** T36 — Manual integration check (build + hire + observe)
+- **Last Completed:** T35 — Top Bar income reflects staffed production
+- **Total Progress:** 35 / 42
 
 ---
 
@@ -70,7 +70,7 @@
 - [x] **T32**: Implement `src/game/workers.py` (`Worker`, `WorkerManager` with `hire`, `reassign_all`, `idle`). Run tests — must PASS.
 - [x] **T33**: Wire WorkerManager into game state: every place/demolish/hire/upgrade calls `reassign_all()`; hire button in town hall panel calls `WorkerManager.hire(type)`.
 - [x] **T34**: Render workers on screen: assigned workers as a colored dot at building center; idle workers stacked next to Town Hall; demolition-orphaned workers at the former center tile (until reassigned).
-- [ ] **T35**: Update Top Bar's `+income` to reflect current production (sum of `5×level` over buildings with workers). Add regression test in `test_production.py` (placeholder file).
+- [x] **T35**: Update Top Bar's `+income` to reflect current production (sum of `5×level` over buildings with workers). Add regression test in `test_production.py` (placeholder file).
 - [ ] **T36**: Manual integration check: launch game, build a Lumber Camp, hire a Lumberjack from Town Hall, observe assignment and visual placement.
 
 ### Phase 7 — Production, Polish, Package

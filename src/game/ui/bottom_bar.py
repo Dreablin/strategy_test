@@ -8,7 +8,7 @@ from game.assets import building_sprite, resource_icon
 from game.config import BUILD_COST_WOOD
 from game.resources import ResourceManager
 
-_BAR_HEIGHT = 96
+BAR_HEIGHT = 96
 # Distinct from other user events; carries `building_type: str` (e.g. `"LUMBER_CAMP"`).
 BUILD_MENU_SELECT = pygame.USEREVENT + 10
 
@@ -22,11 +22,11 @@ _BUTTONS: tuple[tuple[str, str, str], ...] = (
 
 def _button_rects(surface: pygame.Surface) -> list[tuple[pygame.Rect, str, str]]:
     w, h = surface.get_width(), surface.get_height()
-    y0 = h - _BAR_HEIGHT
+    y0 = h - BAR_HEIGHT
     col_w = max(1, w // len(_BUTTONS))
     out: list[tuple[pygame.Rect, str, str]] = []
     for i, (asset_key, _label, tag) in enumerate(_BUTTONS):
-        out.append((pygame.Rect(i * col_w, y0, col_w, _BAR_HEIGHT), asset_key, tag))
+        out.append((pygame.Rect(i * col_w, y0, col_w, BAR_HEIGHT), asset_key, tag))
     return out
 
 
@@ -36,8 +36,8 @@ class BottomBar:
     @staticmethod
     def draw(surface: pygame.Surface, resources: ResourceManager) -> None:
         w, h = surface.get_width(), surface.get_height()
-        y0 = h - _BAR_HEIGHT
-        pygame.draw.rect(surface, (26, 28, 34), (0, y0, w, _BAR_HEIGHT))
+        y0 = h - BAR_HEIGHT
+        pygame.draw.rect(surface, (26, 28, 34), (0, y0, w, BAR_HEIGHT))
         pygame.draw.line(surface, (48, 52, 60), (0, y0), (w, y0))
 
         can_afford = resources.get("wood") >= BUILD_COST_WOOD

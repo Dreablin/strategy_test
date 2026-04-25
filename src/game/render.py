@@ -30,8 +30,13 @@ class Renderer:
     """Draws the static grass map plus an outer ring of non-playable tree tiles."""
 
     @staticmethod
+    def map_origin(surface: pygame.Surface, world: World) -> tuple[int, int]:
+        """Screen offset for `world_to_screen` so the grass patch matches `draw_world`."""
+        return _compute_grass_origin(surface, world)
+
+    @staticmethod
     def draw_world(surface: pygame.Surface, world: World) -> None:
-        origin_x, origin_y = _compute_grass_origin(surface, world)
+        origin_x, origin_y = Renderer.map_origin(surface, world)
         lo = -_TREE_RING_TILES
         hi_w = world.width + _TREE_RING_TILES
         hi_h = world.height + _TREE_RING_TILES

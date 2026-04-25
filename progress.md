@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 4. Buildings & Placement
-- **Next Task:** T24 — Implement bottom build bar UI
-- **Last Completed:** T23 — Implement BuildingRegistry
-- **Total Progress:** 23 / 42
+- **Next Task:** T25 — Implement placement controller UI
+- **Last Completed:** T24 — Implement bottom build bar UI
+- **Total Progress:** 24 / 42
 
 ---
 
@@ -53,7 +53,7 @@
 - [x] **T21**: Implement `src/game/buildings/base.py` + `town_hall.py`, `lumber_camp.py`, `stone_mine.py`, `iron_mine.py`, `farm.py`. Run tests — must PASS.
 - [x] **T22**: Write `tests/test_registry.py` covering: cannot place outside grass; cannot overlap; distance rule rejects placement closer than ceil(0.5×max_dim) tiles; second TownHall rejected; `demolish` clears occupancy. Tests must FAIL.
 - [x] **T23**: Implement `src/game/buildings/registry.py` (`BuildingRegistry` with `can_place`, `place`, `demolish`, `at`, `all`). Run tests — must PASS.
-- [ ] **T24**: Implement `src/game/ui/bottom_bar.py` — 96 px strip with 4 build buttons (Lumber, Stone, Iron, Farm) showing icon + name + "100🪵". Greyed when insufficient wood. Click → emits selection event.
+- [x] **T24**: Implement `src/game/ui/bottom_bar.py` — 96 px strip with 4 build buttons (Lumber, Stone, Iron, Farm) showing icon + name + "100🪵". Greyed when insufficient wood. Click → emits selection event.
 - [ ] **T25**: Implement `src/game/ui/placement.py` — placement controller: snaps mouse to grid, draws translucent contour green/red, left-click places (delegates to registry, deducts wood), right-click/Esc cancels.
 
 ### Phase 5 — Building Panel & Actions

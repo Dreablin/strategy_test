@@ -37,8 +37,9 @@ class Renderer:
         return _compute_grass_origin(surface, world)
 
     @staticmethod
-    def draw_world(surface: pygame.Surface, world: World) -> None:
+    def draw_world(surface: pygame.Surface, world: World, camera=None) -> None:
         origin_x, origin_y = Renderer.map_origin(surface, world)
+        cam_x, cam_y = (0, 0) if camera is None else camera.offset
         lo = -_TREE_RING_TILES
         hi_w = world.width + _TREE_RING_TILES
         hi_h = world.height + _TREE_RING_TILES
@@ -54,7 +55,7 @@ class Renderer:
         for gx, gy, in_grass in cells:
             sx, sy = world_to_screen(gx, gy)
             tile = g_tile if in_grass else t_tile
-            surface.blit(tile, (origin_x + sx, origin_y + sy))
+            surface.blit(tile, (origin_x + cam_x + sx, origin_y + cam_y + sy))
 
     @staticmethod
     def draw_buildings(
@@ -132,16 +133,18 @@ class Renderer:
         world: World,
         registry: BuildingRegistry,
         worker_manager: WorkerManager,
+        camera=None,
     ) -> None:
         """Draw worker dots at grid positions returned by `worker_grid_positions`."""
         from game.assets import worker_dot
 
         ox, oy = Renderer.map_origin(surface, world)
+        cam_x, cam_y = (0, 0) if camera is None else camera.offset
         positions = Renderer.worker_grid_positions(registry, worker_manager)
         positions.sort(key=lambda item: sum(item[1]))
         for worker_type, (gx, gy) in positions:
             sx, sy = world_to_screen(gx, gy)
             dot = worker_dot(worker_type)
-            px = ox + sx + TILE_W // 2 - dot.get_width() // 2
-            py = oy + sy + TILE_H // 2 - dot.get_height() // 2
+            px = ox + cam_x + sx + TILE_W // 2 - dot.get_width() // 2
+            py = oy + cam_y + sy + TILE_H // 2 - dot.get_height() // 2
             surface.blit(dot, (px, py))

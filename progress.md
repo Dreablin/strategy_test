@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 8. Render fixes & camera pan
-- **Next Task:** T47 — Refactor rendering for camera offsets
-- **Last Completed:** T46 — Implement Camera class
-- **Total Progress:** 46 / 51
+- **Next Task:** T48 — Refactor screen_to_grid to apply camera offset
+- **Last Completed:** T47 — Camera-aware rendering offsets
+- **Total Progress:** 47 / 51
 
 ---
 
@@ -112,7 +112,7 @@
 
 - [x] **T46**: Implement `src/game/camera.py` with the `Camera` class per PRD §6 API and F-CAM-01..05. Run T45 — must PASS.
 
-- [ ] **T47**: Refactor rendering to be camera-aware:
+- [x] **T47**: Refactor rendering to be camera-aware:
    - Add an optional `camera: Camera | None` parameter to `Renderer.draw_world`, `draw_buildings`, `draw_workers`, and `PlacementController.draw`.
    - When a camera is provided, add `camera.offset[0]` to every blit's `x` and `camera.offset[1]` to every blit's `y`.
    - `TopBar`, `BottomBar`, `BuildingPanel`, `TownHallPanel` MUST NOT be camera-shifted — they stay anchored to the screen.

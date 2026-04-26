@@ -3,6 +3,7 @@
 import pygame
 
 from game.buildings.registry import BuildingRegistry
+from game.camera import Camera
 from game.config import WINDOW_SIZE
 from game.input import GameInput
 from game.loop import apply_production_tick
@@ -30,6 +31,7 @@ def main() -> int:
     worker_manager = WorkerManager(resources, registry)
     game_input = GameInput(world, registry, resources, placement, worker_manager)
     scheduler = TickScheduler()
+    camera = Camera()
 
     running = True
     try:
@@ -49,12 +51,12 @@ def main() -> int:
                 )
 
             screen.fill((20, 24, 22))
-            Renderer.draw_world(screen, world)
-            Renderer.draw_buildings(screen, world, registry)
-            Renderer.draw_workers(screen, world, registry, worker_manager)
+            Renderer.draw_world(screen, world, camera)
+            Renderer.draw_buildings(screen, world, registry, camera)
+            Renderer.draw_workers(screen, world, registry, worker_manager, camera)
             TopBar.draw(screen, resources)
             BottomBar.draw(screen, resources)
-            placement.draw(screen)
+            placement.draw(screen, camera)
             game_input.draw_panel(screen)
             pygame.display.flip()
             clock.tick(60)

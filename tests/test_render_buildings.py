@@ -8,6 +8,7 @@ from game.assets import grass_tile
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
+from game.camera import Camera
 from game.iso import world_to_screen
 from game.render import Renderer
 from game.resources import ResourceManager
@@ -93,3 +94,28 @@ def test_painters_order() -> None:
     assert len(dests) >= 3
     # (8,8) should be drawn before (20,20), so an earlier y destination.
     assert dests[1][1] < dests[2][1]
+
+
+def test_draw_building_shifted_by_camera_offset() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    _resources = ResourceManager()
+    registry.place(TownHall, (16, 16))
+    camp = registry.place(LumberCamp, (10, 10))
+
+    no_cam = pygame.Surface((1280, 720))
+    no_cam.fill(_SENTINEL)
+    Renderer.draw_world(no_cam, world, None)
+    Renderer.draw_buildings(no_cam, world, registry, None)
+
+    with_cam = pygame.Surface((1280, 720))
+    with_cam.fill(_SENTINEL)
+    camera = Camera((50, 30))
+    Renderer.draw_world(with_cam, world, camera)
+    Renderer.draw_buildings(with_cam, world, registry, camera)
+
+    cx, cy = camp.grid_pos  # type: ignore[assignment]
+    px, py = _tile_center_pixel(no_cam, world, cx + 1, cy + 1)
+    px2, py2 = px + 50, py + 30
+    assert no_cam.get_at((px, py))[:3] != _SENTINEL
+    assert with_cam.get_at((px2, py2))[:3] != _SENTINEL

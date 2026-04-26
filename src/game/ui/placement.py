@@ -98,13 +98,16 @@ class PlacementController:
         self._registry.place(cls, (gx, gy))
         return True
 
-    def draw(self, surface: pygame.Surface) -> None:
+    def draw(self, surface: pygame.Surface, camera=None) -> None:
         if self._pending is None or self._hover is None:
             return
         gx, gy = self._hover
         cls = self._pending
         w, h = cls.footprint
         ox, oy = Renderer.map_origin(surface, self._world)
+        cam_x, cam_y = (0, 0) if camera is None else camera.offset
+        ox += cam_x
+        oy += cam_y
         valid = self._registry.can_place(cls, (gx, gy)) and self._resources.has(
             build_cost(cls.type_tag)
         )

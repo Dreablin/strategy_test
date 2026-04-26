@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 8. Render fixes & camera pan
-- **Next Task:** T44 — Implement `Renderer.draw_buildings` and wire render pipeline
-- **Last Completed:** T43 — Add failing tests for building rendering
-- **Total Progress:** 43 / 51
+- **Next Task:** T45 — Write failing camera tests
+- **Last Completed:** T44 — Implement draw_buildings and render wiring
+- **Total Progress:** 44 / 51
 
 ---
 
@@ -97,7 +97,7 @@
    3. `test_placed_building_drawn` — same setup, then place a `LumberCamp` at a valid tile via `registry.place(...)` and re-render. Sample the placed building's centre pixel — must be different from grass / sentinel.
    4. `test_painters_order` — record `surface.blit` calls (use a thin spy `class _Spy(pygame.Surface): def blit(self, *a, **kw): self.calls.append((a, kw)); return super().blit(*a, **kw)`). Place two buildings at `(8, 8)` and `(20, 20)`. Assert the call for `(8, 8)` precedes the call for `(20, 20)` (lower `gx+gy` drawn first).
 
-- [ ] **T44**: Implement `Renderer.draw_buildings(surface, world, registry, camera=None)`:
+- [x] **T44**: Implement `Renderer.draw_buildings(surface, world, registry, camera=None)`:
    - Iterate `registry.all()`, sort by `(b.grid_pos[0] + b.grid_pos[1], b.grid_pos[0])`.
    - For each building, compute footprint screen rect via `iso.world_to_screen` for each footprint tile + `Renderer.map_origin`. Anchor sprite bottom-centre to footprint bottom-centre. Apply `camera.offset` if given (else `(0,0)`).
    - Blit `assets.building_sprite(b.type_tag, b.level)`.

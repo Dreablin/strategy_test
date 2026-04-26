@@ -2,7 +2,7 @@
 
 import pygame
 
-from game.assets import grass_tile, tree_tile
+from game.assets import building_sprite, grass_tile, tree_tile
 from game.buildings.registry import BuildingRegistry
 from game.config import TILE_H, TILE_W
 from game.iso import world_to_screen
@@ -55,6 +55,56 @@ class Renderer:
             sx, sy = world_to_screen(gx, gy)
             tile = g_tile if in_grass else t_tile
             surface.blit(tile, (origin_x + sx, origin_y + sy))
+
+    @staticmethod
+    def draw_buildings(
+        surface: pygame.Surface,
+        world: World,
+        registry: BuildingRegistry,
+        camera=None,
+    ) -> None:
+        """Draw building sprites in painter order, anchored to footprint bottom-center."""
+        ox, oy = Renderer.map_origin(surface, world)
+        cam_x, cam_y = (0, 0) if camera is None else camera.offset
+        draw_surface = surface.inner if hasattr(surface, "inner") else surface
+        buildings = sorted(
+            registry.all(),
+            key=lambda b: (b.grid_pos[0] + b.grid_pos[1], b.grid_pos[0]) if b.grid_pos else (10**9, 10**9),
+        )
+        for b in buildings:
+            pos = b.grid_pos
+            if pos is None:
+                continue
+            gx, gy = pos
+            w, h = type(b).footprint
+            base_color = (96, 84, 72) if b.type_tag == "TOWN_HALL" else (88, 78, 66)
+            min_x = 10**9
+            min_y = 10**9
+            max_x = -10**9
+            max_y = -10**9
+            for tx in range(gx, gx + w):
+                for ty in range(gy, gy + h):
+                    sx, sy = world_to_screen(tx, ty)
+                    px = ox + cam_x + sx
+                    py = oy + cam_y + sy
+                    hw, hh = TILE_W // 2, TILE_H // 2
+                    pts = [
+                        (px + hw, py),
+                        (px + TILE_W - 1, py + hh),
+                        (px + hw, py + TILE_H - 1),
+                        (px, py + hh),
+                    ]
+                    pygame.draw.polygon(draw_surface, base_color, pts)
+                    min_x = min(min_x, sx)
+                    min_y = min(min_y, sy)
+                    max_x = max(max_x, sx + TILE_W)
+                    max_y = max(max_y, sy + TILE_H)
+            foot_cx = (min_x + max_x) // 2
+            foot_by = max_y
+            spr = building_sprite(b.type_tag, b.level)
+            dx = ox + cam_x + foot_cx - spr.get_width() // 2
+            dy = oy + cam_y + foot_by - spr.get_height()
+            surface.blit(spr, (dx, dy))
 
     @staticmethod
     def worker_grid_positions(

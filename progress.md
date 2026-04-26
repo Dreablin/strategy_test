@@ -2,10 +2,10 @@
 
 ## Current Status
 
-- **Phase:** Complete
-- **Next Task:** None
-- **Last Completed:** T51 — Phase 8 smoke integration test
-- **Total Progress:** 51 / 51
+- **Phase:** 9. Worker movement & spacing
+- **Next Task:** T53 — Implement fixed spacing rule in registry
+- **Last Completed:** T52 — Added failing spacing tests
+- **Total Progress:** 52 / 62
 
 ---
 
@@ -149,6 +149,77 @@
    4. Inject `MOUSEBUTTONDOWN` RMB → 3× `MOUSEMOTION` of `(20, 0)` rel → `MOUSEBUTTONUP` RMB. Assert `camera.offset[0] >= 60` (rounded for clamp). Render does not raise.
    5. After tests pass, write `<promise>ALL_TASKS_COMPLETE</promise>` per `prompt.md` step 6 (and create `.cursor/ralph/done`).
 
+### Phase 9 — Worker Movement & Building Spacing
+
+> **Scope added by user:** workers must walk smoothly to workplaces at 1 tile / 3 s, may not step onto building tiles, may approach target building from any side, and buildings must have at least one empty tile between footprints.
+
+- [x] **T52**: Write failing tests for new placement spacing in `tests/test_registry.py`:
+   - Adjacent footprints (edge-touch and corner-touch) are rejected.
+   - A placement with exactly one tile gap is accepted.
+   - Town Hall and resource buildings follow the same spacing rule.
+   Tests must FAIL against current `can_place` logic.
+
+- [ ] **T53**: Implement spacing rule in `src/game/buildings/registry.py`:
+   - Replace the current variable separation formula with fixed minimum Chebyshev distance `>= 1` between any two footprint tiles.
+   - Keep overlap/bounds checks unchanged.
+   Run full `pytest -q` — green.
+
+- [ ] **T54**: Add worker movement model tests in new `tests/test_worker_movement.py` (failing first):
+   - Worker has tile path queue and per-segment interpolation progress.
+   - Movement speed constant is `WORKER_TILE_TRAVEL_MS == 3000`.
+   - `update(now_ms)` advances interpolation smoothly, reaches next tile only after 3000 ms.
+   - Worker state machine: `idle -> moving -> working`.
+
+- [ ] **T55**: Implement movement state in `src/game/workers.py`:
+   - Extend `Worker` with `state`, `current_tile`, `target_tile`, `path`, `segment_started_ms`.
+   - Add `WorkerManager.update(now_ms)`.
+   - Keep old API compatibility where possible (`workers()`, `idle()`).
+   - Add config constant `WORKER_TILE_TRAVEL_MS = 3000` in `src/game/config.py`.
+   Run tests — green.
+
+- [ ] **T56**: Write failing pathfinding tests in new `tests/test_pathfinding.py`:
+   - 8-directional path exists around obstacles.
+   - Occupied building tiles are never included in path.
+   - If destination unreachable, returns no path.
+
+- [ ] **T57**: Implement pathfinding module `src/game/pathfinding.py`:
+   - Grid **BFS** (strictly BFS, not A*) over world grass tiles.
+   - Blocked set = all occupied footprint tiles.
+   - Neighbors = 8 directions in deterministic order: `N, NE, E, SE, S, SW, W, NW`.
+   - Diagonal no-corner-cutting rule: for diagonal step, at least one adjacent orthogonal tile must be walkable.
+   - Deterministic behavior for stable tests.
+   Run tests — green.
+
+- [ ] **T58**: Integrate assignment-to-approach-tiles in `WorkerManager.reassign_all()`:
+   - For each free matching building, compute all free approach tiles (Chebyshev distance 1 from footprint).
+   - Choose a reachable approach tile, compute path from worker current tile, set worker `moving`.
+   - If no reachable approach tile exists, worker remains waiting/idle.
+   Add failing-then-passing tests in `tests/test_workers.py`.
+
+- [ ] **T59**: Update production gating and demolition behavior:
+   - `working_buildings()` must include only buildings whose worker reached destination.
+   - `apply_production_tick` and `sync_resources_per_cycle` use `working_buildings()` (not merely assigned).
+   - If target/working building is demolished, worker stops moving/working and becomes idle at current tile.
+   Add regression tests in `tests/test_production.py` and `tests/test_workers.py`.
+
+- [ ] **T60**: Render smooth worker movement:
+   - `Renderer.draw_workers` uses worker interpolated world position between tile centers while moving.
+   - Idle/working workers render at tile center as before.
+   - Add focused render test in `tests/test_render_workers.py` verifying moving worker pixel shifts between frames.
+
+- [ ] **T61**: Wire game loop updates:
+   - In `main.py`, call `worker_manager.update(pygame.time.get_ticks())` every frame before rendering.
+   - Recompute per-cycle preview income only from `working_buildings`.
+   - Verify no exceptions under `SDL_VIDEODRIVER=dummy` smoke run.
+
+- [ ] **T62**: End-to-end smoke test in `tests/test_smoke_phase9.py`:
+   1. Build Lumber Camp at valid location.
+   2. Hire Lumberjack.
+   3. Advance simulated time: verify worker visibly moves over multiple updates and reaches an approach tile near camp.
+   4. Before arrival, production tick adds 0 wood from that camp; after arrival, next tick adds `5 * level`.
+   5. Build-adjacency rejection confirmed (touching placement fails, one-tile-gap passes).
+   After passing tests, output `<promise>ALL_TASKS_COMPLETE</promise>` and create `.cursor/ralph/done`.
+
 ---
 
 ## Decisions Log
@@ -167,6 +238,6 @@
 
 - Ambiguity in user spec: per-cycle stone/iron upgrade increment was not stated explicitly for level 5 vs subsequent levels. We follow the wood pattern: stone +200/level from L5, iron +300/level from L7 (see PRD §3 F-BLD-05). Record any alternative in the Decisions Log if changed.
 - Worker hire cost not stated by user → fixed at 50 food. Any change → Decisions Log.
-- Workers teleport (no pathfinding) — keeps scope small and deterministic.
+- As of Phase 9 plan, teleport movement is deprecated: workers must move with pathfinding at 1 tile / 3 s and only produce after reaching workplace.
 - All assets are procedural; no binary files in the repo.
 - Tests run headless via `SDL_VIDEODRIVER=dummy` set in `tests/conftest.py`.

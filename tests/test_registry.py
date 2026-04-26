@@ -106,3 +106,29 @@ def test_all_lists_placed_buildings(registry: BuildingRegistry) -> None:
     registry.place(StoneMine, (20, 20))
     all_b = registry.all()
     assert len(all_b) == 2
+
+
+def test_adjacent_edge_touch_rejected(registry: BuildingRegistry) -> None:
+    registry.place(LumberCamp, (10, 10))
+    # Right next to 2x2 footprint: new starts at x=12 touches edge.
+    assert not registry.can_place(StoneMine, (12, 10))
+
+
+def test_adjacent_corner_touch_rejected(registry: BuildingRegistry) -> None:
+    registry.place(LumberCamp, (10, 10))
+    # Corner-touch at (12,12) for two 2x2 footprints.
+    assert not registry.can_place(StoneMine, (12, 12))
+
+
+def test_exactly_one_tile_gap_accepted(registry: BuildingRegistry) -> None:
+    registry.place(LumberCamp, (10, 10))
+    # One tile horizontal gap between footprints.
+    assert registry.can_place(StoneMine, (13, 10))
+
+
+def test_town_hall_and_resource_use_same_spacing_rule(registry: BuildingRegistry) -> None:
+    registry.place(TownHall, (10, 10))
+    # Touching edge at x=13 should be rejected.
+    assert not registry.can_place(LumberCamp, (13, 11))
+    # One-tile gap at x=14 should be accepted.
+    assert registry.can_place(LumberCamp, (14, 11))

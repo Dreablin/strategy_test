@@ -60,6 +60,7 @@ def test_tick_adds_5_wood_for_staffed_level1_lumber_camp() -> None:
     registry.place(LumberCamp, (10, 10))
     assert workers.hire("LUMBERJACK") is not None
     workers.reassign_all()
+    workers.update(120_000)
 
     wood_before = resources.get("wood")
     assert scheduler.update(TICK_MS) is True
@@ -77,6 +78,7 @@ def test_tick_after_upgrade_to_level3_adds_15_wood() -> None:
     camp = registry.place(LumberCamp, (10, 10))
     assert workers.hire("LUMBERJACK") is not None
     workers.reassign_all()
+    workers.update(120_000)
 
     # Upgrade level 1 -> 3.
     resources.add("wood", 10_000)
@@ -89,3 +91,29 @@ def test_tick_after_upgrade_to_level3_adds_15_wood() -> None:
     assert scheduler.update(TICK_MS) is True
     _apply_production_tick(registry, resources, workers)
     assert resources.get("wood") == wood_before + 15
+
+
+def test_moving_worker_does_not_produce_until_working() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    workers = WorkerManager(resources, registry)
+    registry.place(TownHall, (16, 16))
+    camp = registry.place(LumberCamp, (24, 24))
+    assert workers.hire("LUMBERJACK") is not None
+    workers.reassign_all()
+
+    registry.sync_resources_per_cycle(resources, staffed_buildings=workers.working_buildings())
+    assert camp not in workers.working_buildings()
+    assert resources.per_cycle["wood"] == 0
+
+    wood_before = resources.get("wood")
+    _apply_production_tick(registry, resources, workers)
+    assert resources.get("wood") == wood_before
+
+    workers.update(60_000)
+    registry.sync_resources_per_cycle(resources, staffed_buildings=workers.working_buildings())
+    wood_before = resources.get("wood")
+    assert resources.per_cycle["wood"] == 5
+    _apply_production_tick(registry, resources, workers)
+    assert resources.get("wood") == wood_before + 5

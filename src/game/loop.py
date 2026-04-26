@@ -8,9 +8,9 @@ from game.workers import WorkerManager
 def apply_production_tick(
     registry: BuildingRegistry, resources: ResourceManager, workers: WorkerManager
 ) -> None:
-    """Apply one 10-second production cycle from staffed buildings only."""
+    """Apply one 10-second production cycle from working buildings only."""
     placed = set(registry.all())
-    for building in workers.staffed_buildings():
+    for building in workers.working_buildings():
         if building not in placed:
             continue
         for name, amount in type(building).income(building.level).items():

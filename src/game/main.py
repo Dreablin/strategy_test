@@ -3,14 +3,15 @@
 import pygame
 
 from game.buildings.registry import BuildingRegistry
+from game.buildings.town_hall import TownHall
 from game.camera import Camera
 from game.config import WINDOW_SIZE
-from game.input import TOP_BAR_HEIGHT, GameInput
+from game.input import GameInput
 from game.loop import apply_production_tick
 from game.render import Renderer
 from game.resources import ResourceManager
 from game.tick import TickScheduler
-from game.ui.bottom_bar import BAR_HEIGHT, BottomBar
+from game.ui.bottom_bar import BottomBar
 from game.ui.placement import PlacementController
 from game.ui.top_bar import TopBar
 from game.world import World
@@ -27,6 +28,8 @@ def main() -> int:
     world = World()
     resources = ResourceManager()
     registry = BuildingRegistry(world)
+    # Player starts with a single Town Hall as required by core game rules.
+    registry.place(TownHall, (16, 16))
     camera = Camera()
     placement = PlacementController(world, registry, resources, camera)
     worker_manager = WorkerManager(resources, registry)
@@ -42,13 +45,19 @@ def main() -> int:
                 else:
                     game_input.handle(screen, event)
             if game_input.consume_camera_moved():
-                play_area = (WINDOW_SIZE[0], WINDOW_SIZE[1] - TOP_BAR_HEIGHT - BAR_HEIGHT)
-                camera.clamp(play_area, Renderer.world_pixel_bounds(world))
+                # Clamp in the same coordinate space used by rendering:
+                # world pixel bounds + renderer origin for the current surface.
+                origin_x, origin_y = Renderer.map_origin(screen, world)
+                min_x, min_y, max_x, max_y = Renderer.world_pixel_bounds(world)
+                camera.clamp(
+                    WINDOW_SIZE,
+                    (min_x + origin_x, min_y + origin_y, max_x + origin_x, max_y + origin_y),
+                )
 
             if scheduler.update(pygame.time.get_ticks()):
                 apply_production_tick(registry, resources, worker_manager)
                 registry.sync_resources_per_cycle(
-                    resources, staffed_buildings=worker_manager.staffed_buildings()
+                    resources, staffed_buildings=worker_manager.working_buildings()
                 )
 
             screen.fill((20, 24, 22))

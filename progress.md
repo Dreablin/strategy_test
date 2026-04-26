@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 9. Worker movement & spacing
-- **Next Task:** T59 — Update production gating and demolition behavior
-- **Last Completed:** T58 — Integrate assignment-to-approach-tiles
-- **Total Progress:** 58 / 62
+- **Next Task:** T60 — Render smooth worker movement
+- **Last Completed:** T59 — Update production gating and demolition behavior
+- **Total Progress:** 59 / 62
 
 ---
 
@@ -196,7 +196,7 @@
    - If no reachable approach tile exists, worker remains waiting/idle.
    Add failing-then-passing tests in `tests/test_workers.py`.
 
-- [ ] **T59**: Update production gating and demolition behavior:
+- [x] **T59**: Update production gating and demolition behavior:
    - `working_buildings()` must include only buildings whose worker reached destination.
    - `apply_production_tick` and `sync_resources_per_cycle` use `working_buildings()` (not merely assigned).
    - If target/working building is demolished, worker stops moving/working and becomes idle at current tile.

@@ -196,3 +196,42 @@ def test_reassign_all_keeps_worker_idle_when_no_approach_tile_reachable() -> Non
     assert w.idle
     assert w.assigned_building is None
     assert w.state == "idle"
+
+
+def test_working_buildings_excludes_moving_worker_until_arrival() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, (16, 16))
+    camp = registry.place(LumberCamp, (24, 24))
+    wm = WorkerManager(resources, registry)
+    w = Worker("LUMBERJACK", stand_tile=(2, 2))
+    wm.add_worker(w)
+    wm.reassign_all()
+
+    assert camp not in wm.working_buildings()
+    wm.update(120_000)
+    assert camp in wm.working_buildings()
+
+
+def test_demolish_moving_worker_becomes_idle_at_current_tile() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, (16, 16))
+    camp = registry.place(LumberCamp, (24, 24))
+    wm = WorkerManager(resources, registry)
+    w = Worker("LUMBERJACK", stand_tile=(2, 2))
+    wm.add_worker(w)
+    wm.reassign_all()
+    assert w.assigned_building is camp
+    assert w.state == "moving"
+
+    wm.update(1_500)
+    before = w.current_tile
+    registry.demolish(camp, wm)
+
+    assert w.idle
+    assert w.state == "idle"
+    assert w.current_tile == before
+    assert w.assigned_building is None

@@ -87,7 +87,7 @@ class GameInput:
         self._worker_manager.reassign_all()
         self._registry.sync_resources_per_cycle(
             self._resources,
-            staffed_buildings=self._worker_manager.staffed_buildings(),
+            staffed_buildings=self._worker_manager.working_buildings(),
         )
 
     @property

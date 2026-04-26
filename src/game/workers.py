@@ -68,14 +68,15 @@ class Worker:
         if self.state != "moving" or self.target_tile is None:
             return
         elapsed = max(0, int(now_ms) - self.segment_started_ms)
-        if elapsed >= WORKER_TILE_TRAVEL_MS:
+        while elapsed >= WORKER_TILE_TRAVEL_MS:
             self.current_tile = self.target_tile
             self.path = self.path[1:] if self.path else []
             if len(self.path) >= 2:
                 self.target_tile = self.path[1]
                 self.segment_started_ms += WORKER_TILE_TRAVEL_MS
                 self.segment_progress = 0.0
-                return
+                elapsed = max(0, int(now_ms) - self.segment_started_ms)
+                continue
             self.target_tile = self.current_tile
             self.segment_progress = 1.0
             self.state = "working"
@@ -132,6 +133,13 @@ class WorkerManager:
     def staffed_buildings(self) -> set[Building]:
         return {w.assigned_building for w in self._workers if w.assigned_building is not None}
 
+    def working_buildings(self) -> set[Building]:
+        return {
+            w.assigned_building
+            for w in self._workers
+            if w.assigned_building is not None and w.state == "working"
+        }
+
     def hire(self, worker_type: str) -> Worker | None:
         """Hire a worker for 50 food; ``None`` if unaffordable."""
         if self._resources is None or self._registry is None:
@@ -150,14 +158,12 @@ class WorkerManager:
         return worker
 
     def notify_demolished(self, building: Building) -> None:
-        """Park former workers on the demolished building's center tile (idle)."""
-        cx, cy = building_center_tile(building)
+        """Workers targeting this building become idle at their current tile."""
         for w in self._workers:
             if w.assigned_building is building:
                 w.assigned_building = None
                 w.idle = True
-                w.stand_tile = (cx, cy)
-                w.current_tile = (cx, cy)
+                w.stand_tile = w.current_tile
                 w.target_tile = None
                 w.path = []
                 w.segment_started_ms = 0

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from game.buildings.base import Building
-from game.config import WORKER_HIRE_COST
+from game.config import WORKER_HIRE_COST, WORKER_TILE_TRAVEL_MS
 from game.resources import ResourceManager
 
 
@@ -22,13 +22,66 @@ def building_center_tile(building: Building) -> tuple[int, int]:
 class Worker:
     """One worker: type tag, optional assigned building, idle flag, stand tile for rendering."""
 
-    __slots__ = ("type_tag", "assigned_building", "idle", "stand_tile")
+    __slots__ = (
+        "type_tag",
+        "assigned_building",
+        "idle",
+        "stand_tile",
+        "state",
+        "current_tile",
+        "target_tile",
+        "path",
+        "segment_started_ms",
+        "segment_progress",
+    )
 
     def __init__(self, type_tag: str, *, stand_tile: tuple[int, int] = (0, 0)) -> None:
         self.type_tag = type_tag
         self.assigned_building: Building | None = None
         self.idle = True
         self.stand_tile: tuple[int, int] = stand_tile
+        self.state = "idle"
+        self.current_tile = stand_tile
+        self.target_tile: tuple[int, int] | None = None
+        self.path: list[tuple[int, int]] = []
+        self.segment_started_ms = 0
+        self.segment_progress = 0.0
+
+    def start_move(self, path: list[tuple[int, int]], started_ms: int) -> None:
+        if len(path) < 2:
+            self.path = []
+            self.target_tile = self.current_tile
+            self.segment_progress = 0.0
+            self.state = "working"
+            self.idle = False
+            return
+        self.path = list(path)
+        self.current_tile = self.path[0]
+        self.target_tile = self.path[1]
+        self.segment_started_ms = int(started_ms)
+        self.segment_progress = 0.0
+        self.state = "moving"
+        self.idle = False
+
+    def update(self, now_ms: int) -> None:
+        if self.state != "moving" or self.target_tile is None:
+            return
+        elapsed = max(0, int(now_ms) - self.segment_started_ms)
+        if elapsed >= WORKER_TILE_TRAVEL_MS:
+            self.current_tile = self.target_tile
+            self.path = self.path[1:] if self.path else []
+            if len(self.path) >= 2:
+                self.target_tile = self.path[1]
+                self.segment_started_ms += WORKER_TILE_TRAVEL_MS
+                self.segment_progress = 0.0
+                return
+            self.target_tile = self.current_tile
+            self.segment_progress = 1.0
+            self.state = "working"
+            self.idle = False
+            self.stand_tile = self.current_tile
+            return
+        self.segment_progress = elapsed / WORKER_TILE_TRAVEL_MS
 
 
 class WorkerManager:
@@ -65,6 +118,12 @@ class WorkerManager:
         worker.assigned_building = building
         worker.idle = False
         worker.stand_tile = building_center_tile(building)
+        worker.current_tile = worker.stand_tile
+        worker.target_tile = worker.current_tile
+        worker.path = []
+        worker.segment_started_ms = 0
+        worker.segment_progress = 0.0
+        worker.state = "working"
 
     def is_staffed(self, building: Building) -> bool:
         return any(w.assigned_building is building for w in self._workers)
@@ -94,6 +153,12 @@ class WorkerManager:
                 w.assigned_building = None
                 w.idle = True
                 w.stand_tile = (cx, cy)
+                w.current_tile = (cx, cy)
+                w.target_tile = None
+                w.path = []
+                w.segment_started_ms = 0
+                w.segment_progress = 0.0
+                w.state = "idle"
 
     def reassign_all(self) -> None:
         """Assign one idle worker per free matching building."""
@@ -113,3 +178,8 @@ class WorkerManager:
             )
             if target is not None:
                 self.assign_to_building(worker, target)
+
+    def update(self, now_ms: int) -> None:
+        """Advance worker movement interpolation/state for this frame."""
+        for worker in self._workers:
+            worker.update(now_ms)

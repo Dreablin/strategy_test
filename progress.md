@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 9. Worker movement & spacing
-- **Next Task:** T55 — Implement worker movement state model
-- **Last Completed:** T54 — Add failing worker movement tests
-- **Total Progress:** 54 / 62
+- **Next Task:** T56 — Add failing pathfinding tests
+- **Last Completed:** T55 — Implement worker movement state model
+- **Total Progress:** 55 / 62
 
 ---
 
@@ -170,7 +170,7 @@
    - `update(now_ms)` advances interpolation smoothly, reaches next tile only after 3000 ms.
    - Worker state machine: `idle -> moving -> working`.
 
-- [ ] **T55**: Implement movement state in `src/game/workers.py`:
+- [x] **T55**: Implement movement state in `src/game/workers.py`:
    - Extend `Worker` with `state`, `current_tile`, `target_tile`, `path`, `segment_started_ms`.
    - Add `WorkerManager.update(now_ms)`.
    - Keep old API compatibility where possible (`workers()`, `idle()`).

@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 9. Worker movement & spacing
-- **Next Task:** T57 — Implement pathfinding module
-- **Last Completed:** T56 — Add failing pathfinding tests
-- **Total Progress:** 56 / 62
+- **Next Task:** T58 — Integrate assignment-to-approach-tiles
+- **Last Completed:** T57 — Implement BFS pathfinding module
+- **Total Progress:** 57 / 62
 
 ---
 
@@ -182,7 +182,7 @@
    - Occupied building tiles are never included in path.
    - If destination unreachable, returns no path.
 
-- [ ] **T57**: Implement pathfinding module `src/game/pathfinding.py`:
+- [x] **T57**: Implement pathfinding module `src/game/pathfinding.py`:
    - Grid **BFS** (strictly BFS, not A*) over world grass tiles.
    - Blocked set = all occupied footprint tiles.
    - Neighbors = 8 directions in deterministic order: `N, NE, E, SE, S, SW, W, NW`.

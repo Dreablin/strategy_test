@@ -2,10 +2,10 @@
 
 ## Current Status
 
-- **Phase:** 8. Render fixes & camera pan
-- **Next Task:** T51 — Smoke integration test for phase 8
-- **Last Completed:** T50 — World bounds helper and camera clamp wiring
-- **Total Progress:** 50 / 51
+- **Phase:** Complete
+- **Next Task:** None
+- **Last Completed:** T51 — Phase 8 smoke integration test
+- **Total Progress:** 51 / 51
 
 ---
 
@@ -142,7 +142,7 @@
    - Add `tests/test_world_bounds.py` — bounds returned for the default 32×32 world include the `_TREE_RING_TILES` skirt on every side.
    - `pytest -q` — green.
 
-- [ ] **T51**: Smoke integration test `tests/test_smoke_phase8.py` (uses `SDL_VIDEODRIVER=dummy`):
+- [x] **T51**: Smoke integration test `tests/test_smoke_phase8.py` (uses `SDL_VIDEODRIVER=dummy`):
    1. Boot world+registry+resources+worker_manager+placement+input+camera as `main.py` does.
    2. Render one frame onto the screen surface — Town Hall pixel is non-sentinel (verifies bug A fixed).
    3. Inject `BUILD_MENU_SELECT` for `LUMBER_CAMP`, then a synthetic `MOUSEBUTTONDOWN` at a valid placement screen coord, then a `MOUSEBUTTONUP`. Render again — Lumber Camp pixel is non-sentinel (verifies bug B fixed).

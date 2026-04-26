@@ -1,5 +1,8 @@
-"""Worker render placement rules: assigned center, idle stack, orphan tile."""
+"""Worker render placement rules: assigned center, idle stack, orphan tile, movement."""
 
+import pygame
+
+import game.assets as assets
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
@@ -53,3 +56,31 @@ def test_worker_grid_positions_orphan_stays_on_demolished_center() -> None:
     registry.demolish(camp, wm)
     pos = Renderer.worker_grid_positions(registry, wm)
     assert pos == [("LUMBERJACK", center)]
+
+
+def test_draw_workers_moving_worker_pixel_shifts_between_frames(monkeypatch) -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, (16, 16))
+    wm = WorkerManager(resources, registry)
+    w = Worker("LUMBERJACK", stand_tile=(5, 5))
+    w.start_move([(5, 5), (6, 5)], started_ms=0)
+    wm.add_worker(w)
+
+    dot = pygame.Surface((1, 1), pygame.SRCALPHA)
+    dot.fill((255, 0, 0, 255))
+    monkeypatch.setattr(assets, "worker_dot", lambda _t: dot)
+
+    surface = pygame.Surface((1280, 720), pygame.SRCALPHA)
+    Renderer.draw_workers(surface, world, registry, wm)
+    first = surface.get_bounding_rect()
+
+    wm.update(1500)
+    surface.fill((0, 0, 0, 0))
+    Renderer.draw_workers(surface, world, registry, wm)
+    second = surface.get_bounding_rect()
+
+    assert first.width == 1 and first.height == 1
+    assert second.width == 1 and second.height == 1
+    assert second.x > first.x

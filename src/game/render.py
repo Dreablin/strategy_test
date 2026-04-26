@@ -152,14 +152,35 @@ class Renderer:
         worker_manager: WorkerManager,
         camera=None,
     ) -> None:
-        """Draw worker dots at grid positions returned by `worker_grid_positions`."""
+        """Draw worker dots; moving workers are interpolated between tile centers."""
         from game.assets import worker_dot
 
         ox, oy = Renderer.map_origin(surface, world)
         cam_x, cam_y = (0, 0) if camera is None else camera.offset
-        positions = Renderer.worker_grid_positions(registry, worker_manager)
-        positions.sort(key=lambda item: sum(item[1]))
-        for worker_type, (gx, gy) in positions:
+        town_hall = next((b for b in registry.all() if b.type_tag == "TOWN_HALL"), None)
+        th_center = building_center_tile(town_hall) if town_hall is not None else (0, 0)
+        idle_i = 0
+        entries: list[tuple[str, float, float]] = []
+        for worker in worker_manager.workers():
+            if worker.state == "moving" and worker.target_tile is not None:
+                cx, cy = worker.current_tile
+                tx, ty = worker.target_tile
+                t = max(0.0, min(1.0, worker.segment_progress))
+                entries.append((worker.type_tag, cx + (tx - cx) * t, cy + (ty - cy) * t))
+                continue
+            if worker.assigned_building is not None:
+                wx, wy = worker.current_tile
+                entries.append((worker.type_tag, float(wx), float(wy)))
+                continue
+            if town_hall is not None and worker.stand_tile in ((0, 0), th_center):
+                entries.append((worker.type_tag, float(th_center[0] + 1 + idle_i), float(th_center[1])))
+                idle_i += 1
+                continue
+            sxg, syg = worker.stand_tile
+            entries.append((worker.type_tag, float(sxg), float(syg)))
+
+        entries.sort(key=lambda item: item[1] + item[2])
+        for worker_type, gx, gy in entries:
             sx, sy = world_to_screen(gx, gy)
             dot = worker_dot(worker_type)
             px = ox + cam_x + sx + TILE_W // 2 - dot.get_width() // 2

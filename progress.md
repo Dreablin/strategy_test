@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 9. Worker movement & spacing
-- **Next Task:** T60 — Render smooth worker movement
-- **Last Completed:** T59 — Update production gating and demolition behavior
-- **Total Progress:** 59 / 62
+- **Next Task:** T61 — Wire game loop updates
+- **Last Completed:** T60 — Render smooth worker movement
+- **Total Progress:** 60 / 62
 
 ---
 
@@ -202,7 +202,7 @@
    - If target/working building is demolished, worker stops moving/working and becomes idle at current tile.
    Add regression tests in `tests/test_production.py` and `tests/test_workers.py`.
 
-- [ ] **T60**: Render smooth worker movement:
+- [x] **T60**: Render smooth worker movement:
    - `Renderer.draw_workers` uses worker interpolated world position between tile centers while moving.
    - Idle/working workers render at tile center as before.
    - Add focused render test in `tests/test_render_workers.py` verifying moving worker pixel shifts between frames.

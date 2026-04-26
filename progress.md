@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 8. Render fixes & camera pan
-- **Next Task:** T50 — Add world bounds helper and clamp wiring
-- **Last Completed:** T49 — RMB drag pan threshold behavior
-- **Total Progress:** 49 / 51
+- **Next Task:** T51 — Smoke integration test for phase 8
+- **Last Completed:** T50 — World bounds helper and camera clamp wiring
+- **Total Progress:** 50 / 51
 
 ---
 
@@ -135,7 +135,7 @@
    - Add `tests/test_rmb_drag.py` exercising the threshold logic with stub events and a stub camera (no display): drag of 3 px → cancel; drag of 5 px → pan called once and no cancel.
    - `pytest -q` — green.
 
-- [ ] **T50**: Compute world bounds for clamping in `main.py`:
+- [x] **T50**: Compute world bounds for clamping in `main.py`:
    - World pixel bounds = the bounding rect of all (grass + tree-skirt) tiles per `Renderer._compute_grass_origin` math, expressed as `(min_x, min_y, max_x, max_y)` *before* `map_origin` re-centring. Provide a helper `Renderer.world_pixel_bounds(world) -> tuple[int,int,int,int]` so the camera's `clamp` can be called consistently.
    - Compute viewport play-area size = `(WINDOW_WIDTH, WINDOW_HEIGHT - TOP_BAR_HEIGHT - BOTTOM_BAR_HEIGHT)`.
    - In the main loop after every pan: `camera.clamp(play_area_size, Renderer.world_pixel_bounds(world))`.

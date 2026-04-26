@@ -37,6 +37,23 @@ class Renderer:
         return _compute_grass_origin(surface, world)
 
     @staticmethod
+    def world_pixel_bounds(world: World) -> tuple[int, int, int, int]:
+        """World bounds in pre-centered pixel space including tree-skirt tiles."""
+        lo = -_TREE_RING_TILES
+        hi_w = world.width + _TREE_RING_TILES
+        hi_h = world.height + _TREE_RING_TILES
+        min_x = min_y = 10**9
+        max_x = max_y = -10**9
+        for gx in range(lo, hi_w):
+            for gy in range(lo, hi_h):
+                sx, sy = world_to_screen(gx, gy)
+                min_x = min(min_x, sx)
+                min_y = min(min_y, sy)
+                max_x = max(max_x, sx + TILE_W)
+                max_y = max(max_y, sy + TILE_H)
+        return (min_x, min_y, max_x, max_y)
+
+    @staticmethod
     def draw_world(surface: pygame.Surface, world: World, camera=None) -> None:
         origin_x, origin_y = Renderer.map_origin(surface, world)
         cam_x, cam_y = (0, 0) if camera is None else camera.offset

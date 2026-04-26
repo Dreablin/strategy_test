@@ -5,12 +5,12 @@ import pygame
 from game.buildings.registry import BuildingRegistry
 from game.camera import Camera
 from game.config import WINDOW_SIZE
-from game.input import GameInput
+from game.input import TOP_BAR_HEIGHT, GameInput
 from game.loop import apply_production_tick
 from game.render import Renderer
 from game.resources import ResourceManager
 from game.tick import TickScheduler
-from game.ui.bottom_bar import BottomBar
+from game.ui.bottom_bar import BAR_HEIGHT, BottomBar
 from game.ui.placement import PlacementController
 from game.ui.top_bar import TopBar
 from game.world import World
@@ -41,6 +41,9 @@ def main() -> int:
                     running = False
                 else:
                     game_input.handle(screen, event)
+            if game_input.consume_camera_moved():
+                play_area = (WINDOW_SIZE[0], WINDOW_SIZE[1] - TOP_BAR_HEIGHT - BAR_HEIGHT)
+                camera.clamp(play_area, Renderer.world_pixel_bounds(world))
 
             if scheduler.update(pygame.time.get_ticks()):
                 apply_production_tick(registry, resources, worker_manager)

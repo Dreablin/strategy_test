@@ -59,7 +59,8 @@ def test_rmb_drag_above_threshold_pans_and_does_not_cancel() -> None:
         surface,
         pygame.event.Event(pygame.MOUSEMOTION, pos=(405, 300), rel=(5, 0), buttons=(0, 0, 1)),
     )
+    assert gi.consume_camera_moved() is True
     gi.handle(surface, pygame.event.Event(pygame.MOUSEBUTTONUP, button=pygame.BUTTON_RIGHT, pos=(405, 300)))
     assert placement.pending_type is not None
     assert camera.pan_calls == [(5, 0)]
-    assert camera.clamp_calls == 1
+    assert camera.clamp_calls == 0

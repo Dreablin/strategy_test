@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import math
 from collections.abc import Collection
 from typing import Type
 
@@ -60,14 +59,15 @@ class BuildingRegistry:
             return False
         if self._world_footprint_overlaps_occupied(gx, gy, w, h):
             return False
-        sep_need = math.ceil(0.5 * max(w, h))
+        # Require at least one empty tile between any two footprints.
+        min_allowed = 2
         for b in self._buildings:
             pos = b.grid_pos
             if pos is None:
                 continue
             bx, by = pos
             bw, bh = type(b).footprint
-            if _min_chebyshev_between_footprints(gx, gy, w, h, bx, by, bw, bh) < sep_need:
+            if _min_chebyshev_between_footprints(gx, gy, w, h, bx, by, bw, bh) < min_allowed:
                 return False
         return True
 

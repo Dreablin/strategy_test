@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 9. Worker movement & spacing
-- **Next Task:** T53 — Implement fixed spacing rule in registry
-- **Last Completed:** T52 — Added failing spacing tests
-- **Total Progress:** 52 / 62
+- **Next Task:** T54 — Add failing worker movement model tests
+- **Last Completed:** T53 — Implement fixed spacing rule
+- **Total Progress:** 53 / 62
 
 ---
 
@@ -159,7 +159,7 @@
    - Town Hall and resource buildings follow the same spacing rule.
    Tests must FAIL against current `can_place` logic.
 
-- [ ] **T53**: Implement spacing rule in `src/game/buildings/registry.py`:
+- [x] **T53**: Implement spacing rule in `src/game/buildings/registry.py`:
    - Replace the current variable separation formula with fixed minimum Chebyshev distance `>= 1` between any two footprint tiles.
    - Keep overlap/bounds checks unchanged.
    Run full `pytest -q` — green.

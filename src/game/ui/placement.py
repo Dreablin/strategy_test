@@ -12,6 +12,7 @@ from game.buildings.farm import Farm
 from game.buildings.iron_mine import IronMine
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.registry import BuildingRegistry
+from game.camera import Camera
 from game.buildings.stone_mine import StoneMine
 from game.config import TILE_H, TILE_W
 from game.iso import screen_to_world, world_to_screen
@@ -44,12 +45,19 @@ def _diamond_screen_points(
 class PlacementController:
     """Tracks pending building type, hover cell, preview tint, and commits via registry."""
 
-    __slots__ = ("_hover", "_pending", "_registry", "_resources", "_world")
+    __slots__ = ("_camera", "_hover", "_pending", "_registry", "_resources", "_world")
 
-    def __init__(self, world: World, registry: BuildingRegistry, resources: ResourceManager) -> None:
+    def __init__(
+        self,
+        world: World,
+        registry: BuildingRegistry,
+        resources: ResourceManager,
+        camera: Camera | None = None,
+    ) -> None:
         self._world = world
         self._registry = registry
         self._resources = resources
+        self._camera = camera if camera is not None else Camera()
         self._pending: Type[Building] | None = None
         self._hover: tuple[int, int] | None = None
 
@@ -73,19 +81,30 @@ class PlacementController:
         self._pending = cls
         self._hover = None
 
-    def update_hover(self, surface: pygame.Surface, screen_pos: tuple[int, int]) -> None:
+    def update_hover(
+        self,
+        surface: pygame.Surface,
+        screen_pos: tuple[int, int],
+        camera: Camera | None = None,
+    ) -> None:
         if self._pending is None:
             self._hover = None
             return
         ox, oy = Renderer.map_origin(surface, self._world)
         mx, my = screen_pos
-        gx, gy = screen_to_world(mx - ox, my - oy)
+        cam = camera if camera is not None else self._camera
+        gx, gy = screen_to_world(mx - cam.offset[0] - ox, my - cam.offset[1] - oy)
         self._hover = (gx, gy)
 
-    def try_place(self, surface: pygame.Surface, screen_pos: tuple[int, int]) -> bool:
+    def try_place(
+        self,
+        surface: pygame.Surface,
+        screen_pos: tuple[int, int],
+        camera: Camera | None = None,
+    ) -> bool:
         if self._pending is None:
             return False
-        self.update_hover(surface, screen_pos)
+        self.update_hover(surface, screen_pos, camera)
         if self._hover is None:
             return False
         gx, gy = self._hover

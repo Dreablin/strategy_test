@@ -7,6 +7,7 @@ import pygame
 from game.buildings.base import Building
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
+from game.camera import Camera
 from game.iso import screen_to_world
 from game.render import Renderer
 from game.resources import ResourceManager
@@ -21,11 +22,16 @@ from game.workers import WorkerManager
 TOP_BAR_HEIGHT = 48
 
 
-def screen_to_grid(surface: pygame.Surface, world: World, screen_pos: tuple[int, int]) -> tuple[int, int]:
+def screen_to_grid(
+    surface: pygame.Surface,
+    world: World,
+    screen_pos: tuple[int, int],
+    camera: Camera,
+) -> tuple[int, int]:
     """Map screen pixel to isometric grid cell using the same origin as ``Renderer.draw_world``."""
     ox, oy = Renderer.map_origin(surface, world)
     mx, my = screen_pos
-    return screen_to_world(mx - ox, my - oy)
+    return screen_to_world(mx - camera.offset[0] - ox, my - camera.offset[1] - oy)
 
 
 def _on_map(surface: pygame.Surface, pos: tuple[int, int]) -> bool:
@@ -37,7 +43,7 @@ def _on_map(surface: pygame.Surface, pos: tuple[int, int]) -> bool:
 class GameInput:
     """Owns building panel selection; delegates placement and bottom bar where appropriate."""
 
-    __slots__ = ("_panel", "_placement", "_registry", "_resources", "_worker_manager", "_world")
+    __slots__ = ("_camera", "_panel", "_placement", "_registry", "_resources", "_worker_manager", "_world")
 
     def __init__(
         self,
@@ -46,12 +52,14 @@ class GameInput:
         resources: ResourceManager,
         placement: PlacementController,
         worker_manager: WorkerManager,
+        camera: Camera,
     ) -> None:
         self._world = world
         self._registry = registry
         self._resources = resources
         self._placement = placement
         self._worker_manager = worker_manager
+        self._camera = camera
         self._panel: Building | None = None
 
     def _panel_worker_assigned(self) -> bool:
@@ -101,7 +109,7 @@ class GameInput:
 
     def update_placement_hover(self, surface: pygame.Surface, pos: tuple[int, int]) -> None:
         if _on_map(surface, pos):
-            self._placement.update_hover(surface, pos)
+            self._placement.update_hover(surface, pos, self._camera)
 
     def draw_panel(self, surface: pygame.Surface) -> None:
         self._sync_panel_stale()
@@ -125,11 +133,11 @@ class GameInput:
 
     def _handle_map_left_click(self, surface: pygame.Surface, pos: tuple[int, int]) -> None:
         if self._placement.pending_type is not None:
-            if self._placement.try_place(surface, pos):
+            if self._placement.try_place(surface, pos, self._camera):
                 self._sync_assignments()
             return
 
-        gx, gy = screen_to_grid(surface, self._world, pos)
+        gx, gy = screen_to_grid(surface, self._world, pos, self._camera)
 
         if self._panel is not None:
             wa = self._panel_worker_assigned()

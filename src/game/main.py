@@ -27,11 +27,11 @@ def main() -> int:
     world = World()
     resources = ResourceManager()
     registry = BuildingRegistry(world)
-    placement = PlacementController(world, registry, resources)
-    worker_manager = WorkerManager(resources, registry)
-    game_input = GameInput(world, registry, resources, placement, worker_manager)
-    scheduler = TickScheduler()
     camera = Camera()
+    placement = PlacementController(world, registry, resources, camera)
+    worker_manager = WorkerManager(resources, registry)
+    game_input = GameInput(world, registry, resources, placement, worker_manager, camera)
+    scheduler = TickScheduler()
 
     running = True
     try:

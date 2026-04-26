@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 8. Render fixes & camera pan
-- **Next Task:** T48 — Refactor screen_to_grid to apply camera offset
-- **Last Completed:** T47 — Camera-aware rendering offsets
-- **Total Progress:** 47 / 51
+- **Next Task:** T49 — Implement RMB drag pan behavior
+- **Last Completed:** T48 — Camera-aware input grid conversion
+- **Total Progress:** 48 / 51
 
 ---
 
@@ -120,7 +120,7 @@
    - Update existing tests to pass `camera=None` where appropriate; add a regression test in `test_render_buildings.py` asserting that with `Camera(offset=(50, 30))` the building's drawn pixel position is shifted by `(50, 30)`.
    - `pytest -q` — full suite green.
 
-- [ ] **T48**: Refactor `screen_to_grid` in `src/game/input.py` to take a `Camera`:
+- [x] **T48**: Refactor `screen_to_grid` in `src/game/input.py` to take a `Camera`:
    - Signature: `screen_to_grid(surface, world, screen_pos, camera)`.
    - Subtracts `camera.offset` before subtracting `Renderer.map_origin` and calling `iso.screen_to_world`.
    - Update all call sites: `GameInput._handle_map_left_click`, `PlacementController.update_hover`, `try_place`. Pass `camera` from `main.py` into `GameInput` and `PlacementController` constructors.

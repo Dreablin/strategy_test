@@ -5,6 +5,7 @@ import pygame
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
+from game.camera import Camera
 from game.input import TOP_BAR_HEIGHT, GameInput, screen_to_grid
 from game.render import Renderer
 from game.resources import ResourceManager
@@ -32,11 +33,12 @@ def test_screen_to_grid_matches_placement_hover() -> None:
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     placement = PlacementController(world, registry, resources)
+    camera = Camera()
     placement.select("LUMBER_CAMP")
     pos = (523, 381)
     placement.update_hover(surface, pos)
     assert placement.hover_grid is not None
-    assert screen_to_grid(surface, world, pos) == placement.hover_grid
+    assert screen_to_grid(surface, world, pos, camera) == placement.hover_grid
 
 
 def test_map_click_opens_panel_for_building() -> None:
@@ -45,8 +47,9 @@ def test_map_click_opens_panel_for_building() -> None:
     registry = BuildingRegistry(world)
     registry.place(LumberCamp, (14, 14))
     resources = ResourceManager()
-    placement = PlacementController(world, registry, resources)
-    inp = GameInput(world, registry, resources, placement, WorkerManager())
+    camera = Camera()
+    placement = PlacementController(world, registry, resources, camera)
+    inp = GameInput(world, registry, resources, placement, WorkerManager(), camera)
     pos = _tile_center(surface, world, 14, 14)
     inp.handle(surface, pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=pos))
     assert inp.panel_building is not None
@@ -59,8 +62,9 @@ def test_outside_panel_click_closes() -> None:
     registry = BuildingRegistry(world)
     registry.place(LumberCamp, (10, 10))
     resources = ResourceManager()
-    placement = PlacementController(world, registry, resources)
-    inp = GameInput(world, registry, resources, placement, WorkerManager())
+    camera = Camera()
+    placement = PlacementController(world, registry, resources, camera)
+    inp = GameInput(world, registry, resources, placement, WorkerManager(), camera)
     inp.handle(
         surface,
         pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=_tile_center(surface, world, 10, 10)),
@@ -72,7 +76,7 @@ def test_outside_panel_click_closes() -> None:
     for my in range(TOP_BAR_HEIGHT + 40, surface.get_height() - BAR_HEIGHT - 8, 15):
         for mx in range(40, layout.frame.left - 8, 4):
             if not layout.frame.collidepoint(mx, my):
-                gx, gy = screen_to_grid(surface, world, (mx, my))
+                gx, gy = screen_to_grid(surface, world, (mx, my), camera)
                 if registry.at(gx, gy) is None:
                     pos_out = (mx, my)
                     break
@@ -89,8 +93,9 @@ def test_close_button_closes_panel() -> None:
     registry = BuildingRegistry(world)
     registry.place(LumberCamp, (8, 8))
     resources = ResourceManager()
-    placement = PlacementController(world, registry, resources)
-    inp = GameInput(world, registry, resources, placement, WorkerManager())
+    camera = Camera()
+    placement = PlacementController(world, registry, resources, camera)
+    inp = GameInput(world, registry, resources, placement, WorkerManager(), camera)
     b = registry.all()[0]
     inp.handle(
         surface,
@@ -108,8 +113,9 @@ def test_escape_closes_panel() -> None:
     registry = BuildingRegistry(world)
     registry.place(LumberCamp, (5, 5))
     resources = ResourceManager()
-    placement = PlacementController(world, registry, resources)
-    inp = GameInput(world, registry, resources, placement, WorkerManager())
+    camera = Camera()
+    placement = PlacementController(world, registry, resources, camera)
+    inp = GameInput(world, registry, resources, placement, WorkerManager(), camera)
     inp.handle(
         surface,
         pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=_tile_center(surface, world, 5, 5)),
@@ -124,8 +130,9 @@ def test_build_menu_select_closes_panel() -> None:
     registry = BuildingRegistry(world)
     registry.place(LumberCamp, (6, 6))
     resources = ResourceManager()
-    placement = PlacementController(world, registry, resources)
-    inp = GameInput(world, registry, resources, placement, WorkerManager())
+    camera = Camera()
+    placement = PlacementController(world, registry, resources, camera)
+    inp = GameInput(world, registry, resources, placement, WorkerManager(), camera)
     inp.handle(
         surface,
         pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=_tile_center(surface, world, 6, 6)),
@@ -140,10 +147,11 @@ def test_place_calls_reassign_all_and_assigns_idle_worker() -> None:
     world = World()
     registry = BuildingRegistry(world)
     resources = ResourceManager()
-    placement = PlacementController(world, registry, resources)
+    camera = Camera()
+    placement = PlacementController(world, registry, resources, camera)
     workers = WorkerManager(resources, registry)
     workers.add_worker(Worker("LUMBERJACK"))
-    inp = GameInput(world, registry, resources, placement, workers)
+    inp = GameInput(world, registry, resources, placement, workers, camera)
     inp.handle(surface, pygame.event.Event(BUILD_MENU_SELECT, building_type="LUMBER_CAMP"))
     inp.handle(
         surface,
@@ -162,9 +170,10 @@ def test_town_hall_hire_button_calls_worker_manager_hire() -> None:
     town_hall = registry.place(TownHall, (16, 16))
     camp = registry.place(LumberCamp, (10, 10))
     resources = ResourceManager()
-    placement = PlacementController(world, registry, resources)
+    camera = Camera()
+    placement = PlacementController(world, registry, resources, camera)
     workers = WorkerManager(resources, registry)
-    inp = GameInput(world, registry, resources, placement, workers)
+    inp = GameInput(world, registry, resources, placement, workers, camera)
     inp.handle(
         surface,
         pygame.event.Event(

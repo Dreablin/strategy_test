@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 9. Worker movement & spacing
-- **Next Task:** T54 — Add failing worker movement model tests
-- **Last Completed:** T53 — Implement fixed spacing rule
-- **Total Progress:** 53 / 62
+- **Next Task:** T55 — Implement worker movement state model
+- **Last Completed:** T54 — Add failing worker movement tests
+- **Total Progress:** 54 / 62
 
 ---
 
@@ -164,7 +164,7 @@
    - Keep overlap/bounds checks unchanged.
    Run full `pytest -q` — green.
 
-- [ ] **T54**: Add worker movement model tests in new `tests/test_worker_movement.py` (failing first):
+- [x] **T54**: Add worker movement model tests in new `tests/test_worker_movement.py` (failing first):
    - Worker has tile path queue and per-segment interpolation progress.
    - Movement speed constant is `WORKER_TILE_TRAVEL_MS == 3000`.
    - `update(now_ms)` advances interpolation smoothly, reaches next tile only after 3000 ms.

@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 9. Worker movement & spacing
-- **Next Task:** T61 — Wire game loop updates
-- **Last Completed:** T60 — Render smooth worker movement
-- **Total Progress:** 60 / 62
+- **Next Task:** T62 — End-to-end smoke test
+- **Last Completed:** T61 — Wire game loop updates
+- **Total Progress:** 61 / 62
 
 ---
 
@@ -207,7 +207,7 @@
    - Idle/working workers render at tile center as before.
    - Add focused render test in `tests/test_render_workers.py` verifying moving worker pixel shifts between frames.
 
-- [ ] **T61**: Wire game loop updates:
+- [x] **T61**: Wire game loop updates:
    - In `main.py`, call `worker_manager.update(pygame.time.get_ticks())` every frame before rendering.
    - Recompute per-cycle preview income only from `working_buildings`.
    - Verify no exceptions under `SDL_VIDEODRIVER=dummy` smoke run.

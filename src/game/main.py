@@ -39,6 +39,7 @@ def main() -> int:
     running = True
     try:
         while running:
+            now_ms = pygame.time.get_ticks()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
@@ -54,11 +55,12 @@ def main() -> int:
                     (min_x + origin_x, min_y + origin_y, max_x + origin_x, max_y + origin_y),
                 )
 
-            if scheduler.update(pygame.time.get_ticks()):
+            if scheduler.update(now_ms):
                 apply_production_tick(registry, resources, worker_manager)
                 registry.sync_resources_per_cycle(
                     resources, staffed_buildings=worker_manager.working_buildings()
                 )
+            worker_manager.update(now_ms)
 
             screen.fill((20, 24, 22))
             Renderer.draw_world(screen, world, camera)

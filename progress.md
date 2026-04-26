@@ -2,10 +2,10 @@
 
 ## Current Status
 
-- **Phase:** Complete
-- **Next Task:** None
-- **Last Completed:** T42 — Final README and completion marker
-- **Total Progress:** 42 / 42
+- **Phase:** 8. Render fixes & camera pan
+- **Next Task:** T44 — Implement `Renderer.draw_buildings` and wire render pipeline
+- **Last Completed:** T43 — Add failing tests for building rendering
+- **Total Progress:** 43 / 51
 
 ---
 
@@ -81,6 +81,73 @@
 - [x] **T40**: Polish — verify FPS counter (debug-only) stays ≥55 with 50 buildings + 50 workers in a stress fixture. Optional perf sanity test.
 - [x] **T41**: Add `game.spec` and `build_exe.bat` for PyInstaller (`pyinstaller --onefile --noconsole -n IsometricStrategy src/game/main.py`). Document the command in `README.md`. Smoke check: `dir build_exe.bat` (no actual exe build required in CI).
 - [x] **T42**: Final `README.md`: how to run from source (`pip install -r requirements.txt && python -m game.main`), how to build the exe (`build_exe.bat`), controls (LMB place / open panel, RMB or Esc cancel), gameplay summary. Output `<promise>ALL_TASKS_COMPLETE</promise>` after committing.
+
+### Phase 8 — Render Fixes & Camera Pan
+
+> **Context for this phase:** play-testing exposed two critical render bugs and one missing feature. PRD has been updated by the user (sections F-ISO-01, F-INPUT, F-CAM, F-RENDER, API §6 additions). Do NOT edit PRD; just satisfy the new requirements.
+>
+> - Bug A: the Town Hall is never drawn at startup.
+> - Bug B: a freshly placed building is invisible too (resources are deducted, registry contains it, clicking its tile opens the info panel — only the sprite is missing).
+> - Feature: pan the camera by holding RMB and dragging, with bounds clamped to the world's bounding rectangle.
+> - Root cause for A & B: `Renderer` has no `draw_buildings` method and `main.py`'s render pipeline never calls one.
+
+- [x] **T43**: Write `tests/test_render_buildings.py` with these tests (must FAIL because `Renderer.draw_buildings` does not exist yet):
+   1. `test_draw_buildings_attribute` — `getattr(Renderer, "draw_buildings", None)` is callable.
+   2. `test_initial_town_hall_drawn` — create `World()` + `BuildingRegistry(world)` + `ResourceManager()` exactly as `main.py` does (initial state must include the Town Hall at the centre tile, per PRD F-WORLD-03). Create a 1280×720 surface, fill with sentinel colour `(20, 24, 22)`, call `Renderer.draw_world(surface, world)` then `Renderer.draw_buildings(surface, world, registry)`. Sample the pixel at the screen position of the Town Hall's footprint centre and assert it is **not** the sentinel colour and **not** the grass colour — i.e., something building-coloured was blitted there.
+   3. `test_placed_building_drawn` — same setup, then place a `LumberCamp` at a valid tile via `registry.place(...)` and re-render. Sample the placed building's centre pixel — must be different from grass / sentinel.
+   4. `test_painters_order` — record `surface.blit` calls (use a thin spy `class _Spy(pygame.Surface): def blit(self, *a, **kw): self.calls.append((a, kw)); return super().blit(*a, **kw)`). Place two buildings at `(8, 8)` and `(20, 20)`. Assert the call for `(8, 8)` precedes the call for `(20, 20)` (lower `gx+gy` drawn first).
+
+- [ ] **T44**: Implement `Renderer.draw_buildings(surface, world, registry, camera=None)`:
+   - Iterate `registry.all()`, sort by `(b.grid_pos[0] + b.grid_pos[1], b.grid_pos[0])`.
+   - For each building, compute footprint screen rect via `iso.world_to_screen` for each footprint tile + `Renderer.map_origin`. Anchor sprite bottom-centre to footprint bottom-centre. Apply `camera.offset` if given (else `(0,0)`).
+   - Blit `assets.building_sprite(b.type_tag, b.level)`.
+   - Wire into `src/game/main.py` between `Renderer.draw_world(...)` and `Renderer.draw_workers(...)`.
+   - Run `pytest -q` — T43 tests now PASS, full suite stays green.
+
+- [ ] **T45**: Write `tests/test_camera.py` (must FAIL — `game.camera` does not exist):
+   - `test_initial_offset` — `Camera()` has `offset == (0, 0)`.
+   - `test_pan_accumulates` — `c.pan(10, 5); c.pan(-3, 1)` ⇒ `c.offset == (7, 6)`.
+   - `test_clamp_world_smaller_than_viewport` — viewport `(1280, 720)`, world bounds `(0, 0, 800, 600)`. After `c.pan(50, 50); c.clamp(viewport, bounds)` the offset is locked at the centring value (the value that places the world's centre at the viewport's centre). Pan in any direction is undone by `clamp`.
+   - `test_clamp_world_larger_than_viewport` — viewport `(800, 600)`, world bounds `(0, 0, 2000, 2000)`. `c.pan(10000, 10000); c.clamp(...)` constrains offset so the world's max edge cannot move left of the viewport's right edge (and similarly for the other three sides). Pan-and-clamp moving in the opposite direction also stays bounded.
+
+- [ ] **T46**: Implement `src/game/camera.py` with the `Camera` class per PRD §6 API and F-CAM-01..05. Run T45 — must PASS.
+
+- [ ] **T47**: Refactor rendering to be camera-aware:
+   - Add an optional `camera: Camera | None` parameter to `Renderer.draw_world`, `draw_buildings`, `draw_workers`, and `PlacementController.draw`.
+   - When a camera is provided, add `camera.offset[0]` to every blit's `x` and `camera.offset[1]` to every blit's `y`.
+   - `TopBar`, `BottomBar`, `BuildingPanel`, `TownHallPanel` MUST NOT be camera-shifted — they stay anchored to the screen.
+   - In `main.py`, instantiate one `Camera()`, pass it through the render calls.
+   - Update existing tests to pass `camera=None` where appropriate; add a regression test in `test_render_buildings.py` asserting that with `Camera(offset=(50, 30))` the building's drawn pixel position is shifted by `(50, 30)`.
+   - `pytest -q` — full suite green.
+
+- [ ] **T48**: Refactor `screen_to_grid` in `src/game/input.py` to take a `Camera`:
+   - Signature: `screen_to_grid(surface, world, screen_pos, camera)`.
+   - Subtracts `camera.offset` before subtracting `Renderer.map_origin` and calling `iso.screen_to_world`.
+   - Update all call sites: `GameInput._handle_map_left_click`, `PlacementController.update_hover`, `try_place`. Pass `camera` from `main.py` into `GameInput` and `PlacementController` constructors.
+   - Add `tests/test_input_camera.py`: with `Camera(offset=(64, 32))`, a screen click at the previously-correct coords for tile `(5, 5)` shifted by `(64, 32)` round-trips back to grid `(5, 5)`.
+   - `pytest -q` — green.
+
+- [ ] **T49**: Implement RMB drag pan in `GameInput`:
+   - State: `_rmb_down: bool`, `_rmb_press_pos: (int, int)`, `_rmb_dragging: bool`.
+   - `MOUSEBUTTONDOWN button=RIGHT`: store press pos, `_rmb_down=True`, `_rmb_dragging=False`. Do NOT cancel placement yet.
+   - `MOUSEMOTION` while `_rmb_down`: if Chebyshev distance from `_rmb_press_pos` ≥ 4 px, set `_rmb_dragging=True` and call `camera.pan(event.rel[0], event.rel[1])` then `camera.clamp(viewport, world_bounds)`.
+   - `MOUSEBUTTONUP button=RIGHT`: if `_rmb_dragging` is False → existing cancel behaviour (close panel, cancel placement). Else swallow. Reset state.
+   - Add `tests/test_rmb_drag.py` exercising the threshold logic with stub events and a stub camera (no display): drag of 3 px → cancel; drag of 5 px → pan called once and no cancel.
+   - `pytest -q` — green.
+
+- [ ] **T50**: Compute world bounds for clamping in `main.py`:
+   - World pixel bounds = the bounding rect of all (grass + tree-skirt) tiles per `Renderer._compute_grass_origin` math, expressed as `(min_x, min_y, max_x, max_y)` *before* `map_origin` re-centring. Provide a helper `Renderer.world_pixel_bounds(world) -> tuple[int,int,int,int]` so the camera's `clamp` can be called consistently.
+   - Compute viewport play-area size = `(WINDOW_WIDTH, WINDOW_HEIGHT - TOP_BAR_HEIGHT - BOTTOM_BAR_HEIGHT)`.
+   - In the main loop after every pan: `camera.clamp(play_area_size, Renderer.world_pixel_bounds(world))`.
+   - Add `tests/test_world_bounds.py` — bounds returned for the default 32×32 world include the `_TREE_RING_TILES` skirt on every side.
+   - `pytest -q` — green.
+
+- [ ] **T51**: Smoke integration test `tests/test_smoke_phase8.py` (uses `SDL_VIDEODRIVER=dummy`):
+   1. Boot world+registry+resources+worker_manager+placement+input+camera as `main.py` does.
+   2. Render one frame onto the screen surface — Town Hall pixel is non-sentinel (verifies bug A fixed).
+   3. Inject `BUILD_MENU_SELECT` for `LUMBER_CAMP`, then a synthetic `MOUSEBUTTONDOWN` at a valid placement screen coord, then a `MOUSEBUTTONUP`. Render again — Lumber Camp pixel is non-sentinel (verifies bug B fixed).
+   4. Inject `MOUSEBUTTONDOWN` RMB → 3× `MOUSEMOTION` of `(20, 0)` rel → `MOUSEBUTTONUP` RMB. Assert `camera.offset[0] >= 60` (rounded for clamp). Render does not raise.
+   5. After tests pass, write `<promise>ALL_TASKS_COMPLETE</promise>` per `prompt.md` step 6 (and create `.cursor/ralph/done`).
 
 ---
 

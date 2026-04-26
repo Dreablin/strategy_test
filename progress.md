@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 8. Render fixes & camera pan
-- **Next Task:** T46 — Implement Camera class
-- **Last Completed:** T45 — Add failing camera tests
-- **Total Progress:** 45 / 51
+- **Next Task:** T47 — Refactor rendering for camera offsets
+- **Last Completed:** T46 — Implement Camera class
+- **Total Progress:** 46 / 51
 
 ---
 
@@ -110,7 +110,7 @@
    - `test_clamp_world_smaller_than_viewport` — viewport `(1280, 720)`, world bounds `(0, 0, 800, 600)`. After `c.pan(50, 50); c.clamp(viewport, bounds)` the offset is locked at the centring value (the value that places the world's centre at the viewport's centre). Pan in any direction is undone by `clamp`.
    - `test_clamp_world_larger_than_viewport` — viewport `(800, 600)`, world bounds `(0, 0, 2000, 2000)`. `c.pan(10000, 10000); c.clamp(...)` constrains offset so the world's max edge cannot move left of the viewport's right edge (and similarly for the other three sides). Pan-and-clamp moving in the opposite direction also stays bounded.
 
-- [ ] **T46**: Implement `src/game/camera.py` with the `Camera` class per PRD §6 API and F-CAM-01..05. Run T45 — must PASS.
+- [x] **T46**: Implement `src/game/camera.py` with the `Camera` class per PRD §6 API and F-CAM-01..05. Run T45 — must PASS.
 
 - [ ] **T47**: Refactor rendering to be camera-aware:
    - Add an optional `camera: Camera | None` parameter to `Renderer.draw_world`, `draw_buildings`, `draw_workers`, and `PlacementController.draw`.

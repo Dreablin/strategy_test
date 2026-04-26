@@ -39,8 +39,6 @@ def main() -> int:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
-                elif event.type == pygame.MOUSEMOTION:
-                    game_input.update_placement_hover(screen, event.pos)
                 else:
                     game_input.handle(screen, event)
 

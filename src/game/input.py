@@ -8,7 +8,7 @@ from game.buildings.base import Building
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
 from game.camera import Camera
-from game.iso import screen_to_world
+from game.iso import screen_to_world, world_to_screen
 from game.render import Renderer
 from game.resources import ResourceManager
 from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT, BottomBar
@@ -43,7 +43,18 @@ def _on_map(surface: pygame.Surface, pos: tuple[int, int]) -> bool:
 class GameInput:
     """Owns building panel selection; delegates placement and bottom bar where appropriate."""
 
-    __slots__ = ("_camera", "_panel", "_placement", "_registry", "_resources", "_worker_manager", "_world")
+    __slots__ = (
+        "_camera",
+        "_panel",
+        "_placement",
+        "_registry",
+        "_resources",
+        "_rmb_down",
+        "_rmb_dragging",
+        "_rmb_press_pos",
+        "_worker_manager",
+        "_world",
+    )
 
     def __init__(
         self,
@@ -61,6 +72,9 @@ class GameInput:
         self._worker_manager = worker_manager
         self._camera = camera
         self._panel: Building | None = None
+        self._rmb_down = False
+        self._rmb_dragging = False
+        self._rmb_press_pos: tuple[int, int] = (0, 0)
 
     def _panel_worker_assigned(self) -> bool:
         if self._panel is None:
@@ -83,6 +97,19 @@ class GameInput:
         if self._panel is not None and self._panel not in self._registry.all():
             self._panel = None
 
+    def _world_bounds_px(self) -> tuple[int, int, int, int]:
+        """Approx world bounds for camera clamping (refined helper lands in T50)."""
+        min_x = min_y = 10**9
+        max_x = max_y = -10**9
+        for gx in range(self._world.width):
+            for gy in range(self._world.height):
+                sx, sy = world_to_screen(gx, gy)
+                min_x = min(min_x, sx)
+                min_y = min(min_y, sy)
+                max_x = max(max_x, sx + 64)
+                max_y = max(max_y, sy + 32)
+        return (min_x, min_y, max_x, max_y)
+
     def handle(self, surface: pygame.Surface, event: pygame.event.Event) -> None:
         self._sync_panel_stale()
         if event.type == BUILD_MENU_SELECT:
@@ -96,8 +123,33 @@ class GameInput:
                 self._placement.cancel()
             return
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == pygame.BUTTON_RIGHT:
-            self._placement.cancel()
-            self._panel = None
+            self._rmb_down = True
+            self._rmb_dragging = False
+            self._rmb_press_pos = event.pos
+            return
+        if event.type == pygame.MOUSEMOTION:
+            if self._rmb_down:
+                dx = event.pos[0] - self._rmb_press_pos[0]
+                dy = event.pos[1] - self._rmb_press_pos[1]
+                if max(abs(dx), abs(dy)) >= 4:
+                    self._rmb_dragging = True
+                if self._rmb_dragging:
+                    rx, ry = event.rel
+                    self._camera.pan(rx, ry)
+                    self._camera.clamp(
+                        (surface.get_width(), surface.get_height()),
+                        self._world_bounds_px(),
+                    )
+                return
+            if _on_map(surface, event.pos):
+                self._placement.update_hover(surface, event.pos, self._camera)
+            return
+        if event.type == pygame.MOUSEBUTTONUP and event.button == pygame.BUTTON_RIGHT:
+            if not self._rmb_dragging:
+                self._placement.cancel()
+                self._panel = None
+            self._rmb_down = False
+            self._rmb_dragging = False
             return
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == pygame.BUTTON_LEFT:
             if not _on_map(surface, event.pos):

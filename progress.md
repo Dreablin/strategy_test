@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 8. Render fixes & camera pan
-- **Next Task:** T49 — Implement RMB drag pan behavior
-- **Last Completed:** T48 — Camera-aware input grid conversion
-- **Total Progress:** 48 / 51
+- **Next Task:** T50 — Add world bounds helper and clamp wiring
+- **Last Completed:** T49 — RMB drag pan threshold behavior
+- **Total Progress:** 49 / 51
 
 ---
 
@@ -127,7 +127,7 @@
    - Add `tests/test_input_camera.py`: with `Camera(offset=(64, 32))`, a screen click at the previously-correct coords for tile `(5, 5)` shifted by `(64, 32)` round-trips back to grid `(5, 5)`.
    - `pytest -q` — green.
 
-- [ ] **T49**: Implement RMB drag pan in `GameInput`:
+- [x] **T49**: Implement RMB drag pan in `GameInput`:
    - State: `_rmb_down: bool`, `_rmb_press_pos: (int, int)`, `_rmb_dragging: bool`.
    - `MOUSEBUTTONDOWN button=RIGHT`: store press pos, `_rmb_down=True`, `_rmb_dragging=False`. Do NOT cancel placement yet.
    - `MOUSEMOTION` while `_rmb_down`: if Chebyshev distance from `_rmb_press_pos` ≥ 4 px, set `_rmb_dragging=True` and call `camera.pan(event.rel[0], event.rel[1])` then `camera.clamp(viewport, world_bounds)`.

@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 8. Render fixes & camera pan
-- **Next Task:** T45 — Write failing camera tests
-- **Last Completed:** T44 — Implement draw_buildings and render wiring
-- **Total Progress:** 44 / 51
+- **Next Task:** T46 — Implement Camera class
+- **Last Completed:** T45 — Add failing camera tests
+- **Total Progress:** 45 / 51
 
 ---
 
@@ -104,7 +104,7 @@
    - Wire into `src/game/main.py` between `Renderer.draw_world(...)` and `Renderer.draw_workers(...)`.
    - Run `pytest -q` — T43 tests now PASS, full suite stays green.
 
-- [ ] **T45**: Write `tests/test_camera.py` (must FAIL — `game.camera` does not exist):
+- [x] **T45**: Write `tests/test_camera.py` (must FAIL — `game.camera` does not exist):
    - `test_initial_offset` — `Camera()` has `offset == (0, 0)`.
    - `test_pan_accumulates` — `c.pan(10, 5); c.pan(-3, 1)` ⇒ `c.offset == (7, 6)`.
    - `test_clamp_world_smaller_than_viewport` — viewport `(1280, 720)`, world bounds `(0, 0, 800, 600)`. After `c.pan(50, 50); c.clamp(viewport, bounds)` the offset is locked at the centring value (the value that places the world's centre at the viewport's centre). Pan in any direction is undone by `clamp`.

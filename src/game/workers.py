@@ -6,6 +6,7 @@ from typing import Any
 
 from game.buildings.base import Building
 from game.config import WORKER_HIRE_COST, WORKER_TILE_TRAVEL_MS
+from game.pathfinding import find_path_bfs
 from game.resources import ResourceManager
 
 
@@ -140,7 +141,10 @@ class WorkerManager:
         if not self._resources.try_spend(WORKER_HIRE_COST):
             return None
         town_hall = next((b for b in self._registry.all() if b.type_tag == "TOWN_HALL"), None)
-        stand = building_center_tile(town_hall) if town_hall is not None else (0, 0)
+        stand = (0, 0)
+        if town_hall is not None:
+            approaches = self._approach_tiles(town_hall)
+            stand = approaches[0] if approaches else building_center_tile(town_hall)
         worker = Worker(worker_type, stand_tile=stand)
         self._workers.append(worker)
         return worker
@@ -161,23 +165,71 @@ class WorkerManager:
                 w.state = "idle"
 
     def reassign_all(self) -> None:
-        """Assign one idle worker per free matching building."""
+        """Assign one idle worker per free matching building with path-to-approach."""
         if self._registry is None:
+            return
+        world = getattr(self._registry, "_world", None)
+        if world is None:
             return
         for worker in [w for w in self._workers if w.idle]:
             want = self._WORKER_TO_BUILDING.get(worker.type_tag)
             if want is None:
                 continue
-            target = next(
-                (
-                    b
-                    for b in self._registry.all()
-                    if b.type_tag == want and not self.is_staffed(b)
-                ),
-                None,
-            )
-            if target is not None:
-                self.assign_to_building(worker, target)
+            targets = [b for b in self._registry.all() if b.type_tag == want and not self.is_staffed(b)]
+            assigned = False
+            blocked = {
+                (x, y)
+                for y in range(world.height)
+                for x in range(world.width)
+                if world.is_occupied(x, y)
+            }
+            # Workers may start on an occupied spawn tile (e.g., Town Hall center).
+            blocked.discard(worker.current_tile)
+            for target in targets:
+                best_path: list[tuple[int, int]] | None = None
+                for tile in self._approach_tiles(target):
+                    path = find_path_bfs(world, worker.current_tile, tile, blocked)
+                    if path is None:
+                        continue
+                    if best_path is None or len(path) < len(best_path):
+                        best_path = path
+                if best_path is None:
+                    continue
+                worker.assigned_building = target
+                worker.start_move(best_path, started_ms=0)
+                assigned = True
+                break
+            if not assigned:
+                worker.assigned_building = None
+                worker.idle = True
+                worker.state = "idle"
+                worker.path = []
+                worker.target_tile = None
+                worker.segment_progress = 0.0
+
+    def _approach_tiles(self, building: Building) -> list[tuple[int, int]]:
+        pos = building.grid_pos
+        if pos is None or self._registry is None:
+            return []
+        world = getattr(self._registry, "_world", None)
+        if world is None:
+            return []
+        gx, gy = pos
+        w, h = type(building).footprint
+        x0, x1 = gx - 1, gx + w
+        y0, y1 = gy - 1, gy + h
+        tiles: list[tuple[int, int]] = []
+        for y in range(y0, y1 + 1):
+            for x in range(x0, x1 + 1):
+                inside = gx <= x < gx + w and gy <= y < gy + h
+                if inside:
+                    continue
+                if not world.is_in_grass(x, y):
+                    continue
+                if world.is_occupied(x, y):
+                    continue
+                tiles.append((x, y))
+        return tiles
 
     def update(self, now_ms: int) -> None:
         """Advance worker movement interpolation/state for this frame."""

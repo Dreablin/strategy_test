@@ -148,3 +148,51 @@ def test_reassign_all_assigns_miner_to_empty_iron_mine() -> None:
     wm.add_worker(Worker("MINER"))
     wm.reassign_all()
     assert wm.is_staffed(mine)
+
+
+def test_reassign_all_sets_moving_path_to_reachable_approach_tile() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, (16, 16))
+    camp = registry.place(LumberCamp, (24, 24))
+    wm = WorkerManager(resources, registry)
+    w = Worker("LUMBERJACK", stand_tile=(2, 2))
+    wm.add_worker(w)
+
+    wm.reassign_all()
+
+    assert w.assigned_building is camp
+    assert w.state == "moving"
+    assert len(w.path) >= 2
+    assert w.path[0] == (2, 2)
+    end = w.path[-1]
+    cx, cy = camp.grid_pos  # type: ignore[misc]
+    cw, ch = type(camp).footprint
+    assert not world.is_occupied(*end)
+    assert max(
+        max(cx - end[0], end[0] - (cx + cw - 1), 0),
+        max(cy - end[1], end[1] - (cy + ch - 1), 0),
+    ) == 1
+
+
+def test_reassign_all_keeps_worker_idle_when_no_approach_tile_reachable() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, (16, 16))
+    camp = registry.place(LumberCamp, (24, 24))
+    for y in range(23, 27):
+        for x in range(23, 27):
+            if camp.grid_pos is not None and 24 <= x <= 25 and 24 <= y <= 25:
+                continue
+            world.mark_occupied(x, y, 1, 1)
+    wm = WorkerManager(resources, registry)
+    w = Worker("LUMBERJACK", stand_tile=(2, 2))
+    wm.add_worker(w)
+
+    wm.reassign_all()
+
+    assert w.idle
+    assert w.assigned_building is None
+    assert w.state == "idle"

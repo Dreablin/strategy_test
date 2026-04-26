@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 9. Worker movement & spacing
-- **Next Task:** T58 — Integrate assignment-to-approach-tiles
-- **Last Completed:** T57 — Implement BFS pathfinding module
-- **Total Progress:** 57 / 62
+- **Next Task:** T59 — Update production gating and demolition behavior
+- **Last Completed:** T58 — Integrate assignment-to-approach-tiles
+- **Total Progress:** 58 / 62
 
 ---
 
@@ -190,7 +190,7 @@
    - Deterministic behavior for stable tests.
    Run tests — green.
 
-- [ ] **T58**: Integrate assignment-to-approach-tiles in `WorkerManager.reassign_all()`:
+- [x] **T58**: Integrate assignment-to-approach-tiles in `WorkerManager.reassign_all()`:
    - For each free matching building, compute all free approach tiles (Chebyshev distance 1 from footprint).
    - Choose a reachable approach tile, compute path from worker current tile, set worker `moving`.
    - If no reachable approach tile exists, worker remains waiting/idle.

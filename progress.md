@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 9. Worker movement & spacing
-- **Next Task:** T62 — End-to-end smoke test
-- **Last Completed:** T61 — Wire game loop updates
-- **Total Progress:** 61 / 62
+- **Next Task:** None (all tasks complete)
+- **Last Completed:** T62 — End-to-end smoke test
+- **Total Progress:** 62 / 62
 
 ---
 
@@ -212,7 +212,7 @@
    - Recompute per-cycle preview income only from `working_buildings`.
    - Verify no exceptions under `SDL_VIDEODRIVER=dummy` smoke run.
 
-- [ ] **T62**: End-to-end smoke test in `tests/test_smoke_phase9.py`:
+- [x] **T62**: End-to-end smoke test in `tests/test_smoke_phase9.py`:
    1. Build Lumber Camp at valid location.
    2. Hire Lumberjack.
    3. Advance simulated time: verify worker visibly moves over multiple updates and reaches an approach tile near camp.

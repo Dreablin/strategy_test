@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 9. Worker movement & spacing
-- **Next Task:** T56 — Add failing pathfinding tests
-- **Last Completed:** T55 — Implement worker movement state model
-- **Total Progress:** 55 / 62
+- **Next Task:** T57 — Implement pathfinding module
+- **Last Completed:** T56 — Add failing pathfinding tests
+- **Total Progress:** 56 / 62
 
 ---
 
@@ -177,7 +177,7 @@
    - Add config constant `WORKER_TILE_TRAVEL_MS = 3000` in `src/game/config.py`.
    Run tests — green.
 
-- [ ] **T56**: Write failing pathfinding tests in new `tests/test_pathfinding.py`:
+- [x] **T56**: Write failing pathfinding tests in new `tests/test_pathfinding.py`:
    - 8-directional path exists around obstacles.
    - Occupied building tiles are never included in path.
    - If destination unreachable, returns no path.

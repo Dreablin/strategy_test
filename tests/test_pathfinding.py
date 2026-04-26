@@ -1,0 +1,63 @@
+"""Failing pathfinding tests for Phase 9 (T56)."""
+
+from game.pathfinding import find_path_bfs
+from game.world import World
+
+
+def _blocked_from_world(world: World) -> set[tuple[int, int]]:
+    return {
+        (x, y)
+        for y in range(world.height)
+        for x in range(world.width)
+        if world.is_occupied(x, y)
+    }
+
+
+def test_bfs_finds_8dir_path_around_obstacles() -> None:
+    world = World()
+    start = (2, 2)
+    goal = (6, 2)
+    blocked = {(4, y) for y in range(1, 6)}
+    blocked.remove((4, 3))
+
+    path = find_path_bfs(world, start, goal, blocked)
+
+    assert path is not None
+    assert path[0] == start
+    assert path[-1] == goal
+    assert (4, 3) in path
+    assert all(tile not in blocked for tile in path)
+
+
+def test_path_never_steps_on_occupied_footprint_tiles() -> None:
+    world = World()
+    world.mark_occupied(10, 10, 2, 2)
+    blocked = _blocked_from_world(world)
+    start = (8, 11)
+    goal = (13, 11)
+
+    path = find_path_bfs(world, start, goal, blocked)
+
+    assert path is not None
+    assert path[0] == start
+    assert path[-1] == goal
+    assert all(tile not in blocked for tile in path)
+
+
+def test_returns_none_when_goal_unreachable() -> None:
+    world = World()
+    goal = (5, 5)
+    blocked = {
+        (4, 4),
+        (5, 4),
+        (6, 4),
+        (4, 5),
+        (6, 5),
+        (4, 6),
+        (5, 6),
+        (6, 6),
+    }
+
+    path = find_path_bfs(world, (1, 1), goal, blocked)
+
+    assert path is None

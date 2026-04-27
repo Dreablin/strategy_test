@@ -3,7 +3,7 @@
 ## Current Status
 
 - **Phase:** 13. Performance optimisation & orthogonal pathfinding
-- **Next Task:** T138 — add failing pixel-equivalence test for render culling.
+- **Next Task:** T138 (in progress) — add failing pixel-equivalence test for render culling.
 - **Last Completed:** T137 — implement renderer viewport culling.
 - **Total Progress:** 137 / 148
 
@@ -280,7 +280,7 @@
     use a small margin and just check `current_tile`).
   - Run all rendering tests — green.
 
-- [ ] **T138**: Add failing pixel-equivalence test in
+- [~] **T138**: Add failing pixel-equivalence test in
   `tests/test_render_visual_equivalence.py`:
   - Build a deterministic `World` (fixed seed by way of `GRID_SIZE`).
   - Render a 320×240 surface twice:

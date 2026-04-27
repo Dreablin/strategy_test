@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 13. Performance optimisation & orthogonal pathfinding
-- **Next Task:** T143 — add failing perf-gate smoke test.
-- **Last Completed:** T142 — sort assignment targets by Manhattan distance.
-- **Total Progress:** 142 / 148
+- **Next Task:** T144 — fix perf-gate regressions without relaxing thresholds.
+- **Last Completed:** T143 — add failing perf-gate smoke test.
+- **Total Progress:** 143 / 148
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -333,7 +333,7 @@
 
 #### 13.5 End-to-end perf gate
 
-- [ ] **T143**: Add failing perf-gate test
+- [x] **T143**: Add failing perf-gate test
   `tests/test_perf_smoke_phase13.py`:
   - Use `monkeypatch.setattr(game.config, "GRID_SIZE", 100)` and reload
     `game.world` / `game.pathfinding` in the test (or use a fixture that

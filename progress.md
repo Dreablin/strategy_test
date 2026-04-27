@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T109 — Implement stone model and world stone APIs
-- **Last Completed:** T108 — Add failing tests for stone domain model
-- **Total Progress:** 108 / 111
+- **Next Task:** T110 — Add failing tests for deterministic stone generation
+- **Last Completed:** T109 — Implement stone model and world stone APIs
+- **Total Progress:** 109 / 111
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -279,7 +279,7 @@
     `release_reservations_for(worker)` (already exists; extend it).
   Tests must FAIL first.
 
-- [ ] **T109**: Implement `src/game/stones.py` (or a small section in
+- [x] **T109**: Implement `src/game/stones.py` (or a small section in
   `src/game/world.py`) and wire World methods.
   - Use `__slots__`. Keep generation deterministic given a seed.
   - The reservation system is shared with trees; rename internal storage

@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import deque
 
 from game.config import GRID_SIZE
+from game.stones import Stone
 from game.trees import Tree, stage_from_tile_seed
 
 _TREE_EDGE_BAND = 8
@@ -23,14 +24,16 @@ _NEIGHBORS_8: tuple[tuple[int, int], ...] = (
 class World:
     """Square `GRID_SIZE`×`GRID_SIZE` grass field with occupancy and trees."""
 
-    __slots__ = ("_occupied", "_trees", "_tree_reservations")
+    __slots__ = ("_occupied", "_trees", "_stones", "_tree_reservations", "_stone_reservations")
 
     def __init__(self) -> None:
         self._occupied: list[list[bool]] = [
             [False] * GRID_SIZE for _ in range(GRID_SIZE)
         ]
         self._trees: dict[tuple[int, int], Tree] = {}
+        self._stones: dict[tuple[int, int], Stone] = {}
         self._tree_reservations: dict[tuple[int, int], object] = {}
+        self._stone_reservations: dict[tuple[int, int], object] = {}
         self._init_trees()
 
     @property
@@ -91,6 +94,46 @@ class World:
         to_release = [tile for tile, owner in self._tree_reservations.items() if owner is worker]
         for tile in to_release:
             self._tree_reservations.pop(tile, None)
+        to_release_stone = [tile for tile, owner in self._stone_reservations.items() if owner is worker]
+        for tile in to_release_stone:
+            self._stone_reservations.pop(tile, None)
+
+    def stone_at(self, gx: int, gy: int) -> Stone | None:
+        if not self.is_in_grass(gx, gy):
+            return None
+        return self._stones.get((gx, gy))
+
+    def is_stone_blocking(self, gx: int, gy: int) -> bool:
+        return self.stone_at(gx, gy) is not None
+
+    def iter_stones(self) -> list[tuple[tuple[int, int], Stone]]:
+        return list(self._stones.items())
+
+    def harvest_stone(self, gx: int, gy: int) -> Stone | None:
+        stone = self._stones.get((gx, gy))
+        if stone is None:
+            return None
+        stone.harvest()
+        if stone.is_depleted:
+            self._stones.pop((gx, gy), None)
+            self._stone_reservations.pop((gx, gy), None)
+        return stone
+
+    def reserve_stone(self, gx: int, gy: int, worker: object) -> bool:
+        tile = (gx, gy)
+        if self.stone_at(gx, gy) is None:
+            return False
+        existing = self._stone_reservations.get(tile)
+        if existing is None:
+            self._stone_reservations[tile] = worker
+            return True
+        return existing is worker
+
+    def release_stone(self, gx: int, gy: int) -> None:
+        self._stone_reservations.pop((gx, gy), None)
+
+    def is_stone_reserved(self, gx: int, gy: int) -> bool:
+        return (gx, gy) in self._stone_reservations
 
     def mark_occupied(self, gx: int, gy: int, w: int, h: int) -> None:
         for ty in range(gy, gy + h):

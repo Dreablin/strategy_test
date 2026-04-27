@@ -48,6 +48,15 @@ def test_lumber_camp_panel_shows_delivered_counter_line() -> None:
     assert LumberCampPanel.delivered_line(camp) == "Wood delivered: 7"
 
 
+def test_lumber_camp_panel_storage_line_reflects_stored_and_capacity() -> None:
+    camp = LumberCamp(level=1, grid_pos=(10, 10))
+    camp.add_to_storage(2)
+    assert LumberCampPanel.storage_line(camp) == "Storage: 2 / 3"
+
+    camp.level = 3
+    assert LumberCampPanel.storage_line(camp) == "Storage: 2 / 7"
+
+
 def test_non_lumber_buildings_do_not_expose_toggle_or_counter() -> None:
     others = [
         Farm(level=1, grid_pos=(2, 2)),

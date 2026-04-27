@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T106 — Add failing tests for storage UI lines
-- **Last Completed:** T105 — Implement production storage gating
-- **Total Progress:** 105 / 111
+- **Next Task:** T107 — Implement storage line rendering in panels
+- **Last Completed:** T106 — Add failing tests for storage UI lines
+- **Total Progress:** 106 / 111
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -247,7 +247,7 @@
     `resources.add(...)`.
   - Run all tests — green.
 
-- [ ] **T106**: Add failing UI tests for storage display in
+- [x] **T106**: Add failing UI tests for storage display in
   `tests/test_lumber_camp_panel.py` and a new
   `tests/test_building_panel_storage.py`:
   - The panel renders a `Storage: <stored> / <capacity>` line for each of

@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 13. Performance optimisation & orthogonal pathfinding
-- **Next Task:** T139 (in progress) — add failing test for O(1) render pixel bounds.
-- **Last Completed:** T138 — add failing pixel-equivalence test for render culling.
-- **Total Progress:** 138 / 148
+- **Next Task:** T140 — replace render bounds/origin with closed-form corner-based versions.
+- **Last Completed:** T139 — add failing test for O(1) render pixel bounds.
+- **Total Progress:** 139 / 148
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -294,7 +294,7 @@
     (4-direction movement).
   Tests must FAIL first if culling drops or shifts a pixel.
 
-- [~] **T139**: Add failing test in `tests/test_render_pixel_bounds_o1.py`:
+- [x] **T139**: Add failing test in `tests/test_render_pixel_bounds_o1.py`:
   - Monkeypatch `game.iso.world_to_screen` to wrap a counter.
   - Call `Renderer.world_pixel_bounds(world)` — counter must be `<= 4`.
   - Call `Renderer.map_origin(surface, world)` — counter must be `<= 4`.

@@ -18,8 +18,8 @@ from game.workers import WorkerManager, building_center_tile
 VISIBLE_TILE_MARGIN = 2
 
 
-def _compute_grass_origin(surface: pygame.Surface, world: World) -> tuple[int, int]:
-    """Shift so the playable grass patch is roughly centered on the surface."""
+def _world_screen_extents(world: World) -> tuple[int, int, int, int]:
+    """Pixel-space min/max extents from the four world corners."""
     corners = (
         (0, 0),
         (world.width - 1, 0),
@@ -34,6 +34,12 @@ def _compute_grass_origin(surface: pygame.Surface, world: World) -> tuple[int, i
         min_y = min(min_y, sy)
         max_x = max(max_x, sx + TILE_W)
         max_y = max(max_y, sy + TILE_H)
+    return (min_x, min_y, max_x, max_y)
+
+
+def _compute_grass_origin(surface: pygame.Surface, world: World) -> tuple[int, int]:
+    """Shift so the playable grass patch is roughly centered on the surface."""
+    min_x, min_y, max_x, max_y = _world_screen_extents(world)
     cx = (min_x + max_x) // 2
     cy = (min_y + max_y) // 2
     return surface.get_width() // 2 - cx, surface.get_height() // 2 - cy
@@ -50,16 +56,7 @@ class Renderer:
     @staticmethod
     def world_pixel_bounds(world: World) -> tuple[int, int, int, int]:
         """World bounds in pre-centered pixel space for playable grass field."""
-        min_x = min_y = 10**9
-        max_x = max_y = -10**9
-        for gx in range(world.width):
-            for gy in range(world.height):
-                sx, sy = world_to_screen(gx, gy)
-                min_x = min(min_x, sx)
-                min_y = min(min_y, sy)
-                max_x = max(max_x, sx + TILE_W)
-                max_y = max(max_y, sy + TILE_H)
-        return (min_x, min_y, max_x, max_y)
+        return _world_screen_extents(world)
 
     @staticmethod
     def draw_world(surface: pygame.Surface, world: World, camera=None) -> None:

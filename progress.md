@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 10. Tree entities, blocking, layering
-- **Next Task:** T64 — Implement tree domain module
-- **Last Completed:** T63 — Add failing tree model tests
-- **Total Progress:** 63 / 74
+- **Next Task:** T65 — Add failing world integration tests
+- **Last Completed:** T64 — Implement tree domain module
+- **Total Progress:** 64 / 74
 
 ---
 
@@ -231,7 +231,7 @@
   - A `remove()` / `cut_down()` transition sets tree as absent/dead and returns the tile to plain grass semantics.
   Tests must FAIL first.
 
-- [ ] **T64**: Implement tree domain module `src/game/trees.py`:
+- [x] **T64**: Implement tree domain module `src/game/trees.py`:
   - Add `TreeStage` enum and `Tree` model (minimal API used by tests).
   - Add helper for deterministic stage selection from tile seed (for initial map generation).
   - Add explicit removed/dead state for post-chop behavior.

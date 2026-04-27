@@ -1,4 +1,4 @@
-"""Town Hall — fixed level 1, no production income."""
+"""Town Hall — upgradable (levels 1..10), no production income."""
 
 from typing import ClassVar
 
@@ -11,4 +11,4 @@ class TownHall(Building):
 
     @classmethod
     def max_level(cls) -> int:
-        return 1
+        return 10

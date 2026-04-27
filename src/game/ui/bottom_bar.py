@@ -64,7 +64,7 @@ class BottomBar:
             surface.blit(name_s, (tx, ty_name))
 
             cost_y = ty_name + name_s.get_height() + 4
-            cost_s = small_font.render("100", True, fg)
+            cost_s = small_font.render(str(BUILD_COST_WOOD), True, fg)
             wood_ic = pygame.transform.smoothscale(resource_icon("wood"), (20, 20))
             surface.blit(cost_s, (tx, cost_y))
             surface.blit(wood_ic, (tx + cost_s.get_width() + 4, cost_y - 1))

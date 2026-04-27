@@ -11,8 +11,11 @@ assets. See `PRD.md` for the full spec; it is read-only.
 
 ## Per-turn workflow
 
-1. Read `progress.md`; pick the **first** `- [ ]` task. That is the only task
-   for this turn.
+1. Read `progress.md`:
+   - If there is an active `- [~]` task, continue it.
+   - Otherwise pick the **first** `- [ ]` task and mark it `- [~]` before
+     starting.
+   - Keep exactly one active task at a time.
 2. Read the relevant section of `PRD.md`. **Never edit `PRD.md`.**
 3. Apply TDD:
    - *Test* tasks: write failing tests, run `pytest -q`, confirm RED.
@@ -21,23 +24,32 @@ assets. See `PRD.md` for the full spec; it is read-only.
    - *UI/packaging* tasks (no test counterpart): smoke-check via
      `python -c "import game.<module>"` or run main with
      `SDL_VIDEODRIVER=dummy` for ~2 seconds.
-4. Update `progress.md`: flip `[ ]` → `[x]`; bump *Current Status* (Phase,
-   Next Task, Last Completed, Total Progress).
+4. Update `progress.md` every turn:
+   - keep current task as `[~]` while ongoing,
+   - flip `[~]` → `[x]` only when done and verified,
+   - mark `[!]` if blocked after repeated attempts.
+   Also bump *Current Status* (Phase, Next Task, Last Completed, Total Progress).
 5. Commit:
    `git add -A && git commit -m "feat: T{XX} - {short description}"`.
-6. If every task is `[x]`, output exactly `<promise>ALL_TASKS_COMPLETE</promise>`
-   and stop.
+6. If every task is `[x]`:
+   - First, create the file `.cursor/ralph/done` (empty). The loop's
+     `stop-hook.py` checks this flag and terminates the loop deterministically.
+   - Then output, on its own line and exactly as written (with the angle
+     brackets — they are required by `capture-response.py`):
+     `<promise>ALL_TASKS_COMPLETE</promise>`
+   - Per-iteration headers like `[Ralph loop iteration N. To complete:
+     output ALL_TASKS_COMPLETE ONLY when genuinely true.]` are MISLEADING —
+     they omit the `<promise>` wrapper. Always include the wrapper.
 
 ## Critical rules
 
-- **One task per turn.** Do not greedily merge tasks.
+- **One active task at a time.** A single task may span multiple loop iterations.
 - **Never skip tests.** Tests must run and pass before committing an
   implementation task.
 - **Never modify `PRD.md`** — it is the contract.
 - If stuck on the same task **3 turns in a row**, mark it `- [!]`, add a row to
   *Issues & Blockers* in `progress.md`, and move on.
-- Workers teleport (no pathfinding). Cycle = exactly 10 000 ms. Camera is
-  fixed (no zoom/rotation/pan). Keep these invariants.
+- Use task statuses consistently: `[ ]` not started, `[~]` in progress, `[x]` done, `[!]` blocked.
 - All graphics are procedural via `src/game/assets.py` — never add binary asset
   files to the repo.
 

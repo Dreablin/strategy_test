@@ -92,8 +92,8 @@ def test_painters_order() -> None:
     # Building blits should follow painter's order by grid depth.
     dests = [args[1] for args, _kwargs in spy.calls if len(args) >= 2]
     assert len(dests) >= 3
-    # (8,8) should be drawn before (20,20), so an earlier y destination.
-    assert dests[1][1] < dests[2][1]
+    # Order is (8,8) first, then town hall, then (20,20). We compare the two camps.
+    assert dests[0][1] < dests[2][1]
 
 
 def test_draw_building_shifted_by_camera_offset() -> None:

@@ -57,10 +57,10 @@ def test_resource_building_max_level_10() -> None:
         LumberCamp(level=11)
 
 
-def test_town_hall_level_locked_to_one() -> None:
-    TownHall(level=1)
+def test_town_hall_max_level_10() -> None:
+    TownHall(level=10)
     with pytest.raises(ValueError):
-        TownHall(level=2)
+        TownHall(level=11)
 
 
 def test_upgrade_lumber_camp_spends_cost_and_increments_level() -> None:
@@ -72,7 +72,7 @@ def test_upgrade_lumber_camp_spends_cost_and_increments_level() -> None:
     wood_before = resources.get("wood")
     assert registry.upgrade_building(b, resources)
     assert b.level == 2
-    assert resources.get("wood") == wood_before - 200
+    assert resources.get("wood") == wood_before - 5
 
 
 def test_upgrade_rejected_when_insufficient_resources() -> None:
@@ -86,13 +86,14 @@ def test_upgrade_rejected_when_insufficient_resources() -> None:
     assert b.level == 1
 
 
-def test_upgrade_rejected_for_town_hall() -> None:
+def test_upgrade_allowed_for_town_hall_below_cap() -> None:
     world = World()
     registry = BuildingRegistry(world)
     resources = ResourceManager()
+    resources.add("wood", 50)
     th = registry.place(TownHall, (16, 16))
-    assert not registry.upgrade_building(th, resources)
-    assert th.level == 1
+    assert registry.upgrade_building(th, resources)
+    assert th.level == 2
 
 
 def test_upgrade_updates_per_cycle_when_building_is_staffed() -> None:

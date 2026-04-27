@@ -3,7 +3,20 @@
 A lightweight isometric economy strategy game built with Python + Pygame.
 Start immediately, place buildings, hire workers, and grow resource income.
 
-## Run from source
+## Run without polluting your system
+
+Two helper scripts keep everything self-contained inside `.\.venv\`:
+
+- `run.bat`  — creates a local virtual environment on first run, installs the
+  required packages into it (with the pip cache redirected to `.venv\pip-cache`),
+  then launches the game. Subsequent runs reuse the venv and start instantly.
+- `clean.bat` — removes `.venv\` (and `.pytest_cache\` / `.ruff_cache\` if
+  present). Nothing the scripts downloaded remains on your machine.
+
+You only need a system Python 3.10+ on `PATH` (or the `py` launcher). No global
+`pip install` is performed.
+
+## Run from source manually
 
 Install dependencies and run:
 

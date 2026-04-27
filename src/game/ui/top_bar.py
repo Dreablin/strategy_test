@@ -2,6 +2,7 @@
 
 import pygame
 
+from game import dev_asset_reload
 from game.assets import resource_icon
 from game.resources import ResourceManager
 
@@ -36,3 +37,6 @@ class TopBar:
             text_surf = font.render(label, True, (228, 230, 238))
             text_y = (_BAR_HEIGHT - text_surf.get_height()) // 2
             surface.blit(text_surf, (text_x, text_y))
+
+        # Temporary dev-only control: force asset cache reload.
+        dev_asset_reload.draw_button(surface)

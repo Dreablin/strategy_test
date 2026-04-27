@@ -1,11 +1,20 @@
-"""Smoke tests for procedural asset surfaces."""
+"""Smoke tests and loader behavior checks for asset surfaces."""
 
+from pathlib import Path
+
+import pygame
+
+import game.assets as assets_mod
 from game.assets import (
     building_sprite,
+    building_sprite_anchor,
+    clear_asset_caches,
     grass_tile,
+    hire_ui_icon,
     resource_icon,
     tree_tile,
     worker_dot,
+    worker_ui_icon,
 )
 
 
@@ -37,7 +46,11 @@ def test_tree_tile_smoke() -> None:
 def test_building_sprite_smoke() -> None:
     for b_type in ("town_hall", "lumber_camp", "stone_mine", "iron_mine", "farm"):
         for level in (1, 5, 10):
-            _assert_nonempty_surface(building_sprite(b_type, level))
+            spr = building_sprite(b_type, level)
+            _assert_nonempty_surface(spr)
+            ax, ay = building_sprite_anchor(b_type, level)
+            assert 0 <= ax <= spr.get_width()
+            assert 0 <= ay <= spr.get_height()
 
 
 def test_worker_dot_smoke() -> None:
@@ -48,3 +61,65 @@ def test_worker_dot_smoke() -> None:
 def test_resource_icon_smoke() -> None:
     for name in ("food", "wood", "stone", "iron"):
         _assert_nonempty_surface(resource_icon(name))
+
+
+def test_worker_and_hire_ui_icon_smoke() -> None:
+    for w_type in ("LUMBERJACK", "STONECUTTER", "MINER", "FARMER"):
+        _assert_nonempty_surface(worker_ui_icon(w_type, 24))
+        _assert_nonempty_surface(hire_ui_icon(w_type, 20))
+
+
+def _write_png(path: Path, size: tuple[int, int], color: tuple[int, int, int]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    surf = pygame.Surface(size, pygame.SRCALPHA)
+    surf.fill((*color, 255))
+    pygame.image.save(surf, str(path))
+
+
+def test_building_sprite_prefers_level_file_over_default(tmp_path, monkeypatch) -> None:
+    root = tmp_path / "buildings"
+    farm_dir = root / "farm"
+    _write_png(farm_dir / "default.png", (20, 20), (200, 10, 10))
+    _write_png(farm_dir / "level_01.png", (30, 30), (10, 200, 10))
+    (farm_dir / "asset_meta.json").write_text("{}", encoding="utf-8")
+
+    monkeypatch.setattr(assets_mod, "_BUILDINGS_ROOT", root)
+    clear_asset_caches()
+    spr = building_sprite("FARM", 1)
+    assert spr.get_size() == (30, 30)
+    clear_asset_caches()
+
+
+def test_building_sprite_applies_scale_and_anchor_norm(tmp_path, monkeypatch) -> None:
+    root = tmp_path / "buildings"
+    farm_dir = root / "farm"
+    _write_png(farm_dir / "default.png", (100, 80), (120, 90, 60))
+    (farm_dir / "asset_meta.json").write_text(
+        '{"default":{"scale":0.5,"anchor_norm":[0.25,0.75]},"levels":{}}',
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(assets_mod, "_BUILDINGS_ROOT", root)
+    clear_asset_caches()
+    spr = building_sprite("FARM", 1)
+    ax, ay = building_sprite_anchor("FARM", 1)
+    assert spr.get_size() == (50, 40)
+    assert (ax, ay) == (12, 30)
+    clear_asset_caches()
+
+
+def test_building_meta_bom_is_accepted(tmp_path, monkeypatch) -> None:
+    root = tmp_path / "buildings"
+    farm_dir = root / "farm"
+    _write_png(farm_dir / "default.png", (64, 64), (100, 100, 100))
+    # Write with BOM (utf-8-sig) to mirror typical Windows editor behavior.
+    (farm_dir / "asset_meta.json").write_text(
+        '{"default":{"scale":0.25,"anchor_norm":[0.5,1.0]},"levels":{}}',
+        encoding="utf-8-sig",
+    )
+
+    monkeypatch.setattr(assets_mod, "_BUILDINGS_ROOT", root)
+    clear_asset_caches()
+    spr = building_sprite("FARM", 1)
+    assert spr.get_size() == (16, 16)
+    clear_asset_caches()

@@ -1,18 +1,47 @@
-"""Procedural pygame surfaces for tiles, buildings, workers, and HUD icons."""
+"""Asset loading with disk-first lookup and procedural fallbacks."""
 
 import functools
+import json
+from pathlib import Path
 
 import pygame
 
 from game.config import TILE_H, TILE_W
+
+_PROJECT_ROOT = Path(__file__).resolve().parents[2]
+_ASSETS_ROOT = _PROJECT_ROOT / "assets"
+_BUILDINGS_ROOT = _ASSETS_ROOT / "buildings"
+_NPC_ROOT = _ASSETS_ROOT / "npc"
+_ICONS_ROOT = _ASSETS_ROOT / "icons"
+
+_BUILDING_FOLDER: dict[str, str] = {
+    "TOWN_HALL": "town_hall",
+    "LUMBER_CAMP": "lumber_camp",
+    "STONE_MINE": "stone_mine",
+    "IRON_MINE": "iron_mine",
+    "FARM": "farm",
+}
+
+_WORKER_FOLDER: dict[str, str] = {
+    "LUMBERJACK": "lumberjack",
+    "STONECUTTER": "stonecutter",
+    "MINER": "miner",
+    "FARMER": "farmer",
+}
 
 
 def _diamond_points(w: int, h: int) -> list[tuple[int, int]]:
     return [(w // 2, 0), (w - 1, h // 2), (w // 2, h - 1), (0, h // 2)]
 
 
+def _building_folder_name(b_type: str) -> str:
+    t = b_type.upper().replace(" ", "_")
+    return _BUILDING_FOLDER.get(t, t.lower())
+
+
 @functools.lru_cache(maxsize=1)
 def grass_tile() -> pygame.Surface:
+    """Grass tile is still procedural for now."""
     surf = pygame.Surface((TILE_W, TILE_H), pygame.SRCALPHA)
     pts = _diamond_points(TILE_W, TILE_H)
     pygame.draw.polygon(surf, (72, 152, 84), pts)
@@ -22,6 +51,7 @@ def grass_tile() -> pygame.Surface:
 
 @functools.lru_cache(maxsize=1)
 def tree_tile() -> pygame.Surface:
+    """Tree skirt tile is still procedural for now."""
     surf = pygame.Surface((TILE_W, TILE_H), pygame.SRCALPHA)
     pts = _diamond_points(TILE_W, TILE_H)
     pygame.draw.polygon(surf, (34, 58, 34), pts)
@@ -43,8 +73,35 @@ def _building_palette(b_type: str) -> tuple[tuple[int, int, int], tuple[int, int
     return palettes.get(t, ((120, 120, 130), (60, 60, 70)))
 
 
-@functools.lru_cache(maxsize=128)
-def building_sprite(b_type: str, level: int) -> pygame.Surface:
+@functools.lru_cache(maxsize=512)
+def _load_png_by_mtime(path_s: str, mtime_ns: int) -> pygame.Surface | None:
+    _ = mtime_ns
+    path = Path(path_s)
+    if not path.exists():
+        return None
+    try:
+        img = pygame.image.load(str(path))
+    except pygame.error:
+        return None
+    # convert_alpha is ideal but needs display mode; keep robust for tests/tools.
+    try:
+        return img.convert_alpha()
+    except pygame.error:
+        return img
+
+
+def _load_png(path_s: str) -> pygame.Surface | None:
+    path = Path(path_s)
+    if not path.exists():
+        return None
+    try:
+        mtime_ns = path.stat().st_mtime_ns
+    except OSError:
+        return None
+    return _load_png_by_mtime(path_s, mtime_ns)
+
+
+def _procedural_building_sprite(b_type: str, level: int) -> pygame.Surface:
     w, h = TILE_W + 8, TILE_H + 16
     surf = pygame.Surface((w, h), pygame.SRCALPHA)
     fill, outline = _building_palette(b_type)
@@ -64,6 +121,117 @@ def building_sprite(b_type: str, level: int) -> pygame.Surface:
     return surf
 
 
+@functools.lru_cache(maxsize=256)
+def _load_building_meta_by_mtime(path_s: str, mtime_ns: int) -> dict:
+    _ = mtime_ns
+    path = Path(path_s)
+    if not path.exists():
+        return {}
+    try:
+        # utf-8-sig tolerates BOM that Windows tools may write.
+        parsed = json.loads(path.read_text(encoding="utf-8-sig"))
+    except (json.JSONDecodeError, OSError):
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def _load_building_meta(folder: str) -> dict:
+    path = _BUILDINGS_ROOT / folder / "asset_meta.json"
+    if not path.exists():
+        return {}
+    try:
+        mtime_ns = path.stat().st_mtime_ns
+    except OSError:
+        return {}
+    return _load_building_meta_by_mtime(str(path), mtime_ns)
+
+
+def _building_level_candidates(folder: str, lvl: int) -> tuple[Path, ...]:
+    return (
+        _BUILDINGS_ROOT / folder / f"level_{lvl:02d}.png",
+        _BUILDINGS_ROOT / folder / f"level_{lvl}.png",
+        _BUILDINGS_ROOT / folder / "default.png",
+    )
+
+
+def _meta_for_level(meta: dict, lvl: int) -> dict:
+    out: dict = {}
+    default = meta.get("default")
+    if isinstance(default, dict):
+        out.update(default)
+    levels = meta.get("levels")
+    if isinstance(levels, dict):
+        lv = levels.get(str(lvl))
+        if lv is None:
+            lv = levels.get(f"{lvl:02d}")
+        if isinstance(lv, dict):
+            out.update(lv)
+    return out
+
+
+def _building_render_spec(b_type: str, level: int) -> tuple[pygame.Surface, tuple[int, int]]:
+    """Return (surface, anchor_px) where anchor sits on footprint bottom-center."""
+    folder = _building_folder_name(b_type)
+    lvl = max(1, min(level, 10))
+    src: pygame.Surface | None = None
+    for candidate in _building_level_candidates(folder, lvl):
+        src = _load_png(str(candidate))
+        if src is not None:
+            break
+    if src is None:
+        src = _procedural_building_sprite(b_type, lvl)
+    meta = _meta_for_level(_load_building_meta(folder), lvl)
+    scale_raw = meta.get("scale", 1.0)
+    try:
+        scale = float(scale_raw)
+    except (TypeError, ValueError):
+        scale = 1.0
+    if scale <= 0:
+        scale = 1.0
+
+    if scale != 1.0:
+        sw = max(1, int(round(src.get_width() * scale)))
+        sh = max(1, int(round(src.get_height() * scale)))
+        src = pygame.transform.smoothscale(src, (sw, sh))
+
+    ax = src.get_width() // 2
+    ay = src.get_height()
+
+    anchor_norm = meta.get("anchor_norm")
+    if isinstance(anchor_norm, (list, tuple)) and len(anchor_norm) == 2:
+        try:
+            nx = float(anchor_norm[0])
+            ny = float(anchor_norm[1])
+            ax = int(round(nx * src.get_width()))
+            ay = int(round(ny * src.get_height()))
+        except (TypeError, ValueError):
+            pass
+    else:
+        anchor_px = meta.get("anchor_px")
+        if isinstance(anchor_px, (list, tuple)) and len(anchor_px) == 2:
+            try:
+                px = float(anchor_px[0])
+                py = float(anchor_px[1])
+                ax = int(round(px * scale))
+                ay = int(round(py * scale))
+            except (TypeError, ValueError):
+                pass
+
+    ax = max(0, min(src.get_width(), ax))
+    ay = max(0, min(src.get_height(), ay))
+    return src, (ax, ay)
+
+
+def building_sprite(b_type: str, level: int) -> pygame.Surface:
+    """Load building sprite from assets folder, fallback to procedural."""
+    return _building_render_spec(b_type, level)[0]
+
+
+def building_sprite_anchor(b_type: str, level: int) -> tuple[int, int]:
+    """Return anchor pixel in building sprite (x,y)."""
+    return _building_render_spec(b_type, level)[1]
+
+
 def _worker_color(w_type: str) -> tuple[int, int, int]:
     t = w_type.upper().replace(" ", "_")
     colors: dict[str, tuple[int, int, int]] = {
@@ -75,13 +243,58 @@ def _worker_color(w_type: str) -> tuple[int, int, int]:
     return colors.get(t, (200, 200, 220))
 
 
-@functools.lru_cache(maxsize=32)
-def worker_dot(w_type: str) -> pygame.Surface:
+def _procedural_worker_dot(w_type: str) -> pygame.Surface:
     size = 14
     surf = pygame.Surface((size, size), pygame.SRCALPHA)
     pygame.draw.circle(surf, _worker_color(w_type), (size // 2, size // 2), size // 2 - 1)
     pygame.draw.circle(surf, (20, 20, 30), (size // 2, size // 2), size // 2 - 1, 1)
     return surf
+
+
+@functools.lru_cache(maxsize=32)
+def worker_dot(w_type: str) -> pygame.Surface:
+    """Load worker icon from assets folder, fallback to procedural."""
+    t = w_type.upper().replace(" ", "_")
+    folder = _WORKER_FOLDER.get(t, t.lower())
+    loaded = _load_png(str(_NPC_ROOT / folder / "default.png"))
+    if loaded is not None:
+        return loaded
+    return _procedural_worker_dot(w_type)
+
+
+def _hire_icon_fallback(w_type: str) -> pygame.Surface:
+    size = 20
+    surf = pygame.Surface((size, size), pygame.SRCALPHA)
+    bg = pygame.Rect(1, 1, size - 2, size - 2)
+    pygame.draw.rect(surf, (70, 86, 110), bg, border_radius=4)
+    pygame.draw.rect(surf, (24, 30, 42), bg, width=1, border_radius=4)
+    # Plus mark
+    cx, cy = size // 2, size // 2
+    pygame.draw.line(surf, (220, 232, 248), (cx - 4, cy), (cx + 4, cy), 2)
+    pygame.draw.line(surf, (220, 232, 248), (cx, cy - 4), (cx, cy + 4), 2)
+    return surf
+
+
+@functools.lru_cache(maxsize=64)
+def _load_fixed_icon(kind: str, worker_type: str, size: int) -> pygame.Surface:
+    t = worker_type.upper().replace(" ", "_")
+    folder = _WORKER_FOLDER.get(t, t.lower())
+    if kind == "worker":
+        path = _ICONS_ROOT / "workers" / f"{folder}.png"
+        base = _load_png(str(path)) or _procedural_worker_dot(worker_type)
+    else:
+        path = _ICONS_ROOT / "hire" / f"{folder}.png"
+        base = _load_png(str(path)) or _hire_icon_fallback(worker_type)
+    sz = max(1, int(size))
+    return pygame.transform.smoothscale(base, (sz, sz))
+
+
+def worker_ui_icon(worker_type: str, size: int = 24) -> pygame.Surface:
+    return _load_fixed_icon("worker", worker_type, size)
+
+
+def hire_ui_icon(worker_type: str, size: int = 20) -> pygame.Surface:
+    return _load_fixed_icon("hire", worker_type, size)
 
 
 def _resource_colors(name: str) -> tuple[int, int, int]:
@@ -102,3 +315,14 @@ def resource_icon(name: str) -> pygame.Surface:
     pygame.draw.circle(surf, c, (size // 2, size // 2), size // 2 - 2)
     pygame.draw.circle(surf, (30, 30, 40), (size // 2, size // 2), size // 2 - 2, 2)
     return surf
+
+
+def clear_asset_caches() -> None:
+    """Clear all in-memory asset caches (used by dev reload button)."""
+    grass_tile.cache_clear()
+    tree_tile.cache_clear()
+    _load_png_by_mtime.cache_clear()
+    _load_building_meta_by_mtime.cache_clear()
+    _load_fixed_icon.cache_clear()
+    worker_dot.cache_clear()
+    resource_icon.cache_clear()

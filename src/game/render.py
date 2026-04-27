@@ -2,7 +2,7 @@
 
 import pygame
 
-from game.assets import building_sprite, grass_tile, tree_tile
+from game.assets import building_sprite, building_sprite_anchor, grass_tile, tree_tile
 from game.buildings.registry import BuildingRegistry
 from game.config import TILE_H, TILE_W
 from game.iso import world_to_screen
@@ -120,8 +120,9 @@ class Renderer:
             foot_cx = (min_x + max_x) // 2
             foot_by = max_y
             spr = building_sprite(b.type_tag, b.level)
-            dx = ox + cam_x + foot_cx - spr.get_width() // 2
-            dy = oy + cam_y + foot_by - spr.get_height()
+            anchor_x, anchor_y = building_sprite_anchor(b.type_tag, b.level)
+            dx = ox + cam_x + foot_cx - anchor_x
+            dy = oy + cam_y + foot_by - anchor_y
             surface.blit(spr, (dx, dy))
 
     @staticmethod
@@ -129,17 +130,10 @@ class Renderer:
         registry: BuildingRegistry, worker_manager: WorkerManager
     ) -> list[tuple[str, tuple[int, int]]]:
         """Grid positions for worker dots: assigned center, idle stack near Town Hall, orphan tile."""
-        town_hall = next((b for b in registry.all() if b.type_tag == "TOWN_HALL"), None)
-        th_center = building_center_tile(town_hall) if town_hall is not None else (0, 0)
         out: list[tuple[str, tuple[int, int]]] = []
-        idle_i = 0
         for worker in worker_manager.workers():
             if worker.assigned_building is not None:
                 out.append((worker.type_tag, building_center_tile(worker.assigned_building)))
-                continue
-            if town_hall is not None and worker.stand_tile in ((0, 0), th_center):
-                out.append((worker.type_tag, (th_center[0] + 1 + idle_i, th_center[1])))
-                idle_i += 1
                 continue
             out.append((worker.type_tag, worker.stand_tile))
         return out
@@ -157,9 +151,6 @@ class Renderer:
 
         ox, oy = Renderer.map_origin(surface, world)
         cam_x, cam_y = (0, 0) if camera is None else camera.offset
-        town_hall = next((b for b in registry.all() if b.type_tag == "TOWN_HALL"), None)
-        th_center = building_center_tile(town_hall) if town_hall is not None else (0, 0)
-        idle_i = 0
         entries: list[tuple[str, float, float]] = []
         for worker in worker_manager.workers():
             if worker.state == "moving" and worker.target_tile is not None:
@@ -169,12 +160,11 @@ class Renderer:
                 entries.append((worker.type_tag, cx + (tx - cx) * t, cy + (ty - cy) * t))
                 continue
             if worker.assigned_building is not None:
-                wx, wy = worker.current_tile
+                if worker.state == "working":
+                    wx, wy = building_center_tile(worker.assigned_building)
+                else:
+                    wx, wy = worker.current_tile
                 entries.append((worker.type_tag, float(wx), float(wy)))
-                continue
-            if town_hall is not None and worker.stand_tile in ((0, 0), th_center):
-                entries.append((worker.type_tag, float(th_center[0] + 1 + idle_i), float(th_center[1])))
-                idle_i += 1
                 continue
             sxg, syg = worker.stand_tile
             entries.append((worker.type_tag, float(sxg), float(syg)))

@@ -1,4 +1,4 @@
-"""Worker render placement rules: assigned center, idle stack, orphan tile, movement."""
+"""Worker render placement rules: assigned center, idle tile, orphan tile, movement."""
 
 import pygame
 
@@ -26,7 +26,7 @@ def test_worker_grid_positions_assigned_worker_on_building_center() -> None:
     assert pos == [("LUMBERJACK", building_center_tile(camp))]
 
 
-def test_worker_grid_positions_idle_workers_stack_next_to_town_hall() -> None:
+def test_worker_grid_positions_idle_workers_stay_on_their_stand_tiles() -> None:
     world = World()
     registry = BuildingRegistry(world)
     resources = ResourceManager()
@@ -34,11 +34,10 @@ def test_worker_grid_positions_idle_workers_stack_next_to_town_hall() -> None:
     wm = WorkerManager(resources, registry)
     wm.add_worker(Worker("LUMBERJACK", stand_tile=building_center_tile(town_hall)))
     wm.add_worker(Worker("FARMER", stand_tile=(0, 0)))
-    thx, thy = building_center_tile(town_hall)
     pos = Renderer.worker_grid_positions(registry, wm)
     assert pos == [
-        ("LUMBERJACK", (thx + 1, thy)),
-        ("FARMER", (thx + 2, thy)),
+        ("LUMBERJACK", building_center_tile(town_hall)),
+        ("FARMER", (0, 0)),
     ]
 
 

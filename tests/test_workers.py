@@ -8,7 +8,7 @@ from game.buildings.town_hall import TownHall
 from game.config import WORKER_HIRE_COST
 from game.resources import ResourceManager
 from game.world import World
-from game.workers import Worker, WorkerManager, building_center_tile
+from game.workers import Worker, WorkerManager, building_center_tile, town_hall_spawn_tile
 
 
 def test_building_center_tile_for_2x2() -> None:
@@ -52,12 +52,13 @@ def test_hire_deducts_50_food_and_returns_worker() -> None:
     world = World()
     registry = BuildingRegistry(world)
     resources = ResourceManager()
-    registry.place(TownHall, (16, 16))
+    town_hall = registry.place(TownHall, (16, 16))
     wm = WorkerManager(resources, registry)
     food_before = resources.get("food")
     w = wm.hire("LUMBERJACK")
     assert w is not None
     assert w.type_tag == "LUMBERJACK"
+    assert w.current_tile == town_hall_spawn_tile(town_hall)
     assert resources.get("food") == food_before - WORKER_HIRE_COST["food"]
 
 
@@ -126,7 +127,8 @@ def test_reassign_all_assigns_farmer_to_empty_farm() -> None:
     world = World()
     registry = BuildingRegistry(world)
     resources = ResourceManager()
-    registry.place(TownHall, (16, 16))
+    town_hall = registry.place(TownHall, (16, 16))
+    town_hall.level = 5
     registry.place(LumberCamp, (4, 4))
     farm = registry.place(Farm, (24, 24))
     mine = registry.place(IronMine, (10, 20))
@@ -141,7 +143,8 @@ def test_reassign_all_assigns_miner_to_empty_iron_mine() -> None:
     world = World()
     registry = BuildingRegistry(world)
     resources = ResourceManager()
-    registry.place(TownHall, (16, 16))
+    town_hall = registry.place(TownHall, (16, 16))
+    town_hall.level = 5
     registry.place(Farm, (4, 4))
     mine = registry.place(IronMine, (24, 24))
     wm = WorkerManager(resources, registry)
@@ -174,6 +177,28 @@ def test_reassign_all_sets_moving_path_to_reachable_approach_tile() -> None:
         max(cx - end[0], end[0] - (cx + cw - 1), 0),
         max(cy - end[1], end[1] - (cy + ch - 1), 0),
     ) == 1
+
+
+def test_reassign_all_uses_current_time_for_move_start_no_first_frame_teleport() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    town_hall = registry.place(TownHall, (16, 16))
+    town_hall.level = 5
+    registry.place(IronMine, (26, 26))
+    now_holder = {"t": 100_000}
+    wm = WorkerManager(resources, registry, now_ms_fn=lambda: now_holder["t"])
+    w = Worker("MINER", stand_tile=(17, 19))
+    wm.add_worker(w)
+
+    wm.reassign_all()
+    start = w.current_tile
+    assert w.state == "moving"
+
+    # 1 ms after assignment should still be on the same tile.
+    now_holder["t"] = 100_001
+    wm.update(now_holder["t"])
+    assert w.current_tile == start
 
 
 def test_reassign_all_keeps_worker_idle_when_no_approach_tile_reachable() -> None:
@@ -214,6 +239,22 @@ def test_working_buildings_excludes_moving_worker_until_arrival() -> None:
     assert camp in wm.working_buildings()
 
 
+def test_worker_status_for_building_reports_on_the_way_then_assigned() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, (16, 16))
+    camp = registry.place(LumberCamp, (24, 24))
+    wm = WorkerManager(resources, registry)
+    w = Worker("LUMBERJACK", stand_tile=(2, 2))
+    wm.add_worker(w)
+    wm.reassign_all()
+
+    assert wm.worker_status_for_building(camp) == "on the way"
+    wm.update(120_000)
+    assert wm.worker_status_for_building(camp) == "assigned"
+
+
 def test_demolish_moving_worker_becomes_idle_at_current_tile() -> None:
     world = World()
     registry = BuildingRegistry(world)
@@ -235,3 +276,78 @@ def test_demolish_moving_worker_becomes_idle_at_current_tile() -> None:
     assert w.state == "idle"
     assert w.current_tile == before
     assert w.assigned_building is None
+
+
+def test_reassign_all_does_not_retarget_worker_already_moving() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, (16, 16))
+    camp_a = registry.place(LumberCamp, (22, 22))
+    camp_b = registry.place(LumberCamp, (26, 26))
+    wm = WorkerManager(resources, registry)
+    w = Worker("LUMBERJACK", stand_tile=(2, 2))
+    wm.add_worker(w)
+    wm.reassign_all()
+    first_target = w.assigned_building
+    assert first_target in {camp_a, camp_b}
+    assert w.state == "moving"
+
+    wm.reassign_all()
+    assert w.assigned_building is first_target
+    assert w.state == "moving"
+
+
+def test_reassign_all_one_slot_two_workers_only_one_assigned() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, (16, 16))
+    camp = registry.place(LumberCamp, (24, 24))
+    wm = WorkerManager(resources, registry)
+    w1 = Worker("LUMBERJACK", stand_tile=(2, 2))
+    w2 = Worker("LUMBERJACK", stand_tile=(3, 2))
+    wm.add_worker(w1)
+    wm.add_worker(w2)
+
+    wm.reassign_all()
+    assigned = [w for w in (w1, w2) if w.assigned_building is camp]
+    idle = [w for w in (w1, w2) if w.assigned_building is None and w.idle]
+    assert len(assigned) == 1
+    assert len(idle) == 1
+
+
+def test_hire_unknown_worker_type_returns_none_and_keeps_resources() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, (16, 16))
+    wm = WorkerManager(resources, registry)
+    food_before = resources.get("food")
+    assert wm.hire("WIZARD") is None
+    assert resources.get("food") == food_before
+
+
+def test_hire_stonecutter_requires_town_hall_level_3() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    town_hall = registry.place(TownHall, (16, 16))
+    wm = WorkerManager(resources, registry)
+    food_before = resources.get("food")
+    assert wm.hire("STONECUTTER") is None
+    assert resources.get("food") == food_before
+    town_hall.level = 3
+    assert wm.hire("STONECUTTER") is not None
+    assert resources.get("food") == food_before - WORKER_HIRE_COST["food"]
+
+
+def test_hire_miner_requires_town_hall_level_5() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    town_hall = registry.place(TownHall, (16, 16))
+    wm = WorkerManager(resources, registry)
+    assert wm.hire("MINER") is None
+    town_hall.level = 5
+    assert wm.hire("MINER") is not None

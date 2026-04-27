@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
 from game.buildings.base import Building
-from game.config import WORKER_HIRE_COST, WORKER_TILE_TRAVEL_MS
+from game.config import TOWN_HALL_MIN_LEVEL_FOR_HIRE, WORKER_HIRE_COSTS, WORKER_TILE_TRAVEL_MS
 from game.pathfinding import find_path_bfs
 from game.resources import ResourceManager
 
@@ -18,6 +19,16 @@ def building_center_tile(building: Building) -> tuple[int, int]:
     gx, gy = pos
     w, h = type(building).footprint
     return gx + w // 2, gy + h // 2
+
+
+def town_hall_spawn_tile(building: Building) -> tuple[int, int]:
+    """Deterministic spawn tile: one cell directly below Town Hall footprint."""
+    pos = building.grid_pos
+    if pos is None:
+        raise ValueError("building has no grid position")
+    gx, gy = pos
+    w, h = type(building).footprint
+    return gx + w // 2, gy + h
 
 
 class Worker:
@@ -89,7 +100,7 @@ class Worker:
 class WorkerManager:
     """Tracks workers; notifies assignments when a staffed building is demolished (PRD F-WORK)."""
 
-    __slots__ = ("_registry", "_resources", "_workers")
+    __slots__ = ("_now_ms_fn", "_registry", "_resources", "_workers")
     _WORKER_TO_BUILDING: dict[str, str] = {
         "LUMBERJACK": "LUMBER_CAMP",
         "STONECUTTER": "STONE_MINE",
@@ -101,10 +112,12 @@ class WorkerManager:
         self,
         resources: ResourceManager | None = None,
         registry: Any | None = None,
+        now_ms_fn: Callable[[], int] | None = None,
     ) -> None:
         self._resources = resources
         self._registry = registry
         self._workers: list[Worker] = []
+        self._now_ms_fn = now_ms_fn or (lambda: 0)
 
     def add_worker(self, worker: Worker) -> None:
         self._workers.append(worker)
@@ -130,6 +143,16 @@ class WorkerManager:
     def is_staffed(self, building: Building) -> bool:
         return any(w.assigned_building is building for w in self._workers)
 
+    def worker_status_for_building(self, building: Building) -> str:
+        """Return panel-friendly worker status: empty | on the way | assigned."""
+        for worker in self._workers:
+            if worker.assigned_building is not building:
+                continue
+            if worker.state == "moving":
+                return "on the way"
+            return "assigned"
+        return "empty"
+
     def staffed_buildings(self) -> set[Building]:
         return {w.assigned_building for w in self._workers if w.assigned_building is not None}
 
@@ -141,21 +164,53 @@ class WorkerManager:
         }
 
     def hire(self, worker_type: str) -> Worker | None:
-        """Hire a worker for 50 food; ``None`` if unaffordable."""
+        """Hire a worker if town hall level and resources allow it."""
         if self._resources is None or self._registry is None:
             return None
         if worker_type not in self._WORKER_TO_BUILDING:
             return None
-        if not self._resources.try_spend(WORKER_HIRE_COST):
+        min_level = int(TOWN_HALL_MIN_LEVEL_FOR_HIRE.get(worker_type, 1))
+        th_level = 0
+        for b in self._registry.all():
+            if b.type_tag == "TOWN_HALL":
+                th_level = b.level
+                break
+        if th_level < min_level:
+            return None
+        cost = dict(WORKER_HIRE_COSTS.get(worker_type, {"food": 0}))
+        if not self._resources.try_spend(cost):
             return None
         town_hall = next((b for b in self._registry.all() if b.type_tag == "TOWN_HALL"), None)
         stand = (0, 0)
         if town_hall is not None:
-            approaches = self._approach_tiles(town_hall)
-            stand = approaches[0] if approaches else building_center_tile(town_hall)
+            stand = town_hall_spawn_tile(town_hall)
+            world = getattr(self._registry, "_world", None)
+            if world is not None and (
+                not world.is_in_grass(*stand) or world.is_occupied(*stand)
+            ):
+                approaches = self._approach_tiles(town_hall)
+                if approaches:
+                    stand = approaches[0]
+                else:
+                    stand = building_center_tile(town_hall)
         worker = Worker(worker_type, stand_tile=stand)
         self._workers.append(worker)
         return worker
+
+    def can_hire(self, worker_type: str) -> bool:
+        """Whether current state allows hiring this worker type."""
+        if self._resources is None or self._registry is None:
+            return False
+        if worker_type not in self._WORKER_TO_BUILDING:
+            return False
+        min_level = int(TOWN_HALL_MIN_LEVEL_FOR_HIRE.get(worker_type, 1))
+        th_level = 0
+        for b in self._registry.all():
+            if b.type_tag == "TOWN_HALL":
+                th_level = b.level
+                break
+        cost = dict(WORKER_HIRE_COSTS.get(worker_type, {"food": 0}))
+        return th_level >= min_level and self._resources.has(cost)
 
     def notify_demolished(self, building: Building) -> None:
         """Workers targeting this building become idle at their current tile."""
@@ -177,6 +232,7 @@ class WorkerManager:
         world = getattr(self._registry, "_world", None)
         if world is None:
             return
+        now_ms = int(self._now_ms_fn())
         for worker in [w for w in self._workers if w.idle]:
             want = self._WORKER_TO_BUILDING.get(worker.type_tag)
             if want is None:
@@ -202,7 +258,7 @@ class WorkerManager:
                 if best_path is None:
                     continue
                 worker.assigned_building = target
-                worker.start_move(best_path, started_ms=0)
+                worker.start_move(best_path, started_ms=now_ms)
                 assigned = True
                 break
             if not assigned:

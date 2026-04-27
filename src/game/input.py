@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pygame
 
+from game import dev_asset_reload
 from game.buildings.base import Building
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
@@ -78,10 +79,10 @@ class GameInput:
         self._rmb_moved = False
         self._rmb_press_pos: tuple[int, int] = (0, 0)
 
-    def _panel_worker_assigned(self) -> bool:
+    def _panel_worker_status(self) -> str:
         if self._panel is None:
-            return False
-        return self._worker_manager.is_staffed(self._panel)
+            return "empty"
+        return self._worker_manager.worker_status_for_building(self._panel)
 
     def _sync_assignments(self) -> None:
         self._worker_manager.reassign_all()
@@ -145,6 +146,8 @@ class GameInput:
             return
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == pygame.BUTTON_LEFT:
             if not _on_map(surface, event.pos):
+                if event.pos[1] < TOP_BAR_HEIGHT and dev_asset_reload.handle_click(surface, event.pos):
+                    return
                 if event.pos[1] >= surface.get_height() - BAR_HEIGHT:
                     BottomBar.handle_click(surface, event.pos, self._resources)
                 return
@@ -165,14 +168,17 @@ class GameInput:
                 surface,
                 self._panel,
                 self._resources,
-                worker_assigned=self._panel_worker_assigned(),
+                worker_assigned=self._panel_worker_status() != "empty",
             )
             return
+        worker_status = self._panel_worker_status()
         BuildingPanel.draw(
             surface,
             self._panel,
             self._resources,
-            worker_assigned=self._panel_worker_assigned(),
+            worker_assigned=worker_status != "empty",
+            worker_status=worker_status,
+            worker_working=worker_status == "assigned",
         )
 
     def _handle_map_left_click(self, surface: pygame.Surface, pos: tuple[int, int]) -> None:
@@ -184,7 +190,7 @@ class GameInput:
         gx, gy = screen_to_grid(surface, self._world, pos, self._camera)
 
         if self._panel is not None:
-            wa = self._panel_worker_assigned()
+            wa = self._panel_worker_status() != "empty"
             if self._panel.type_tag == "TOWN_HALL":
                 assert isinstance(self._panel, TownHall)
                 layout = TownHallPanel.layout(
@@ -204,6 +210,10 @@ class GameInput:
                     )
                 if action == "close":
                     self._panel = None
+                    return
+                if action == "upgrade":
+                    if self._registry.upgrade_building(self._panel, self._resources):
+                        self._sync_assignments()
                     return
                 if action is not None and action.startswith("hire:"):
                     worker_type = action.split(":", 1)[1]

@@ -49,18 +49,20 @@ def _format_cost(cost: dict[str, int]) -> str:
     return ", ".join(parts) if parts else ""
 
 
-def _income_line(building: Building) -> str:
+def _income_line(building: Building, *, worker_working: bool) -> str:
     inc = type(building).income(building.level)
     if not inc:
         return "Income: —"
     (res, n), = inc.items()
+    if not worker_working:
+        n = 0
     sec = TICK_MS // 1000
     return f"Income: +{n} {res} / {sec} s"
 
 
 def _upgrade_label(building: Building) -> str:
     nxt = building.level + 1
-    cost = upgrade_cost(building.level)
+    cost = upgrade_cost(building.type_tag, building.level)
     cost_s = _format_cost(cost)
     return f"Upgrade to Lv {nxt} — {cost_s}"
 
@@ -88,6 +90,7 @@ class BuildingPanel:
         worker_assigned: bool,
         show_upgrade: bool | None = None,
         show_demolish: bool = True,
+        extra_bottom_px: int = 0,
     ) -> BuildingPanelLayout:
         sw, sh = surface.get_size()
         cls = type(building)
@@ -98,7 +101,7 @@ class BuildingPanel:
         upgrade_enabled = False
         if can_upgrade and building.level < max_lv:
             try:
-                cost = upgrade_cost(building.level)
+                cost = upgrade_cost(building.type_tag, building.level)
             except ValueError:
                 can_upgrade = False
                 cost = {}
@@ -114,6 +117,7 @@ class BuildingPanel:
             + (8 if btn_count else 0)
             + btn_count * (_BTN_H + 8)
             + 8
+            + max(0, int(extra_bottom_px))
         )
         frame = pygame.Rect(sw // 2 - _PANEL_W // 2, sh // 2 - h // 2, _PANEL_W, h)
         close = pygame.Rect(
@@ -157,8 +161,11 @@ class BuildingPanel:
         resources: ResourceManager,
         *,
         worker_assigned: bool,
+        worker_status: str = "empty",
+        worker_working: bool = False,
         show_upgrade: bool | None = None,
         show_demolish: bool = True,
+        extra_bottom_px: int = 0,
     ) -> None:
         layout = BuildingPanel.layout(
             surface,
@@ -167,6 +174,7 @@ class BuildingPanel:
             worker_assigned=worker_assigned,
             show_upgrade=show_upgrade,
             show_demolish=show_demolish,
+            extra_bottom_px=extra_bottom_px,
         )
         dim = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
         dim.fill((10, 12, 16, 170))
@@ -203,11 +211,13 @@ class BuildingPanel:
         surface.blit(body_font.render(desc, True, (200, 204, 214)), (layout.frame.left + _PANEL_PAD, y))
         y += _ROW
         surface.blit(
-            body_font.render(_income_line(building), True, (200, 204, 214)),
+            body_font.render(_income_line(building, worker_working=worker_working), True, (200, 204, 214)),
             (layout.frame.left + _PANEL_PAD, y),
         )
         y += _ROW
-        wstat = "Worker: assigned" if worker_assigned else "Worker: empty"
+        if worker_status not in {"empty", "on the way", "assigned"}:
+            worker_status = "assigned" if worker_assigned else "empty"
+        wstat = f"Worker: {worker_status}"
         surface.blit(body_font.render(wstat, True, (200, 204, 214)), (layout.frame.left + _PANEL_PAD, y))
 
         if layout.upgrade is not None:
@@ -245,6 +255,7 @@ class BuildingPanel:
         worker_assigned: bool,
         show_upgrade: bool | None = None,
         show_demolish: bool = True,
+        extra_bottom_px: int = 0,
     ) -> str | None:
         """Return ``\"close\"``, ``\"upgrade\"``, ``\"demolish\"``, or ``None``."""
         layout = BuildingPanel.layout(
@@ -254,6 +265,7 @@ class BuildingPanel:
             worker_assigned=worker_assigned,
             show_upgrade=show_upgrade,
             show_demolish=show_demolish,
+            extra_bottom_px=extra_bottom_px,
         )
         x, y = pos
         if layout.close.collidepoint(x, y):

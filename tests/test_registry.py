@@ -5,6 +5,7 @@ import math
 import pytest
 
 from game.buildings.lumber_camp import LumberCamp
+from game.buildings.iron_mine import IronMine
 from game.buildings.stone_mine import StoneMine
 from game.buildings.town_hall import TownHall
 from game.buildings.registry import BuildingRegistry
@@ -102,10 +103,12 @@ def test_demolish_with_worker_manager_notifies_before_removal(registry: Building
 
 
 def test_all_lists_placed_buildings(registry: BuildingRegistry) -> None:
+    th = registry.place(TownHall, (16, 16))
+    th.level = 3
     registry.place(LumberCamp, (4, 4))
     registry.place(StoneMine, (20, 20))
     all_b = registry.all()
-    assert len(all_b) == 2
+    assert len(all_b) == 3
 
 
 def test_adjacent_edge_touch_rejected(registry: BuildingRegistry) -> None:
@@ -121,6 +124,8 @@ def test_adjacent_corner_touch_rejected(registry: BuildingRegistry) -> None:
 
 
 def test_exactly_one_tile_gap_accepted(registry: BuildingRegistry) -> None:
+    th = registry.place(TownHall, (16, 16))
+    th.level = 3
     registry.place(LumberCamp, (10, 10))
     # One tile horizontal gap between footprints.
     assert registry.can_place(StoneMine, (13, 10))
@@ -132,3 +137,19 @@ def test_town_hall_and_resource_use_same_spacing_rule(registry: BuildingRegistry
     assert not registry.can_place(LumberCamp, (13, 11))
     # One-tile gap at x=14 should be accepted.
     assert registry.can_place(LumberCamp, (14, 11))
+
+
+def test_stone_mine_requires_town_hall_level_3(registry: BuildingRegistry) -> None:
+    th = registry.place(TownHall, (16, 16))
+    assert not registry.can_place(StoneMine, (8, 8))
+    th.level = 3
+    assert registry.can_place(StoneMine, (8, 8))
+
+
+def test_iron_mine_requires_town_hall_level_5(registry: BuildingRegistry) -> None:
+    th = registry.place(TownHall, (16, 16))
+    assert not registry.can_place(IronMine, (8, 8))
+    th.level = 4
+    assert not registry.can_place(IronMine, (8, 8))
+    th.level = 5
+    assert registry.can_place(IronMine, (8, 8))

@@ -5,7 +5,7 @@ import pygame
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.town_hall import TownHall
 from game.resources import ResourceManager
-from game.ui.building_panel import BuildingPanel
+from game.ui.building_panel import BuildingPanel, _income_line
 
 
 def test_building_panel_close_click() -> None:
@@ -31,7 +31,7 @@ def test_building_panel_upgrade_disabled_when_poor() -> None:
     surface = pygame.Surface((640, 480))
     building = LumberCamp(level=1, grid_pos=(4, 4))
     resources = ResourceManager()
-    assert resources.try_spend({"wood": 200})
+    assert resources.try_spend({"wood": resources.get("wood")})
     layout = BuildingPanel.layout(surface, building, resources, worker_assigned=False)
     assert layout.upgrade is not None
     assert layout.upgrade_enabled is False
@@ -58,9 +58,19 @@ def test_building_panel_draw_smoke() -> None:
     assert surface.get_at((400, 300)) != (0, 0, 0, 255)
 
 
-def test_town_hall_panel_no_upgrade_button() -> None:
+def test_building_panel_shows_upgrade_for_town_hall() -> None:
     surface = pygame.Surface((640, 480))
     building = TownHall(level=1, grid_pos=(10, 10))
     resources = ResourceManager()
     layout = BuildingPanel.layout(surface, building, resources, worker_assigned=False)
-    assert layout.upgrade is None
+    assert layout.upgrade is not None
+
+
+def test_income_line_is_zero_while_worker_not_arrived() -> None:
+    building = LumberCamp(level=3, grid_pos=(4, 4))
+    assert _income_line(building, worker_working=False) == "Income: +0 wood / 10 s"
+
+
+def test_income_line_shows_full_value_when_worker_working() -> None:
+    building = LumberCamp(level=3, grid_pos=(4, 4))
+    assert _income_line(building, worker_working=True) == "Income: +15 wood / 10 s"

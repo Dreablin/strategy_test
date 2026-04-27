@@ -188,3 +188,36 @@ def test_town_hall_hire_button_calls_worker_manager_hire() -> None:
     )
     assert len(workers.workers()) == 1
     assert workers.is_staffed(camp)
+
+
+def test_top_bar_boundary_click_is_treated_as_map() -> None:
+    """y == TOP_BAR_HEIGHT is considered map area for hover updates."""
+    surface = pygame.Surface((1280, 720))
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    camera = Camera()
+    placement = PlacementController(world, registry, resources, camera)
+    inp = GameInput(world, registry, resources, placement, WorkerManager(), camera)
+    placement.select("LUMBER_CAMP")
+    inp.handle(surface, pygame.event.Event(pygame.MOUSEMOTION, pos=(100, TOP_BAR_HEIGHT), rel=(0, 0)))
+    assert placement.hover_grid is not None
+
+
+def test_bottom_bar_boundary_click_is_not_map() -> None:
+    """y == (height - BAR_HEIGHT) belongs to HUD area and must not open map panel."""
+    surface = pygame.Surface((1280, 720))
+    world = World()
+    registry = BuildingRegistry(world)
+    registry.place(LumberCamp, (14, 14))
+    resources = ResourceManager()
+    camera = Camera()
+    placement = PlacementController(world, registry, resources, camera)
+    inp = GameInput(world, registry, resources, placement, WorkerManager(), camera)
+    x, _ = _tile_center(surface, world, 14, 14)
+    hud_y = surface.get_height() - BAR_HEIGHT
+    inp.handle(
+        surface,
+        pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=(x, hud_y)),
+    )
+    assert inp.panel_building is None

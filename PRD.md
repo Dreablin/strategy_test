@@ -126,8 +126,16 @@ class ResourceManager:
 
 ### F-ISO — Isometric Projection
 
-- **F-ISO-01 (MUST):** Tile size 64×32 (classic 2:1 diamond). Camera fixed; no zoom, no rotation, no pan.
-- **F-ISO-02 (MUST):** `iso.world_to_screen(gx, gy)` and `iso.screen_to_world(px, py)` are inverses (rounded to int grid).
+- **F-ISO-01 (MUST):** Tile size 64×32 (classic 2:1 diamond). No zoom, no rotation. Camera **pan via RMB drag** is supported (see F-CAM).
+- **F-ISO-02 (MUST):** `iso.world_to_screen(gx, gy)` and `iso.screen_to_world(px, py)` are inverses (rounded to int grid). They operate in *world* pixels; camera offset is applied separately by the renderer.
+
+### F-CAM — Camera Pan
+
+- **F-CAM-01 (MUST):** A `Camera` carries an integer `offset = (ox, oy)` in pixels, initially `(0, 0)`.
+- **F-CAM-02 (MUST):** `Renderer.draw_world`, `draw_buildings`, `draw_workers` and the placement preview apply `camera.offset` before blitting. `TopBar`, `BottomBar` and modal panels are drawn in **screen** coordinates and DO NOT pan.
+- **F-CAM-03 (MUST):** `screen_to_grid` subtracts `camera.offset` before calling `iso.screen_to_world`, so clicks land on the correct world tile when panned.
+- **F-CAM-04 (MUST):** `camera.clamp(viewport_size, world_bounds_px)` keeps the world's bounding box (grass + tree skirt) inside the viewport play area (between TopBar and BottomBar). When the world is bigger than the viewport, only previously off-screen parts can be revealed; when smaller, the offset is locked at the centering value.
+- **F-CAM-05 (MUST):** Camera UX = **"grab-and-drag the world"**: if the mouse moves by `(dx, dy)` while RMB is held, then `camera.offset += (dx, dy)` (the world moves with the cursor), then immediately clamped per F-CAM-04.
 
 ### F-WORLD — World
 
@@ -150,6 +158,13 @@ class ResourceManager:
 - **F-BLD-06 (MUST):** Production per cycle for resource-buildings with a worker assigned: `5 × level` of the building's resource.
 - **F-BLD-07 (MUST):** Each new building starts with **no worker**.
 
+### F-RENDER — Building Rendering
+
+- **F-RENDER-01 (MUST):** Every building present in `BuildingRegistry.all()` MUST be drawn each frame, including the initial Town Hall and any building placed during play. (Critical regression observed in early build: buildings were stored but never rendered.)
+- **F-RENDER-02 (MUST):** `Renderer.draw_buildings(surface, world, registry, camera=None)` iterates the registry, sorts by painter's algorithm key `(grid_y + grid_x, grid_x)` so buildings further from the camera draw first, and blits each via `assets.building_sprite(b.type_tag, b.level)`.
+- **F-RENDER-03 (MUST):** A building sprite is anchored so that the bottom-center of the sprite sits at the bottom-center of the building's footprint diamond, then offset by `camera.offset`.
+- **F-RENDER-04 (MUST):** `main.py` render pipeline order: clear → `draw_world` → `draw_buildings` → `draw_workers` → placement preview → `TopBar` → `BottomBar` → open modal panel.
+
 ```python
 class Building:
     type: BuildingType
@@ -169,7 +184,8 @@ class Building:
 - **F-PLACE-03 (MUST):** Placement is **invalid** if any of:
   - Footprint extends outside the playable grass field.
   - Footprint overlaps an existing building's footprint.
-  - The closest distance (in tiles, Chebyshev) from any tile of the new footprint to any tile of an existing building's footprint is `< ceil(0.5 × max(footprint_w, footprint_h))` of the **new** building. (i.e. ≥ 50 % of building's linear size separation.)
+  - The closest distance (in tiles, Chebyshev) from any tile of the new footprint to any tile of an existing building's footprint is `< 1`.  
+    Interpretation: buildings may not touch edge-to-edge or corner-to-corner; there must be at least one free tile gap.
 - **F-PLACE-04 (MUST):** Left-click on a valid spot deducts the build cost (only `wood=100`) and places the building. If the player has insufficient resources, no placement happens and the contour stays red.
 - **F-PLACE-05 (MUST):** Right-click or `Esc` cancels placement mode.
 - **F-PLACE-06 (MUST):** A second Town Hall can never be placed (the Town Hall option is not in the bottom bar).
@@ -241,23 +257,34 @@ class Building:
   ```
   for each idle worker W of type T:
       find any building B of matching type with no worker
-      if found:  assign W to B; W is no longer idle
+      if found:  reserve B for W, set W target tile to a valid approach tile near B, W starts moving
       else:      W remains idle, standing near Town Hall
   ```
-- **F-WORK-04 (MUST):** Movement is **instant** (teleport) — no path-finding required. The visual position is just at the building's center for assigned workers, near Town Hall for idle workers.
-- **F-WORK-05 (MUST):** Workers are visualized as a small colored dot/figure on top of their assigned building (or on the demolished tile if the building was destroyed).
-- **F-WORK-06 (MUST):** The Town Hall does not consume a worker slot itself.
+- **F-WORK-04 (MUST):** Workers move smoothly over time on grid paths (no teleport). Movement speed is exactly **1 tile per 3 seconds** (`WORKER_TILE_TRAVEL_MS = 3000`).
+- **F-WORK-05 (MUST):** Workers cannot step onto tiles occupied by any building footprint. Pathfinding treats occupied tiles as blocked.
+- **F-WORK-06 (MUST):** For a target production building, a worker may approach from any side. The destination tile is any free grass tile Chebyshev-distance `1` from the building footprint.
+- **F-WORK-07 (MUST):** Pathfinding algorithm is **BFS** (not A*), 8-directional (N, S, E, W, and diagonals), uniform step cost 1 per tile.
+- **F-WORK-07a (MUST):** Deterministic neighbor order for BFS expansion: `N, NE, E, SE, S, SW, W, NW` (dx/dy: `(0,-1),(1,-1),(1,0),(1,1),(0,1),(-1,1),(-1,0),(-1,-1)`).
+- **F-WORK-07b (MUST):** No corner-cutting through blocked diagonals: for diagonal step `(x,y)->(x+dx,y+dy)`, at least one of orthogonal side tiles `(x+dx,y)` or `(x,y+dy)` must be walkable.
+- **F-WORK-07c (MUST):** If no path exists, worker remains waiting and retries on each assignment recalculation.
+- **F-WORK-08 (MUST):** A worker contributes production only when in `working` state (destination reached and building still valid).
+- **F-WORK-09 (MUST):** If a building is demolished while a worker is moving to it or working in it, that worker transitions to idle at its current tile and may be reassigned.
+- **F-WORK-10 (MUST):** Workers are visualized as small dots moving smoothly between tile centers (interpolated position each frame).
+- **F-WORK-11 (MUST):** The Town Hall does not consume a worker slot itself.
 
 ### F-PROD — Production
 
-- **F-PROD-01 (MUST):** Every 10 s, for every building with an assigned worker:
+- **F-PROD-01 (MUST):** Every 10 s, for every building with an assigned worker in `working` state:
   `resources[building.resource] += 5 × building.level`
 - **F-PROD-02 (MUST):** Production is atomic per-tick (no fractional accumulation between ticks).
 
 ### F-INPUT — Input
 
-- **F-INPUT-01 (MUST):** Mouse: left-click = primary action; right-click / Esc = cancel placement / close panel.
-- **F-INPUT-02 (MUST):** No keyboard shortcuts beyond Esc are required.
+- **F-INPUT-01 (MUST):** Mouse: left-click = primary action.
+- **F-INPUT-02 (MUST):** Right mouse button is dual-purpose with a 4-pixel drag threshold:
+  - **Drag** (RMB held + cursor moves ≥ 4 px from press position): pan the camera (F-CAM-05). While a drag is in progress, the placement preview and any open panel remain on screen and continue to track world coordinates correctly.
+  - **Click** (RMB pressed and released with total motion < 4 px): cancel placement mode and/or close the open panel. Same effect as `Esc`.
+- **F-INPUT-03 (MUST):** `Esc` cancels placement / closes panel. No other keyboard shortcuts are required.
 
 ---
 
@@ -335,14 +362,43 @@ BuildingRegistry(world)
 ```python
 WorkerManager(resources, registry)
   .hire(worker_type) -> Optional[Worker]   # None if not enough food
-  .reassign_all() -> None                  # called after any placement/demolish/hire
+  .reassign_all() -> None                  # called after any placement/demolish/hire/upgrade
+  .update(now_ms: int) -> None             # advances movement along current path
+  .working_buildings() -> list[Building]   # only buildings whose worker reached destination
   .idle() -> list[Worker]
+```
+
+### `game.pathfinding`
+```python
+find_path_bfs(
+  world,
+  start: tuple[int, int],
+  goal: tuple[int, int],
+  blocked: set[tuple[int, int]],
+) -> list[tuple[int, int]] | None
+# Returns inclusive path [start, ..., goal] or None when unreachable.
+# Uses 8-direction BFS, deterministic neighbor order, and no-corner-cutting.
 ```
 
 ### `game.tick`
 ```python
 TickScheduler(period_ms=10_000)
   .update(now_ms) -> bool                  # True iff a tick fired this frame
+```
+
+### `game.camera`
+```python
+Camera(initial_offset=(0,0))
+  .offset: tuple[int,int]
+  .pan(dx: int, dy: int) -> None
+  .clamp(viewport_size: tuple[int,int], world_bounds_px: tuple[int,int,int,int]) -> None
+  # world_bounds_px = (min_world_x, min_world_y, max_world_x, max_world_y)
+```
+
+### `game.render` (Renderer additions)
+```python
+Renderer.draw_buildings(surface, world, registry, camera=None) -> None
+# All other draw_* methods accept an optional `camera` argument and apply offset.
 ```
 
 ---
@@ -360,6 +416,8 @@ The full ordered task list is the source of truth in `progress.md`. Summary:
 | 5. Building panel & actions    | T26–T30  |
 | 6. Workers                     | T31–T36  |
 | 7. Production, polish, package | T37–T42  |
+| 8. Render fixes & camera pan   | T43–T51  |
+| 9. Worker movement & spacing   | T52–T62  |
 
 42 atomic tasks total. See `progress.md`.
 

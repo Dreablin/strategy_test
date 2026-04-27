@@ -7,6 +7,7 @@ from typing import Type
 
 from game.buildings.base import Building
 from game.buildings.costs import upgrade_cost
+from game.config import TOWN_HALL_MIN_LEVEL_FOR_BUILDING
 from game.resources import ResourceManager
 from game.world import World
 from game.workers import WorkerManager
@@ -49,6 +50,12 @@ class BuildingRegistry:
         return None
 
     def can_place(self, cls: Type[Building], grid_pos: tuple[int, int]) -> bool:
+        # Tech gates by Town Hall level.
+        th_level = self.town_hall_level()
+        required = TOWN_HALL_MIN_LEVEL_FOR_BUILDING.get(cls.type_tag)
+        if required is not None and th_level < required:
+            return False
+
         gx, gy = grid_pos
         w, h = cls.footprint
         if not self._footprint_inside_grass(gx, gy, w, h):
@@ -70,6 +77,13 @@ class BuildingRegistry:
             if _min_chebyshev_between_footprints(gx, gy, w, h, bx, by, bw, bh) < min_allowed:
                 return False
         return True
+
+    def town_hall_level(self) -> int:
+        """Current Town Hall level (0 if none placed)."""
+        for building in self._buildings:
+            if building.type_tag == "TOWN_HALL":
+                return building.level
+        return 0
 
     def place(self, cls: Type[Building], grid_pos: tuple[int, int]) -> Building:
         if not self.can_place(cls, grid_pos):
@@ -118,7 +132,7 @@ class BuildingRegistry:
         if building.level >= cls.max_level():
             return False
         try:
-            cost = upgrade_cost(building.level)
+            cost = upgrade_cost(building.type_tag, building.level)
         except ValueError:
             return False
         if not resources.try_spend(cost):

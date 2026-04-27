@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 13. Performance optimisation & orthogonal pathfinding
-- **Next Task:** T134 — switch world resource search to 4-direction.
-- **Last Completed:** T133 — add failing 4-direction resource-search tests.
-- **Total Progress:** 133 / 148
+- **Next Task:** T135 — update tests that assumed diagonal pathing.
+- **Last Completed:** T134 — switch world resource search to 4-direction.
+- **Total Progress:** 134 / 148
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -231,7 +231,7 @@
   - Same coverage for `find_nearest_free_stone`.
   Tests must FAIL first.
 
-- [ ] **T134**: Switch `src/game/world.py`:
+- [x] **T134**: Switch `src/game/world.py`:
   - Replace `_NEIGHBORS_8` (line 15) with `_NEIGHBORS_4` and use it in both
     `find_nearest_free_tree` and `find_nearest_free_stone`.
   - Module-level `_NEIGHBORS_8` symbol is removed (also from

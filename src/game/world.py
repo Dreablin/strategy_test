@@ -12,15 +12,11 @@ from game.trees import Tree, stage_from_tile_seed
 _TREE_EDGE_BAND = 8
 _STONE_CENTER_COUNT = 3
 _STONE_MIN_DISTANCE_FROM_TOWN_HALL = 12
-_NEIGHBORS_8: tuple[tuple[int, int], ...] = (
+_NEIGHBORS_4: tuple[tuple[int, int], ...] = (
     (0, -1),
-    (1, -1),
     (1, 0),
-    (1, 1),
     (0, 1),
-    (-1, 1),
     (-1, 0),
-    (-1, -1),
 )
 
 
@@ -301,7 +297,7 @@ def find_nearest_free_tree(
     seen: set[tuple[int, int]] = {from_tile}
     while q:
         cx, cy = q.popleft()
-        for dx, dy in _NEIGHBORS_8:
+        for dx, dy in _NEIGHBORS_4:
             nx, ny = cx + dx, cy + dy
             nxt = (nx, ny)
             if not world.is_in_grass(nx, ny):
@@ -362,7 +358,7 @@ def find_nearest_free_stone(
     seen: set[tuple[int, int]] = {from_tile}
     while q:
         cx, cy = q.popleft()
-        for dx, dy in _NEIGHBORS_8:
+        for dx, dy in _NEIGHBORS_4:
             nx, ny = cx + dx, cy + dy
             nxt = (nx, ny)
             if not world.is_in_grass(nx, ny):

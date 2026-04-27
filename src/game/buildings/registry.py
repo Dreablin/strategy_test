@@ -29,11 +29,16 @@ def _min_chebyshev_between_footprints(
 class BuildingRegistry:
     """Owns placed `Building` instances and mirrors their footprints on `World`."""
 
-    __slots__ = ("_buildings", "_world")
+    __slots__ = ("_buildings", "_world", "_worker_manager")
 
     def __init__(self, world: World) -> None:
         self._world = world
         self._buildings: list[Building] = []
+        self._worker_manager: WorkerManager | None = None
+
+    def bind_worker_manager(self, worker_manager: WorkerManager) -> None:
+        """Attach worker manager callbacks for upgrade-driven bonus refresh."""
+        self._worker_manager = worker_manager
 
     def all(self) -> list[Building]:
         return list(self._buildings)
@@ -66,6 +71,8 @@ class BuildingRegistry:
             return False
         if self._world_footprint_overlaps_occupied(gx, gy, w, h):
             return False
+        if self._world_footprint_overlaps_stones(gx, gy, w, h):
+            return False
         # Require at least one empty tile between any two footprints.
         min_allowed = 2
         for b in self._buildings:
@@ -90,6 +97,9 @@ class BuildingRegistry:
             raise ValueError("invalid placement")
         gx, gy = grid_pos
         w, h = cls.footprint
+        for ty in range(gy, gy + h):
+            for tx in range(gx, gx + w):
+                self._world.remove_tree(tx, ty)
         inst = cls(level=1, grid_pos=grid_pos)
         self._world.mark_occupied(gx, gy, w, h)
         self._buildings.append(inst)
@@ -114,15 +124,13 @@ class BuildingRegistry:
         *,
         staffed_buildings: Collection[Building] = (),
     ) -> None:
-        """Recompute ``ResourceManager`` per-cycle totals from staffed buildings (PRD F-PROD)."""
-        staffed = set(staffed_buildings)
-        totals = {"food": 0, "wood": 0, "stone": 0, "iron": 0}
-        for b in self._buildings:
-            if b not in staffed:
-                continue
-            for name, amount in type(b).income(b.level).items():
-                totals[name] = totals.get(name, 0) + amount
-        resources.set_per_cycle_totals(totals)
+        """Set per-cycle preview totals.
+
+        Passive production is removed globally; all resources are delivered by workers
+        via explicit gather/deposit cycles. Keep this API to avoid touching callers.
+        """
+        _ = staffed_buildings
+        resources.set_per_cycle_totals({"food": 0, "wood": 0, "stone": 0, "iron": 0})
 
     def upgrade_building(self, building: Building, resources: ResourceManager) -> bool:
         """Spend ``upgrade_cost(level)``, increment ``level``, refresh per-cycle totals. Returns success."""
@@ -138,6 +146,8 @@ class BuildingRegistry:
         if not resources.try_spend(cost):
             return False
         building.level += 1
+        if self._worker_manager is not None:
+            self._worker_manager.refresh_building_bonuses(building)
         self.sync_resources_per_cycle(resources, staffed_buildings=())
         return True
 
@@ -152,5 +162,12 @@ class BuildingRegistry:
         for ty in range(gy, gy + h):
             for tx in range(gx, gx + w):
                 if self._world.is_occupied(tx, ty):
+                    return True
+        return False
+
+    def _world_footprint_overlaps_stones(self, gx: int, gy: int, w: int, h: int) -> bool:
+        for ty in range(gy, gy + h):
+            for tx in range(gx, gx + w):
+                if self._world.is_stone_blocking(tx, ty):
                     return True
         return False

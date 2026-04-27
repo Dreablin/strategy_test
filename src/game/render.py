@@ -1,15 +1,19 @@
-"""Isometric world drawing (grass field and decorative tree skirt)."""
+"""Isometric world drawing with buildings, workers, and tree layering."""
 
 import pygame
 
-from game.assets import building_sprite, building_sprite_anchor, grass_tile, tree_tile
+from game.assets import (
+    building_sprite,
+    building_sprite_anchor,
+    grass_tile,
+    stone_sprite,
+    tree_sprite,
+)
 from game.buildings.registry import BuildingRegistry
 from game.config import TILE_H, TILE_W
 from game.iso import world_to_screen
 from game.world import World
 from game.workers import WorkerManager, building_center_tile
-
-_TREE_RING_TILES = 2
 
 
 def _compute_grass_origin(surface: pygame.Surface, world: World) -> tuple[int, int]:
@@ -29,7 +33,7 @@ def _compute_grass_origin(surface: pygame.Surface, world: World) -> tuple[int, i
 
 
 class Renderer:
-    """Draws the static grass map plus an outer ring of non-playable tree tiles."""
+    """Draws the grass map, buildings, workers, and tree sprites."""
 
     @staticmethod
     def map_origin(surface: pygame.Surface, world: World) -> tuple[int, int]:
@@ -38,14 +42,11 @@ class Renderer:
 
     @staticmethod
     def world_pixel_bounds(world: World) -> tuple[int, int, int, int]:
-        """World bounds in pre-centered pixel space including tree-skirt tiles."""
-        lo = -_TREE_RING_TILES
-        hi_w = world.width + _TREE_RING_TILES
-        hi_h = world.height + _TREE_RING_TILES
+        """World bounds in pre-centered pixel space for playable grass field."""
         min_x = min_y = 10**9
         max_x = max_y = -10**9
-        for gx in range(lo, hi_w):
-            for gy in range(lo, hi_h):
+        for gx in range(world.width):
+            for gy in range(world.height):
                 sx, sy = world_to_screen(gx, gy)
                 min_x = min(min_x, sx)
                 min_y = min(min_y, sy)
@@ -57,22 +58,18 @@ class Renderer:
     def draw_world(surface: pygame.Surface, world: World, camera=None) -> None:
         origin_x, origin_y = Renderer.map_origin(surface, world)
         cam_x, cam_y = (0, 0) if camera is None else camera.offset
-        lo = -_TREE_RING_TILES
-        hi_w = world.width + _TREE_RING_TILES
-        hi_h = world.height + _TREE_RING_TILES
 
-        cells: list[tuple[int, int, bool]] = []
-        for gx in range(lo, hi_w):
-            for gy in range(lo, hi_h):
-                cells.append((gx, gy, world.is_in_grass(gx, gy)))
+        cells: list[tuple[int, int]] = []
+        for gx in range(world.width):
+            for gy in range(world.height):
+                cells.append((gx, gy))
         cells.sort(key=lambda c: (c[0] + c[1], c[0]))
 
         g_tile = grass_tile()
-        t_tile = tree_tile()
-        for gx, gy, in_grass in cells:
+        for gx, gy in cells:
             sx, sy = world_to_screen(gx, gy)
-            tile = g_tile if in_grass else t_tile
-            surface.blit(tile, (origin_x + cam_x + sx, origin_y + cam_y + sy))
+            px, py = origin_x + cam_x + sx, origin_y + cam_y + sy
+            surface.blit(g_tile, (px, py))
 
     @staticmethod
     def draw_buildings(
@@ -151,28 +148,62 @@ class Renderer:
 
         ox, oy = Renderer.map_origin(surface, world)
         cam_x, cam_y = (0, 0) if camera is None else camera.offset
-        entries: list[tuple[str, float, float]] = []
+        moving_states = {"moving", "going_to_tree", "going_to_stone", "returning"}
+        entries: list[tuple[str, bool, float, float]] = []
         for worker in worker_manager.workers():
-            if worker.state == "moving" and worker.target_tile is not None:
+            carrying = (
+                (worker.type_tag == "LUMBERJACK" and worker.carrying == "wood")
+                or (worker.type_tag == "STONECUTTER" and worker.carrying == "stone")
+            )
+            if worker.state in moving_states and worker.target_tile is not None:
                 cx, cy = worker.current_tile
                 tx, ty = worker.target_tile
                 t = max(0.0, min(1.0, worker.segment_progress))
-                entries.append((worker.type_tag, cx + (tx - cx) * t, cy + (ty - cy) * t))
+                entries.append((worker.type_tag, carrying, cx + (tx - cx) * t, cy + (ty - cy) * t))
                 continue
             if worker.assigned_building is not None:
                 if worker.state == "working":
                     wx, wy = building_center_tile(worker.assigned_building)
                 else:
                     wx, wy = worker.current_tile
-                entries.append((worker.type_tag, float(wx), float(wy)))
+                entries.append((worker.type_tag, carrying, float(wx), float(wy)))
                 continue
             sxg, syg = worker.stand_tile
-            entries.append((worker.type_tag, float(sxg), float(syg)))
+            entries.append((worker.type_tag, carrying, float(sxg), float(syg)))
 
-        entries.sort(key=lambda item: item[1] + item[2])
-        for worker_type, gx, gy in entries:
+        entries.sort(key=lambda item: item[2] + item[3])
+        for worker_type, carrying, gx, gy in entries:
             sx, sy = world_to_screen(gx, gy)
-            dot = worker_dot(worker_type)
+            try:
+                dot = worker_dot(worker_type, carrying=carrying)
+            except TypeError:
+                dot = worker_dot(worker_type)
             px = ox + cam_x + sx + TILE_W // 2 - dot.get_width() // 2
             py = oy + cam_y + sy + TILE_H // 2 - dot.get_height() // 2
             surface.blit(dot, (px, py))
+
+    @staticmethod
+    def draw_trees(surface: pygame.Surface, world: World, camera=None) -> None:
+        """Draw world-owned trees as tall sprites anchored at tile bottom-center."""
+        ox, oy = Renderer.map_origin(surface, world)
+        cam_x, cam_y = (0, 0) if camera is None else camera.offset
+        entries = sorted(world.iter_alive_trees(), key=lambda item: (item[0][0] + item[0][1], item[0][0]))
+        for (gx, gy), tree in entries:
+            sx, sy = world_to_screen(gx, gy)
+            spr = tree_sprite(tree.stage.name.lower())
+            px = ox + cam_x + sx + TILE_W // 2 - spr.get_width() // 2
+            py = oy + cam_y + sy + TILE_H - spr.get_height()
+            surface.blit(spr, (px, py))
+
+    @staticmethod
+    def draw_stones(surface: pygame.Surface, world: World, camera=None) -> None:
+        """Draw world-owned stones as sprites anchored at tile bottom-center."""
+        ox, oy = Renderer.map_origin(surface, world)
+        cam_x, cam_y = (0, 0) if camera is None else camera.offset
+        entries = sorted(world.iter_stones(), key=lambda item: (item[0][0] + item[0][1], item[0][0]))
+        for (gx, gy), _stone in entries:
+            sx, sy = world_to_screen(gx, gy)
+            spr = stone_sprite()
+            px = ox + cam_x + sx + TILE_W // 2 - spr.get_width() // 2
+            py = oy + cam_y + sy + TILE_H - spr.get_height()
+            surface.blit(spr, (px, py))

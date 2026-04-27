@@ -63,13 +63,13 @@ def test_draw_workers_moving_worker_pixel_shifts_between_frames(monkeypatch) -> 
     resources = ResourceManager()
     registry.place(TownHall, (16, 16))
     wm = WorkerManager(resources, registry)
-    w = Worker("LUMBERJACK", stand_tile=(5, 5))
-    w.start_move([(5, 5), (6, 5)], started_ms=0)
+    w = Worker("LUMBERJACK", stand_tile=(22, 22))
+    w.start_move([(22, 22), (23, 22)], started_ms=0)
     wm.add_worker(w)
 
     dot = pygame.Surface((1, 1), pygame.SRCALPHA)
     dot.fill((255, 0, 0, 255))
-    monkeypatch.setattr(assets, "worker_dot", lambda _t: dot)
+    monkeypatch.setattr(assets, "worker_dot", lambda _t, carrying=False: dot)
 
     surface = pygame.Surface((1280, 720), pygame.SRCALPHA)
     Renderer.draw_workers(surface, world, registry, wm)
@@ -83,3 +83,136 @@ def test_draw_workers_moving_worker_pixel_shifts_between_frames(monkeypatch) -> 
     assert first.width == 1 and first.height == 1
     assert second.width == 1 and second.height == 1
     assert second.x > first.x
+
+
+def test_draw_workers_lumberjack_going_to_tree_interpolates_between_tiles(monkeypatch) -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, (16, 16))
+    wm = WorkerManager(resources, registry)
+    w = Worker("LUMBERJACK", stand_tile=(22, 22))
+    w.start_move([(22, 22), (23, 22)], started_ms=0, move_state="going_to_tree")
+    wm.add_worker(w)
+
+    dot = pygame.Surface((1, 1), pygame.SRCALPHA)
+    dot.fill((255, 0, 0, 255))
+    monkeypatch.setattr(assets, "worker_dot", lambda _t, carrying=False: dot)
+
+    surface = pygame.Surface((1280, 720), pygame.SRCALPHA)
+    Renderer.draw_workers(surface, world, registry, wm)
+    first = surface.get_bounding_rect()
+
+    wm.update(1500)
+    surface.fill((0, 0, 0, 0))
+    Renderer.draw_workers(surface, world, registry, wm)
+    second = surface.get_bounding_rect()
+
+    assert first.width == 1 and first.height == 1
+    assert second.width == 1 and second.height == 1
+    assert second.x > first.x
+
+
+def test_draw_workers_lumberjack_returning_interpolates_between_tiles(monkeypatch) -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, (16, 16))
+    wm = WorkerManager(resources, registry)
+    w = Worker("LUMBERJACK", stand_tile=(22, 22))
+    w.carrying = "wood"
+    w.start_move([(22, 22), (23, 22)], started_ms=0, move_state="returning")
+    wm.add_worker(w)
+
+    dot = pygame.Surface((1, 1), pygame.SRCALPHA)
+    dot.fill((255, 0, 0, 255))
+    monkeypatch.setattr(assets, "worker_dot", lambda _t, carrying=False: dot)
+
+    surface = pygame.Surface((1280, 720), pygame.SRCALPHA)
+    Renderer.draw_workers(surface, world, registry, wm)
+    first = surface.get_bounding_rect()
+
+    wm.update(1500)
+    surface.fill((0, 0, 0, 0))
+    Renderer.draw_workers(surface, world, registry, wm)
+    second = surface.get_bounding_rect()
+
+    assert first.width == 1 and first.height == 1
+    assert second.width == 1 and second.height == 1
+    assert second.x > first.x
+
+
+def test_draw_workers_stonecutter_going_to_stone_interpolates_between_tiles(monkeypatch) -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, (16, 16))
+    wm = WorkerManager(resources, registry)
+    w = Worker("STONECUTTER", stand_tile=(22, 22))
+    w.start_move([(22, 22), (23, 22)], started_ms=0, move_state="going_to_stone")
+    wm.add_worker(w)
+
+    dot = pygame.Surface((1, 1), pygame.SRCALPHA)
+    dot.fill((255, 0, 0, 255))
+    monkeypatch.setattr(assets, "worker_dot", lambda _t, carrying=False: dot)
+
+    surface = pygame.Surface((1280, 720), pygame.SRCALPHA)
+    Renderer.draw_workers(surface, world, registry, wm)
+    first = surface.get_bounding_rect()
+
+    wm.update(1500)
+    surface.fill((0, 0, 0, 0))
+    Renderer.draw_workers(surface, world, registry, wm)
+    second = surface.get_bounding_rect()
+
+    assert first.width == 1 and first.height == 1
+    assert second.width == 1 and second.height == 1
+    assert second.x > first.x
+
+
+def test_draw_workers_uses_carrying_variant_for_lumberjack(monkeypatch) -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, (16, 16))
+    wm = WorkerManager(resources, registry)
+    w = Worker("LUMBERJACK", stand_tile=(22, 22))
+    w.carrying = "wood"
+    wm.add_worker(w)
+
+    calls: list[bool] = []
+    dot = pygame.Surface((1, 1), pygame.SRCALPHA)
+    dot.fill((255, 0, 0, 255))
+
+    def fake_worker_dot(_t: str, carrying: bool = False) -> pygame.Surface:
+        calls.append(carrying)
+        return dot
+
+    monkeypatch.setattr(assets, "worker_dot", fake_worker_dot)
+    surface = pygame.Surface((1280, 720), pygame.SRCALPHA)
+    Renderer.draw_workers(surface, world, registry, wm)
+    assert calls == [True]
+
+
+def test_draw_workers_uses_carrying_variant_for_stonecutter(monkeypatch) -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, (16, 16))
+    wm = WorkerManager(resources, registry)
+    w = Worker("STONECUTTER", stand_tile=(22, 22))
+    w.carrying = "stone"
+    wm.add_worker(w)
+
+    calls: list[bool] = []
+    dot = pygame.Surface((1, 1), pygame.SRCALPHA)
+    dot.fill((255, 0, 0, 255))
+
+    def fake_worker_dot(_t: str, carrying: bool = False) -> pygame.Surface:
+        calls.append(carrying)
+        return dot
+
+    monkeypatch.setattr(assets, "worker_dot", fake_worker_dot)
+    surface = pygame.Surface((1280, 720), pygame.SRCALPHA)
+    Renderer.draw_workers(surface, world, registry, wm)
+    assert calls == [True]

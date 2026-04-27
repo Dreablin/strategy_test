@@ -2,231 +2,454 @@
 
 ## Current Status
 
-- **Phase:** 9. Worker movement & spacing
-- **Next Task:** None (all tasks complete)
-- **Last Completed:** T62 — End-to-end smoke test
-- **Total Progress:** 62 / 62
+- **Phase:** 12. Level bonuses, internal storage, stones
+- **Next Task:** — (all tasks complete)
+- **Last Completed:** T125 — Cleanup pass
+- **Total Progress:** 125 / 125
+
+> Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
+> ralph-loop input context (it is the immediate precursor to Phase 12). When
+> Phase 12 is complete, archive Phase 11 too.
+
+---
+
+## Hot-Fixes (outside the ralph queue)
+
+### HF12-A — Lumber Camp disappears when player clicks Upgrade (FIXED)
+
+- **Symptom:** clicking the Upgrade button on a `LumberCamp` panel sometimes
+  demolished the camp instead of upgrading it.
+- **Root cause:** `LumberCampPanel.click_action` resolved hit-targets by calling
+  `BuildingPanel.click_action` **twice** — first without `extra_bottom_px=72`
+  (legacy frame) and then with it. The drawn panel uses `extra_bottom_px=72`,
+  so the legacy frame's `Demolish` rect overlapped the visible `Upgrade`
+  button by ~28 px. Lower-half clicks on `Upgrade` matched that legacy
+  `Demolish` rect first, returning `"demolish"`.
+- **Fix:** keep only the `extra_bottom_px=72` resolution; fall back to the
+  `toggle_active` rect last. See
+  [`src/game/ui/lumber_camp_panel.py`](src/game/ui/lumber_camp_panel.py).
+- **Regression tests:** `tests/test_lumber_camp_panel.py::test_lumber_camp_click_upgrade_returns_upgrade_not_demolish`,
+  `…::test_lumber_camp_click_demolish_still_returns_demolish`.
+- **Status:** committed; full suite green (221 tests).
 
 ---
 
 ## Task Log
 
-### Phase 1 — Project Foundation
+### Phase 11 — Lumberjack Chop Cycle (DONE — kept for ralph context)
 
-- [x] **T01**: Create project skeleton — `src/game/`, `tests/`, `requirements.txt` (pygame 2.5.2, pytest 8.3.3, pyinstaller 6.10.0, ruff 0.6.9), `pyproject.toml` (pytest config: `testpaths=["tests"]`), `.gitignore` (add `.cursor/ralph/`, `__pycache__/`, `*.pyc`, `build/`, `dist/`, `*.spec.bak`), empty `README.md` placeholder, empty `src/game/__init__.py` and `tests/__init__.py`. Verify `pip install -r requirements.txt` succeeds and `pytest -q` runs (0 tests, exits 0).
-- [x] **T02**: Write `tests/conftest.py` setting `os.environ["SDL_VIDEODRIVER"]="dummy"` BEFORE any pygame import; add a `pygame_initialized` autouse fixture that calls `pygame.init()` / `pygame.quit()` per session. Verify with `pytest -q` (still 0 tests, exits 0).
-- [x] **T03**: Write `tests/test_config.py` asserting required constants exist with sane values: `TICK_MS == 10_000`, `TILE_W == 64`, `TILE_H == 32`, `GRID_SIZE == 32`, `INITIAL_RESOURCES == {"food":200,"wood":200,"stone":0,"iron":0}`, `WORKER_HIRE_COST == {"food":50}`, `BUILD_COST_WOOD == 100`, `MAX_LEVEL == 10`, `WINDOW_SIZE == (1280, 720)`. Tests must FAIL (module not yet implemented).
-- [x] **T04**: Implement `src/game/config.py` with all constants from T03. Run `pytest tests/test_config.py -q` — must PASS.
-- [x] **T05**: Write `tests/test_iso.py` covering `world_to_screen` and `screen_to_world` round-trip for grid points (0,0), (1,0), (0,1), (5,7), (31,31). Tests must FAIL.
-- [x] **T06**: Implement `src/game/iso.py` with classic 2:1 isometric transform using `TILE_W=64`, `TILE_H=32`. `screen_to_world` returns int grid coords. Run tests — must PASS.
-- [x] **T07**: Implement `src/game/main.py` with a clean `def main()` that opens a 1280×720 pygame window titled "Isometric Strategy", runs a 60 FPS loop until QUIT, then `pygame.quit()` and `return`. Smoke-test with `SDL_VIDEODRIVER=dummy timeout 2 python -m game.main || true` (exits cleanly).
+> Lumber Camp no longer passively produces wood. A staffed Lumber Camp dispatches
+> its Lumberjack on a chop cycle: walk to a free tree → adjacent free tile →
+> chop for 10 s → carry wood back to the camp → deposit `+1 wood` and remove the
+> tree. Active/Inactive toggle on the camp; `delivered_wood` counter; `carrying`
+> flag on the worker. Two distinct lumberjack sprites (empty / carrying).
+> Lumberjack rests inside the camp for `LUMBERJACK_REST_MS = 5000 ms` between
+> trips and stays parked inside if the camp is toggled off.
 
-### Phase 2 — Resources & Top Bar
+- [x] **T75–T91** (see commit history; full test coverage in
+  `tests/test_lumber_camp_state.py`, `test_lumberjack_cycle_states.py`,
+  `test_lumber_camp_active_toggle.py`, `test_smoke_phase11.py`, etc.).
 
-- [x] **T08**: Write `tests/test_resources.py` covering: initial values, `add` increments, `has`/`try_spend` for cost dicts, `try_spend` returns False & does not deduct on insufficient funds, non-negative invariants. Tests must FAIL.
-- [x] **T09**: Implement `src/game/resources.py` (`ResourceManager`). Run tests — must PASS.
-- [x] **T10**: Write `tests/test_tick.py` covering `TickScheduler.update(now_ms)`: returns True exactly once per 10_000 ms boundary; returns False otherwise. Tests must FAIL.
-- [x] **T11**: Implement `src/game/tick.py` (`TickScheduler`). Run tests — must PASS.
-- [x] **T12**: Implement `src/game/assets.py` — pure-pygame procedural factory: `grass_tile()`, `tree_tile()`, `building_sprite(b_type, level)`, `worker_dot(w_type)`, `resource_icon(name)`. Returns cached `pygame.Surface`. Add a tiny smoke test `tests/test_assets.py` checking each function returns a non-empty Surface (uses `SDL_VIDEODRIVER=dummy`). Tests must PASS after implementation.
-- [x] **T13**: Implement `src/game/ui/top_bar.py` — `TopBar.draw(surface, resources)` renders the 4 resources in a 48 px strip using `assets.resource_icon` and current `amount` and `(+income)`. Manual smoke check: `python -c "from game.ui.top_bar import TopBar; print('ok')"`.
+---
 
-### Phase 3 — World & Rendering
+### Phase 12 — Level Bonuses, Internal Storage, Stones
 
-- [x] **T14**: Write `tests/test_world.py` covering: grid is 32×32, `is_in_grass(gx,gy)` correct, `mark_occupied`/`is_occupied`/`free` work, footprint occupancy spans all tiles. Tests must FAIL.
-- [x] **T15**: Implement `src/game/world.py` (`World` with grid + occupancy bitmap + grass/tree zones). Run tests — must PASS.
-- [x] **T16**: Implement `src/game/render.py` — `Renderer.draw_world(surface, world)` draws grass diamonds for every in-grass tile and tree borders outside grass. Smoke check by running main loop briefly under dummy driver.
-- [x] **T17**: Wire `World` + `Renderer` into `main.py` so launching the game shows the grass field with tree borders. Visual confirmation only (no test).
-
-### Phase 4 — Buildings & Placement
-
-- [x] **T18**: Write `tests/test_costs.py` covering `upgrade_cost(L)` for L=1..10. Specifically:
-   - L→2: `{wood:200}`
-   - L→4: `{wood:400}`
-   - L→5: `{wood:500, stone:200}`
-   - L→6: `{wood:600, stone:400}`
-   - L→7: `{wood:700, stone:600, iron:300}`
-   - L→10: `{wood:1000, stone:1200, iron:1200}`
-   - L→11: raises `ValueError` (over cap)
-  Tests must FAIL.
-- [x] **T19**: Implement `src/game/buildings/costs.py` (`build_cost`, `upgrade_cost`). Run tests — must PASS.
-- [x] **T20**: Write `tests/test_buildings.py` covering each subclass: type tag, footprint (2×2 for resource, 3×3 for TownHall), `income(level)` = `5×level` of correct resource, TownHall income empty, level cap enforcement. Tests must FAIL.
-- [x] **T21**: Implement `src/game/buildings/base.py` + `town_hall.py`, `lumber_camp.py`, `stone_mine.py`, `iron_mine.py`, `farm.py`. Run tests — must PASS.
-- [x] **T22**: Write `tests/test_registry.py` covering: cannot place outside grass; cannot overlap; distance rule rejects placement closer than ceil(0.5×max_dim) tiles; second TownHall rejected; `demolish` clears occupancy. Tests must FAIL.
-- [x] **T23**: Implement `src/game/buildings/registry.py` (`BuildingRegistry` with `can_place`, `place`, `demolish`, `at`, `all`). Run tests — must PASS.
-- [x] **T24**: Implement `src/game/ui/bottom_bar.py` — 96 px strip with 4 build buttons (Lumber, Stone, Iron, Farm) showing icon + name + "100🪵". Greyed when insufficient wood. Click → emits selection event.
-- [x] **T25**: Implement `src/game/ui/placement.py` — placement controller: snaps mouse to grid, draws translucent contour green/red, left-click places (delegates to registry, deducts wood), right-click/Esc cancels.
-
-### Phase 5 — Building Panel & Actions
-
-- [x] **T26**: Implement `src/game/ui/building_panel.py` — modal panel: name, level, description, income, worker status, Upgrade button (with cost), Demolish button, [×] close. Layout per PRD §3 F-UI-PANEL. Manual smoke check.
-- [x] **T27**: Implement click-on-building → opens BuildingPanel; clicking outside or [×] closes it. Wire into `input.py`.
-- [x] **T28**: Implement Upgrade action: deducts `upgrade_cost(level)`, increments level, recomputes `per_cycle` income. Disabled at level 10 or insufficient resources. Add a regression test in `test_buildings.py`.
-- [x] **T29**: Implement Demolish action: removes building from registry, sets any worker to idle and parks them on the former center tile. Add regression test in `test_registry.py` and `test_workers.py`.
-- [x] **T30**: Implement `src/game/ui/town_hall_panel.py` extending BuildingPanel: hide Upgrade and Demolish, show "Hire Workers" section with one button per worker type costing 50 food. Disabled when food < 50.
-
-### Phase 6 — Workers
-
-- [x] **T31**: Write `tests/test_workers.py` covering: `hire` deducts 50 food and returns Worker; `hire` returns None when insufficient food and does not deduct; `reassign_all` matches one idle worker per free building of correct type; type mismatch never assigned; demolition leaves worker on tile and idle; subsequent reassignment moves them when a slot opens. Tests must FAIL.
-- [x] **T32**: Implement `src/game/workers.py` (`Worker`, `WorkerManager` with `hire`, `reassign_all`, `idle`). Run tests — must PASS.
-- [x] **T33**: Wire WorkerManager into game state: every place/demolish/hire/upgrade calls `reassign_all()`; hire button in town hall panel calls `WorkerManager.hire(type)`.
-- [x] **T34**: Render workers on screen: assigned workers as a colored dot at building center; idle workers stacked next to Town Hall; demolition-orphaned workers at the former center tile (until reassigned).
-- [x] **T35**: Update Top Bar's `+income` to reflect current production (sum of `5×level` over buildings with workers). Add regression test in `test_production.py` (placeholder file).
-- [x] **T36**: Manual integration check: launch game, build a Lumber Camp, hire a Lumberjack from Town Hall, observe assignment and visual placement.
-
-### Phase 7 — Production, Polish, Package
-
-- [x] **T37**: Write `tests/test_production.py` end-to-end (no display): create World+Registry+WorkerManager+ResourceManager, place Lumber Camp + hire+assign a worker, fire one tick → wood increased by 5; upgrade to L3 → next tick adds 15. Tests must FAIL initially.
-- [x] **T38**: Implement production loop in `main.py` (or `game/loop.py`): on tick, sum `5×level` per building with worker → `resources.add(...)`. Run tests — must PASS.
-- [x] **T39**: Verify clean shutdown: in `main.py` ensure `pygame.quit()` runs in a `finally:` block; no daemon threads are spawned (or all are joined). Add `tests/test_shutdown.py` that imports main, runs `main()` in a thread for 1 s with QUIT event injected, and asserts the thread exits within 2 s.
-- [x] **T40**: Polish — verify FPS counter (debug-only) stays ≥55 with 50 buildings + 50 workers in a stress fixture. Optional perf sanity test.
-- [x] **T41**: Add `game.spec` and `build_exe.bat` for PyInstaller (`pyinstaller --onefile --noconsole -n IsometricStrategy src/game/main.py`). Document the command in `README.md`. Smoke check: `dir build_exe.bat` (no actual exe build required in CI).
-- [x] **T42**: Final `README.md`: how to run from source (`pip install -r requirements.txt && python -m game.main`), how to build the exe (`build_exe.bat`), controls (LMB place / open panel, RMB or Esc cancel), gameplay summary. Output `<promise>ALL_TASKS_COMPLETE</promise>` after committing.
-
-### Phase 8 — Render Fixes & Camera Pan
-
-> **Context for this phase:** play-testing exposed two critical render bugs and one missing feature. PRD has been updated by the user (sections F-ISO-01, F-INPUT, F-CAM, F-RENDER, API §6 additions). Do NOT edit PRD; just satisfy the new requirements.
+> **Scope added by user (April 2026):**
 >
-> - Bug A: the Town Hall is never drawn at startup.
-> - Bug B: a freshly placed building is invisible too (resources are deducted, registry contains it, clicking its tile opens the info panel — only the sprite is missing).
-> - Feature: pan the camera by holding RMB and dragging, with bounds clamped to the world's bounding rectangle.
-> - Root cause for A & B: `Renderer` has no `draw_buildings` method and `main.py`'s render pipeline never calls one.
+> 1. **Bug** *(fixed in HF12-A above; do not re-do)*: Lumber Camp disappears on level-up.
+> 2. **Rework upgrade reward.** Each level above 1 grants the building's
+>    *currently assigned* worker **+5 % move speed AND +5 % gather speed**,
+>    additive in fixed-point form (e.g. L5 ⇒ +20 %). The old `5 × level`
+>    passive income is gone for `LUMBER_CAMP` and `STONE_MINE`. `FARM` and
+>    `IRON_MINE` keep passive income for now (rewrite is out of scope for
+>    Phase 12) but get the storage cap.
+> 3. **Worker characteristics + bonuses.** Each worker has a `Characteristics`
+>    block (movement / gather speed multipliers) and a list of bonus sources
+>    (permanent / temporary). Permanent bonuses are tied to a "source" key so
+>    they can be added/removed atomically (e.g. `("building_level", camp_id)`).
+> 4. **Internal storage.** Producing buildings now hold a typed stack of units
+>    `stored / capacity(L)`, where `capacity(L) = 3 + 2 × (L − 1)`. A new
+>    cycle / tick is **gated** when storage is full. Future phases will pick
+>    up resources from buildings; this phase only fills them.
+> 5. **Stones on the map.** New world entity `Stone(units=15)`. Generation:
+>    3 random centres at Chebyshev ≥ 12 from the Town Hall, each with a random
+>    radius `r ∈ [3, 6]` filled with stones. Stones block movement and
+>    placement, never share a tile with a tree. Stonecutter gather logic
+>    mirrors lumberjack: walk to stone → mine 1 unit → return to camp →
+>    deposit `+1 stone`. Stones decrement by 1 per harvest; tile reverts to
+>    plain grass at 0 units.
+> 6. **STONE_MINE active cycle.** Same state machine as `LumberCamp`
+>    (active toggle, delivered counter, carrying sprite). MINER and FARMER
+>    stay passive in this phase.
+>
+> Constants / keys (suggested):
+>
+> - `MOVE_SPEED_PER_LEVEL = 0.05`
+> - `GATHER_SPEED_PER_LEVEL = 0.05`
+> - `MINE_DURATION_MS = 10_000`
+> - `STONECUTTER_REST_MS = 5_000`
+> - `STONE_UNITS_PER_TILE = 15`
+> - `STONE_GEN_CENTERS = 3`
+> - `STONE_MIN_DISTANCE_FROM_TOWN_HALL = 12`
+> - `STONE_RADIUS_RANGE = (3, 6)`
+> - `BUILDING_STORAGE_BASE = 3`
+> - `BUILDING_STORAGE_PER_LEVEL = 2`
+> - `STONE_RESOURCE_KEY = "stone"`
+> - `STONE_ASSET_DIR = "assets/world/stone/"`
+> - Worker bonus source keys: `("building_level", id(building))`.
 
-- [x] **T43**: Write `tests/test_render_buildings.py` with these tests (must FAIL because `Renderer.draw_buildings` does not exist yet):
-   1. `test_draw_buildings_attribute` — `getattr(Renderer, "draw_buildings", None)` is callable.
-   2. `test_initial_town_hall_drawn` — create `World()` + `BuildingRegistry(world)` + `ResourceManager()` exactly as `main.py` does (initial state must include the Town Hall at the centre tile, per PRD F-WORLD-03). Create a 1280×720 surface, fill with sentinel colour `(20, 24, 22)`, call `Renderer.draw_world(surface, world)` then `Renderer.draw_buildings(surface, world, registry)`. Sample the pixel at the screen position of the Town Hall's footprint centre and assert it is **not** the sentinel colour and **not** the grass colour — i.e., something building-coloured was blitted there.
-   3. `test_placed_building_drawn` — same setup, then place a `LumberCamp` at a valid tile via `registry.place(...)` and re-render. Sample the placed building's centre pixel — must be different from grass / sentinel.
-   4. `test_painters_order` — record `surface.blit` calls (use a thin spy `class _Spy(pygame.Surface): def blit(self, *a, **kw): self.calls.append((a, kw)); return super().blit(*a, **kw)`). Place two buildings at `(8, 8)` and `(20, 20)`. Assert the call for `(8, 8)` precedes the call for `(20, 20)` (lower `gx+gy` drawn first).
+#### 12.1 Worker characteristics & permanent bonuses
 
-- [x] **T44**: Implement `Renderer.draw_buildings(surface, world, registry, camera=None)`:
-   - Iterate `registry.all()`, sort by `(b.grid_pos[0] + b.grid_pos[1], b.grid_pos[0])`.
-   - For each building, compute footprint screen rect via `iso.world_to_screen` for each footprint tile + `Renderer.map_origin`. Anchor sprite bottom-centre to footprint bottom-centre. Apply `camera.offset` if given (else `(0,0)`).
-   - Blit `assets.building_sprite(b.type_tag, b.level)`.
-   - Wire into `src/game/main.py` between `Renderer.draw_world(...)` and `Renderer.draw_workers(...)`.
-   - Run `pytest -q` — T43 tests now PASS, full suite stays green.
+- [x] **T92**: Add failing tests for the worker characteristics module in new
+  `tests/test_worker_characteristics.py`:
+  - `Characteristics()` defaults: `move_speed_mult == 1.0`,
+    `gather_speed_mult == 1.0`.
+  - `Characteristics.add_permanent(source, kind, value)` increments the
+    matching multiplier; `kind ∈ {"move_speed_mult", "gather_speed_mult"}`,
+    `value` is the additive delta (e.g. 0.05 for +5 %). Adding under the same
+    `(source, kind)` key replaces the previous value (no double-stacking).
+  - `Characteristics.remove_source(source)` undoes all bonuses keyed by
+    `source`.
+  - `Characteristics.add_temporary(kind, value, expires_at_ms)` adds a
+    timed delta. `tick(now_ms)` removes any temporary bonus whose
+    `expires_at_ms <= now_ms`.
+  - Effective multipliers are clamped to a positive minimum (e.g. `0.10`)
+    so workers never freeze.
+  Tests must FAIL first.
 
-- [x] **T45**: Write `tests/test_camera.py` (must FAIL — `game.camera` does not exist):
-   - `test_initial_offset` — `Camera()` has `offset == (0, 0)`.
-   - `test_pan_accumulates` — `c.pan(10, 5); c.pan(-3, 1)` ⇒ `c.offset == (7, 6)`.
-   - `test_clamp_world_smaller_than_viewport` — viewport `(1280, 720)`, world bounds `(0, 0, 800, 600)`. After `c.pan(50, 50); c.clamp(viewport, bounds)` the offset is locked at the centring value (the value that places the world's centre at the viewport's centre). Pan in any direction is undone by `clamp`.
-   - `test_clamp_world_larger_than_viewport` — viewport `(800, 600)`, world bounds `(0, 0, 2000, 2000)`. `c.pan(10000, 10000); c.clamp(...)` constrains offset so the world's max edge cannot move left of the viewport's right edge (and similarly for the other three sides). Pan-and-clamp moving in the opposite direction also stays bounded.
+- [x] **T93**: Implement `src/game/characteristics.py`:
+  - `Characteristics` class with two derived multipliers and an internal
+    `dict[(source_key, kind), float]` of permanent deltas plus a list of
+    `(kind, value, expires_at_ms)` for temporaries.
+  - `tick(now_ms)` purges expired temporaries.
+  - Use `__slots__`; no Pygame dependency. Run `pytest -q
+    tests/test_worker_characteristics.py` — PASS.
 
-- [x] **T46**: Implement `src/game/camera.py` with the `Camera` class per PRD §6 API and F-CAM-01..05. Run T45 — must PASS.
+- [x] **T94**: Add failing tests for `Worker` integration in
+  `tests/test_workers.py`:
+  - New attribute `worker.characteristics` is a `Characteristics`.
+  - Newly hired worker has `move_speed_mult == 1.0`,
+    `gather_speed_mult == 1.0`.
+  - `WorkerManager.notify_demolished(building)` clears any
+    `("building_level", id(building))` source from the worker.
+  - Reassigning a worker to a different building swaps the source.
+  Tests must FAIL first.
 
-- [x] **T47**: Refactor rendering to be camera-aware:
-   - Add an optional `camera: Camera | None` parameter to `Renderer.draw_world`, `draw_buildings`, `draw_workers`, and `PlacementController.draw`.
-   - When a camera is provided, add `camera.offset[0]` to every blit's `x` and `camera.offset[1]` to every blit's `y`.
-   - `TopBar`, `BottomBar`, `BuildingPanel`, `TownHallPanel` MUST NOT be camera-shifted — they stay anchored to the screen.
-   - In `main.py`, instantiate one `Camera()`, pass it through the render calls.
-   - Update existing tests to pass `camera=None` where appropriate; add a regression test in `test_render_buildings.py` asserting that with `Camera(offset=(50, 30))` the building's drawn pixel position is shifted by `(50, 30)`.
-   - `pytest -q` — full suite green.
+- [x] **T95**: Wire `Characteristics` into `Worker` (`src/game/workers.py`):
+  - Extend `__slots__`, initialise in `__init__`.
+  - On `assign_to_building` / `reassign_all` success: call
+    `worker.characteristics.remove_source(("building_level", id(prev_camp)))`,
+    then `add_permanent(("building_level", id(new_camp)),
+    "move_speed_mult", (new_camp.level − 1) * MOVE_SPEED_PER_LEVEL)` and
+    similarly for `gather_speed_mult`.
+  - On demolition / become-idle: remove the source.
+  - On building upgrade (next task) the registry/UI dispatches
+    `worker_manager.refresh_worker_bonuses()` to re-apply new deltas.
+  - Run `pytest -q` — green.
 
-- [x] **T48**: Refactor `screen_to_grid` in `src/game/input.py` to take a `Camera`:
-   - Signature: `screen_to_grid(surface, world, screen_pos, camera)`.
-   - Subtracts `camera.offset` before subtracting `Renderer.map_origin` and calling `iso.screen_to_world`.
-   - Update all call sites: `GameInput._handle_map_left_click`, `PlacementController.update_hover`, `try_place`. Pass `camera` from `main.py` into `GameInput` and `PlacementController` constructors.
-   - Add `tests/test_input_camera.py`: with `Camera(offset=(64, 32))`, a screen click at the previously-correct coords for tile `(5, 5)` shifted by `(64, 32)` round-trips back to grid `(5, 5)`.
-   - `pytest -q` — green.
+#### 12.2 Apply level bonuses to movement and gather speed
 
-- [x] **T49**: Implement RMB drag pan in `GameInput`:
-   - State: `_rmb_down: bool`, `_rmb_press_pos: (int, int)`, `_rmb_dragging: bool`.
-   - `MOUSEBUTTONDOWN button=RIGHT`: store press pos, `_rmb_down=True`, `_rmb_dragging=False`. Do NOT cancel placement yet.
-   - `MOUSEMOTION` while `_rmb_down`: if Chebyshev distance from `_rmb_press_pos` ≥ 4 px, set `_rmb_dragging=True` and call `camera.pan(event.rel[0], event.rel[1])` then `camera.clamp(viewport, world_bounds)`.
-   - `MOUSEBUTTONUP button=RIGHT`: if `_rmb_dragging` is False → existing cancel behaviour (close panel, cancel placement). Else swallow. Reset state.
-   - Add `tests/test_rmb_drag.py` exercising the threshold logic with stub events and a stub camera (no display): drag of 3 px → cancel; drag of 5 px → pan called once and no cancel.
-   - `pytest -q` — green.
+- [x] **T96**: Add failing tests for movement-speed application in
+  `tests/test_worker_movement.py`:
+  - With `move_speed_mult == 1.0`, traversing one tile takes
+    `WORKER_TILE_TRAVEL_MS` (already covered).
+  - With `move_speed_mult == 1.20`, traversal completes after
+    `WORKER_TILE_TRAVEL_MS / 1.20` ms (rounded to int ms with deterministic
+    tolerance ≤ 1 ms).
+  - Multiple-tile path interpolation respects the same effective duration
+    per tile.
+  Tests must FAIL first.
 
-- [x] **T50**: Compute world bounds for clamping in `main.py`:
-   - World pixel bounds = the bounding rect of all (grass + tree-skirt) tiles per `Renderer._compute_grass_origin` math, expressed as `(min_x, min_y, max_x, max_y)` *before* `map_origin` re-centring. Provide a helper `Renderer.world_pixel_bounds(world) -> tuple[int,int,int,int]` so the camera's `clamp` can be called consistently.
-   - Compute viewport play-area size = `(WINDOW_WIDTH, WINDOW_HEIGHT - TOP_BAR_HEIGHT - BOTTOM_BAR_HEIGHT)`.
-   - In the main loop after every pan: `camera.clamp(play_area_size, Renderer.world_pixel_bounds(world))`.
-   - Add `tests/test_world_bounds.py` — bounds returned for the default 32×32 world include the `_TREE_RING_TILES` skirt on every side.
-   - `pytest -q` — green.
+- [x] **T97**: Update `Worker.update(now_ms)` (`src/game/workers.py`) to use the
+  effective per-tile duration:
+  - `effective_travel_ms = max(1, int(round(WORKER_TILE_TRAVEL_MS /
+    self.characteristics.move_speed_mult)))`.
+  - Replace the current hard-coded `WORKER_TILE_TRAVEL_MS` boundaries.
+  - Add a fast helper for tests if needed (`Worker._effective_travel_ms()`).
+  - Run movement tests — green.
 
-- [x] **T51**: Smoke integration test `tests/test_smoke_phase8.py` (uses `SDL_VIDEODRIVER=dummy`):
-   1. Boot world+registry+resources+worker_manager+placement+input+camera as `main.py` does.
-   2. Render one frame onto the screen surface — Town Hall pixel is non-sentinel (verifies bug A fixed).
-   3. Inject `BUILD_MENU_SELECT` for `LUMBER_CAMP`, then a synthetic `MOUSEBUTTONDOWN` at a valid placement screen coord, then a `MOUSEBUTTONUP`. Render again — Lumber Camp pixel is non-sentinel (verifies bug B fixed).
-   4. Inject `MOUSEBUTTONDOWN` RMB → 3× `MOUSEMOTION` of `(20, 0)` rel → `MOUSEBUTTONUP` RMB. Assert `camera.offset[0] >= 60` (rounded for clamp). Render does not raise.
-   5. After tests pass, write `<promise>ALL_TASKS_COMPLETE</promise>` per `prompt.md` step 6 (and create `.cursor/ralph/done`).
+- [x] **T98**: Add failing tests for chop / mine duration scaling in
+  `tests/test_lumberjack_cycle_chopping.py` and a new
+  `tests/test_lumberjack_speed_bonus.py`:
+  - With camp at level 1 (no bonus) chop completes after
+    `CHOP_DURATION_MS`.
+  - With camp at level 5 the chop completes after `CHOP_DURATION_MS / 1.20`
+    ms (assert exact integer ms after applying the same rounding rule as
+    movement).
+  - Demolish-during-chop still cancels deterministically.
+  Tests must FAIL first.
 
-### Phase 9 — Worker Movement & Building Spacing
+- [x] **T99**: Update `WorkerManager.update` chop cycle:
+  - Compute `effective_chop_ms = max(1, int(round(CHOP_DURATION_MS /
+    worker.characteristics.gather_speed_mult)))` at chop start (snapshot,
+    not re-read mid-chop).
+  - Use that snapshot for the `now_ms - chop_started_ms >= …` check.
+  - Run all lumberjack tests — green.
 
-> **Scope added by user:** workers must walk smoothly to workplaces at 1 tile / 3 s, may not step onto building tiles, may approach target building from any side, and buildings must have at least one empty tile between footprints.
+- [x] **T100**: Add failing tests for `BuildingRegistry.upgrade_building`
+  side-effects in `tests/test_registry.py`:
+  - Upgrading a camp keeps the building in the registry (regression for
+    HF12-A; assert `camp in registry.all()` after upgrade).
+  - The assigned worker's `gather_speed_mult` increases by exactly
+    `MOVE_SPEED_PER_LEVEL` after a 1→2 upgrade.
+  - Multiple consecutive upgrades stack additively, not multiplicatively.
+  - Demolish removes both bonus sources (move + gather) from the worker.
+  Tests must FAIL first.
 
-- [x] **T52**: Write failing tests for new placement spacing in `tests/test_registry.py`:
-   - Adjacent footprints (edge-touch and corner-touch) are rejected.
-   - A placement with exactly one tile gap is accepted.
-   - Town Hall and resource buildings follow the same spacing rule.
-   Tests must FAIL against current `can_place` logic.
+- [x] **T101**: Implement registry → worker bonus refresh:
+  - In `BuildingRegistry.upgrade_building`, after `building.level += 1`,
+    notify the `WorkerManager` (inject reference, or callback). The manager
+    finds the staffed worker (if any) and calls
+    `characteristics.remove_source(...)` then re-adds with the new level
+    delta.
+  - Add a `WorkerManager.refresh_building_bonuses(building)` helper.
+  - Run all tests — green; HF12-A regression case is now in CI.
 
-- [x] **T53**: Implement spacing rule in `src/game/buildings/registry.py`:
-   - Replace the current variable separation formula with fixed minimum Chebyshev distance `>= 1` between any two footprint tiles.
-   - Keep overlap/bounds checks unchanged.
-   Run full `pytest -q` — green.
+#### 12.3 Internal storage on producing buildings
 
-- [x] **T54**: Add worker movement model tests in new `tests/test_worker_movement.py` (failing first):
-   - Worker has tile path queue and per-segment interpolation progress.
-   - Movement speed constant is `WORKER_TILE_TRAVEL_MS == 3000`.
-   - `update(now_ms)` advances interpolation smoothly, reaches next tile only after 3000 ms.
-   - Worker state machine: `idle -> moving -> working`.
+- [x] **T102**: Add failing tests for storage in
+  `tests/test_buildings.py`:
+  - Each of `LumberCamp`, `StoneMine`, `IronMine`, `Farm` has fields
+    `stored: int = 0` and method `storage_capacity()` returning
+    `BUILDING_STORAGE_BASE + BUILDING_STORAGE_PER_LEVEL × (level − 1)`.
+  - `add_to_storage(n)` raises if `n < 0` or would overflow capacity.
+  - `take_from_storage(n)` raises if `n` exceeds `stored`.
+  - `is_storage_full()` returns True iff `stored == capacity`.
+  - `TownHall` does NOT expose any of these (assert `AttributeError` /
+    method missing).
+  Tests must FAIL first.
 
-- [x] **T55**: Implement movement state in `src/game/workers.py`:
-   - Extend `Worker` with `state`, `current_tile`, `target_tile`, `path`, `segment_started_ms`.
-   - Add `WorkerManager.update(now_ms)`.
-   - Keep old API compatibility where possible (`workers()`, `idle()`).
-   - Add config constant `WORKER_TILE_TRAVEL_MS = 3000` in `src/game/config.py`.
-   Run tests — green.
+- [x] **T103**: Add a mixin / base storage helper used by the four producing
+  buildings:
+  - Recommend `src/game/buildings/storage.py` exposing a small mixin or a
+    helper class that stores `stored: int` plus `storage_capacity(level)`
+    static method. Apply to `LumberCamp`, `StoneMine`, `IronMine`, `Farm`.
+  - Update `__slots__`. Run `pytest -q tests/test_buildings.py` — green.
 
-- [x] **T56**: Write failing pathfinding tests in new `tests/test_pathfinding.py`:
-   - 8-directional path exists around obstacles.
-   - Occupied building tiles are never included in path.
-   - If destination unreachable, returns no path.
+- [x] **T104**: Add failing tests for production gating by storage in
+  `tests/test_lumberjack_cycle_deposit.py` and
+  `tests/test_production.py`:
+  - Once `LumberCamp.stored == LumberCamp.storage_capacity()`, the next
+    chop cycle does NOT start (worker stays inside camp; deposit count
+    does not grow until storage drops).
+  - Per-tick passive income for `Farm` and `IronMine` skips when
+    `stored >= capacity`.
+  Tests must FAIL first.
 
-- [x] **T57**: Implement pathfinding module `src/game/pathfinding.py`:
-   - Grid **BFS** (strictly BFS, not A*) over world grass tiles.
-   - Blocked set = all occupied footprint tiles.
-   - Neighbors = 8 directions in deterministic order: `N, NE, E, SE, S, SW, W, NW`.
-   - Diagonal no-corner-cutting rule: for diagonal step, at least one adjacent orthogonal tile must be walkable.
-   - Deterministic behavior for stable tests.
-   Run tests — green.
+- [x] **T105**: Implement storage gating:
+  - In `WorkerManager.update`, when a `LUMBERJACK` (resp. `STONECUTTER`)
+    is in the `working` rest state and ready to start a new cycle, also
+    require `not camp.is_storage_full()`.
+  - In `apply_production_tick` (`src/game/loop.py`) and
+    `BuildingRegistry.sync_resources_per_cycle`, skip a tick of passive
+    income for any producing building whose storage is full.
+  - Each successful deposit calls `camp.add_to_storage(1)` in addition to
+    `resources.add(...)`.
+  - Run all tests — green.
 
-- [x] **T58**: Integrate assignment-to-approach-tiles in `WorkerManager.reassign_all()`:
-   - For each free matching building, compute all free approach tiles (Chebyshev distance 1 from footprint).
-   - Choose a reachable approach tile, compute path from worker current tile, set worker `moving`.
-   - If no reachable approach tile exists, worker remains waiting/idle.
-   Add failing-then-passing tests in `tests/test_workers.py`.
+- [x] **T106**: Add failing UI tests for storage display in
+  `tests/test_lumber_camp_panel.py` and a new
+  `tests/test_building_panel_storage.py`:
+  - The panel renders a `Storage: <stored> / <capacity>` line for each of
+    the four producing buildings.
+  - Capacity changes immediately on level-up.
+  - Tests assert via `LumberCampPanel.storage_line(camp)` /
+    `BuildingPanel.storage_line(building)` (or string scrape; pick one).
+  Tests must FAIL first.
 
-- [x] **T59**: Update production gating and demolition behavior:
-   - `working_buildings()` must include only buildings whose worker reached destination.
-   - `apply_production_tick` and `sync_resources_per_cycle` use `working_buildings()` (not merely assigned).
-   - If target/working building is demolished, worker stops moving/working and becomes idle at current tile.
-   Add regression tests in `tests/test_production.py` and `tests/test_workers.py`.
+- [x] **T107**: Implement storage line rendering in `BuildingPanel.draw` and
+  `LumberCampPanel.draw`. Adjust the `extra_bottom_px` accumulator so the
+  modal grows by one row, and update `BuildingPanelLayout` if necessary.
+  Run UI tests — green.
 
-- [x] **T60**: Render smooth worker movement:
-   - `Renderer.draw_workers` uses worker interpolated world position between tile centers while moving.
-   - Idle/working workers render at tile center as before.
-   - Add focused render test in `tests/test_render_workers.py` verifying moving worker pixel shifts between frames.
+#### 12.4 Stones on the map
 
-- [x] **T61**: Wire game loop updates:
-   - In `main.py`, call `worker_manager.update(pygame.time.get_ticks())` every frame before rendering.
-   - Recompute per-cycle preview income only from `working_buildings`.
-   - Verify no exceptions under `SDL_VIDEODRIVER=dummy` smoke run.
+- [x] **T108**: Add failing tests for the stone domain object in new
+  `tests/test_stones.py`:
+  - `Stone` model with `units: int = 15`, `harvest()` decrements by 1 and
+    returns the new value; `harvest()` raises if `units == 0`.
+  - `is_depleted` is True iff `units == 0`.
+  - World API: `world.stone_at(gx, gy) -> Stone | None`,
+    `world.is_stone_blocking(gx, gy) -> bool`,
+    `world.iter_stones() -> list[((gx, gy), Stone)]`,
+    `world.harvest_stone(gx, gy) -> Stone | None` (decrements and removes
+    when depleted).
+  - Reservation API mirrors trees:
+    `reserve_stone(gx, gy, worker)`, `release_stone(gx, gy)`,
+    `release_reservations_for(worker)` (already exists; extend it).
+  Tests must FAIL first.
 
-- [x] **T62**: End-to-end smoke test in `tests/test_smoke_phase9.py`:
-   1. Build Lumber Camp at valid location.
-   2. Hire Lumberjack.
-   3. Advance simulated time: verify worker visibly moves over multiple updates and reaches an approach tile near camp.
-   4. Before arrival, production tick adds 0 wood from that camp; after arrival, next tick adds `5 * level`.
-   5. Build-adjacency rejection confirmed (touching placement fails, one-tile-gap passes).
-   After passing tests, output `<promise>ALL_TASKS_COMPLETE</promise>` and create `.cursor/ralph/done`.
+- [x] **T109**: Implement `src/game/stones.py` (or a small section in
+  `src/game/world.py`) and wire World methods.
+  - Use `__slots__`. Keep generation deterministic given a seed.
+  - The reservation system is shared with trees; rename internal storage
+    to a more generic `_resource_reservations` or keep a parallel dict —
+    consistent with existing design.
+
+- [x] **T110**: Add failing tests for stone generation in
+  `tests/test_world.py`:
+  - With a fixed seed, exactly 3 generation centres are picked, all in
+    grass, all at Chebyshev ≥ 12 from any Town Hall footprint tile.
+  - Around each centre, every tile inside `r` (random `r ∈ [3, 6]`) that
+    is not a tree, not a building footprint, and inside the grid hosts a
+    `Stone(units=15)`.
+  - No tile can host both a tree and a stone simultaneously.
+  - Stone generation is idempotent: running the seed again from a fresh
+    `World()` produces identical output.
+  Tests must FAIL first.
+
+- [x] **T111**: Implement deterministic stone generation in
+  `World._init_stones()` (called from `__init__`):
+  - Use a stable PRNG derived from a constant seed (or `GRID_SIZE`-based
+    seed already used for trees) so tests are reproducible.
+  - Skip tiles that are trees or already stones; skip tiles within
+    `STONE_MIN_DISTANCE_FROM_TOWN_HALL` of the Town Hall **footprint**
+    (ratchet: tests must check this even though the Town Hall is placed
+    by the registry, not the world — accept a dependency-injection hook
+    `World.set_protected_tiles(set)` if needed).
+  - Run `pytest -q tests/test_world.py` — green.
+
+- [x] **T112**: Add failing tests for movement & placement blocking by stones
+  in `tests/test_pathfinding.py`, `tests/test_registry.py`,
+  `tests/test_workers.py`:
+  - BFS treats alive stone tiles as blocked (no path through).
+  - `BuildingRegistry.can_place` returns False when the footprint covers
+    any stone tile, even if the spacing rule would otherwise accept it.
+  - `BuildingRegistry.place` does NOT remove stones (unlike trees).
+  Tests must FAIL first.
+
+- [x] **T113**: Update pathfinding (`src/game/pathfinding.py`) and registry
+  (`src/game/buildings/registry.py`) to treat stones as blockers and
+  un-buildable. Run all tests — green.
+
+- [x] **T114**: Add failing render tests in
+  `tests/test_render_stones.py`:
+  - World API: `world.iter_stones()` returns all stones.
+  - `Renderer.draw_stones(surface, world, camera=None)` (or extension of
+    `draw_trees`) blits a stone sprite anchored bottom-centre per stone
+    tile, sorted with the same painter key.
+  - With `Camera(offset=(50, 30))`, the draw position is shifted.
+  - Procedural fallback exists when `assets/world/stone/default.png` is
+    missing.
+  Tests must FAIL first.
+
+- [x] **T115**: Add a placeholder asset folder
+  `assets/world/stone/default.png` (procedurally generated grey isometric
+  pile is acceptable; commit a real placeholder PNG so disk-first loader
+  can hot-swap later) plus an `asset_meta.json` mirroring the building
+  scheme. Implement `assets.stone_sprite()` with the same mtime hot-reload
+  caching used for buildings/trees, and add the `Renderer.draw_stones`
+  pass. Run all render tests — green.
+
+#### 12.5 Stonecutter active cycle
+
+- [x] **T116**: Add failing tests for `StoneMine` state in new
+  `tests/test_stone_mine_state.py`:
+  - `StoneMine.active: bool = True`, `StoneMine.delivered_stone: int = 0`.
+  - `set_active(False/True)` works; `record_stone_delivered(n)` is
+    increment-only and rejects negatives.
+  - Other building types do NOT expose those fields (negative test).
+  Tests must FAIL first.
+
+- [x] **T117**: Implement Active toggle and counter on `StoneMine`
+  (`src/game/buildings/stone_mine.py`) using the same pattern as
+  `LumberCamp`. Update `__slots__`. Run those tests — green.
+
+- [x] **T118**: Add failing tests for the stonecutter state machine in new
+  `tests/test_stonecutter_cycle.py`:
+  - State transitions for STONECUTTER assigned to an active StoneMine
+    mirror lumberjack: `idle → moving → working (rest) → going_to_stone
+    → mining → returning → arrived_camp → depositing → working`.
+  - `worker.carrying` becomes `"stone"` after a successful mine and is
+    cleared on deposit.
+  - Reservations are honoured: a second stonecutter cannot claim a stone
+    already targeted.
+  - Demolishing the mine during any active stage cancels the cycle.
+  Tests must FAIL first.
+
+- [x] **T119**: Implement stonecutter dispatch in `WorkerManager`:
+  - Generalise the lumberjack dispatch helpers — extract
+    `_start_gather_cycle(worker, camp, *, world_query)` parametrised by
+    the resource (tree / stone). Reuse `_park_lumberjack_inside_camp`
+    rename → `_park_worker_inside_camp`.
+  - Add `find_nearest_free_stone(world, from_tile, …)` mirroring
+    `find_nearest_free_tree`.
+  - The mining duration uses `MINE_DURATION_MS` and respects
+    `gather_speed_mult`.
+  - Deposit logic: `+1 stone` to `ResourceManager`,
+    `camp.record_stone_delivered(1)`, plus storage gating from §12.3.
+  - Run all worker tests — green.
+
+- [x] **T120**: Add failing UI tests for the StoneMine panel in
+  `tests/test_stone_mine_panel.py`:
+  - Toggle button (Active/Inactive) returns `"toggle_active"` on click.
+  - `Stones delivered: N` line mirrors `mine.delivered_stone`.
+  - Storage line `Storage: <stored> / <capacity>` is rendered.
+  - LumberCamp / Farm / IronMine do not get the stonecutter-specific
+    panel.
+  Tests must FAIL first.
+
+- [x] **T121**: Implement `src/game/ui/stone_mine_panel.py` similarly to
+  `LumberCampPanel` and wire it into `GameInput` so clicks on a
+  `STONE_MINE` open the new panel; reuse the same `extra_bottom_px`
+  pattern correctly (no double-resolution bug — see HF12-A).
+
+#### 12.6 End-to-end smoke + cleanup
+
+- [x] **T122**: Add failing carrying-sprite tests in `tests/test_assets.py`
+  for the stonecutter:
+  - `worker_dot("STONECUTTER", carrying=False)` and `(…, carrying=True)`
+    return distinct surfaces.
+  - Procedural fallback exists for both.
+  - Folder layout: `assets/npc/stonecutter/default.png` + `…/carrying.png`.
+  Tests must FAIL first.
+
+- [x] **T123**: Implement carrying-sprite loading for stonecutter (same
+  contract as lumberjack). Update `Renderer.draw_workers` to dispatch the
+  carrying variant when `worker.carrying == "stone"`. Run render tests —
+  green.
+
+- [x] **T124**: End-to-end smoke `tests/test_smoke_phase12.py`
+  (`SDL_VIDEODRIVER=dummy`):
+  1. World boots with 3 stone clusters, all ≥ 12 tiles from the Town Hall.
+  2. Build a Stone Mine adjacent to a stone cluster; placement on stone
+     tiles is rejected.
+  3. Hire a stonecutter; assert it walks to the mine, rests, then dispatches
+     to a stone, mines `MINE_DURATION_MS`, and deposits `+1 stone`.
+  4. Upgrade a Lumber Camp from L1 → L2 mid-cycle:
+     - The camp does NOT vanish (regression for HF12-A).
+     - The lumberjack's `gather_speed_mult` becomes `1.05`.
+     - The next chop completes faster (assert effective ms equals
+       `CHOP_DURATION_MS / 1.05` snapshot).
+  5. Fill the Lumber Camp's storage to capacity and confirm no further
+     cycles start until storage decreases (manually call
+     `camp.take_from_storage(1)` after assertion).
+  6. Toggle the Stone Mine off mid-cycle: current cycle finishes, no new
+     cycle starts.
+  After all tasks `[x]`, output `<promise>ALL_TASKS_COMPLETE</promise>`
+  and create `.cursor/ralph/done`.
+
+- [x] **T125**: Cleanup pass:
+  - Remove dead `LumberCamp.income()` call sites and any
+    `apply_production_tick` branches that special-cased active-cycle
+    buildings (everything is gated by `working_buildings()` × storage).
+  - Ensure `ruff` / linter is clean.
+  - Update `README.md` controls / gameplay summary to mention
+    stonecutters, internal storage, and per-level worker bonuses (one-line
+    each).
+  - `pytest -q` final green run.
 
 ---
 
 ## Decisions Log
 
-| Date | Task | Decision | Rationale |
-|------|------|----------|-----------|
-|      |      |          |           |
+| Date       | Task   | Decision                                                                                  | Rationale                                                                                                  |
+|------------|--------|-------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
+| 2026-04-27 | HF12-A | Hit-resolve LumberCamp panel against `extra_bottom_px=72` only (drop legacy fallback).    | Legacy fallback returned `"demolish"` for clicks on the visible Upgrade button (28 px overlap).            |
+| 2026-04-27 | T96+   | Movement & gather speed bonuses are additive (per PRD F-CHAR-02), not multiplicative.     | Easier to reason about cumulative debuffs; user explicitly requested additive stacking.                    |
+| 2026-04-27 | T103   | Storage capacity formula `3 + 2 × (L − 1)` = 3, 5, 7 … 21 over levels 1..10.              | User specified +2 per level on top of base 3.                                                              |
+| 2026-04-27 | T111   | 3 stone clusters (constant), centre Chebyshev ≥ 12 from Town Hall, radius `r ∈ [3, 6]`.   | Verbatim user spec.                                                                                        |
+| 2026-04-27 | F-WORK-13 | MINER and FARMER stay passive in Phase 12; only storage cap applies.                  | User chose "active_with_field" later → defer active gather to a follow-up phase.                           |
 
 ## Issues & Blockers
 
@@ -236,8 +459,10 @@
 
 ## Notes
 
-- Ambiguity in user spec: per-cycle stone/iron upgrade increment was not stated explicitly for level 5 vs subsequent levels. We follow the wood pattern: stone +200/level from L5, iron +300/level from L7 (see PRD §3 F-BLD-05). Record any alternative in the Decisions Log if changed.
-- Worker hire cost not stated by user → fixed at 50 food. Any change → Decisions Log.
-- As of Phase 9 plan, teleport movement is deprecated: workers must move with pathfinding at 1 tile / 3 s and only produce after reaching workplace.
-- All assets are procedural; no binary files in the repo.
-- Tests run headless via `SDL_VIDEODRIVER=dummy` set in `tests/conftest.py`.
+- All tests run headless via `SDL_VIDEODRIVER=dummy` in `tests/conftest.py`.
+- All bonuses are clamped to a positive minimum (`>= 0.10`) so workers never
+  freeze when temporary debuffs land in the future.
+- Stone assets are placeholders for now; the disk-first asset loader allows
+  swapping the PNG without code changes.
+- Phase 11 sections above are kept for ralph-loop input context only — do NOT
+  re-run those tasks.

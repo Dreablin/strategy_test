@@ -1,4 +1,4 @@
-"""Fixed-height top HUD strip for resources and per-cycle income."""
+"""Fixed-height top HUD strip for resource totals."""
 
 import pygame
 
@@ -11,7 +11,7 @@ _RESOURCE_ORDER: tuple[str, ...] = ("food", "wood", "stone", "iron")
 
 
 class TopBar:
-    """48 px strip: `[icon] amount (+income)` for each resource, left to right."""
+    """48 px strip: `[icon] amount` for each resource, left to right."""
 
     @staticmethod
     def draw(surface: pygame.Surface, resources: ResourceManager) -> None:
@@ -20,7 +20,6 @@ class TopBar:
         pygame.draw.rect(surface, (32, 36, 44), strip)
         pygame.draw.line(surface, (56, 60, 68), (0, _BAR_HEIGHT - 1), (width, _BAR_HEIGHT - 1))
 
-        income = resources.per_cycle
         col_w = max(1, width // len(_RESOURCE_ORDER))
         font = pygame.font.Font(None, 22)
 
@@ -32,8 +31,7 @@ class TopBar:
 
             text_x = x0 + icon.get_width() + 6
             amount = resources.get(name)
-            inc = int(income.get(name, 0))
-            label = f"{amount}  (+{inc})"
+            label = f"{amount}"
             text_surf = font.render(label, True, (228, 230, 238))
             text_y = (_BAR_HEIGHT - text_surf.get_height()) // 2
             surface.blit(text_surf, (text_x, text_y))

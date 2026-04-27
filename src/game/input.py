@@ -6,6 +6,8 @@ import pygame
 
 from game import dev_asset_reload
 from game.buildings.base import Building
+from game.buildings.lumber_camp import LumberCamp
+from game.buildings.stone_mine import StoneMine
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
 from game.camera import Camera
@@ -14,6 +16,8 @@ from game.render import Renderer
 from game.resources import ResourceManager
 from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT, BottomBar
 from game.ui.building_panel import BuildingPanel
+from game.ui.lumber_camp_panel import LumberCampPanel
+from game.ui.stone_mine_panel import StoneMinePanel
 from game.ui.placement import PlacementController
 from game.ui.town_hall_panel import TownHallPanel
 from game.world import World
@@ -83,6 +87,13 @@ class GameInput:
         if self._panel is None:
             return "empty"
         return self._worker_manager.worker_status_for_building(self._panel)
+
+    def _panel_production_status(self) -> str | None:
+        if self._panel is None:
+            return None
+        if not (hasattr(self._panel, "storage_capacity") and hasattr(self._panel, "stored")):
+            return None
+        return self._worker_manager.production_status_for_building(self._panel)
 
     def _sync_assignments(self) -> None:
         self._worker_manager.reassign_all()
@@ -171,13 +182,43 @@ class GameInput:
                 worker_assigned=self._panel_worker_status() != "empty",
             )
             return
+        if LumberCampPanel.supports_building(self._panel):
+            assert isinstance(self._panel, LumberCamp)
+            worker_status = self._panel_worker_status()
+            production_status = self._panel_production_status()
+            LumberCampPanel.draw(
+                surface,
+                self._panel,
+                self._resources,
+                worker_assigned=worker_status != "empty",
+                worker_status=worker_status,
+                production_status=production_status,
+                worker_working=worker_status == "assigned",
+            )
+            return
+        if StoneMinePanel.supports_building(self._panel):
+            assert isinstance(self._panel, StoneMine)
+            worker_status = self._panel_worker_status()
+            production_status = self._panel_production_status()
+            StoneMinePanel.draw(
+                surface,
+                self._panel,
+                self._resources,
+                worker_assigned=worker_status != "empty",
+                worker_status=worker_status,
+                production_status=production_status,
+                worker_working=worker_status == "assigned",
+            )
+            return
         worker_status = self._panel_worker_status()
+        production_status = self._panel_production_status()
         BuildingPanel.draw(
             surface,
             self._panel,
             self._resources,
             worker_assigned=worker_status != "empty",
             worker_status=worker_status,
+            production_status=production_status,
             worker_working=worker_status == "assigned",
         )
 
@@ -220,11 +261,78 @@ class GameInput:
                     if self._worker_manager.hire(worker_type) is not None:
                         self._sync_assignments()
                     return
+            if LumberCampPanel.supports_building(self._panel):
+                assert isinstance(self._panel, LumberCamp)
+                production_status = self._panel_production_status()
+                layout = LumberCampPanel.layout(
+                    surface,
+                    self._panel,
+                    self._resources,
+                    worker_assigned=wa,
+                    production_status=production_status,
+                )
+                if layout.frame.collidepoint(pos):
+                    action = LumberCampPanel.click_action(
+                        surface,
+                        pos,
+                        self._panel,
+                        self._resources,
+                        worker_assigned=wa,
+                        production_status=production_status,
+                    )
+                    if action == "close":
+                        self._panel = None
+                    elif action == "upgrade" and self._panel is not None:
+                        if self._registry.upgrade_building(self._panel, self._resources):
+                            self._sync_assignments()
+                    elif action == "demolish" and self._panel is not None:
+                        b = self._panel
+                        self._registry.demolish(b, self._worker_manager)
+                        self._panel = None
+                        self._sync_assignments()
+                    elif action == "toggle_active" and self._panel is not None:
+                        self._panel.set_active(not self._panel.active)
+                        self._sync_assignments()
+                    return
+            if StoneMinePanel.supports_building(self._panel):
+                assert isinstance(self._panel, StoneMine)
+                production_status = self._panel_production_status()
+                layout = StoneMinePanel.layout(
+                    surface,
+                    self._panel,
+                    self._resources,
+                    worker_assigned=wa,
+                    production_status=production_status,
+                )
+                if layout.frame.collidepoint(pos):
+                    action = StoneMinePanel.click_action(
+                        surface,
+                        pos,
+                        self._panel,
+                        self._resources,
+                        worker_assigned=wa,
+                        production_status=production_status,
+                    )
+                    if action == "close":
+                        self._panel = None
+                    elif action == "upgrade" and self._panel is not None:
+                        if self._registry.upgrade_building(self._panel, self._resources):
+                            self._sync_assignments()
+                    elif action == "demolish" and self._panel is not None:
+                        b = self._panel
+                        self._registry.demolish(b, self._worker_manager)
+                        self._panel = None
+                        self._sync_assignments()
+                    elif action == "toggle_active" and self._panel is not None:
+                        self._panel.set_active(not self._panel.active)
+                        self._sync_assignments()
+                    return
             layout = BuildingPanel.layout(
                 surface,
                 self._panel,
                 self._resources,
                 worker_assigned=wa,
+                production_status=self._panel_production_status(),
             )
             if layout.frame.collidepoint(pos):
                 action = BuildingPanel.click_action(
@@ -233,6 +341,7 @@ class GameInput:
                     self._panel,
                     self._resources,
                     worker_assigned=wa,
+                    production_status=self._panel_production_status(),
                 )
                 if action == "close":
                     self._panel = None

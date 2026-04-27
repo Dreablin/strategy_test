@@ -5,8 +5,10 @@ from game.buildings.iron_mine import IronMine
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
+from game.characteristics import Characteristics
 from game.config import WORKER_HIRE_COST
 from game.resources import ResourceManager
+from game.trees import Tree, TreeStage
 from game.world import World
 from game.workers import Worker, WorkerManager, building_center_tile, town_hall_spawn_tile
 
@@ -60,6 +62,72 @@ def test_hire_deducts_50_food_and_returns_worker() -> None:
     assert w.type_tag == "LUMBERJACK"
     assert w.current_tile == town_hall_spawn_tile(town_hall)
     assert resources.get("food") == food_before - WORKER_HIRE_COST["food"]
+
+
+def test_hired_worker_has_characteristics_defaults() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, (16, 16))
+    wm = WorkerManager(resources, registry)
+
+    worker = wm.hire("LUMBERJACK")
+
+    assert worker is not None
+    assert isinstance(worker.characteristics, Characteristics)
+    assert worker.characteristics.move_speed_mult == 1.0
+    assert worker.characteristics.gather_speed_mult == 1.0
+
+
+def test_assign_to_building_applies_level_bonus_source() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    camp = registry.place(LumberCamp, (10, 10))
+    camp.level = 3
+    wm = WorkerManager()
+    worker = Worker("LUMBERJACK")
+    wm.add_worker(worker)
+
+    wm.assign_to_building(worker, camp)
+
+    assert worker.characteristics.move_speed_mult == 1.10
+    assert worker.characteristics.gather_speed_mult == 1.10
+
+
+def test_notify_demolished_clears_building_level_bonus_source() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    camp = registry.place(LumberCamp, (12, 12))
+    camp.level = 4
+    wm = WorkerManager(registry=registry)
+    worker = Worker("LUMBERJACK")
+    wm.add_worker(worker)
+    wm.assign_to_building(worker, camp)
+
+    assert worker.characteristics.move_speed_mult == 1.15
+    wm.notify_demolished(camp)
+
+    assert worker.characteristics.move_speed_mult == 1.0
+    assert worker.characteristics.gather_speed_mult == 1.0
+
+
+def test_reassign_to_different_building_swaps_bonus_source() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    camp_a = registry.place(LumberCamp, (8, 8))
+    camp_b = registry.place(LumberCamp, (20, 20))
+    camp_a.level = 2
+    camp_b.level = 5
+    wm = WorkerManager()
+    worker = Worker("LUMBERJACK")
+    wm.add_worker(worker)
+
+    wm.assign_to_building(worker, camp_a)
+    assert worker.characteristics.move_speed_mult == 1.05
+
+    wm.assign_to_building(worker, camp_b)
+    assert worker.characteristics.move_speed_mult == 1.20
+    assert worker.characteristics.gather_speed_mult == 1.20
 
 
 def test_hire_returns_none_when_insufficient_food_and_does_not_deduct() -> None:
@@ -160,7 +228,7 @@ def test_reassign_all_sets_moving_path_to_reachable_approach_tile() -> None:
     registry.place(TownHall, (16, 16))
     camp = registry.place(LumberCamp, (24, 24))
     wm = WorkerManager(resources, registry)
-    w = Worker("LUMBERJACK", stand_tile=(2, 2))
+    w = Worker("LUMBERJACK", stand_tile=(20, 20))
     wm.add_worker(w)
 
     wm.reassign_all()
@@ -168,15 +236,11 @@ def test_reassign_all_sets_moving_path_to_reachable_approach_tile() -> None:
     assert w.assigned_building is camp
     assert w.state == "moving"
     assert len(w.path) >= 2
-    assert w.path[0] == (2, 2)
+    assert w.path[0] == (20, 20)
     end = w.path[-1]
-    cx, cy = camp.grid_pos  # type: ignore[misc]
-    cw, ch = type(camp).footprint
     assert not world.is_occupied(*end)
-    assert max(
-        max(cx - end[0], end[0] - (cx + cw - 1), 0),
-        max(cy - end[1], end[1] - (cy + ch - 1), 0),
-    ) == 1
+    # Tree is only picked after the lumberjack reaches the camp.
+    assert w.target_tree is None
 
 
 def test_reassign_all_uses_current_time_for_move_start_no_first_frame_teleport() -> None:
@@ -213,7 +277,7 @@ def test_reassign_all_keeps_worker_idle_when_no_approach_tile_reachable() -> Non
                 continue
             world.mark_occupied(x, y, 1, 1)
     wm = WorkerManager(resources, registry)
-    w = Worker("LUMBERJACK", stand_tile=(2, 2))
+    w = Worker("LUMBERJACK", stand_tile=(20, 20))
     wm.add_worker(w)
 
     wm.reassign_all()
@@ -230,7 +294,7 @@ def test_working_buildings_excludes_moving_worker_until_arrival() -> None:
     registry.place(TownHall, (16, 16))
     camp = registry.place(LumberCamp, (24, 24))
     wm = WorkerManager(resources, registry)
-    w = Worker("LUMBERJACK", stand_tile=(2, 2))
+    w = Worker("LUMBERJACK", stand_tile=(20, 20))
     wm.add_worker(w)
     wm.reassign_all()
 
@@ -246,13 +310,63 @@ def test_worker_status_for_building_reports_on_the_way_then_assigned() -> None:
     registry.place(TownHall, (16, 16))
     camp = registry.place(LumberCamp, (24, 24))
     wm = WorkerManager(resources, registry)
-    w = Worker("LUMBERJACK", stand_tile=(2, 2))
+    w = Worker("LUMBERJACK", stand_tile=(20, 20))
     wm.add_worker(w)
     wm.reassign_all()
 
     assert wm.worker_status_for_building(camp) == "on the way"
     wm.update(120_000)
     assert wm.worker_status_for_building(camp) == "assigned"
+
+
+def test_worker_status_for_building_reports_on_the_way_for_stonecutter_resource_walk() -> None:
+    from game.buildings.stone_mine import StoneMine
+
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    th = registry.place(TownHall, (16, 16))
+    th.level = 3
+    mine = registry.place(StoneMine, (20, 20))
+    wm = WorkerManager(resources, registry)
+    w = Worker("STONECUTTER", stand_tile=(18, 18))
+    wm.add_worker(w)
+    wm.assign_to_building(w, mine)
+    w.start_move([(18, 18), (19, 18)], started_ms=0, move_state="going_to_stone")
+
+    assert wm.worker_status_for_building(mine) == "on the way"
+
+
+def test_production_status_for_building_no_worker_and_storage_full() -> None:
+    camp = LumberCamp(level=1, grid_pos=(10, 10))
+    wm = WorkerManager()
+
+    assert wm.production_status_for_building(camp) == "No worker"
+
+    w = Worker("LUMBERJACK")
+    wm.add_worker(w)
+    wm.assign_to_building(w, camp)
+    camp.add_to_storage(camp.storage_capacity())
+    assert wm.production_status_for_building(camp) == "Storage full"
+
+
+def test_production_status_for_building_resting_and_gathering_states() -> None:
+    camp = LumberCamp(level=1, grid_pos=(10, 10))
+    now = {"t": 1000}
+    wm = WorkerManager(now_ms_fn=lambda: now["t"])
+    w = Worker("LUMBERJACK")
+    wm.add_worker(w)
+    wm.assign_to_building(w, camp)
+
+    w.state = "working"
+    w.camp_wait_until_ms = 3000
+    assert wm.production_status_for_building(camp) == "Resting"
+
+    w.state = "chopping"
+    assert wm.production_status_for_building(camp) == "Gathering"
+
+    w.state = "returning"
+    assert wm.production_status_for_building(camp) == "On the way"
 
 
 def test_demolish_moving_worker_becomes_idle_at_current_tile() -> None:
@@ -262,7 +376,7 @@ def test_demolish_moving_worker_becomes_idle_at_current_tile() -> None:
     registry.place(TownHall, (16, 16))
     camp = registry.place(LumberCamp, (24, 24))
     wm = WorkerManager(resources, registry)
-    w = Worker("LUMBERJACK", stand_tile=(2, 2))
+    w = Worker("LUMBERJACK", stand_tile=(20, 20))
     wm.add_worker(w)
     wm.reassign_all()
     assert w.assigned_building is camp
@@ -286,7 +400,7 @@ def test_reassign_all_does_not_retarget_worker_already_moving() -> None:
     camp_a = registry.place(LumberCamp, (22, 22))
     camp_b = registry.place(LumberCamp, (26, 26))
     wm = WorkerManager(resources, registry)
-    w = Worker("LUMBERJACK", stand_tile=(2, 2))
+    w = Worker("LUMBERJACK", stand_tile=(20, 20))
     wm.add_worker(w)
     wm.reassign_all()
     first_target = w.assigned_building
@@ -305,8 +419,8 @@ def test_reassign_all_one_slot_two_workers_only_one_assigned() -> None:
     registry.place(TownHall, (16, 16))
     camp = registry.place(LumberCamp, (24, 24))
     wm = WorkerManager(resources, registry)
-    w1 = Worker("LUMBERJACK", stand_tile=(2, 2))
-    w2 = Worker("LUMBERJACK", stand_tile=(3, 2))
+    w1 = Worker("LUMBERJACK", stand_tile=(20, 20))
+    w2 = Worker("LUMBERJACK", stand_tile=(21, 20))
     wm.add_worker(w1)
     wm.add_worker(w2)
 
@@ -351,3 +465,69 @@ def test_hire_miner_requires_town_hall_level_5() -> None:
     assert wm.hire("MINER") is None
     town_hall.level = 5
     assert wm.hire("MINER") is not None
+
+
+def test_reassign_all_detours_around_alive_tree_tile() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, (16, 16))
+    camp = registry.place(LumberCamp, (24, 24))
+    world._trees[(22, 22)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
+    wm = WorkerManager(resources, registry)
+    w = Worker("LUMBERJACK", stand_tile=(20, 20))
+    wm.add_worker(w)
+
+    wm.reassign_all()
+
+    assert w.assigned_building is camp
+    assert w.path
+    assert (22, 22) not in w.path
+
+
+def test_reassign_all_can_use_tile_after_tree_removed() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    world._trees.clear()  # noqa: SLF001
+    registry.place(TownHall, (16, 16))
+    registry.place(LumberCamp, (24, 24))
+    world._trees[(22, 22)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
+    wm = WorkerManager(resources, registry)
+    w = Worker("LUMBERJACK", stand_tile=(20, 20))
+    wm.add_worker(w)
+
+    wm.reassign_all()
+    assert (22, 22) not in w.path
+
+    w.assigned_building = None
+    w.idle = True
+    w.state = "idle"
+    w.path = []
+    world.remove_tree(22, 22)
+    wm.reassign_all()
+    # After tree removal the worker can again walk toward the camp; tree target is
+    # only picked once the lumberjack has actually reached the camp.
+    assert w.target_tree is None
+    assert not w.idle
+    assert w.state == "moving"
+
+
+def test_reassign_all_detours_around_alive_stone_tile() -> None:
+    from game.stones import Stone
+
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, (16, 16))
+    camp = registry.place(LumberCamp, (24, 24))
+    world._stones[(22, 22)] = Stone()  # noqa: SLF001
+    wm = WorkerManager(resources, registry)
+    w = Worker("LUMBERJACK", stand_tile=(20, 20))
+    wm.add_worker(w)
+
+    wm.reassign_all()
+
+    assert w.assigned_building is camp
+    assert w.path
+    assert (22, 22) not in w.path

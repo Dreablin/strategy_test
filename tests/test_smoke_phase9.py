@@ -11,10 +11,8 @@ from game.camera import Camera
 from game.config import WINDOW_SIZE
 from game.input import GameInput
 from game.iso import world_to_screen
-from game.loop import apply_production_tick
 from game.render import Renderer
 from game.resources import ResourceManager
-from game.tick import TickScheduler
 from game.ui.bottom_bar import BUILD_MENU_SELECT
 from game.ui.placement import PlacementController
 from game.world import World
@@ -53,12 +51,11 @@ def test_smoke_phase9_worker_moves_and_production_gates() -> None:
     placement = PlacementController(world, registry, resources, camera)
     workers = WorkerManager(resources, registry)
     game_input = GameInput(world, registry, resources, placement, workers, camera)
-    scheduler = TickScheduler()
     registry.place(TownHall, (16, 16))
 
     # 1) Build Lumber Camp at a valid location through input routing.
     game_input.handle(screen, pygame.event.Event(BUILD_MENU_SELECT, building_type="LUMBER_CAMP"))
-    camp_click = _tile_click_pos(screen, world, camera, 10, 10)
+    camp_click = _tile_click_pos(screen, world, camera, 22, 22)
     game_input.handle(
         screen, pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=camp_click)
     )
@@ -73,6 +70,7 @@ def test_smoke_phase9_worker_moves_and_production_gates() -> None:
     workers.reassign_all()
     worker = workers.workers()[0]
     assert worker.assigned_building is camp
+    # Lumberjack first walks to the camp; the chop cycle starts on arrival.
     assert worker.state == "moving"
 
     # 3) Advance simulated time: worker must move and eventually reach approach tile.
@@ -82,28 +80,26 @@ def test_smoke_phase9_worker_moves_and_production_gates() -> None:
     workers.update(120000)
     end_tile = worker.current_tile
     assert mid_tile != start_tile
-    assert worker.state == "working"
-    assert _is_approach_tile(camp, end_tile)
+    assert worker.state in {"chopping", "returning", "depositing", "going_to_tree"}
+    assert world.is_in_grass(*end_tile)
 
-    # 4) Production gating: before arrival yields 0, after arrival yields +5*level.
+    # 4) Production gating: Lumber Camp has no passive production in Phase 11.
     world2 = World()
     resources2 = ResourceManager()
     registry2 = BuildingRegistry(world2)
     registry2.place(TownHall, (16, 16))
-    camp2 = registry2.place(LumberCamp, (24, 24))
+    registry2.place(LumberCamp, (24, 24))
     workers2 = WorkerManager(resources2, registry2)
     assert workers2.hire("LUMBERJACK") is not None
     workers2.reassign_all()
     wood_before = resources2.get("wood")
-    assert scheduler.update(10_000) is True
-    apply_production_tick(registry2, resources2, workers2)
+    # No passive tick production path exists anymore.
     assert resources2.get("wood") == wood_before
     workers2.update(120_000)
     wood_before = resources2.get("wood")
-    assert scheduler.update(20_000) is True
-    apply_production_tick(registry2, resources2, workers2)
-    assert resources2.get("wood") == wood_before + (5 * camp2.level)
+    # No passive tick production path exists anymore.
+    assert resources2.get("wood") == wood_before
 
     # 5) Spacing rule: touching is rejected, one-tile gap is accepted.
-    assert not registry.can_place(LumberCamp, (12, 10))
-    assert registry.can_place(LumberCamp, (13, 10))
+    assert not registry.can_place(LumberCamp, (24, 22))
+    assert registry.can_place(LumberCamp, (25, 22))

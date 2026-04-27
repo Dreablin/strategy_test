@@ -11,6 +11,8 @@ from game.config import TILE_H, TILE_W
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _ASSETS_ROOT = _PROJECT_ROOT / "assets"
 _BUILDINGS_ROOT = _ASSETS_ROOT / "buildings"
+_TREES_ROOT = _ASSETS_ROOT / "trees"
+_WORLD_ROOT = _ASSETS_ROOT / "world"
 _NPC_ROOT = _ASSETS_ROOT / "npc"
 _ICONS_ROOT = _ASSETS_ROOT / "icons"
 
@@ -49,16 +51,56 @@ def grass_tile() -> pygame.Surface:
     return surf
 
 
-@functools.lru_cache(maxsize=1)
-def tree_tile() -> pygame.Surface:
-    """Tree skirt tile is still procedural for now."""
-    surf = pygame.Surface((TILE_W, TILE_H), pygame.SRCALPHA)
-    pts = _diamond_points(TILE_W, TILE_H)
-    pygame.draw.polygon(surf, (34, 58, 34), pts)
-    cx, top = TILE_W // 2, TILE_H // 4
-    pygame.draw.circle(surf, (28, 110, 48), (cx, top + 4), TILE_H // 3)
-    pygame.draw.rect(surf, (86, 52, 28), (cx - 4, top + 8, 8, TILE_H // 2))
+def _procedural_tree_sprite(stage: str) -> pygame.Surface:
+    """Fallback tall tree sprite used when no staged asset exists."""
+    w, h = 48, 72
+    surf = pygame.Surface((w, h), pygame.SRCALPHA)
+    palette: dict[str, tuple[int, int, int]] = {
+        "sapling": (125, 195, 115),
+        "young": (88, 168, 92),
+        "mature": (58, 138, 78),
+        "adult": (36, 108, 62),
+    }
+    canopy = palette.get(stage, (58, 138, 78))
+    trunk_x = w // 2 - 3
+    pygame.draw.rect(surf, (86, 52, 28), (trunk_x, h - 24, 6, 24))
+    pygame.draw.circle(surf, canopy, (w // 2, h - 36), 16)
+    pygame.draw.circle(surf, (20, 56, 30), (w // 2, h - 36), 16, 1)
     return surf
+
+
+@functools.lru_cache(maxsize=32)
+def tree_sprite(stage: str) -> pygame.Surface:
+    """Load stage tree sprite from disk, fallback to procedural."""
+    stage_key = str(stage).lower().strip()
+    if "." in stage_key:
+        stage_key = stage_key.split(".")[-1]
+    loaded = _load_png(str(_TREES_ROOT / stage_key / "default.png"))
+    if loaded is not None:
+        return loaded
+    return _procedural_tree_sprite(stage_key)
+
+
+def _procedural_stone_sprite() -> pygame.Surface:
+    """Fallback stone pile sprite when no disk asset is present."""
+    w, h = 42, 26
+    surf = pygame.Surface((w, h), pygame.SRCALPHA)
+    mid = w // 2
+    base = [(mid, 2), (w - 3, h // 2), (mid, h - 3), (3, h // 2)]
+    pygame.draw.polygon(surf, (142, 146, 154), base)
+    pygame.draw.polygon(surf, (76, 80, 92), base, 1)
+    pygame.draw.circle(surf, (170, 174, 182), (mid - 6, h // 2 - 3), 5)
+    pygame.draw.circle(surf, (124, 128, 138), (mid + 5, h // 2 + 1), 4)
+    return surf
+
+
+@functools.lru_cache(maxsize=8)
+def stone_sprite() -> pygame.Surface:
+    """Load stone world sprite from disk, fallback to procedural."""
+    loaded = _load_png(str(_WORLD_ROOT / "stone" / "default.png"))
+    if loaded is not None:
+        return loaded
+    return _procedural_stone_sprite()
 
 
 def _building_palette(b_type: str) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
@@ -251,15 +293,70 @@ def _procedural_worker_dot(w_type: str) -> pygame.Surface:
     return surf
 
 
-@functools.lru_cache(maxsize=32)
-def worker_dot(w_type: str) -> pygame.Surface:
+def _procedural_worker_carry_dot(w_type: str) -> pygame.Surface:
+    surf = _procedural_worker_dot(w_type).copy()
+    w, h = surf.get_size()
+    box = pygame.Rect(w // 2 - 4, h // 2 - 1, 8, 5)
+    pygame.draw.rect(surf, (132, 92, 52), box, border_radius=1)
+    pygame.draw.rect(surf, (28, 24, 18), box, width=1, border_radius=1)
+    return surf
+
+
+def _procedural_worker_carry_stone_dot(w_type: str) -> pygame.Surface:
+    """Stonecutter-specific carrying fallback: visible gray stone payload."""
+    surf = _procedural_worker_dot(w_type).copy()
+    w, h = surf.get_size()
+    cx = w // 2
+    cy = h // 2
+    pygame.draw.circle(surf, (164, 168, 176), (cx + 2, cy + 1), 3)
+    pygame.draw.circle(surf, (84, 88, 98), (cx + 2, cy + 1), 3, 1)
+    return surf
+
+
+@functools.lru_cache(maxsize=128)
+def _worker_dot_by_mtime(
+    w_type: str,
+    carrying: bool,
+    default_mtime_ns: int,
+    default_size: int,
+    carrying_mtime_ns: int,
+    carrying_size: int,
+) -> pygame.Surface:
+    _ = default_mtime_ns
+    _ = default_size
+    _ = carrying_mtime_ns
+    _ = carrying_size
+    t = w_type.upper().replace(" ", "_")
+    folder = _WORKER_FOLDER.get(t, t.lower())
+    name = "carrying.png" if carrying else "default.png"
+    loaded = _load_png(str(_NPC_ROOT / folder / name))
+    if loaded is not None:
+        return loaded
+    if carrying:
+        if t == "STONECUTTER":
+            return _procedural_worker_carry_stone_dot(w_type)
+        return _procedural_worker_carry_dot(w_type)
+    return _procedural_worker_dot(w_type)
+
+
+def worker_dot(w_type: str, carrying: bool = False) -> pygame.Surface:
     """Load worker icon from assets folder, fallback to procedural."""
     t = w_type.upper().replace(" ", "_")
     folder = _WORKER_FOLDER.get(t, t.lower())
-    loaded = _load_png(str(_NPC_ROOT / folder / "default.png"))
-    if loaded is not None:
-        return loaded
-    return _procedural_worker_dot(w_type)
+    default_path = _NPC_ROOT / folder / "default.png"
+    carrying_path = _NPC_ROOT / folder / "carrying.png"
+    default_mtime_ns = default_path.stat().st_mtime_ns if default_path.exists() else -1
+    default_size = default_path.stat().st_size if default_path.exists() else -1
+    carrying_mtime_ns = carrying_path.stat().st_mtime_ns if carrying_path.exists() else -1
+    carrying_size = carrying_path.stat().st_size if carrying_path.exists() else -1
+    return _worker_dot_by_mtime(
+        w_type,
+        carrying,
+        default_mtime_ns,
+        default_size,
+        carrying_mtime_ns,
+        carrying_size,
+    )
 
 
 def _hire_icon_fallback(w_type: str) -> pygame.Surface:
@@ -320,9 +417,10 @@ def resource_icon(name: str) -> pygame.Surface:
 def clear_asset_caches() -> None:
     """Clear all in-memory asset caches (used by dev reload button)."""
     grass_tile.cache_clear()
-    tree_tile.cache_clear()
     _load_png_by_mtime.cache_clear()
     _load_building_meta_by_mtime.cache_clear()
     _load_fixed_icon.cache_clear()
-    worker_dot.cache_clear()
+    _worker_dot_by_mtime.cache_clear()
+    tree_sprite.cache_clear()
+    stone_sprite.cache_clear()
     resource_icon.cache_clear()

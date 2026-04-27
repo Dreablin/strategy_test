@@ -50,3 +50,38 @@ def test_update_advances_smoothly_per_segment() -> None:
     w.update(now_ms=3000)
     assert w.current_tile == (2, 1)
     assert w.state == "working"
+
+
+def test_move_speed_multiplier_120_shortens_single_tile_duration() -> None:
+    w = Worker("LUMBERJACK", stand_tile=(1, 1))
+    w.characteristics.add_permanent(("test", "speed"), "move_speed_mult", 0.20)
+    effective_ms = int(round(config.WORKER_TILE_TRAVEL_MS / 1.20))
+    assert effective_ms == 2500
+    w.start_move([(1, 1), (2, 1)], started_ms=0)
+
+    w.update(now_ms=effective_ms - 1)
+    assert w.current_tile == (1, 1)
+    assert w.state == "moving"
+
+    w.update(now_ms=effective_ms)
+    assert w.current_tile == (2, 1)
+    assert w.state == "working"
+
+
+def test_move_speed_multiplier_applies_per_tile_for_multi_segment_path() -> None:
+    w = Worker("LUMBERJACK", stand_tile=(1, 1))
+    w.characteristics.add_permanent(("test", "speed"), "move_speed_mult", 0.20)
+    effective_ms = int(round(config.WORKER_TILE_TRAVEL_MS / 1.20))
+    w.start_move([(1, 1), (2, 1), (3, 1)], started_ms=0)
+
+    w.update(now_ms=effective_ms)
+    assert w.current_tile == (2, 1)
+    assert w.state == "moving"
+
+    w.update(now_ms=(2 * effective_ms) - 1)
+    assert w.current_tile == (2, 1)
+    assert w.state == "moving"
+
+    w.update(now_ms=2 * effective_ms)
+    assert w.current_tile == (3, 1)
+    assert w.state == "working"

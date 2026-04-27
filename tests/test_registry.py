@@ -9,6 +9,7 @@ from game.buildings.iron_mine import IronMine
 from game.buildings.stone_mine import StoneMine
 from game.buildings.town_hall import TownHall
 from game.buildings.registry import BuildingRegistry
+from game.resources import ResourceManager
 from game.world import World
 from game.workers import Worker, WorkerManager
 
@@ -37,8 +38,8 @@ def _min_chebyshev_between_footprints(
 
 
 def test_cannot_place_footprint_outside_grass(registry: BuildingRegistry) -> None:
-    assert not registry.can_place(LumberCamp, (31, 0))
-    assert not registry.can_place(LumberCamp, (0, 31))
+    assert not registry.can_place(LumberCamp, (54, 0))
+    assert not registry.can_place(LumberCamp, (0, 54))
 
 
 def test_cannot_place_overlapping_buildings(registry: BuildingRegistry) -> None:
@@ -153,3 +154,120 @@ def test_iron_mine_requires_town_hall_level_5(registry: BuildingRegistry) -> Non
     assert not registry.can_place(IronMine, (8, 8))
     th.level = 5
     assert registry.can_place(IronMine, (8, 8))
+
+
+def test_can_place_allows_footprint_with_trees_present(registry: BuildingRegistry, world: World) -> None:
+    world._trees[(10, 10)] = world._trees.get((10, 10)) or world.tree_at(0, 0)  # noqa: SLF001
+    if world._trees[(10, 10)] is None:  # noqa: SLF001
+        from game.trees import Tree, TreeStage
+
+        world._trees[(10, 10)] = Tree(stage=TreeStage.YOUNG)  # noqa: SLF001
+    assert registry.can_place(LumberCamp, (10, 10))
+
+
+def test_place_clears_trees_inside_building_footprint(registry: BuildingRegistry, world: World) -> None:
+    from game.trees import Tree, TreeStage
+
+    for tile in [(10, 10), (11, 10), (10, 11), (11, 11)]:
+        world._trees[tile] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
+        assert world.is_tree_blocking(*tile)
+
+    placed = registry.place(LumberCamp, (10, 10))
+    assert placed is not None
+    for tile in [(10, 10), (11, 10), (10, 11), (11, 11)]:
+        assert not world.is_tree_blocking(*tile)
+        assert world.tree_at(*tile) is None
+
+
+def test_tree_presence_does_not_bypass_overlap_or_spacing_rules(
+    registry: BuildingRegistry, world: World
+) -> None:
+    from game.trees import Tree, TreeStage
+
+    world._trees[(10, 10)] = Tree(stage=TreeStage.MATURE)  # noqa: SLF001
+    first = registry.place(LumberCamp, (10, 10))
+    assert first is not None
+    assert not registry.can_place(StoneMine, (10, 10))
+    assert not registry.can_place(StoneMine, (12, 10))
+
+
+def test_cannot_place_when_footprint_covers_stone_tile() -> None:
+    from game.stones import Stone
+
+    world = World()
+    registry = BuildingRegistry(world)
+    world._stones[(10, 10)] = Stone()  # noqa: SLF001
+    assert not registry.can_place(LumberCamp, (10, 10))
+
+
+def test_rejected_place_does_not_remove_stones_in_footprint() -> None:
+    from game.stones import Stone
+
+    world = World()
+    world._stones.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    world._stones[(10, 10)] = Stone()  # noqa: SLF001
+    with pytest.raises(ValueError):
+        registry.place(LumberCamp, (10, 10))
+    assert world.stone_at(10, 10) is not None
+
+
+def test_upgrade_keeps_building_in_registry_list() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    camp = registry.place(LumberCamp, (12, 12))
+
+    assert registry.upgrade_building(camp, resources)
+    assert camp in registry.all()
+
+
+def test_upgrade_refreshes_assigned_worker_gather_speed_bonus() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    camp = registry.place(LumberCamp, (14, 14))
+    workers = WorkerManager(resources, registry)
+    worker = Worker("LUMBERJACK")
+    workers.add_worker(worker)
+    workers.assign_to_building(worker, camp)
+    assert worker.characteristics.gather_speed_mult == pytest.approx(1.0)
+
+    assert registry.upgrade_building(camp, resources)
+    assert worker.characteristics.gather_speed_mult == pytest.approx(1.05)
+
+
+def test_consecutive_upgrades_stack_additively_for_assigned_worker() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    camp = registry.place(LumberCamp, (18, 18))
+    workers = WorkerManager(resources, registry)
+    worker = Worker("LUMBERJACK")
+    workers.add_worker(worker)
+    workers.assign_to_building(worker, camp)
+
+    assert registry.upgrade_building(camp, resources)
+    assert registry.upgrade_building(camp, resources)
+    assert worker.characteristics.move_speed_mult == pytest.approx(1.10)
+    assert worker.characteristics.gather_speed_mult == pytest.approx(1.10)
+
+
+def test_demolish_after_upgrades_clears_move_and_gather_bonus_sources() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    camp = registry.place(LumberCamp, (22, 22))
+    workers = WorkerManager(resources, registry)
+    worker = Worker("LUMBERJACK")
+    workers.add_worker(worker)
+    workers.assign_to_building(worker, camp)
+
+    assert registry.upgrade_building(camp, resources)
+    assert registry.upgrade_building(camp, resources)
+    assert worker.characteristics.move_speed_mult == pytest.approx(1.10)
+    assert worker.characteristics.gather_speed_mult == pytest.approx(1.10)
+
+    registry.demolish(camp, workers)
+    assert worker.characteristics.move_speed_mult == pytest.approx(1.0)
+    assert worker.characteristics.gather_speed_mult == pytest.approx(1.0)

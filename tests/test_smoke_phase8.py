@@ -62,7 +62,7 @@ def test_smoke_phase8_build_draw_and_rmb_pan() -> None:
 
     # 2) Place a Lumber Camp through input events and verify render.
     game_input.handle(screen, pygame.event.Event(BUILD_MENU_SELECT, building_type="LUMBER_CAMP"))
-    psx, psy = world_to_screen(10, 10)
+    psx, psy = world_to_screen(22, 22)
     place_pos = (ox + psx + camera.offset[0] + 16, oy + psy + camera.offset[1] + 16)
     game_input.handle(
         screen, pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=place_pos)

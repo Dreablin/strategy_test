@@ -30,6 +30,12 @@ _HIRE_ICON_SIZE = 18
 _FOOD_ICON_SIZE = 16
 
 _HIRE_ROWS: tuple[str, ...] = ("LUMBERJACK", "STONECUTTER", "MINER", "FARMER")
+_WORKER_LABEL: dict[str, str] = {
+    "LUMBERJACK": "Lumberjack",
+    "STONECUTTER": "Stonecutter",
+    "MINER": "Miner",
+    "FARMER": "Farmer",
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -159,6 +165,15 @@ class TownHallPanel:
             surface.blit(cost_text, (rx, rect.centery - cost_text.get_height() // 2))
             rx -= 8 + hire_icon.get_width()
             surface.blit(hire_icon, (rx, rect.centery - hire_icon.get_height() // 2))
+
+            # Worker label in the middle between left and right icon groups.
+            label = _WORKER_LABEL.get(worker_type, worker_type.title())
+            label_text = font.render(label, True, fg)
+            label_left = lx + worker_icon.get_width() + 10
+            label_right = rx - 8
+            if label_right > label_left:
+                label_x = label_left + max(0, (label_right - label_left - label_text.get_width()) // 2)
+                surface.blit(label_text, (label_x, rect.centery - label_text.get_height() // 2))
 
     @staticmethod
     def click_action(

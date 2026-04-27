@@ -50,7 +50,7 @@ def test_placed_building_drawn() -> None:
     registry = BuildingRegistry(world)
     _resources = ResourceManager()
     registry.place(TownHall, (16, 16))
-    camp = registry.place(LumberCamp, (10, 10))
+    camp = registry.place(LumberCamp, (20, 20))
     surface = pygame.Surface((1280, 720))
     surface.fill(_SENTINEL)
     Renderer.draw_world(surface, world)
@@ -101,7 +101,7 @@ def test_draw_building_shifted_by_camera_offset() -> None:
     registry = BuildingRegistry(world)
     _resources = ResourceManager()
     registry.place(TownHall, (16, 16))
-    camp = registry.place(LumberCamp, (10, 10))
+    camp = registry.place(LumberCamp, (20, 20))
 
     no_cam = pygame.Surface((1280, 720))
     no_cam.fill(_SENTINEL)

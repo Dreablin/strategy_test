@@ -90,6 +90,9 @@ class BuildingRegistry:
             raise ValueError("invalid placement")
         gx, gy = grid_pos
         w, h = cls.footprint
+        for ty in range(gy, gy + h):
+            for tx in range(gx, gx + w):
+                self._world.remove_tree(tx, ty)
         inst = cls(level=1, grid_pos=grid_pos)
         self._world.mark_occupied(gx, gy, w, h)
         self._buildings.append(inst)

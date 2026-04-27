@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 10. Tree entities, blocking, layering
-- **Next Task:** T70 — Implement placement-clears-tree behavior
-- **Last Completed:** T69 — Add failing placement tree-clear tests
-- **Total Progress:** 69 / 74
+- **Next Task:** T71 — Add placeholder tree assets and failing asset-loader tests
+- **Last Completed:** T70 — Implement placement-clears-tree behavior
+- **Total Progress:** 70 / 74
 
 ---
 
@@ -268,7 +268,7 @@
   - Placement still respects bounds/overlap/spacing and resource costs.
   Tests must FAIL first.
 
-- [ ] **T70**: Implement placement-clears-tree behavior in `src/game/buildings/registry.py`:
+- [x] **T70**: Implement placement-clears-tree behavior in `src/game/buildings/registry.py`:
   - During successful place, clear all trees in the new footprint before/with occupancy mark.
   - Tree presence must never block valid building placement.
   - Confirm no regressions in existing placement tests.

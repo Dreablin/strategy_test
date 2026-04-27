@@ -118,7 +118,7 @@ def test_farm_has_no_passive_income_even_when_staffed() -> None:
     world = World()
     registry = BuildingRegistry(world)
     resources = ResourceManager()
-    farm = registry.place(Farm, (10, 10))
+    _farm = registry.place(Farm, (10, 10))
     workers = WorkerManager(resources, registry)
     worker = workers.hire("FARMER")
     if worker is None:
@@ -139,7 +139,7 @@ def test_iron_mine_has_no_passive_income_even_when_staffed() -> None:
     resources = ResourceManager()
     th = registry.place(TownHall, (16, 16))
     th.level = 5
-    mine = registry.place(IronMine, (10, 10))
+    _mine = registry.place(IronMine, (10, 10))
     workers = WorkerManager(resources, registry)
     assert workers.hire("MINER") is not None
     workers.reassign_all()

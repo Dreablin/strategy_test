@@ -29,8 +29,11 @@ class World:
 
     __slots__ = (
         "_occupied",
+        "_occupied_tiles",
         "_trees",
+        "_tree_tiles",
         "_stones",
+        "_stone_tiles",
         "_tree_reservations",
         "_stone_reservations",
         "_stone_centers",
@@ -40,8 +43,11 @@ class World:
         self._occupied: list[list[bool]] = [
             [False] * GRID_SIZE for _ in range(GRID_SIZE)
         ]
+        self._occupied_tiles: set[tuple[int, int]] = set()
         self._trees: dict[tuple[int, int], Tree] = {}
+        self._tree_tiles: set[tuple[int, int]] = set()
         self._stones: dict[tuple[int, int], Stone] = {}
+        self._stone_tiles: set[tuple[int, int]] = set()
         self._tree_reservations: dict[tuple[int, int], object] = {}
         self._stone_reservations: dict[tuple[int, int], object] = {}
         self._stone_centers: list[tuple[int, int]] = []
@@ -75,6 +81,22 @@ class World:
     def iter_alive_trees(self) -> list[tuple[tuple[int, int], Tree]]:
         return [((gx, gy), tree) for (gx, gy), tree in self._trees.items() if tree.alive]
 
+    def occupied_tiles(self) -> set[tuple[int, int]]:
+        return set(self._occupied_tiles)
+
+    def tree_tiles(self) -> set[tuple[int, int]]:
+        # Keep cached set resilient to direct test fixtures mutating `_trees`.
+        self._tree_tiles = {(gx, gy) for (gx, gy), tree in self._trees.items() if tree.alive}
+        return set(self._tree_tiles)
+
+    def stone_tiles(self) -> set[tuple[int, int]]:
+        # Keep cached set resilient to direct test fixtures mutating `_stones`.
+        self._stone_tiles = set(self._stones.keys())
+        return set(self._stone_tiles)
+
+    def blocked_tiles(self) -> set[tuple[int, int]]:
+        return self.occupied_tiles() | self.tree_tiles() | self.stone_tiles()
+
     def is_tree_blocking(self, gx: int, gy: int) -> bool:
         return self.tree_at(gx, gy) is not None
 
@@ -84,6 +106,7 @@ class World:
             return
         tree.remove()
         self._trees.pop((gx, gy), None)
+        self._tree_tiles.discard((gx, gy))
         self._tree_reservations.pop((gx, gy), None)
 
     def reserve_tree(self, gx: int, gy: int, worker: object) -> bool:
@@ -128,6 +151,7 @@ class World:
         stone.harvest()
         if stone.is_depleted:
             self._stones.pop((gx, gy), None)
+            self._stone_tiles.discard((gx, gy))
             self._stone_reservations.pop((gx, gy), None)
         return stone
 
@@ -152,12 +176,14 @@ class World:
             for tx in range(gx, gx + w):
                 if self.is_in_grass(tx, ty):
                     self._occupied[ty][tx] = True
+                    self._occupied_tiles.add((tx, ty))
 
     def free(self, gx: int, gy: int, w: int, h: int) -> None:
         for ty in range(gy, gy + h):
             for tx in range(gx, gx + w):
                 if self.is_in_grass(tx, ty):
                     self._occupied[ty][tx] = False
+                    self._occupied_tiles.discard((tx, ty))
 
     def _init_trees(self) -> None:
         cx = GRID_SIZE // 2
@@ -178,7 +204,9 @@ class World:
                 # edge_dist=0 -> 0.78, edge_dist=7 -> 0.42
                 threshold = 0.78 - (0.36 * (edge_dist / (_TREE_EDGE_BAND - 1)))
                 if noise < threshold:
-                    self._trees[(gx, gy)] = Tree(stage=stage_from_tile_seed(seed))
+                    tile = (gx, gy)
+                    self._trees[tile] = Tree(stage=stage_from_tile_seed(seed))
+                    self._tree_tiles.add(tile)
 
     def _init_stones(self) -> None:
         rng = random.Random(GRID_SIZE * 104_729 + 17)
@@ -216,7 +244,9 @@ class World:
                         continue
                     if (x, y) in self._stones:
                         continue
-                    self._stones[(x, y)] = Stone()
+                    tile = (x, y)
+                    self._stones[tile] = Stone()
+                    self._stone_tiles.add(tile)
 
     @staticmethod
     def _tile_noise(gx: int, gy: int) -> float:

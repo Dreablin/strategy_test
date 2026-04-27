@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 13. Performance optimisation & orthogonal pathfinding
-- **Next Task:** T127 — implement cached tile-set indices in `World`.
-- **Last Completed:** T126 — add failing tests for `World` cached set getters.
-- **Total Progress:** 126 / 148
+- **Next Task:** T128 — failing tests for blocked_tiles no-scan guarantee.
+- **Last Completed:** T127 — implement cached tile-set indices in `World`.
+- **Total Progress:** 127 / 148
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -151,7 +151,7 @@
     called again must still return the original set without `(9, 9)`.
   Tests must FAIL first (the methods do not exist yet).
 
-- [ ] **T127**: Implement the cached sets in `src/game/world.py`:
+- [x] **T127**: Implement the cached sets in `src/game/world.py`:
   - Extend `__slots__` with `_occupied_tiles`, `_tree_tiles`, `_stone_tiles`.
   - Initialise as empty `set` in `__init__`.
   - Maintain them inside `mark_occupied`, `free`, `_init_trees`,

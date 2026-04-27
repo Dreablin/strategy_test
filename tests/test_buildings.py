@@ -129,3 +129,48 @@ def test_upgrade_rejected_at_max_level() -> None:
         assert registry.upgrade_building(b, resources)
     assert b.level == 10
     assert not registry.upgrade_building(b, resources)
+
+
+@pytest.mark.parametrize("cls", [LumberCamp, StoneMine, IronMine, Farm])
+def test_producing_buildings_expose_storage_api_with_default_state(cls: type) -> None:
+    b = cls(level=1, grid_pos=(10, 10))
+    assert b.stored == 0
+    assert b.storage_capacity() == 3
+    assert b.is_storage_full() is False
+
+
+@pytest.mark.parametrize("cls", [LumberCamp, StoneMine, IronMine, Farm])
+def test_storage_capacity_scales_with_level(cls: type) -> None:
+    b = cls(level=5, grid_pos=(10, 10))
+    assert b.storage_capacity() == 11
+
+
+@pytest.mark.parametrize("cls", [LumberCamp, StoneMine, IronMine, Farm])
+def test_add_to_storage_rejects_negative_and_overflow(cls: type) -> None:
+    b = cls(level=1, grid_pos=(10, 10))
+    with pytest.raises(ValueError):
+        b.add_to_storage(-1)
+    b.add_to_storage(3)
+    assert b.stored == 3
+    assert b.is_storage_full() is True
+    with pytest.raises(ValueError):
+        b.add_to_storage(1)
+
+
+@pytest.mark.parametrize("cls", [LumberCamp, StoneMine, IronMine, Farm])
+def test_take_from_storage_rejects_overdraw(cls: type) -> None:
+    b = cls(level=1, grid_pos=(10, 10))
+    b.add_to_storage(2)
+    b.take_from_storage(1)
+    assert b.stored == 1
+    with pytest.raises(ValueError):
+        b.take_from_storage(2)
+
+
+def test_town_hall_does_not_expose_storage_api() -> None:
+    th = TownHall(level=1, grid_pos=(16, 16))
+    assert not hasattr(th, "stored")
+    assert not hasattr(th, "storage_capacity")
+    assert not hasattr(th, "add_to_storage")
+    assert not hasattr(th, "take_from_storage")
+    assert not hasattr(th, "is_storage_full")

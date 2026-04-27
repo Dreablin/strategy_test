@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T102 — Add failing tests for building storage primitives
-- **Last Completed:** T101 — Implement registry to worker bonus refresh
-- **Total Progress:** 101 / 111
+- **Next Task:** T103 — Implement storage mixin for producing buildings
+- **Last Completed:** T102 — Add failing tests for building storage primitives
+- **Total Progress:** 102 / 111
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -207,7 +207,7 @@
 
 #### 12.3 Internal storage on producing buildings
 
-- [ ] **T102**: Add failing tests for storage in
+- [x] **T102**: Add failing tests for storage in
   `tests/test_buildings.py`:
   - Each of `LumberCamp`, `StoneMine`, `IronMine`, `Farm` has fields
     `stored: int = 0` and method `storage_capacity()` returning

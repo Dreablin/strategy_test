@@ -74,3 +74,25 @@ def test_income_line_is_zero_while_worker_not_arrived() -> None:
 def test_income_line_shows_full_value_when_worker_working() -> None:
     building = LumberCamp(level=3, grid_pos=(4, 4))
     assert _income_line(building, worker_working=True) == "Income: —"
+
+
+def test_layout_grows_when_production_status_line_is_present() -> None:
+    surface = pygame.Surface((800, 600))
+    building = LumberCamp(level=1, grid_pos=(4, 4))
+    resources = ResourceManager()
+
+    without_status = BuildingPanel.layout(
+        surface,
+        building,
+        resources,
+        worker_assigned=True,
+    )
+    with_status = BuildingPanel.layout(
+        surface,
+        building,
+        resources,
+        worker_assigned=True,
+        production_status="Resting",
+    )
+
+    assert with_status.frame.height > without_status.frame.height

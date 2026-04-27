@@ -8,7 +8,6 @@ from game.buildings.storage import StorageMixin
 
 class LumberCamp(StorageMixin, Building):
     type_tag: ClassVar[str] = "LUMBER_CAMP"
-    income_resource: ClassVar[str] = None
     __slots__ = ("active", "delivered_wood", "stored")
 
     def __init__(self, level: int = 1, grid_pos: tuple[int, int] | None = None) -> None:

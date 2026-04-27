@@ -6,11 +6,10 @@ from game.config import MAX_LEVEL
 
 
 class Building:
-    """Subclasses set `type_tag`, `footprint`, and optionally `income_resource`."""
+    """Subclasses set `type_tag` and `footprint`."""
 
     type_tag: ClassVar[str] = ""
     footprint: ClassVar[tuple[int, int]] = (2, 2)
-    income_resource: ClassVar[str | None] = None
 
     __slots__ = ("level", "grid_pos")
 
@@ -27,7 +26,6 @@ class Building:
 
     @classmethod
     def income(cls, level: int) -> dict[str, int]:
-        key = cls.income_resource
-        if key is None:
-            return {}
-        return {key: 5 * level}
+        """Passive income was removed; resources come from worker deposit cycles."""
+        _ = level
+        return {}

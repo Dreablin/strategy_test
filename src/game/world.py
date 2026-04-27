@@ -45,8 +45,8 @@ class World:
         self._tree_reservations: dict[tuple[int, int], object] = {}
         self._stone_reservations: dict[tuple[int, int], object] = {}
         self._stone_centers: list[tuple[int, int]] = []
-        self._init_trees()
         self._init_stones()
+        self._init_trees()
 
     @property
     def width(self) -> int:
@@ -170,6 +170,8 @@ class World:
                 edge_dist = min(gx, gy, GRID_SIZE - 1 - gx, GRID_SIZE - 1 - gy)
                 if edge_dist >= _TREE_EDGE_BAND:
                     continue
+                if self.is_stone_blocking(gx, gy):
+                    continue
                 seed = gx * 92821 + gy * 68917 + GRID_SIZE * 37
                 noise = self._tile_noise(gx, gy)
                 # Dense near border, still populated deeper into 5-8 edge rows.
@@ -234,14 +236,20 @@ def find_nearest_free_tree(
     *,
     blocked: set[tuple[int, int]],
     skip_reserved: bool = True,
+    skip_targets: set[tuple[int, int]] | None = None,
 ) -> tuple[int, int] | None:
     """Return nearest alive tree tile reachable from `from_tile` over walkable tiles."""
     sx, sy = from_tile
     if not world.is_in_grass(sx, sy):
         return None
 
+    skip = skip_targets or set()
     start_tree = world.tree_at(sx, sy)
-    if start_tree is not None and (not skip_reserved or not world.is_tree_reserved(sx, sy)):
+    if (
+        start_tree is not None
+        and from_tile not in skip
+        and (not skip_reserved or not world.is_tree_reserved(sx, sy))
+    ):
         return from_tile
 
     def is_walkable(tile: tuple[int, int]) -> bool:
@@ -269,6 +277,8 @@ def find_nearest_free_tree(
             if not world.is_in_grass(nx, ny):
                 continue
             if world.tree_at(nx, ny) is not None:
+                if nxt in skip:
+                    continue
                 if skip_reserved and world.is_tree_reserved(nx, ny):
                     continue
                 return nxt
@@ -285,14 +295,20 @@ def find_nearest_free_stone(
     *,
     blocked: set[tuple[int, int]],
     skip_reserved: bool = True,
+    skip_targets: set[tuple[int, int]] | None = None,
 ) -> tuple[int, int] | None:
     """Return nearest stone tile reachable from `from_tile` over walkable tiles."""
     sx, sy = from_tile
     if not world.is_in_grass(sx, sy):
         return None
 
+    skip = skip_targets or set()
     start_stone = world.stone_at(sx, sy)
-    if start_stone is not None and (not skip_reserved or not world.is_stone_reserved(sx, sy)):
+    if (
+        start_stone is not None
+        and from_tile not in skip
+        and (not skip_reserved or not world.is_stone_reserved(sx, sy))
+    ):
         return from_tile
 
     def is_walkable(tile: tuple[int, int]) -> bool:
@@ -322,6 +338,8 @@ def find_nearest_free_stone(
             if not world.is_in_grass(nx, ny):
                 continue
             if world.stone_at(nx, ny) is not None:
+                if nxt in skip:
+                    continue
                 if skip_reserved and world.is_stone_reserved(nx, ny):
                     continue
                 return nxt

@@ -1,4 +1,4 @@
-"""Stone Mine panel extension with Active toggle and delivered counter."""
+"""Stone Mine panel extension with Active toggle."""
 
 from __future__ import annotations
 
@@ -35,26 +35,20 @@ class StoneMinePanel:
         return "Active" if mine.active else "Inactive"
 
     @staticmethod
-    def delivered_line(mine: StoneMine) -> str:
-        return f"Stones delivered: {mine.delivered_stone}"
-
-    @staticmethod
-    def storage_line(mine: StoneMine) -> str:
-        return BuildingPanel.storage_line(mine)
-
-    @staticmethod
     def layout(
         surface: pygame.Surface,
         mine: StoneMine,
         resources: ResourceManager,
         *,
         worker_assigned: bool,
+        production_status: str | None = None,
     ) -> StoneMinePanelLayout:
         base = BuildingPanel.layout(
             surface,
             mine,
             resources,
             worker_assigned=worker_assigned,
+            production_status=production_status,
             extra_bottom_px=_EXTRA_BOTTOM,
         )
         toggle = pygame.Rect(
@@ -80,6 +74,7 @@ class StoneMinePanel:
         *,
         worker_assigned: bool,
         worker_status: str = "empty",
+        production_status: str | None = None,
         worker_working: bool = False,
     ) -> None:
         BuildingPanel.draw(
@@ -88,18 +83,18 @@ class StoneMinePanel:
             resources,
             worker_assigned=worker_assigned,
             worker_status=worker_status,
+            production_status=production_status,
             worker_working=worker_working,
             extra_bottom_px=_EXTRA_BOTTOM,
         )
-        layout = StoneMinePanel.layout(surface, mine, resources, worker_assigned=worker_assigned)
+        layout = StoneMinePanel.layout(
+            surface,
+            mine,
+            resources,
+            worker_assigned=worker_assigned,
+            production_status=production_status,
+        )
         font = pygame.font.Font(None, 22)
-        body = pygame.font.Font(None, 22)
-        delivered = body.render(StoneMinePanel.delivered_line(mine), True, (200, 204, 214))
-        storage = body.render(StoneMinePanel.storage_line(mine), True, (200, 204, 214))
-        delivered_y = layout.toggle.top - 56
-        storage_y = layout.toggle.top - 30
-        surface.blit(delivered, (layout.frame.left + _PANEL_PAD, delivered_y))
-        surface.blit(storage, (layout.frame.left + _PANEL_PAD, storage_y))
 
         active_bg = (84, 112, 84) if mine.active else (92, 64, 64)
         pygame.draw.rect(surface, active_bg, layout.toggle, border_radius=6)
@@ -117,6 +112,7 @@ class StoneMinePanel:
         resources: ResourceManager,
         *,
         worker_assigned: bool,
+        production_status: str | None = None,
     ) -> str | None:
         base_action = BuildingPanel.click_action(
             surface,
@@ -124,11 +120,18 @@ class StoneMinePanel:
             mine,
             resources,
             worker_assigned=worker_assigned,
+            production_status=production_status,
             extra_bottom_px=_EXTRA_BOTTOM,
         )
         if base_action is not None:
             return base_action
-        layout = StoneMinePanel.layout(surface, mine, resources, worker_assigned=worker_assigned)
+        layout = StoneMinePanel.layout(
+            surface,
+            mine,
+            resources,
+            worker_assigned=worker_assigned,
+            production_status=production_status,
+        )
         if layout.toggle.collidepoint(pos):
             return "toggle_active"
         return None

@@ -199,10 +199,48 @@ class WorkerManager:
         for worker in self._workers:
             if worker.assigned_building is not building:
                 continue
-            if worker.state in {"moving", "going_to_tree", "returning"}:
+            if worker.state in {"moving", "going_to_tree", "going_to_stone", "returning"}:
                 return "on the way"
             return "assigned"
         return "empty"
+
+    def production_status_for_building(self, building: Building) -> str:
+        """Human-readable production status for building panels."""
+        if not (hasattr(building, "storage_capacity") and hasattr(building, "stored")):
+            return "N/A"
+
+        worker: Worker | None = None
+        for candidate in self._workers:
+            if candidate.assigned_building is building:
+                worker = candidate
+                break
+        if worker is None:
+            return "No worker"
+
+        if hasattr(building, "active") and not bool(getattr(building, "active")):
+            return "Inactive"
+        if hasattr(building, "is_storage_full") and building.is_storage_full():
+            return "Storage full"
+
+        moving_states = {"moving", "going_to_tree", "going_to_stone", "returning"}
+        if worker.state in moving_states:
+            return "On the way"
+        if worker.state in {"chopping", "mining"}:
+            return "Gathering"
+        if worker.state == "depositing":
+            return "Depositing"
+        if worker.state in {"arrived_tree", "arrived_stone"}:
+            return "At resource"
+        if worker.state == "arrived_camp":
+            return "At camp"
+        if worker.state == "working":
+            now_ms = int(self._now_ms_fn())
+            if worker.camp_wait_until_ms > now_ms:
+                return "Resting"
+            return "Ready"
+        if worker.state == "idle":
+            return "Waiting target"
+        return "Unknown"
 
     def staffed_buildings(self) -> set[Building]:
         return {w.assigned_building for w in self._workers if w.assigned_building is not None}
@@ -526,67 +564,67 @@ class WorkerManager:
             if world.is_occupied(x, y)
         }
         blocked.discard(worker.current_tile)
-        target_tile = self._find_nearest_gather_target(
-            world, worker.current_tile, blocked=blocked, world_query=world_query
-        )
-        if target_tile is None:
-            worker.idle = True
-            worker.state = "idle"
-            self._clear_building_bonus(worker)
-            return False
-        tx, ty = target_tile
-        reserve_ok = (
-            world.reserve_tree(tx, ty, worker)
-            if world_query == "tree"
-            else world.reserve_stone(tx, ty, worker)
-        )
-        if not reserve_ok:
-            worker.idle = True
-            worker.state = "idle"
-            self._clear_building_bonus(worker)
-            return False
+        rejected_targets: set[tuple[int, int]] = set()
+        while True:
+            target_tile = self._find_nearest_gather_target(
+                world,
+                worker.current_tile,
+                blocked=blocked,
+                world_query=world_query,
+                skip_targets=rejected_targets,
+            )
+            if target_tile is None:
+                worker.idle = True
+                worker.state = "idle"
+                self._clear_building_bonus(worker)
+                return False
+            tx, ty = target_tile
+            reserve_ok = (
+                world.reserve_tree(tx, ty, worker)
+                if world_query == "tree"
+                else world.reserve_stone(tx, ty, worker)
+            )
+            if not reserve_ok:
+                rejected_targets.add(target_tile)
+                continue
 
-        approach: tuple[int, int] | None = None
-        best_len: int | None = None
-        target_blocked = set(blocked)
-        target_blocked.add(target_tile)
-        for ny in range(ty - 1, ty + 2):
-            for nx in range(tx - 1, tx + 2):
-                if (nx, ny) == target_tile:
-                    continue
-                if not world.is_in_grass(nx, ny):
-                    continue
-                if world.is_occupied(nx, ny) or world.is_tree_blocking(nx, ny) or world.is_stone_blocking(nx, ny):
-                    continue
-                path = find_path_bfs(world, worker.current_tile, (nx, ny), target_blocked)
-                if path is None:
-                    continue
-                if best_len is None or len(path) < best_len:
-                    best_len = len(path)
-                    approach = (nx, ny)
-        if approach is None:
-            if world_query == "tree":
-                world.release_tree(*target_tile)
-            else:
-                world.release_stone(*target_tile)
-            worker.idle = True
-            worker.state = "idle"
-            self._clear_building_bonus(worker)
-            return False
-        path = find_path_bfs(world, worker.current_tile, approach, target_blocked)
-        if path is None:
-            if world_query == "tree":
-                world.release_tree(*target_tile)
-            else:
-                world.release_stone(*target_tile)
-            worker.idle = True
-            worker.state = "idle"
-            self._clear_building_bonus(worker)
-            return False
-        worker.target_tree = target_tile
-        move_state = "going_to_tree" if world_query == "tree" else "going_to_stone"
-        worker.start_move(path, started_ms=now_ms, move_state=move_state)
-        return True
+            approach: tuple[int, int] | None = None
+            best_len: int | None = None
+            target_blocked = set(blocked)
+            target_blocked.add(target_tile)
+            for ny in range(ty - 1, ty + 2):
+                for nx in range(tx - 1, tx + 2):
+                    if (nx, ny) == target_tile:
+                        continue
+                    if not world.is_in_grass(nx, ny):
+                        continue
+                    if world.is_occupied(nx, ny) or world.is_tree_blocking(nx, ny) or world.is_stone_blocking(nx, ny):
+                        continue
+                    path = find_path_bfs(world, worker.current_tile, (nx, ny), target_blocked)
+                    if path is None:
+                        continue
+                    if best_len is None or len(path) < best_len:
+                        best_len = len(path)
+                        approach = (nx, ny)
+            if approach is None:
+                if world_query == "tree":
+                    world.release_tree(*target_tile)
+                else:
+                    world.release_stone(*target_tile)
+                rejected_targets.add(target_tile)
+                continue
+            path = find_path_bfs(world, worker.current_tile, approach, target_blocked)
+            if path is None:
+                if world_query == "tree":
+                    world.release_tree(*target_tile)
+                else:
+                    world.release_stone(*target_tile)
+                rejected_targets.add(target_tile)
+                continue
+            worker.target_tree = target_tile
+            move_state = "going_to_tree" if world_query == "tree" else "going_to_stone"
+            worker.start_move(path, started_ms=now_ms, move_state=move_state)
+            return True
 
     @staticmethod
     def _find_nearest_gather_target(
@@ -595,11 +633,24 @@ class WorkerManager:
         *,
         blocked: set[tuple[int, int]],
         world_query: str,
+        skip_targets: set[tuple[int, int]] | None = None,
     ) -> tuple[int, int] | None:
         if world_query == "tree":
-            return find_nearest_free_tree(world, from_tile, blocked=blocked, skip_reserved=True)
+            return find_nearest_free_tree(
+                world,
+                from_tile,
+                blocked=blocked,
+                skip_reserved=True,
+                skip_targets=skip_targets,
+            )
         if world_query == "stone":
-            return find_nearest_free_stone(world, from_tile, blocked=blocked, skip_reserved=True)
+            return find_nearest_free_stone(
+                world,
+                from_tile,
+                blocked=blocked,
+                skip_reserved=True,
+                skip_targets=skip_targets,
+            )
         return None
 
     def _start_return_to_camp(self, worker: Worker, now_ms: int) -> bool:

@@ -88,6 +88,13 @@ class GameInput:
             return "empty"
         return self._worker_manager.worker_status_for_building(self._panel)
 
+    def _panel_production_status(self) -> str | None:
+        if self._panel is None:
+            return None
+        if not (hasattr(self._panel, "storage_capacity") and hasattr(self._panel, "stored")):
+            return None
+        return self._worker_manager.production_status_for_building(self._panel)
+
     def _sync_assignments(self) -> None:
         self._worker_manager.reassign_all()
         self._registry.sync_resources_per_cycle(
@@ -178,34 +185,40 @@ class GameInput:
         if LumberCampPanel.supports_building(self._panel):
             assert isinstance(self._panel, LumberCamp)
             worker_status = self._panel_worker_status()
+            production_status = self._panel_production_status()
             LumberCampPanel.draw(
                 surface,
                 self._panel,
                 self._resources,
                 worker_assigned=worker_status != "empty",
                 worker_status=worker_status,
+                production_status=production_status,
                 worker_working=worker_status == "assigned",
             )
             return
         if StoneMinePanel.supports_building(self._panel):
             assert isinstance(self._panel, StoneMine)
             worker_status = self._panel_worker_status()
+            production_status = self._panel_production_status()
             StoneMinePanel.draw(
                 surface,
                 self._panel,
                 self._resources,
                 worker_assigned=worker_status != "empty",
                 worker_status=worker_status,
+                production_status=production_status,
                 worker_working=worker_status == "assigned",
             )
             return
         worker_status = self._panel_worker_status()
+        production_status = self._panel_production_status()
         BuildingPanel.draw(
             surface,
             self._panel,
             self._resources,
             worker_assigned=worker_status != "empty",
             worker_status=worker_status,
+            production_status=production_status,
             worker_working=worker_status == "assigned",
         )
 
@@ -250,11 +263,13 @@ class GameInput:
                     return
             if LumberCampPanel.supports_building(self._panel):
                 assert isinstance(self._panel, LumberCamp)
+                production_status = self._panel_production_status()
                 layout = LumberCampPanel.layout(
                     surface,
                     self._panel,
                     self._resources,
                     worker_assigned=wa,
+                    production_status=production_status,
                 )
                 if layout.frame.collidepoint(pos):
                     action = LumberCampPanel.click_action(
@@ -263,6 +278,7 @@ class GameInput:
                         self._panel,
                         self._resources,
                         worker_assigned=wa,
+                        production_status=production_status,
                     )
                     if action == "close":
                         self._panel = None
@@ -280,11 +296,13 @@ class GameInput:
                     return
             if StoneMinePanel.supports_building(self._panel):
                 assert isinstance(self._panel, StoneMine)
+                production_status = self._panel_production_status()
                 layout = StoneMinePanel.layout(
                     surface,
                     self._panel,
                     self._resources,
                     worker_assigned=wa,
+                    production_status=production_status,
                 )
                 if layout.frame.collidepoint(pos):
                     action = StoneMinePanel.click_action(
@@ -293,6 +311,7 @@ class GameInput:
                         self._panel,
                         self._resources,
                         worker_assigned=wa,
+                        production_status=production_status,
                     )
                     if action == "close":
                         self._panel = None
@@ -313,6 +332,7 @@ class GameInput:
                 self._panel,
                 self._resources,
                 worker_assigned=wa,
+                production_status=self._panel_production_status(),
             )
             if layout.frame.collidepoint(pos):
                 action = BuildingPanel.click_action(
@@ -321,6 +341,7 @@ class GameInput:
                     self._panel,
                     self._resources,
                     worker_assigned=wa,
+                    production_status=self._panel_production_status(),
                 )
                 if action == "close":
                     self._panel = None

@@ -148,7 +148,7 @@ class Renderer:
 
         ox, oy = Renderer.map_origin(surface, world)
         cam_x, cam_y = (0, 0) if camera is None else camera.offset
-        moving_states = {"moving", "going_to_tree", "returning"}
+        moving_states = {"moving", "going_to_tree", "going_to_stone", "returning"}
         entries: list[tuple[str, bool, float, float]] = []
         for worker in worker_manager.workers():
             carrying = (

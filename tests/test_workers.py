@@ -319,6 +319,56 @@ def test_worker_status_for_building_reports_on_the_way_then_assigned() -> None:
     assert wm.worker_status_for_building(camp) == "assigned"
 
 
+def test_worker_status_for_building_reports_on_the_way_for_stonecutter_resource_walk() -> None:
+    from game.buildings.stone_mine import StoneMine
+
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    th = registry.place(TownHall, (16, 16))
+    th.level = 3
+    mine = registry.place(StoneMine, (20, 20))
+    wm = WorkerManager(resources, registry)
+    w = Worker("STONECUTTER", stand_tile=(18, 18))
+    wm.add_worker(w)
+    wm.assign_to_building(w, mine)
+    w.start_move([(18, 18), (19, 18)], started_ms=0, move_state="going_to_stone")
+
+    assert wm.worker_status_for_building(mine) == "on the way"
+
+
+def test_production_status_for_building_no_worker_and_storage_full() -> None:
+    camp = LumberCamp(level=1, grid_pos=(10, 10))
+    wm = WorkerManager()
+
+    assert wm.production_status_for_building(camp) == "No worker"
+
+    w = Worker("LUMBERJACK")
+    wm.add_worker(w)
+    wm.assign_to_building(w, camp)
+    camp.add_to_storage(camp.storage_capacity())
+    assert wm.production_status_for_building(camp) == "Storage full"
+
+
+def test_production_status_for_building_resting_and_gathering_states() -> None:
+    camp = LumberCamp(level=1, grid_pos=(10, 10))
+    now = {"t": 1000}
+    wm = WorkerManager(now_ms_fn=lambda: now["t"])
+    w = Worker("LUMBERJACK")
+    wm.add_worker(w)
+    wm.assign_to_building(w, camp)
+
+    w.state = "working"
+    w.camp_wait_until_ms = 3000
+    assert wm.production_status_for_building(camp) == "Resting"
+
+    w.state = "chopping"
+    assert wm.production_status_for_building(camp) == "Gathering"
+
+    w.state = "returning"
+    assert wm.production_status_for_building(camp) == "On the way"
+
+
 def test_demolish_moving_worker_becomes_idle_at_current_tile() -> None:
     world = World()
     registry = BuildingRegistry(world)

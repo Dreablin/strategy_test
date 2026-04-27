@@ -41,22 +41,6 @@ def test_stone_mine_click_toggle_returns_toggle_action() -> None:
     assert action == "toggle_active"
 
 
-def test_stone_mine_panel_shows_delivered_counter_line() -> None:
-    mine = StoneMine(level=1, grid_pos=(10, 10))
-    mine.record_stone_delivered(9)
-
-    assert StoneMinePanel.delivered_line(mine) == "Stones delivered: 9"
-
-
-def test_stone_mine_panel_storage_line_reflects_stored_and_capacity() -> None:
-    mine = StoneMine(level=1, grid_pos=(10, 10))
-    mine.add_to_storage(2)
-    assert StoneMinePanel.storage_line(mine) == "Storage: 2 / 3"
-
-    mine.level = 3
-    assert StoneMinePanel.storage_line(mine) == "Storage: 2 / 7"
-
-
 def test_non_stone_mine_buildings_do_not_use_stone_mine_panel() -> None:
     others = [
         LumberCamp(level=1, grid_pos=(2, 2)),

@@ -124,20 +124,13 @@ class BuildingRegistry:
         *,
         staffed_buildings: Collection[Building] = (),
     ) -> None:
-        """Recompute ``ResourceManager`` per-cycle totals from staffed buildings (PRD F-PROD)."""
-        staffed = set(staffed_buildings)
-        totals = {"food": 0, "wood": 0, "stone": 0, "iron": 0}
-        for b in self._buildings:
-            if b not in staffed:
-                continue
-            if hasattr(b, "is_storage_full") and b.is_storage_full():
-                continue
-            income = type(b).income(b.level)
-            if not income:
-                continue
-            for name, amount in income.items():
-                totals[name] = totals.get(name, 0) + amount
-        resources.set_per_cycle_totals(totals)
+        """Set per-cycle preview totals.
+
+        Passive production is removed globally; all resources are delivered by workers
+        via explicit gather/deposit cycles. Keep this API to avoid touching callers.
+        """
+        _ = staffed_buildings
+        resources.set_per_cycle_totals({"food": 0, "wood": 0, "stone": 0, "iron": 0})
 
     def upgrade_building(self, building: Building, resources: ResourceManager) -> bool:
         """Spend ``upgrade_cost(level)``, increment ``level``, refresh per-cycle totals. Returns success."""

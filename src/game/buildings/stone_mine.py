@@ -8,7 +8,6 @@ from game.buildings.storage import StorageMixin
 
 class StoneMine(StorageMixin, Building):
     type_tag: ClassVar[str] = "STONE_MINE"
-    income_resource: ClassVar[str] = "stone"
     __slots__ = ("stored", "active", "delivered_stone")
 
     def __init__(self, level: int = 1, grid_pos: tuple[int, int] | None = None) -> None:

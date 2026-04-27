@@ -1,6 +1,8 @@
 """Smoke tests and loader behavior checks for asset surfaces."""
 
 from pathlib import Path
+import os
+import time
 
 import pygame
 
@@ -121,7 +123,11 @@ def test_lumberjack_worker_dot_cache_invalidation_by_mtime(tmp_path, monkeypatch
     first = worker_dot("LUMBERJACK", carrying=True)
     assert first.get_size() == (12, 12)
 
-    _write_png(folder / "carrying.png", (18, 18), (120, 10, 10))
+    updated = folder / "carrying.png"
+    _write_png(updated, (18, 18), (120, 10, 10))
+    # Ensure mtime changes on fast filesystems.
+    now = time.time() + 1.0
+    os.utime(updated, (now, now))
     second = worker_dot("LUMBERJACK", carrying=True)
     assert second.get_size() == (18, 18)
     clear_asset_caches()

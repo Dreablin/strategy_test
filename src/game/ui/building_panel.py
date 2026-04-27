@@ -88,6 +88,7 @@ class BuildingPanel:
         resources: ResourceManager,
         *,
         worker_assigned: bool,
+        production_status: str | None = None,
         show_upgrade: bool | None = None,
         show_demolish: bool = True,
         extra_bottom_px: int = 0,
@@ -108,7 +109,9 @@ class BuildingPanel:
             else:
                 upgrade_enabled = resources.has(cost)
 
-        text_rows = 5 + (1 if hasattr(building, "storage_capacity") and hasattr(building, "stored") else 0)
+        has_storage_row = hasattr(building, "storage_capacity") and hasattr(building, "stored")
+        has_status_row = has_storage_row and production_status is not None
+        text_rows = 5 + int(has_storage_row) + int(has_status_row)
         btn_count = int(can_upgrade) + int(show_demolish)
         h = (
             _PANEL_PAD * 2
@@ -162,6 +165,7 @@ class BuildingPanel:
         *,
         worker_assigned: bool,
         worker_status: str = "empty",
+        production_status: str | None = None,
         worker_working: bool = False,
         show_upgrade: bool | None = None,
         show_demolish: bool = True,
@@ -172,6 +176,7 @@ class BuildingPanel:
             building,
             resources,
             worker_assigned=worker_assigned,
+            production_status=production_status,
             show_upgrade=show_upgrade,
             show_demolish=show_demolish,
             extra_bottom_px=extra_bottom_px,
@@ -225,6 +230,12 @@ class BuildingPanel:
                 body_font.render(BuildingPanel.storage_line(building), True, (200, 204, 214)),
                 (layout.frame.left + _PANEL_PAD, y),
             )
+            if production_status is not None:
+                y += _ROW
+                surface.blit(
+                    body_font.render(f"Status: {production_status}", True, (200, 204, 214)),
+                    (layout.frame.left + _PANEL_PAD, y),
+                )
 
         if layout.upgrade is not None:
             u_en = layout.upgrade_enabled
@@ -259,6 +270,7 @@ class BuildingPanel:
         resources: ResourceManager,
         *,
         worker_assigned: bool,
+        production_status: str | None = None,
         show_upgrade: bool | None = None,
         show_demolish: bool = True,
         extra_bottom_px: int = 0,
@@ -269,6 +281,7 @@ class BuildingPanel:
             building,
             resources,
             worker_assigned=worker_assigned,
+            production_status=production_status,
             show_upgrade=show_upgrade,
             show_demolish=show_demolish,
             extra_bottom_px=extra_bottom_px,

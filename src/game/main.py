@@ -8,10 +8,8 @@ from game.buildings.town_hall import TownHall
 from game.camera import Camera
 from game.config import WINDOW_SIZE
 from game.input import TOP_BAR_HEIGHT, GameInput
-from game.loop import apply_production_tick
 from game.render import Renderer
 from game.resources import ResourceManager
-from game.tick import TickScheduler
 from game.ui.bottom_bar import BAR_HEIGHT, BottomBar
 from game.ui.placement import PlacementController
 from game.ui.top_bar import TopBar
@@ -35,7 +33,6 @@ def main() -> int:
     placement = PlacementController(world, registry, resources, camera)
     worker_manager = WorkerManager(resources, registry, now_ms_fn=pygame.time.get_ticks)
     game_input = GameInput(world, registry, resources, placement, worker_manager, camera)
-    scheduler = TickScheduler()
 
     running = True
     try:
@@ -68,16 +65,12 @@ def main() -> int:
                     (min_x + origin_x, min_y + origin_y, max_x + origin_x, max_y + origin_y),
                 )
 
-            if scheduler.update(now_ms):
-                apply_production_tick(registry, resources, worker_manager)
-                registry.sync_resources_per_cycle(
-                    resources, staffed_buildings=worker_manager.working_buildings()
-                )
             worker_manager.update(now_ms)
 
             screen.fill((20, 24, 22))
             Renderer.draw_world(screen, world, camera)
             Renderer.draw_buildings(screen, world, registry, camera)
+            Renderer.draw_stones(screen, world, camera)
             Renderer.draw_workers(screen, world, registry, worker_manager, camera)
             Renderer.draw_trees(screen, world, camera)
             TopBar.draw(screen, resources)

@@ -11,10 +11,8 @@ from game.camera import Camera
 from game.config import WINDOW_SIZE
 from game.input import GameInput
 from game.iso import world_to_screen
-from game.loop import apply_production_tick
 from game.render import Renderer
 from game.resources import ResourceManager
-from game.tick import TickScheduler
 from game.ui.bottom_bar import BUILD_MENU_SELECT
 from game.ui.placement import PlacementController
 from game.world import World
@@ -53,7 +51,6 @@ def test_smoke_phase9_worker_moves_and_production_gates() -> None:
     placement = PlacementController(world, registry, resources, camera)
     workers = WorkerManager(resources, registry)
     game_input = GameInput(world, registry, resources, placement, workers, camera)
-    scheduler = TickScheduler()
     registry.place(TownHall, (16, 16))
 
     # 1) Build Lumber Camp at a valid location through input routing.
@@ -96,13 +93,11 @@ def test_smoke_phase9_worker_moves_and_production_gates() -> None:
     assert workers2.hire("LUMBERJACK") is not None
     workers2.reassign_all()
     wood_before = resources2.get("wood")
-    assert scheduler.update(10_000) is True
-    apply_production_tick(registry2, resources2, workers2)
+    # No passive tick production path exists anymore.
     assert resources2.get("wood") == wood_before
     workers2.update(120_000)
     wood_before = resources2.get("wood")
-    assert scheduler.update(20_000) is True
-    apply_production_tick(registry2, resources2, workers2)
+    # No passive tick production path exists anymore.
     assert resources2.get("wood") == wood_before
 
     # 5) Spacing rule: touching is rejected, one-tile gap is accepted.

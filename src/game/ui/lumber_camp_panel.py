@@ -1,4 +1,4 @@
-"""Lumber Camp panel extension with Active toggle and delivered counter."""
+"""Lumber Camp panel extension with Active toggle."""
 
 from __future__ import annotations
 
@@ -35,26 +35,20 @@ class LumberCampPanel:
         return "Active" if camp.active else "Inactive"
 
     @staticmethod
-    def delivered_line(camp: LumberCamp) -> str:
-        return f"Wood delivered: {camp.delivered_wood}"
-
-    @staticmethod
-    def storage_line(camp: LumberCamp) -> str:
-        return BuildingPanel.storage_line(camp)
-
-    @staticmethod
     def layout(
         surface: pygame.Surface,
         camp: LumberCamp,
         resources: ResourceManager,
         *,
         worker_assigned: bool,
+        production_status: str | None = None,
     ) -> LumberCampPanelLayout:
         base = BuildingPanel.layout(
             surface,
             camp,
             resources,
             worker_assigned=worker_assigned,
+            production_status=production_status,
             extra_bottom_px=_EXTRA_BOTTOM,
         )
         toggle = pygame.Rect(
@@ -80,6 +74,7 @@ class LumberCampPanel:
         *,
         worker_assigned: bool,
         worker_status: str = "empty",
+        production_status: str | None = None,
         worker_working: bool = False,
     ) -> None:
         BuildingPanel.draw(
@@ -88,18 +83,18 @@ class LumberCampPanel:
             resources,
             worker_assigned=worker_assigned,
             worker_status=worker_status,
+            production_status=production_status,
             worker_working=worker_working,
             extra_bottom_px=_EXTRA_BOTTOM,
         )
-        layout = LumberCampPanel.layout(surface, camp, resources, worker_assigned=worker_assigned)
+        layout = LumberCampPanel.layout(
+            surface,
+            camp,
+            resources,
+            worker_assigned=worker_assigned,
+            production_status=production_status,
+        )
         font = pygame.font.Font(None, 22)
-        body = pygame.font.Font(None, 22)
-        delivered = body.render(LumberCampPanel.delivered_line(camp), True, (200, 204, 214))
-        storage = body.render(LumberCampPanel.storage_line(camp), True, (200, 204, 214))
-        delivered_y = layout.toggle.top - 56
-        storage_y = layout.toggle.top - 30
-        surface.blit(delivered, (layout.frame.left + _PANEL_PAD, delivered_y))
-        surface.blit(storage, (layout.frame.left + _PANEL_PAD, storage_y))
 
         active_bg = (84, 112, 84) if camp.active else (92, 64, 64)
         pygame.draw.rect(surface, active_bg, layout.toggle, border_radius=6)
@@ -117,6 +112,7 @@ class LumberCampPanel:
         resources: ResourceManager,
         *,
         worker_assigned: bool,
+        production_status: str | None = None,
     ) -> str | None:
         # Match the actually rendered layout: the panel is drawn with `extra_bottom_px`,
         # so we MUST resolve hit-targets against that same extended frame. Calling the
@@ -128,11 +124,18 @@ class LumberCampPanel:
             camp,
             resources,
             worker_assigned=worker_assigned,
+            production_status=production_status,
             extra_bottom_px=_EXTRA_BOTTOM,
         )
         if base_action is not None:
             return base_action
-        layout = LumberCampPanel.layout(surface, camp, resources, worker_assigned=worker_assigned)
+        layout = LumberCampPanel.layout(
+            surface,
+            camp,
+            resources,
+            worker_assigned=worker_assigned,
+            production_status=production_status,
+        )
         if layout.toggle.collidepoint(pos):
             return "toggle_active"
         return None

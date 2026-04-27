@@ -40,15 +40,12 @@ def test_building_footprint(cls: type, expected_footprint: tuple[int, int]) -> N
     assert cls.footprint == expected_footprint
 
 
-def test_resource_income_scales_with_level() -> None:
-    assert StoneMine.income(3) == {"stone": 15}
-    assert IronMine.income(2) == {"iron": 10}
-    assert Farm.income(5) == {"food": 25}
-
-
-def test_lumber_camp_income_is_empty() -> None:
+def test_all_production_buildings_have_no_passive_income() -> None:
     assert LumberCamp.income(1) == {}
     assert LumberCamp.income(5) == {}
+    assert StoneMine.income(3) == {}
+    assert IronMine.income(2) == {}
+    assert Farm.income(5) == {}
 
 
 def test_town_hall_income_always_empty() -> None:
@@ -101,7 +98,7 @@ def test_upgrade_allowed_for_town_hall_below_cap() -> None:
 
 
 def test_upgrade_updates_per_cycle_when_building_is_staffed() -> None:
-    """Staffed production is PRD-accurate; ``sync_resources_per_cycle`` reflects new level after upgrade."""
+    """No passive per-cycle production should be exposed for active gatherers."""
     world = World()
     registry = BuildingRegistry(world)
     resources = ResourceManager()
@@ -109,12 +106,12 @@ def test_upgrade_updates_per_cycle_when_building_is_staffed() -> None:
     th.level = 3
     b = registry.place(StoneMine, (10, 10))
     registry.sync_resources_per_cycle(resources, staffed_buildings={b})
-    assert resources.per_cycle["stone"] == 5
+    assert resources.per_cycle["stone"] == 0
     resources.add("wood", 2000)
     resources.add("stone", 2000)
     assert registry.upgrade_building(b, resources)
     registry.sync_resources_per_cycle(resources, staffed_buildings={b})
-    assert resources.per_cycle["stone"] == 10
+    assert resources.per_cycle["stone"] == 0
 
 
 def test_upgrade_rejected_at_max_level() -> None:

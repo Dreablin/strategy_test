@@ -53,7 +53,7 @@ def _apply_production_tick(registry: BuildingRegistry, resources: ResourceManage
     apply_production_tick(registry, resources, workers)
 
 
-def test_tick_adds_5_wood_for_staffed_level1_lumber_camp() -> None:
+def test_tick_adds_5_stone_for_staffed_level1_stone_mine() -> None:
     world = World()
     registry = BuildingRegistry(world)
     resources = ResourceManager()
@@ -72,7 +72,7 @@ def test_tick_adds_5_wood_for_staffed_level1_lumber_camp() -> None:
     assert resources.get("stone") == stone_before + 5
 
 
-def test_tick_after_upgrade_to_level3_adds_15_wood() -> None:
+def test_tick_after_upgrade_to_level3_adds_15_stone() -> None:
     world = World()
     registry = BuildingRegistry(world)
     resources = ResourceManager()

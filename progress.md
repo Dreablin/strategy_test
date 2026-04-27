@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 11. Lumberjack chop cycle
-- **Next Task:** T90 — Clean up obsolete lumber passive behavior paths
-- **Last Completed:** T89 — Implement Lumber Camp panel additions
-- **Total Progress:** 89 / 91
+- **Next Task:** T91 — Add Phase 11 end-to-end smoke test
+- **Last Completed:** T90 — Clean up obsolete lumber passive behavior paths
+- **Total Progress:** 90 / 91
 
 ---
 
@@ -411,7 +411,7 @@
   - Add toggle button + delivered counter line.
   - Wire input handling in `GameInput` to dispatch `LUMBER_CAMP` clicks to `LumberCampPanel.click_action`; `"toggle_active"` calls `camp.set_active(not camp.active)` and triggers `worker_manager.reassign_all()`.
 
-- [ ] **T90**: Clean up obsolete code:
+- [x] **T90**: Clean up obsolete code:
   - Remove or generalize any code that assumed Lumber Camp emits `5×level` wood per tick.
   - Remove now-unused fields/branches if any (e.g., dead-code paths after `LumberCamp.income()` returns `{}`).
   - Search-and-prune obsolete tests that asserted the old passive Lumber Camp behavior.

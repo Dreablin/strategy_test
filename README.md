@@ -48,3 +48,7 @@ Or run PyInstaller directly:
 - Worker move/gather speed gains +5% per building level above 1 while assigned to that building.
 - Every 10 seconds, staffed buildings add `5 x level` of their resource.
 - Upgrade buildings to increase production; demolish to replan your layout.
+
+## Performance
+
+Workers now move only in four directions (N/E/S/W), rendering is bounded to the camera-visible tile range instead of full-grid scans, and worker dispatch uses cached blocked-tile sets; together these changes keep frame cost tied to viewport activity rather than total map area and make maps around 10x the default area practical without changing gameplay rules.

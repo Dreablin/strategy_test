@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 13. Performance optimisation & orthogonal pathfinding
-- **Next Task:** T147 — add README performance note for Phase 13.
-- **Last Completed:** T146 — update PRD and decisions log for Phase 13 architecture.
-- **Total Progress:** 146 / 148
+- **Next Task:** T148 — add end-of-phase smoke test.
+- **Last Completed:** T147 — add README performance note for Phase 13.
+- **Total Progress:** 147 / 148
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -374,7 +374,7 @@
   - `progress.md` Decisions Log: add the orthogonal-pathing decision and
     the cached-set decision (see template below).
 
-- [ ] **T147**: Add a 1-paragraph note to `README.md` under "Performance":
+- [x] **T147**: Add a 1-paragraph note to `README.md` under "Performance":
   workers move only N/E/S/W; visible-tile rendering keeps frame cost
   independent of map size; supported map sizes scale to ~10× the default
   area.

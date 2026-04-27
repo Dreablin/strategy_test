@@ -12,6 +12,7 @@ from game.assets import (
     grass_tile,
     hire_ui_icon,
     resource_icon,
+    tree_sprite,
     tree_tile,
     worker_dot,
     worker_ui_icon,
@@ -122,4 +123,19 @@ def test_building_meta_bom_is_accepted(tmp_path, monkeypatch) -> None:
     clear_asset_caches()
     spr = building_sprite("FARM", 1)
     assert spr.get_size() == (16, 16)
+    clear_asset_caches()
+
+
+def test_tree_sprite_loads_stage_file_when_present() -> None:
+    clear_asset_caches()
+    spr = tree_sprite("sapling")
+    _assert_nonempty_surface(spr)
+
+
+def test_tree_sprite_falls_back_procedural_when_stage_missing(tmp_path, monkeypatch) -> None:
+    root = tmp_path / "trees"
+    monkeypatch.setattr(assets_mod, "_TREES_ROOT", root)
+    clear_asset_caches()
+    spr = tree_sprite("adult")
+    _assert_nonempty_surface(spr)
     clear_asset_caches()

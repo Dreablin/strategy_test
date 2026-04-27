@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 10. Tree entities, blocking, layering
-- **Next Task:** T71 — Add placeholder tree assets and failing asset-loader tests
-- **Last Completed:** T70 — Implement placement-clears-tree behavior
-- **Total Progress:** 70 / 74
+- **Next Task:** T72 — Implement tree asset loading
+- **Last Completed:** T71 — Add placeholder tree assets and failing asset-loader tests
+- **Total Progress:** 71 / 74
 
 ---
 
@@ -273,7 +273,7 @@
   - Tree presence must never block valid building placement.
   - Confirm no regressions in existing placement tests.
 
-- [ ] **T71**: Add placeholder tree assets and failing asset-loader tests:
+- [x] **T71**: Add placeholder tree assets and failing asset-loader tests:
   - Create folders/files under `assets/trees/` for all stages:
     - `assets/trees/sapling/default.png`
     - `assets/trees/young/default.png`

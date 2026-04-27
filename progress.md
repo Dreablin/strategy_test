@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 13. Performance optimisation & orthogonal pathfinding
-- **Next Task:** T132 — switch pathfinding BFS to 4-direction.
-- **Last Completed:** T131 — add failing 4-direction pathfinding tests.
-- **Total Progress:** 131 / 148
+- **Next Task:** T133 — add failing 4-direction resource-search tests.
+- **Last Completed:** T132 — switch pathfinding BFS to 4-direction.
+- **Total Progress:** 132 / 148
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -211,7 +211,7 @@
     yields a path; same `start == goal` returns `[start]`.
   Tests must FAIL first.
 
-- [ ] **T132**: Switch `src/game/pathfinding.py` to 4-direction:
+- [x] **T132**: Switch `src/game/pathfinding.py` to 4-direction:
   - Replace `_NEIGHBORS_8` with `_NEIGHBORS_4 = ((0, -1), (1, 0), (0, 1),
     (-1, 0))` (deterministic order: N, E, S, W).
   - Drop the entire `if dx != 0 and dy != 0: …` corner-cut guard.

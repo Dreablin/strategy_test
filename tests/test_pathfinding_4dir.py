@@ -4,8 +4,15 @@ from game.pathfinding import find_path_bfs
 from game.world import World
 
 
-def test_4dir_path_length_equals_manhattan_plus_one_on_empty_grid() -> None:
+def _empty_world() -> World:
     world = World()
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    return world
+
+
+def test_4dir_path_length_equals_manhattan_plus_one_on_empty_grid() -> None:
+    world = _empty_world()
     start = (0, 0)
     goal = (3, 3)
     path = find_path_bfs(world, start, goal, blocked=set())
@@ -15,7 +22,7 @@ def test_4dir_path_length_equals_manhattan_plus_one_on_empty_grid() -> None:
 
 
 def test_4dir_path_contains_only_orthogonal_steps() -> None:
-    world = World()
+    world = _empty_world()
     path = find_path_bfs(world, (0, 0), (3, 3), blocked=set())
 
     assert path is not None
@@ -26,7 +33,7 @@ def test_4dir_path_contains_only_orthogonal_steps() -> None:
 
 
 def test_diagonal_wall_pattern_is_unreachable_until_one_blocker_removed() -> None:
-    world = World()
+    world = _empty_world()
     blocked = {(1, 0), (0, 1)}
 
     path = find_path_bfs(world, (0, 0), (1, 1), blocked=blocked)
@@ -38,7 +45,7 @@ def test_diagonal_wall_pattern_is_unreachable_until_one_blocker_removed() -> Non
 
 
 def test_bfs_is_deterministic_for_identical_inputs() -> None:
-    world = World()
+    world = _empty_world()
     blocked = {(2, 1), (2, 2), (2, 3)}
     a = find_path_bfs(world, (0, 0), (4, 4), blocked=blocked)
     b = find_path_bfs(world, (0, 0), (4, 4), blocked=blocked)
@@ -46,7 +53,7 @@ def test_bfs_is_deterministic_for_identical_inputs() -> None:
 
 
 def test_4dir_reachability_and_start_equals_goal() -> None:
-    world = World()
+    world = _empty_world()
     assert find_path_bfs(world, (2, 2), (2, 2), blocked=set()) == [(2, 2)]
 
     path = find_path_bfs(world, (1, 1), (1, 4), blocked=set())

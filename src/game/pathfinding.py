@@ -1,4 +1,4 @@
-"""Deterministic 8-direction BFS pathfinding over world grass tiles."""
+"""Deterministic 4-direction BFS over world grass tiles (no diagonal movement)."""
 
 from __future__ import annotations
 
@@ -6,15 +6,11 @@ from collections import deque
 
 from game.world import World
 
-_NEIGHBORS_8: tuple[tuple[int, int], ...] = (
-    (0, -1),   # N
-    (1, -1),   # NE
-    (1, 0),    # E
-    (1, 1),    # SE
-    (0, 1),    # S
-    (-1, 1),   # SW
-    (-1, 0),   # W
-    (-1, -1),  # NW
+_NEIGHBORS_4: tuple[tuple[int, int], ...] = (
+    (0, -1),  # N
+    (1, 0),   # E
+    (0, 1),   # S
+    (-1, 0),  # W
 )
 
 
@@ -69,7 +65,7 @@ def find_path_bfs(
         if (cx, cy) == goal:
             return _reconstruct_path(came_from, goal)
 
-        for dx, dy in _NEIGHBORS_8:
+        for dx, dy in _NEIGHBORS_4:
             nx, ny = cx + dx, cy + dy
             nxt = (nx, ny)
 
@@ -77,16 +73,6 @@ def find_path_bfs(
                 continue
             if nxt in came_from:
                 continue
-
-            # For diagonal moves, disallow corner cutting only when both
-            # adjacent orthogonals are blocked/unwalkable.
-            if dx != 0 and dy != 0:
-                side_a = (cx + dx, cy)
-                side_b = (cx, cy + dy)
-                a_walkable = is_walkable(side_a)
-                b_walkable = is_walkable(side_b)
-                if not (a_walkable or b_walkable):
-                    continue
 
             came_from[nxt] = (cx, cy)
             frontier.append(nxt)

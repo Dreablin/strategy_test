@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 13. Performance optimisation & orthogonal pathfinding
-- **Next Task:** T133 — add failing 4-direction resource-search tests.
-- **Last Completed:** T132 — switch pathfinding BFS to 4-direction.
-- **Total Progress:** 132 / 148
+- **Next Task:** T134 — switch world resource search to 4-direction.
+- **Last Completed:** T133 — add failing 4-direction resource-search tests.
+- **Total Progress:** 133 / 148
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -220,7 +220,7 @@
   - Run all tests; expect any test that asserted 8-dir paths to fail —
     those must be updated in T135.
 
-- [ ] **T133**: Add failing tests in
+- [x] **T133**: Add failing tests in
   `tests/test_world_resource_search_4dir.py`:
   - `find_nearest_free_tree` expansion uses 4-dir only: place a tree at
     (5, 5) reachable only via diagonals (i.e. (4, 4) is the worker, walls at

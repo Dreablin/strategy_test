@@ -97,3 +97,26 @@ def test_two_camps_track_deliveries_independently() -> None:
     assert camp_a.delivered_wood == 1
     assert camp_b.delivered_wood == 1
     assert resources.get("wood") == wood0 + 2
+
+
+def test_lumberjack_does_not_start_next_cycle_when_storage_full() -> None:
+    now_ms, _world, resources, camp, workers, worker = _setup_single_cycle()
+    camp.stored = camp.storage_capacity()
+    wood_before = resources.get("wood")
+    delivered_before = camp.delivered_wood
+
+    now_ms[0] += 120_000
+    workers.update(now_ms[0])
+    now_ms[0] += CHOP_DURATION_MS
+    workers.update(now_ms[0])
+    now_ms[0] += 120_000
+    workers.update(now_ms[0])
+    workers.update(now_ms[0] + 1)
+
+    assert worker.state == "working"
+    wait_until = worker.camp_wait_until_ms
+    workers.update(wait_until + 500_000)
+    assert worker.state == "working"
+    assert worker.target_tree is None
+    assert resources.get("wood") == wood_before
+    assert camp.delivered_wood == delivered_before

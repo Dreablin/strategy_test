@@ -1,6 +1,8 @@
 """Production regression + end-to-end tick tests."""
 
 from game.buildings.costs import upgrade_cost
+from game.buildings.farm import Farm
+from game.buildings.iron_mine import IronMine
 from game.buildings.stone_mine import StoneMine
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
@@ -123,3 +125,40 @@ def test_moving_worker_does_not_produce_until_working() -> None:
     assert resources.per_cycle["stone"] == 5
     _apply_production_tick(registry, resources, workers)
     assert resources.get("stone") == stone_before + 5
+
+
+def test_passive_farm_income_skips_tick_when_storage_full() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    farm = registry.place(Farm, (10, 10))
+    farm.stored = farm.storage_capacity()
+    workers = WorkerManager(resources, registry)
+    worker = workers.hire("FARMER")
+    if worker is None:
+        th = registry.place(TownHall, (16, 16))
+        th.level = 5
+        worker = workers.hire("FARMER")
+    assert worker is not None
+    workers.reassign_all()
+    workers.update(120_000)
+    food_before = resources.get("food")
+    _apply_production_tick(registry, resources, workers)
+    assert resources.get("food") == food_before
+
+
+def test_passive_iron_income_skips_tick_when_storage_full() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    th = registry.place(TownHall, (16, 16))
+    th.level = 5
+    mine = registry.place(IronMine, (10, 10))
+    mine.stored = mine.storage_capacity()
+    workers = WorkerManager(resources, registry)
+    assert workers.hire("MINER") is not None
+    workers.reassign_all()
+    workers.update(120_000)
+    iron_before = resources.get("iron")
+    _apply_production_tick(registry, resources, workers)
+    assert resources.get("iron") == iron_before

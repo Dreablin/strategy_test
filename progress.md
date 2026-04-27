@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T104 — Add failing tests for production storage gating
-- **Last Completed:** T103 — Implement storage mixin for producing buildings
-- **Total Progress:** 103 / 111
+- **Next Task:** T105 — Implement production storage gating
+- **Last Completed:** T104 — Add failing tests for production storage gating
+- **Total Progress:** 104 / 111
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -226,7 +226,7 @@
     static method. Apply to `LumberCamp`, `StoneMine`, `IronMine`, `Farm`.
   - Update `__slots__`. Run `pytest -q tests/test_buildings.py` — green.
 
-- [ ] **T104**: Add failing tests for production gating by storage in
+- [x] **T104**: Add failing tests for production gating by storage in
   `tests/test_lumberjack_cycle_deposit.py` and
   `tests/test_production.py`:
   - Once `LumberCamp.stored == LumberCamp.storage_capacity()`, the next

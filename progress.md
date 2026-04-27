@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 13. Performance optimisation & orthogonal pathfinding
-- **Next Task:** T146 (in progress) — update PRD and decisions log for Phase 13 architecture.
-- **Last Completed:** T145 — cleanup pass and lint autofix.
-- **Total Progress:** 145 / 148
+- **Next Task:** T147 — add README performance note for Phase 13.
+- **Last Completed:** T146 — update PRD and decisions log for Phase 13 architecture.
+- **Total Progress:** 146 / 148
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -362,7 +362,7 @@
   - Run `ruff check --fix .` until clean.
   - `pytest -q` final green run.
 
-- [~] **T146**: Update PRD and progress decisions log:
+- [x] **T146**: Update PRD and progress decisions log:
   - PRD: change the `game.pathfinding` API block to "4-direction BFS" and
     add a new `F-PATH-01` requirement saying "movement is restricted to
     horizontal and vertical (no diagonals)".

@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T118 — Add failing stonecutter cycle tests
-- **Last Completed:** T117 — Implement StoneMine active toggle and counter
-- **Total Progress:** 117 / 125
+- **Next Task:** T119 — Implement stonecutter dispatch in WorkerManager
+- **Last Completed:** T118 — Add failing stonecutter cycle tests
+- **Total Progress:** 118 / 125
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -355,7 +355,7 @@
   (`src/game/buildings/stone_mine.py`) using the same pattern as
   `LumberCamp`. Update `__slots__`. Run those tests — green.
 
-- [ ] **T118**: Add failing tests for the stonecutter state machine in new
+- [x] **T118**: Add failing tests for the stonecutter state machine in new
   `tests/test_stonecutter_cycle.py`:
   - State transitions for STONECUTTER assigned to an active StoneMine
     mirror lumberjack: `idle → moving → working (rest) → going_to_stone

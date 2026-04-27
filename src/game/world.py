@@ -277,3 +277,56 @@ def find_nearest_free_tree(
             seen.add(nxt)
             q.append(nxt)
     return None
+
+
+def find_nearest_free_stone(
+    world: World,
+    from_tile: tuple[int, int],
+    *,
+    blocked: set[tuple[int, int]],
+    skip_reserved: bool = True,
+) -> tuple[int, int] | None:
+    """Return nearest stone tile reachable from `from_tile` over walkable tiles."""
+    sx, sy = from_tile
+    if not world.is_in_grass(sx, sy):
+        return None
+
+    start_stone = world.stone_at(sx, sy)
+    if start_stone is not None and (not skip_reserved or not world.is_stone_reserved(sx, sy)):
+        return from_tile
+
+    def is_walkable(tile: tuple[int, int]) -> bool:
+        tx, ty = tile
+        if not world.is_in_grass(tx, ty):
+            return False
+        if tile in blocked and tile != from_tile:
+            return False
+        if world.is_occupied(tx, ty):
+            return False
+        if world.is_tree_blocking(tx, ty):
+            return False
+        if world.is_stone_blocking(tx, ty):
+            return False
+        return True
+
+    if not is_walkable(from_tile):
+        return None
+
+    q: deque[tuple[int, int]] = deque([from_tile])
+    seen: set[tuple[int, int]] = {from_tile}
+    while q:
+        cx, cy = q.popleft()
+        for dx, dy in _NEIGHBORS_8:
+            nx, ny = cx + dx, cy + dy
+            nxt = (nx, ny)
+            if not world.is_in_grass(nx, ny):
+                continue
+            if world.stone_at(nx, ny) is not None:
+                if skip_reserved and world.is_stone_reserved(nx, ny):
+                    continue
+                return nxt
+            if nxt in seen or not is_walkable(nxt):
+                continue
+            seen.add(nxt)
+            q.append(nxt)
+    return None

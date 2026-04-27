@@ -10,10 +10,12 @@ from game.characteristics import Characteristics
 from game.config import TOWN_HALL_MIN_LEVEL_FOR_HIRE, WORKER_HIRE_COSTS, WORKER_TILE_TRAVEL_MS
 from game.pathfinding import find_path_bfs
 from game.resources import ResourceManager
-from game.world import find_nearest_free_tree
+from game.world import find_nearest_free_stone, find_nearest_free_tree
 
 CHOP_DURATION_MS = 10_000
+MINE_DURATION_MS = 10_000
 LUMBERJACK_REST_MS = 5_000
+STONECUTTER_REST_MS = 5_000
 MOVE_SPEED_PER_LEVEL = 0.05
 GATHER_SPEED_PER_LEVEL = 0.05
 
@@ -89,6 +91,8 @@ class Worker:
             self.segment_progress = 0.0
             if move_state == "going_to_tree":
                 self.state = "going_to_tree"
+            elif move_state == "going_to_stone":
+                self.state = "going_to_stone"
             elif move_state == "returning":
                 self.state = "returning"
             else:
@@ -104,7 +108,7 @@ class Worker:
         self.idle = False
 
     def update(self, now_ms: int) -> None:
-        if self.state not in {"moving", "going_to_tree", "returning"} or self.target_tile is None:
+        if self.state not in {"moving", "going_to_tree", "going_to_stone", "returning"} or self.target_tile is None:
             return
         travel_ms = self._effective_travel_ms()
         elapsed = max(0, int(now_ms) - self.segment_started_ms)
@@ -122,6 +126,8 @@ class Worker:
             self.arrival_ms = self.segment_started_ms + travel_ms
             if self.state == "going_to_tree":
                 self.state = "arrived_tree"
+            elif self.state == "going_to_stone":
+                self.state = "arrived_stone"
             elif self.state == "returning":
                 self.state = "arrived_camp"
             else:
@@ -205,7 +211,8 @@ class WorkerManager:
         return {
             w.assigned_building
             for w in self._workers
-            if w.assigned_building is not None and w.state in {"working", "chopping", "depositing"}
+            if w.assigned_building is not None
+            and w.state in {"working", "chopping", "mining", "depositing"}
         }
 
     def hire(self, worker_type: str) -> Worker | None:
@@ -291,16 +298,17 @@ class WorkerManager:
             want = self._WORKER_TO_BUILDING.get(worker.type_tag)
             if want is None:
                 continue
-            # Lumberjack already at its camp (e.g., post-deposit with toggle off, then on):
-            # resume the chop cycle directly without walking back to the camp.
+            # Gather worker already at its camp (e.g., post-deposit with toggle off, then on):
+            # resume the gather cycle directly without walking back to the camp.
             if (
-                worker.type_tag == "LUMBERJACK"
+                worker.type_tag in {"LUMBERJACK", "STONECUTTER"}
                 and worker.assigned_building is not None
                 and worker.assigned_building.type_tag == want
             ):
                 camp = worker.assigned_building
-                self._park_lumberjack_inside_camp(worker, camp)
-                worker.camp_wait_until_ms = max(worker.camp_wait_until_ms, now_ms + LUMBERJACK_REST_MS)
+                self._park_worker_inside_camp(worker, camp)
+                rest_ms = LUMBERJACK_REST_MS if worker.type_tag == "LUMBERJACK" else STONECUTTER_REST_MS
+                worker.camp_wait_until_ms = max(worker.camp_wait_until_ms, now_ms + rest_ms)
                 continue
             targets = [b for b in self._registry.all() if b.type_tag == want and not self.is_staffed(b)]
             assigned = False
@@ -390,7 +398,7 @@ class WorkerManager:
         world = getattr(self._registry, "_world", None) if self._registry is not None else None
         for worker in self._workers:
             worker.update(now_ms)
-            if worker.type_tag != "LUMBERJACK":
+            if worker.type_tag not in {"LUMBERJACK", "STONECUTTER"}:
                 continue
             if world is None:
                 continue
@@ -399,13 +407,17 @@ class WorkerManager:
                 world.release_reservations_for(worker)
                 continue
 
-            # Lumberjack just walked into the camp: kick off the chop cycle from the
+            gather_state = self._gather_state_for(worker.type_tag)
+            if gather_state is None:
+                continue
+
+            # Gather worker just walked into the camp: kick off the cycle from the
             # actual arrival timestamp so leftover time in this tick still moves the
-            # worker further along the new (going_to_tree) path.
+            # worker further along the new (resource-targeting) path.
             if worker.state == "working":
-                self._park_lumberjack_inside_camp(worker, camp)
+                self._park_worker_inside_camp(worker, camp)
                 if worker.camp_wait_until_ms <= 0:
-                    worker.camp_wait_until_ms = worker.arrival_ms + LUMBERJACK_REST_MS
+                    worker.camp_wait_until_ms = worker.arrival_ms + gather_state["rest_ms"]
                 if int(now_ms) < worker.camp_wait_until_ms:
                     continue
                 if not getattr(camp, "active", False):
@@ -415,55 +427,87 @@ class WorkerManager:
                     worker.camp_wait_until_ms = int(now_ms) + 1_000
                     continue
                 depart_ms = worker.camp_wait_until_ms
-                if not self._start_lumberjack_cycle(worker, camp, depart_ms):
-                    # No target tree/path right now: stay inside camp and retry later.
-                    self._park_lumberjack_inside_camp(worker, camp)
+                if not self._start_gather_cycle(worker, camp, depart_ms, world_query=gather_state["world_query"]):
+                    # No target/path right now: stay inside camp and retry later.
+                    self._park_worker_inside_camp(worker, camp)
                     worker.camp_wait_until_ms = int(now_ms) + 1_000
                     continue
                 worker.camp_wait_until_ms = 0
                 worker.update(now_ms)
 
-            if worker.state == "arrived_tree":
-                worker.state = "chopping"
+            if worker.state == gather_state["arrived_state"]:
+                worker.state = gather_state["work_state"]
                 worker.chop_started_ms = int(now_ms)
                 speed = worker.characteristics.gather_speed_mult
                 if speed <= 0.0:
-                    worker.chop_duration_ms = CHOP_DURATION_MS
+                    worker.chop_duration_ms = gather_state["duration_ms"]
                 else:
-                    worker.chop_duration_ms = max(1, int(round(CHOP_DURATION_MS / speed)))
+                    worker.chop_duration_ms = max(1, int(round(gather_state["duration_ms"] / speed)))
                 continue
 
-            if worker.state == "chopping":
+            if worker.state == gather_state["work_state"]:
                 if int(now_ms) - worker.chop_started_ms < worker.chop_duration_ms:
                     continue
-                tree_tile = worker.target_tree
-                if tree_tile is not None:
-                    world.remove_tree(*tree_tile)
-                worker.carrying = "wood"
+                target_tile = worker.target_tree
+                if target_tile is not None:
+                    if gather_state["world_query"] == "tree":
+                        world.remove_tree(*target_tile)
+                    else:
+                        world.harvest_stone(*target_tile)
+                worker.carrying = gather_state["carry_resource"]
                 if not self._start_return_to_camp(worker, int(now_ms)):
                     worker.state = "depositing"
                 continue
 
             if worker.state == "arrived_camp":
-                self._park_lumberjack_inside_camp(worker, camp)
+                self._park_worker_inside_camp(worker, camp)
                 worker.state = "depositing"
                 continue
 
             if worker.state == "depositing":
-                if worker.carrying == "wood" and self._resources is not None:
-                    self._resources.add("wood", 1)
+                if worker.carrying == gather_state["carry_resource"] and self._resources is not None:
+                    self._resources.add(gather_state["carry_resource"], 1)
                     if hasattr(camp, "add_to_storage"):
                         camp.add_to_storage(1)
-                    if hasattr(camp, "record_wood_delivered"):
-                        camp.record_wood_delivered(1)
+                    if hasattr(camp, gather_state["record_method"]):
+                        record_method = getattr(camp, gather_state["record_method"])
+                        record_method(1)
                 worker.carrying = None
                 worker.target_tree = None
                 worker.chop_started_ms = 0
                 worker.chop_duration_ms = CHOP_DURATION_MS
-                self._park_lumberjack_inside_camp(worker, camp)
-                worker.camp_wait_until_ms = int(now_ms) + LUMBERJACK_REST_MS
+                self._park_worker_inside_camp(worker, camp)
+                worker.camp_wait_until_ms = int(now_ms) + gather_state["rest_ms"]
+                continue
+    def _gather_state_for(self, worker_type: str) -> dict[str, Any] | None:
+        if worker_type == "LUMBERJACK":
+            return {
+                "world_query": "tree",
+                "arrived_state": "arrived_tree",
+                "work_state": "chopping",
+                "duration_ms": CHOP_DURATION_MS,
+                "carry_resource": "wood",
+                "record_method": "record_wood_delivered",
+                "rest_ms": LUMBERJACK_REST_MS,
+            }
+        if worker_type == "STONECUTTER":
+            return {
+                "world_query": "stone",
+                "arrived_state": "arrived_stone",
+                "work_state": "mining",
+                "duration_ms": MINE_DURATION_MS,
+                "carry_resource": "stone",
+                "record_method": "record_stone_delivered",
+                "rest_ms": STONECUTTER_REST_MS,
+            }
+        return None
 
     def _start_lumberjack_cycle(self, worker: Worker, camp: Building, now_ms: int) -> bool:
+        return self._start_gather_cycle(worker, camp, now_ms, world_query="tree")
+
+    def _start_gather_cycle(
+        self, worker: Worker, camp: Building, now_ms: int, *, world_query: str
+    ) -> bool:
         if self._registry is None:
             return False
         world = getattr(self._registry, "_world", None)
@@ -482,53 +526,81 @@ class WorkerManager:
             if world.is_occupied(x, y)
         }
         blocked.discard(worker.current_tile)
-        tree_tile = find_nearest_free_tree(world, worker.current_tile, blocked=blocked, skip_reserved=True)
-        if tree_tile is None:
+        target_tile = self._find_nearest_gather_target(
+            world, worker.current_tile, blocked=blocked, world_query=world_query
+        )
+        if target_tile is None:
             worker.idle = True
             worker.state = "idle"
             self._clear_building_bonus(worker)
             return False
-        if not world.reserve_tree(tree_tile[0], tree_tile[1], worker):
+        tx, ty = target_tile
+        reserve_ok = (
+            world.reserve_tree(tx, ty, worker)
+            if world_query == "tree"
+            else world.reserve_stone(tx, ty, worker)
+        )
+        if not reserve_ok:
             worker.idle = True
             worker.state = "idle"
             self._clear_building_bonus(worker)
             return False
 
-        tx, ty = tree_tile
         approach: tuple[int, int] | None = None
         best_len: int | None = None
-        tree_blocked = set(blocked)
-        tree_blocked.add(tree_tile)
+        target_blocked = set(blocked)
+        target_blocked.add(target_tile)
         for ny in range(ty - 1, ty + 2):
             for nx in range(tx - 1, tx + 2):
-                if (nx, ny) == tree_tile:
+                if (nx, ny) == target_tile:
                     continue
                 if not world.is_in_grass(nx, ny):
                     continue
-                if world.is_occupied(nx, ny) or world.is_tree_blocking(nx, ny):
+                if world.is_occupied(nx, ny) or world.is_tree_blocking(nx, ny) or world.is_stone_blocking(nx, ny):
                     continue
-                path = find_path_bfs(world, worker.current_tile, (nx, ny), tree_blocked)
+                path = find_path_bfs(world, worker.current_tile, (nx, ny), target_blocked)
                 if path is None:
                     continue
                 if best_len is None or len(path) < best_len:
                     best_len = len(path)
                     approach = (nx, ny)
         if approach is None:
-            world.release_tree(*tree_tile)
+            if world_query == "tree":
+                world.release_tree(*target_tile)
+            else:
+                world.release_stone(*target_tile)
             worker.idle = True
             worker.state = "idle"
             self._clear_building_bonus(worker)
             return False
-        path = find_path_bfs(world, worker.current_tile, approach, tree_blocked)
+        path = find_path_bfs(world, worker.current_tile, approach, target_blocked)
         if path is None:
-            world.release_tree(*tree_tile)
+            if world_query == "tree":
+                world.release_tree(*target_tile)
+            else:
+                world.release_stone(*target_tile)
             worker.idle = True
             worker.state = "idle"
             self._clear_building_bonus(worker)
             return False
-        worker.target_tree = tree_tile
-        worker.start_move(path, started_ms=now_ms, move_state="going_to_tree")
+        worker.target_tree = target_tile
+        move_state = "going_to_tree" if world_query == "tree" else "going_to_stone"
+        worker.start_move(path, started_ms=now_ms, move_state=move_state)
         return True
+
+    @staticmethod
+    def _find_nearest_gather_target(
+        world: Any,
+        from_tile: tuple[int, int],
+        *,
+        blocked: set[tuple[int, int]],
+        world_query: str,
+    ) -> tuple[int, int] | None:
+        if world_query == "tree":
+            return find_nearest_free_tree(world, from_tile, blocked=blocked, skip_reserved=True)
+        if world_query == "stone":
+            return find_nearest_free_stone(world, from_tile, blocked=blocked, skip_reserved=True)
+        return None
 
     def _start_return_to_camp(self, worker: Worker, now_ms: int) -> bool:
         if self._registry is None or worker.assigned_building is None:
@@ -555,7 +627,7 @@ class WorkerManager:
         worker.start_move(best_path, started_ms=now_ms, move_state="returning")
         return True
 
-    def _park_lumberjack_inside_camp(self, worker: Worker, camp: Building) -> None:
+    def _park_worker_inside_camp(self, worker: Worker, camp: Building) -> None:
         world = getattr(self._registry, "_world", None) if self._registry is not None else None
         if world is not None and world.is_occupied(*worker.current_tile):
             approach_tiles = self._approach_tiles(camp)

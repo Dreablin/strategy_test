@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T119 — Implement stonecutter dispatch in WorkerManager
-- **Last Completed:** T118 — Add failing stonecutter cycle tests
-- **Total Progress:** 118 / 125
+- **Next Task:** T120 — Add failing UI tests for StoneMine panel
+- **Last Completed:** T119 — Implement stonecutter dispatch in WorkerManager
+- **Total Progress:** 119 / 125
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -367,7 +367,7 @@
   - Demolishing the mine during any active stage cancels the cycle.
   Tests must FAIL first.
 
-- [ ] **T119**: Implement stonecutter dispatch in `WorkerManager`:
+- [x] **T119**: Implement stonecutter dispatch in `WorkerManager`:
   - Generalise the lumberjack dispatch helpers — extract
     `_start_gather_cycle(worker, camp, *, world_query)` parametrised by
     the resource (tree / stone). Reuse `_park_lumberjack_inside_camp`

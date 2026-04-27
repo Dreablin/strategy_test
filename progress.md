@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 11. Lumberjack chop cycle
-- **Next Task:** T77 — Add failing tests for tree reservation
-- **Last Completed:** T76 — Implement LumberCamp toggle and counter
-- **Total Progress:** 76 / 91
+- **Next Task:** T78 — Implement tree reservation in world
+- **Last Completed:** T77 — Add failing tests for tree reservation
+- **Total Progress:** 77 / 91
 
 ---
 
@@ -325,7 +325,7 @@
   - Keep `LumberCamp.income(level)` as `{}` (no passive production); regression: `Building.income` for other resource buildings unchanged.
   - Run `pytest -q tests/test_lumber_camp_state.py` and ensure full suite still green.
 
-- [ ] **T77**: Add failing tests for tree reservation in new `tests/test_tree_reservation.py`:
+- [x] **T77**: Add failing tests for tree reservation in new `tests/test_tree_reservation.py`:
   - World/registry exposes `reserve_tree(gx, gy, worker)` and `release_tree(gx, gy)` (location TBD; recommend on `World`).
   - A tree can be reserved by at most one worker; second reservation returns False.
   - Reservation auto-releases when:

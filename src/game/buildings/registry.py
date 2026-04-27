@@ -132,7 +132,10 @@ class BuildingRegistry:
                 continue
             if hasattr(b, "is_storage_full") and b.is_storage_full():
                 continue
-            for name, amount in type(b).income(b.level).items():
+            income = type(b).income(b.level)
+            if not income:
+                continue
+            for name, amount in income.items():
                 totals[name] = totals.get(name, 0) + amount
         resources.set_per_cycle_totals(totals)
 

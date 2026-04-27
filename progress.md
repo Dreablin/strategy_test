@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T125 — Cleanup pass
-- **Last Completed:** T124 — Add phase 12 end-to-end smoke suite
-- **Total Progress:** 124 / 125
+- **Next Task:** — (all tasks complete)
+- **Last Completed:** T125 — Cleanup pass
+- **Total Progress:** 125 / 125
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -429,7 +429,7 @@
   After all tasks `[x]`, output `<promise>ALL_TASKS_COMPLETE</promise>`
   and create `.cursor/ralph/done`.
 
-- [ ] **T125**: Cleanup pass:
+- [x] **T125**: Cleanup pass:
   - Remove dead `LumberCamp.income()` call sites and any
     `apply_production_tick` branches that special-cased active-cycle
     buildings (everything is gated by `working_buildings()` × storage).

@@ -15,5 +15,9 @@ def apply_production_tick(
             continue
         if hasattr(building, "is_storage_full") and building.is_storage_full():
             continue
-        for name, amount in type(building).income(building.level).items():
+        income = type(building).income(building.level)
+        if not income:
+            # Active-cycle buildings (e.g., Lumber Camp) deposit via worker logic.
+            continue
+        for name, amount in income.items():
             resources.add(name, amount)

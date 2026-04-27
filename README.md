@@ -36,11 +36,15 @@ Or run PyInstaller directly:
 
 - `LMB`: place selected building, or open a building panel.
 - `RMB` / `Esc`: cancel placement or close an open panel.
+- Building panels now include active toggles for camp/mine workflows and live storage counters.
 
 ## Gameplay summary
 
 - Start with a Town Hall and initial resources.
 - Build production buildings (Lumber Camp, Stone Mine, Iron Mine, Farm).
 - Hire workers from the Town Hall panel; only staffed buildings produce.
+- Stonecutters run an active mine cycle (walk, mine, return, deposit) and can be toggled on/off per mine.
+- Producing buildings use internal storage caps, so full storage pauses new production until space is freed.
+- Worker move/gather speed gains +5% per building level above 1 while assigned to that building.
 - Every 10 seconds, staffed buildings add `5 x level` of their resource.
 - Upgrade buildings to increase production; demolish to replan your layout.

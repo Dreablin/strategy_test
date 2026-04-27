@@ -45,6 +45,7 @@ def test_chop_duration_removes_tree_and_releases_reservation() -> None:
 
 def test_second_lumberjack_can_target_another_tree_same_cycle() -> None:
     now_ms, _world, resources, registry, _camp, workers, worker_a = _setup_two_tree_cycle()
+    registry.place(LumberCamp, (26, 22))
 
     worker_b = workers.hire("LUMBERJACK")
     assert worker_b is not None

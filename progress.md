@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 11. Lumberjack chop cycle
-- **Next Task:** T82 — Implement chopping completion logic
-- **Last Completed:** T81 — Add failing tests for chopping interaction
-- **Total Progress:** 81 / 91
+- **Next Task:** T83 — Add failing tests for deposit and counter
+- **Last Completed:** T82 — Implement chopping completion logic
+- **Total Progress:** 82 / 91
 
 ---
 
@@ -363,7 +363,7 @@
   - Reservation is released for that tile; another lumberjack can target a different tree the same cycle.
   - Demolishing the camp during `chopping` cancels the worker (state → idle, carrying=None, tree NOT removed before duration completes — but after chopping completes mid-flight, no deposit happens since camp is gone).
 
-- [ ] **T82**: Implement chopping completion logic in `WorkerManager.update`:
+- [x] **T82**: Implement chopping completion logic in `WorkerManager.update`:
   - Use `now_ms` boundary checks identical to `WORKER_TILE_TRAVEL_MS` style (deterministic).
   - On chop completion: `world.remove_tree(tx, ty)` (which auto-releases reservation), set `carrying = "wood"`, recompute path back to camp.
   - On demolition during chop / return / deposit: stop cycle, mark idle, drop reservation if held, set `carrying = None`. No deposit.

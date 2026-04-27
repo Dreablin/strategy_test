@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T120 — Add failing UI tests for StoneMine panel
-- **Last Completed:** T119 — Implement stonecutter dispatch in WorkerManager
-- **Total Progress:** 119 / 125
+- **Next Task:** T121 — Implement StoneMine panel and input wiring
+- **Last Completed:** T120 — Add failing UI tests for StoneMine panel
+- **Total Progress:** 120 / 125
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -380,7 +380,7 @@
     `camp.record_stone_delivered(1)`, plus storage gating from §12.3.
   - Run all worker tests — green.
 
-- [ ] **T120**: Add failing UI tests for the StoneMine panel in
+- [x] **T120**: Add failing UI tests for the StoneMine panel in
   `tests/test_stone_mine_panel.py`:
   - Toggle button (Active/Inactive) returns `"toggle_active"` on click.
   - `Stones delivered: N` line mirrors `mine.delivered_stone`.

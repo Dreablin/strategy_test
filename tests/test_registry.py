@@ -37,8 +37,8 @@ def _min_chebyshev_between_footprints(
 
 
 def test_cannot_place_footprint_outside_grass(registry: BuildingRegistry) -> None:
-    assert not registry.can_place(LumberCamp, (31, 0))
-    assert not registry.can_place(LumberCamp, (0, 31))
+    assert not registry.can_place(LumberCamp, (44, 0))
+    assert not registry.can_place(LumberCamp, (0, 44))
 
 
 def test_cannot_place_overlapping_buildings(registry: BuildingRegistry) -> None:
@@ -153,3 +153,38 @@ def test_iron_mine_requires_town_hall_level_5(registry: BuildingRegistry) -> Non
     assert not registry.can_place(IronMine, (8, 8))
     th.level = 5
     assert registry.can_place(IronMine, (8, 8))
+
+
+def test_can_place_allows_footprint_with_trees_present(registry: BuildingRegistry, world: World) -> None:
+    world._trees[(10, 10)] = world._trees.get((10, 10)) or world.tree_at(0, 0)  # noqa: SLF001
+    if world._trees[(10, 10)] is None:  # noqa: SLF001
+        from game.trees import Tree, TreeStage
+
+        world._trees[(10, 10)] = Tree(stage=TreeStage.YOUNG)  # noqa: SLF001
+    assert registry.can_place(LumberCamp, (10, 10))
+
+
+def test_place_clears_trees_inside_building_footprint(registry: BuildingRegistry, world: World) -> None:
+    from game.trees import Tree, TreeStage
+
+    for tile in [(10, 10), (11, 10), (10, 11), (11, 11)]:
+        world._trees[tile] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
+        assert world.is_tree_blocking(*tile)
+
+    placed = registry.place(LumberCamp, (10, 10))
+    assert placed is not None
+    for tile in [(10, 10), (11, 10), (10, 11), (11, 11)]:
+        assert not world.is_tree_blocking(*tile)
+        assert world.tree_at(*tile) is None
+
+
+def test_tree_presence_does_not_bypass_overlap_or_spacing_rules(
+    registry: BuildingRegistry, world: World
+) -> None:
+    from game.trees import Tree, TreeStage
+
+    world._trees[(10, 10)] = Tree(stage=TreeStage.MATURE)  # noqa: SLF001
+    first = registry.place(LumberCamp, (10, 10))
+    assert first is not None
+    assert not registry.can_place(StoneMine, (10, 10))
+    assert not registry.can_place(StoneMine, (12, 10))

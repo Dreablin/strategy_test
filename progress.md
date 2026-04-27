@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 10. Tree entities, blocking, layering
-- **Next Task:** T69 — Add failing placement tree-clear tests
-- **Last Completed:** T68 — Implement movement blocking by trees
-- **Total Progress:** 68 / 74
+- **Next Task:** T70 — Implement placement-clears-tree behavior
+- **Last Completed:** T69 — Add failing placement tree-clear tests
+- **Total Progress:** 69 / 74
 
 ---
 
@@ -262,7 +262,7 @@
   - Keep existing no-corner-cutting and deterministic neighbor order intact.
   - Ensure worker movement/regression suite remains green.
 
-- [ ] **T69**: Add failing placement tests in `tests/test_registry.py`:
+- [x] **T69**: Add failing placement tests in `tests/test_registry.py`:
   - Placing building over tree tile is allowed.
   - Trees inside placed footprint are removed automatically.
   - Placement still respects bounds/overlap/spacing and resource costs.

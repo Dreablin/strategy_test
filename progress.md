@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T98 — Add failing tests for gather-duration scaling
-- **Last Completed:** T97 — Apply move-speed multiplier in `Worker.update`
-- **Total Progress:** 97 / 111
+- **Next Task:** T99 — Implement gather-duration scaling snapshot
+- **Last Completed:** T98 — Add failing tests for gather-duration scaling
+- **Total Progress:** 98 / 111
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -168,7 +168,7 @@
   - Add a fast helper for tests if needed (`Worker._effective_travel_ms()`).
   - Run movement tests — green.
 
-- [ ] **T98**: Add failing tests for chop / mine duration scaling in
+- [x] **T98**: Add failing tests for chop / mine duration scaling in
   `tests/test_lumberjack_cycle_chopping.py` and a new
   `tests/test_lumberjack_speed_bonus.py`:
   - With camp at level 1 (no bonus) chop completes after

@@ -47,6 +47,21 @@ def test_chop_duration_removes_tree_and_releases_reservation() -> None:
     assert world.is_tree_reserved(*tree_tile) is False
 
 
+def test_level1_chop_completes_on_exact_chop_duration_boundary() -> None:
+    now_ms, _world, _resources, _registry, _camp, workers, worker = _setup_two_tree_cycle()
+    now_ms[0] += 120_000
+    workers.update(now_ms[0])
+    assert worker.state == "chopping"
+
+    now_ms[0] += CHOP_DURATION_MS - 1
+    workers.update(now_ms[0])
+    assert worker.state == "chopping"
+
+    now_ms[0] += 1
+    workers.update(now_ms[0])
+    assert worker.state in {"returning", "depositing"}
+
+
 def test_second_lumberjack_can_target_another_tree_same_cycle() -> None:
     now_ms, _world, resources, registry, _camp, workers, worker_a = _setup_two_tree_cycle()
     registry.place(LumberCamp, (26, 22))

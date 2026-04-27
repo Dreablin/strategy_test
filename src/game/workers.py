@@ -411,6 +411,7 @@ class WorkerManager:
         world = getattr(self._registry, "_world", None)
         if world is None:
             return []
+        blocked = world.blocked_tiles()
         gx, gy = pos
         w, h = type(building).footprint
         x0, x1 = gx - 1, gx + w
@@ -423,9 +424,7 @@ class WorkerManager:
                     continue
                 if not world.is_in_grass(x, y):
                     continue
-                if world.is_occupied(x, y):
-                    continue
-                if world.is_tree_blocking(x, y):
+                if (x, y) in blocked:
                     continue
                 tiles.append((x, y))
         return tiles

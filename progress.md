@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 13. Performance optimisation & orthogonal pathfinding
-- **Next Task:** T144 — fix perf-gate regressions without relaxing thresholds.
-- **Last Completed:** T143 — add failing perf-gate smoke test.
-- **Total Progress:** 143 / 148
+- **Next Task:** T145 — cleanup pass and lint autofix.
+- **Last Completed:** T144 — fix perf-gate regressions without relaxing thresholds.
+- **Total Progress:** 144 / 148
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -349,7 +349,7 @@
       `<= 4_000`.
   - Tests must FAIL first if any of T126–T142 regresses.
 
-- [ ] **T144**: If T143 reds, do not relax thresholds. Re-audit which call
+- [x] **T144**: If T143 reds, do not relax thresholds. Re-audit which call
   site exceeds the budget (counter dump in test failure output) and fix
   the implementation. Re-run; commit only when green.
 

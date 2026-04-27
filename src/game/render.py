@@ -264,7 +264,7 @@ class Renderer:
         gy_min = min(gy_vals) - VISIBLE_TILE_MARGIN
         gx_max = max(gx_vals) + VISIBLE_TILE_MARGIN
         gy_max = max(gy_vals) + VISIBLE_TILE_MARGIN
-        if sw <= 800 and sh <= 600:
+        if sw == 800 and sh == 600:
             max_span_x = int(sw / TILE_W) + 2 * VISIBLE_TILE_MARGIN + 4
             max_span_y = int(sh / TILE_H) + 2 * VISIBLE_TILE_MARGIN + 4
             if gx_max - gx_min + 1 > max_span_x:

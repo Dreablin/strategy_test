@@ -11,11 +11,12 @@ from game.stones import Stone
 from game.trees import Tree, stage_from_tile_seed
 
 _STONE_CENTER_COUNT = 3
-_TREE_GROVE_COUNT = 3
+_TREE_GROVE_COUNT = 5
 _STONE_MIN_DISTANCE_FROM_TOWN_HALL = 12
 _TREE_GROVE_RADIUS_MIN = 3
 _TREE_GROVE_RADIUS_MAX = 6
 _TREE_GROVE_FILL_PROBABILITY = 0.8
+_SCATTER_TREE_FRACTION = 0.02
 _NEIGHBORS_4: tuple[tuple[int, int], ...] = (
     (0, -1),
     (1, 0),
@@ -124,6 +125,7 @@ class World:
         "_stone_reservations",
         "_stone_centers",
         "_tree_centers",
+        "_scatter_trees_placed",
     )
 
     def __init__(self) -> None:
@@ -140,6 +142,7 @@ class World:
         self._stone_reservations: dict[tuple[int, int], object] = {}
         self._stone_centers: list[tuple[int, int]] = []
         self._tree_centers: list[tuple[int, int]] = []
+        self._scatter_trees_placed = 0
         self._init_stones()
         self._init_trees()
 
@@ -314,6 +317,39 @@ class World:
                         continue
                     seed = x * 92821 + y * 68917 + GRID_SIZE * 37
                     self._trees[(x, y)] = Tree(stage=stage_from_tile_seed(seed))
+
+        self._scatter_random_trees(rng, mid, center_clear_radius)
+
+    def _scatter_random_trees(
+        self, rng: random.Random, mid: int, center_clear_radius: int
+    ) -> None:
+        """Place extra trees on random grass (same passability rules as groves, no overlap)."""
+        area = GRID_SIZE * GRID_SIZE
+        target = int(area * _SCATTER_TREE_FRACTION)
+        if target <= 0:
+            self._scatter_trees_placed = 0
+            return
+        eligible: list[tuple[int, int]] = []
+        for gy in range(GRID_SIZE):
+            for gx in range(GRID_SIZE):
+                if not self.is_in_grass(gx, gy):
+                    continue
+                if max(abs(gx - mid), abs(gy - mid)) <= center_clear_radius:
+                    continue
+                if self.is_stone_blocking(gx, gy):
+                    continue
+                if (gx, gy) in self._trees:
+                    continue
+                eligible.append((gx, gy))
+        rng.shuffle(eligible)
+        placed = 0
+        for gx, gy in eligible:
+            if placed >= target:
+                break
+            seed = gx * 92821 + gy * 68917 + GRID_SIZE * 37
+            self._trees[(gx, gy)] = Tree(stage=stage_from_tile_seed(seed))
+            placed += 1
+        self._scatter_trees_placed = placed
 
     def _init_stones(self) -> None:
         rng = random.Random(GRID_SIZE * 104_729 + 17)

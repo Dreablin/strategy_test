@@ -97,9 +97,9 @@ def test_stone_generation_is_deterministic_for_fresh_world() -> None:
     assert a_tiles == b_tiles
 
 
-def test_tree_generation_picks_three_grove_centers_far_from_town_hall() -> None:
+def test_tree_generation_picks_five_grove_centers_far_from_town_hall() -> None:
     world = World()
-    assert len(world._tree_centers) == 3  # noqa: SLF001
+    assert len(world._tree_centers) == 5  # noqa: SLF001
     town_hall_tiles = {(x, y) for y in range(16, 19) for x in range(16, 19)}
     for cx, cy in world._tree_centers:  # noqa: SLF001
         assert world.is_in_grass(cx, cy)
@@ -114,3 +114,9 @@ def test_tree_generation_is_deterministic_for_fresh_world() -> None:
     a_trees = sorted((pos, tree.stage) for pos, tree in a.iter_alive_trees())
     b_trees = sorted((pos, tree.stage) for pos, tree in b.iter_alive_trees())
     assert a_trees == b_trees
+
+
+def test_scatter_tree_count_matches_two_percent_floor() -> None:
+    world = World()
+    budget = int(GRID_SIZE * GRID_SIZE * 0.02)
+    assert world._scatter_trees_placed == budget  # noqa: SLF001

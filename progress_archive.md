@@ -103,7 +103,7 @@ ralph-loop must NOT re-run them. New work belongs to a fresh phase in
 > Trees become world-owned entities with growth stages; chopping is a future flow.
 
 - [x] **T63–T64**: `tests/test_trees.py` + `src/game/trees.py` (`TreeStage`, `Tree`).
-- [x] **T65–T66**: World owns trees by tile; three sparse groves (see F-WORLD-02), center clearing.
+- [x] **T65–T66**: World owns trees by tile; sparse groves + scatter (see F-WORLD-02), center clearing.
 - [x] **T67–T68**: BFS treats alive tree tiles as blocked; movement detours.
 - [x] **T69–T70**: Placement clears trees inside the new footprint.
 - [x] **T71–T72**: Tree assets per stage; loader with procedural fallback.

@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T94 — Add failing tests for Worker integration
-- **Last Completed:** T93 — Implement `src/game/characteristics.py`
-- **Total Progress:** 93 / 111
+- **Next Task:** T95 — Wire `Characteristics` into `Worker`
+- **Last Completed:** T94 — Add failing tests for Worker integration
+- **Total Progress:** 94 / 111
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -125,7 +125,7 @@
   - Use `__slots__`; no Pygame dependency. Run `pytest -q
     tests/test_worker_characteristics.py` — PASS.
 
-- [ ] **T94**: Add failing tests for `Worker` integration in
+- [x] **T94**: Add failing tests for `Worker` integration in
   `tests/test_workers.py`:
   - New attribute `worker.characteristics` is a `Characteristics`.
   - Newly hired worker has `move_speed_mult == 1.0`,

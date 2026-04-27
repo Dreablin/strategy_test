@@ -5,6 +5,7 @@ from game.buildings.iron_mine import IronMine
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
+from game.characteristics import Characteristics
 from game.config import WORKER_HIRE_COST
 from game.resources import ResourceManager
 from game.trees import Tree, TreeStage
@@ -61,6 +62,72 @@ def test_hire_deducts_50_food_and_returns_worker() -> None:
     assert w.type_tag == "LUMBERJACK"
     assert w.current_tile == town_hall_spawn_tile(town_hall)
     assert resources.get("food") == food_before - WORKER_HIRE_COST["food"]
+
+
+def test_hired_worker_has_characteristics_defaults() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, (16, 16))
+    wm = WorkerManager(resources, registry)
+
+    worker = wm.hire("LUMBERJACK")
+
+    assert worker is not None
+    assert isinstance(worker.characteristics, Characteristics)
+    assert worker.characteristics.move_speed_mult == 1.0
+    assert worker.characteristics.gather_speed_mult == 1.0
+
+
+def test_assign_to_building_applies_level_bonus_source() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    camp = registry.place(LumberCamp, (10, 10))
+    camp.level = 3
+    wm = WorkerManager()
+    worker = Worker("LUMBERJACK")
+    wm.add_worker(worker)
+
+    wm.assign_to_building(worker, camp)
+
+    assert worker.characteristics.move_speed_mult == 1.10
+    assert worker.characteristics.gather_speed_mult == 1.10
+
+
+def test_notify_demolished_clears_building_level_bonus_source() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    camp = registry.place(LumberCamp, (12, 12))
+    camp.level = 4
+    wm = WorkerManager(registry=registry)
+    worker = Worker("LUMBERJACK")
+    wm.add_worker(worker)
+    wm.assign_to_building(worker, camp)
+
+    assert worker.characteristics.move_speed_mult == 1.15
+    wm.notify_demolished(camp)
+
+    assert worker.characteristics.move_speed_mult == 1.0
+    assert worker.characteristics.gather_speed_mult == 1.0
+
+
+def test_reassign_to_different_building_swaps_bonus_source() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    camp_a = registry.place(LumberCamp, (8, 8))
+    camp_b = registry.place(LumberCamp, (20, 20))
+    camp_a.level = 2
+    camp_b.level = 5
+    wm = WorkerManager()
+    worker = Worker("LUMBERJACK")
+    wm.add_worker(worker)
+
+    wm.assign_to_building(worker, camp_a)
+    assert worker.characteristics.move_speed_mult == 1.05
+
+    wm.assign_to_building(worker, camp_b)
+    assert worker.characteristics.move_speed_mult == 1.20
+    assert worker.characteristics.gather_speed_mult == 1.20
 
 
 def test_hire_returns_none_when_insufficient_food_and_does_not_deduct() -> None:

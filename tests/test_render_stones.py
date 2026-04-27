@@ -27,7 +27,7 @@ def test_renderer_has_draw_stones_callable() -> None:
 
 def test_draw_stones_blits_bottom_center_anchor(monkeypatch) -> None:
     world = World()
-    world._stones = {(12, 14): Stone()}  # noqa: SLF001
+    world._stones = {(27, 27): Stone()}  # noqa: SLF001
     sprite = pygame.Surface((1, 1), pygame.SRCALPHA)
     sprite.fill((0, 255, 255, 255))
     monkeypatch.setattr(render_mod, "stone_sprite", lambda: sprite, raising=False)
@@ -38,7 +38,7 @@ def test_draw_stones_blits_bottom_center_anchor(monkeypatch) -> None:
     Renderer.draw_stones(surface, world, camera=None)
 
     ox, oy = Renderer.map_origin(surface, world)
-    sx, sy = world_to_screen(12, 14)
+    sx, sy = world_to_screen(27, 27)
     px = ox + sx + 32
     py = oy + sy + 31
     assert surface.get_at((px, py))[:3] == (0, 255, 255)
@@ -46,7 +46,7 @@ def test_draw_stones_blits_bottom_center_anchor(monkeypatch) -> None:
 
 def test_draw_stones_respects_camera_offset(monkeypatch) -> None:
     world = World()
-    world._stones = {(6, 7): Stone()}  # noqa: SLF001
+    world._stones = {(27, 27): Stone()}  # noqa: SLF001
     sprite = pygame.Surface((1, 1), pygame.SRCALPHA)
     sprite.fill((255, 0, 255, 255))
     monkeypatch.setattr(render_mod, "stone_sprite", lambda: sprite, raising=False)
@@ -58,7 +58,7 @@ def test_draw_stones_respects_camera_offset(monkeypatch) -> None:
     Renderer.draw_stones(surface, world, camera=camera)
 
     ox, oy = Renderer.map_origin(surface, world)
-    sx, sy = world_to_screen(6, 7)
+    sx, sy = world_to_screen(27, 27)
     px = ox + camera.offset[0] + sx + 32
     py = oy + camera.offset[1] + sy + 31
     assert surface.get_at((px, py))[:3] == (255, 0, 255)

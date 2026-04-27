@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T115 — Implement stone sprite asset + renderer pass
-- **Last Completed:** T114 — Add failing render tests for stones
-- **Total Progress:** 114 / 125
+- **Next Task:** T116 — Add failing tests for StoneMine state
+- **Last Completed:** T115 — Implement stone sprite asset + renderer pass
+- **Total Progress:** 115 / 125
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -333,7 +333,7 @@
     missing.
   Tests must FAIL first.
 
-- [ ] **T115**: Add a placeholder asset folder
+- [x] **T115**: Add a placeholder asset folder
   `assets/world/stone/default.png` (procedurally generated grey isometric
   pile is acceptable; commit a real placeholder PNG so disk-first loader
   can hot-swap later) plus an `asset_meta.json` mirroring the building

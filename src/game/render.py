@@ -6,6 +6,7 @@ from game.assets import (
     building_sprite,
     building_sprite_anchor,
     grass_tile,
+    stone_sprite,
     tree_sprite,
 )
 from game.buildings.registry import BuildingRegistry
@@ -187,6 +188,19 @@ class Renderer:
         for (gx, gy), tree in entries:
             sx, sy = world_to_screen(gx, gy)
             spr = tree_sprite(tree.stage.name.lower())
+            px = ox + cam_x + sx + TILE_W // 2 - spr.get_width() // 2
+            py = oy + cam_y + sy + TILE_H - spr.get_height()
+            surface.blit(spr, (px, py))
+
+    @staticmethod
+    def draw_stones(surface: pygame.Surface, world: World, camera=None) -> None:
+        """Draw world-owned stones as sprites anchored at tile bottom-center."""
+        ox, oy = Renderer.map_origin(surface, world)
+        cam_x, cam_y = (0, 0) if camera is None else camera.offset
+        entries = sorted(world.iter_stones(), key=lambda item: (item[0][0] + item[0][1], item[0][0]))
+        for (gx, gy), _stone in entries:
+            sx, sy = world_to_screen(gx, gy)
+            spr = stone_sprite()
             px = ox + cam_x + sx + TILE_W // 2 - spr.get_width() // 2
             py = oy + cam_y + sy + TILE_H - spr.get_height()
             surface.blit(spr, (px, py))

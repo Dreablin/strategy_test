@@ -12,6 +12,7 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _ASSETS_ROOT = _PROJECT_ROOT / "assets"
 _BUILDINGS_ROOT = _ASSETS_ROOT / "buildings"
 _TREES_ROOT = _ASSETS_ROOT / "trees"
+_WORLD_ROOT = _ASSETS_ROOT / "world"
 _NPC_ROOT = _ASSETS_ROOT / "npc"
 _ICONS_ROOT = _ASSETS_ROOT / "icons"
 
@@ -78,6 +79,28 @@ def tree_sprite(stage: str) -> pygame.Surface:
     if loaded is not None:
         return loaded
     return _procedural_tree_sprite(stage_key)
+
+
+def _procedural_stone_sprite() -> pygame.Surface:
+    """Fallback stone pile sprite when no disk asset is present."""
+    w, h = 42, 26
+    surf = pygame.Surface((w, h), pygame.SRCALPHA)
+    mid = w // 2
+    base = [(mid, 2), (w - 3, h // 2), (mid, h - 3), (3, h // 2)]
+    pygame.draw.polygon(surf, (142, 146, 154), base)
+    pygame.draw.polygon(surf, (76, 80, 92), base, 1)
+    pygame.draw.circle(surf, (170, 174, 182), (mid - 6, h // 2 - 3), 5)
+    pygame.draw.circle(surf, (124, 128, 138), (mid + 5, h // 2 + 1), 4)
+    return surf
+
+
+@functools.lru_cache(maxsize=8)
+def stone_sprite() -> pygame.Surface:
+    """Load stone world sprite from disk, fallback to procedural."""
+    loaded = _load_png(str(_WORLD_ROOT / "stone" / "default.png"))
+    if loaded is not None:
+        return loaded
+    return _procedural_stone_sprite()
 
 
 def _building_palette(b_type: str) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
@@ -386,4 +409,5 @@ def clear_asset_caches() -> None:
     _load_fixed_icon.cache_clear()
     _worker_dot_by_mtime.cache_clear()
     tree_sprite.cache_clear()
+    stone_sprite.cache_clear()
     resource_icon.cache_clear()

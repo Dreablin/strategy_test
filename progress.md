@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 10. Tree entities, blocking, layering
-- **Next Task:** T65 — Add failing world integration tests
-- **Last Completed:** T64 — Implement tree domain module
-- **Total Progress:** 64 / 74
+- **Next Task:** T66 — Integrate trees into world
+- **Last Completed:** T65 — Add failing world integration tests
+- **Total Progress:** 65 / 74
 
 ---
 
@@ -237,7 +237,7 @@
   - Add explicit removed/dead state for post-chop behavior.
   - Run `pytest -q tests/test_trees.py` — PASS.
 
-- [ ] **T65**: Add failing world-integration tests in `tests/test_world_trees.py`:
+- [x] **T65**: Add failing world-integration tests in `tests/test_world_trees.py`:
   - World owns tree data by tile (e.g. `world.tree_at(gx, gy)`).
   - Edge-biased generation still leaves a center-safe clearing.
   - `is_tree_blocking(gx, gy)` returns True for alive trees and False otherwise.

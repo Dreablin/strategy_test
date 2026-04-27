@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 13. Performance optimisation & orthogonal pathfinding
-- **Next Task:** T128 — failing tests for blocked_tiles no-scan guarantee.
-- **Last Completed:** T127 — implement cached tile-set indices in `World`.
-- **Total Progress:** 127 / 148
+- **Next Task:** T129 — refactor worker blocked-set construction to `world.blocked_tiles()`.
+- **Last Completed:** T128 — add blocked_tiles no-grid-scan tests.
+- **Total Progress:** 128 / 148
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -162,7 +162,7 @@
     union as a fresh `set`.
   - Run `pytest -q tests/test_world_cached_sets.py` — green.
 
-- [ ] **T128**: Add failing tests in new `tests/test_world_blocked_no_grid_scan.py`:
+- [x] **T128**: Add failing tests in new `tests/test_world_blocked_no_grid_scan.py`:
   - Build a `World`, place a Town Hall + 1 Lumber Camp, and assert that
     `world.blocked_tiles()` returns the correct union.
   - **No-scan guarantee:** `monkeypatch.setattr(World, "is_occupied",

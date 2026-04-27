@@ -20,6 +20,17 @@ _NEIGHBORS_4: tuple[tuple[int, int], ...] = (
 )
 
 
+def _within_gather_search_radius(
+    tile: tuple[int, int],
+    search_anchor: tuple[int, int],
+    max_search_radius: int,
+) -> bool:
+    """True iff `tile` lies inside the Chebyshev ball around `search_anchor`."""
+    tx, ty = tile
+    ax, ay = search_anchor
+    return max(abs(tx - ax), abs(ty - ay)) <= max_search_radius
+
+
 class World:
     """Square `GRID_SIZE`×`GRID_SIZE` grass field with occupancy and trees."""
 
@@ -263,11 +274,25 @@ def find_nearest_free_tree(
     blocked: set[tuple[int, int]],
     skip_reserved: bool = True,
     skip_targets: set[tuple[int, int]] | None = None,
+    search_anchor: tuple[int, int] | None = None,
+    max_search_radius: int | None = None,
 ) -> tuple[int, int] | None:
-    """Return nearest alive tree tile reachable from `from_tile` over walkable tiles."""
+    """Return nearest alive tree tile reachable from `from_tile` over walkable tiles.
+
+    When ``search_anchor`` and ``max_search_radius`` are both set, BFS never
+    leaves the Chebyshev disk of radius ``max_search_radius`` around
+    ``search_anchor`` (typically the staffed camp centre). This caps worst-case
+    work at O(r²) instead of the full map.
+    """
     sx, sy = from_tile
     if not world.is_in_grass(sx, sy):
         return None
+
+    anchor = search_anchor
+    radius = max_search_radius
+    if anchor is not None and radius is not None:
+        if not _within_gather_search_radius(from_tile, anchor, radius):
+            return None
 
     skip = skip_targets or set()
     start_tree = world.tree_at(sx, sy)
@@ -302,6 +327,8 @@ def find_nearest_free_tree(
             nxt = (nx, ny)
             if not world.is_in_grass(nx, ny):
                 continue
+            if anchor is not None and radius is not None and not _within_gather_search_radius(nxt, anchor, radius):
+                continue
             if world.tree_at(nx, ny) is not None:
                 if nxt in skip:
                     continue
@@ -322,11 +349,23 @@ def find_nearest_free_stone(
     blocked: set[tuple[int, int]],
     skip_reserved: bool = True,
     skip_targets: set[tuple[int, int]] | None = None,
+    search_anchor: tuple[int, int] | None = None,
+    max_search_radius: int | None = None,
 ) -> tuple[int, int] | None:
-    """Return nearest stone tile reachable from `from_tile` over walkable tiles."""
+    """Return nearest stone tile reachable from `from_tile` over walkable tiles.
+
+    Optional ``search_anchor`` / ``max_search_radius`` bound the search to a
+    Chebyshev disk (same contract as :func:`find_nearest_free_tree`).
+    """
     sx, sy = from_tile
     if not world.is_in_grass(sx, sy):
         return None
+
+    anchor = search_anchor
+    radius = max_search_radius
+    if anchor is not None and radius is not None:
+        if not _within_gather_search_radius(from_tile, anchor, radius):
+            return None
 
     skip = skip_targets or set()
     start_stone = world.stone_at(sx, sy)
@@ -362,6 +401,8 @@ def find_nearest_free_stone(
             nx, ny = cx + dx, cy + dy
             nxt = (nx, ny)
             if not world.is_in_grass(nx, ny):
+                continue
+            if anchor is not None and radius is not None and not _within_gather_search_radius(nxt, anchor, radius):
                 continue
             if world.stone_at(nx, ny) is not None:
                 if nxt in skip:

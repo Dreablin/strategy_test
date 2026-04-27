@@ -7,7 +7,12 @@ from typing import Any
 
 from game.buildings.base import Building
 from game.characteristics import Characteristics
-from game.config import TOWN_HALL_MIN_LEVEL_FOR_HIRE, WORKER_HIRE_COSTS, WORKER_TILE_TRAVEL_MS
+from game.config import (
+    GATHER_RESOURCE_SEARCH_RADIUS,
+    TOWN_HALL_MIN_LEVEL_FOR_HIRE,
+    WORKER_HIRE_COSTS,
+    WORKER_TILE_TRAVEL_MS,
+)
 from game.pathfinding import find_path_bfs
 from game.resources import ResourceManager
 from game.world import find_nearest_free_stone, find_nearest_free_tree
@@ -562,6 +567,7 @@ class WorkerManager:
             target_tile = self._find_nearest_gather_target(
                 world,
                 worker.current_tile,
+                camp=camp,
                 blocked=blocked,
                 world_query=world_query,
                 skip_targets=rejected_targets,
@@ -624,10 +630,13 @@ class WorkerManager:
         world: Any,
         from_tile: tuple[int, int],
         *,
+        camp: Building,
         blocked: set[tuple[int, int]],
         world_query: str,
         skip_targets: set[tuple[int, int]] | None = None,
     ) -> tuple[int, int] | None:
+        anchor = building_center_tile(camp)
+        radius = GATHER_RESOURCE_SEARCH_RADIUS
         if world_query == "tree":
             return find_nearest_free_tree(
                 world,
@@ -635,6 +644,8 @@ class WorkerManager:
                 blocked=blocked,
                 skip_reserved=True,
                 skip_targets=skip_targets,
+                search_anchor=anchor,
+                max_search_radius=radius,
             )
         if world_query == "stone":
             return find_nearest_free_stone(
@@ -643,6 +654,8 @@ class WorkerManager:
                 blocked=blocked,
                 skip_reserved=True,
                 skip_targets=skip_targets,
+                search_anchor=anchor,
+                max_search_radius=radius,
             )
         return None
 

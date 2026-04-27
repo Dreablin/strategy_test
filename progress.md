@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T117 — Implement StoneMine active toggle and counter
-- **Last Completed:** T116 — Add failing tests for StoneMine state
-- **Total Progress:** 116 / 125
+- **Next Task:** T118 — Add failing stonecutter cycle tests
+- **Last Completed:** T117 — Implement StoneMine active toggle and counter
+- **Total Progress:** 117 / 125
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -351,7 +351,7 @@
   - Other building types do NOT expose those fields (negative test).
   Tests must FAIL first.
 
-- [ ] **T117**: Implement Active toggle and counter on `StoneMine`
+- [x] **T117**: Implement Active toggle and counter on `StoneMine`
   (`src/game/buildings/stone_mine.py`) using the same pattern as
   `LumberCamp`. Update `__slots__`. Run those tests — green.
 

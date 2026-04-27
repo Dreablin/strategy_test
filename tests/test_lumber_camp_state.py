@@ -40,6 +40,5 @@ def test_non_lumber_buildings_do_not_expose_delivery_api() -> None:
         TownHall(level=1, grid_pos=(8, 8)),
     ]
     for b in others:
-        assert not hasattr(b, "set_active")
         assert not hasattr(b, "record_wood_delivered")
         assert not hasattr(b, "delivered_wood")

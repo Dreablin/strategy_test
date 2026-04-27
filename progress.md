@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 11. Lumberjack chop cycle
-- **Next Task:** T81 — Add failing tests for chopping interaction
-- **Last Completed:** T80 — Implement Lumberjack cycle state machine
-- **Total Progress:** 80 / 91
+- **Next Task:** T82 — Implement chopping completion logic
+- **Last Completed:** T81 — Add failing tests for chopping interaction
+- **Total Progress:** 81 / 91
 
 ---
 
@@ -357,7 +357,7 @@
   - Other worker types unchanged.
   - All other tests must remain green.
 
-- [ ] **T81**: Add failing tests for chopping interaction in `tests/test_lumberjack_cycle_chopping.py`:
+- [x] **T81**: Add failing tests for chopping interaction in `tests/test_lumberjack_cycle_chopping.py`:
   - Tree exists, worker arrives at adjacent free tile.
   - After exactly `CHOP_DURATION_MS`, tree disappears (`world.tree_at(...)` is None, blocking is False).
   - Reservation is released for that tile; another lumberjack can target a different tree the same cycle.

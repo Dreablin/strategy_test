@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 10. Tree entities, blocking, layering
-- **Next Task:** T66 — Integrate trees into world
-- **Last Completed:** T65 — Add failing world integration tests
-- **Total Progress:** 65 / 74
+- **Next Task:** T67 — Add failing path/movement tree-block tests
+- **Last Completed:** T66 — Integrate trees into world
+- **Total Progress:** 66 / 74
 
 ---
 
@@ -244,7 +244,7 @@
   - Removing a tree updates blocking state immediately.
   Tests must FAIL first.
 
-- [ ] **T66**: Integrate trees into `src/game/world.py` generation/state:
+- [x] **T66**: Integrate trees into `src/game/world.py` generation/state:
   - Replace renderer-only edge tree decision with world-owned tree map.
   - Generate tree entities deterministically near edges with mixed stages.
   - Preserve central buildable clearing.

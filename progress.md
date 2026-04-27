@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 11. Lumberjack chop cycle
-- **Next Task:** T84 — Implement deposit in WorkerManager and remove passive Lumber Camp production
-- **Last Completed:** T83 — Add deposit and counter coverage
-- **Total Progress:** 83 / 91
+- **Next Task:** T85 — Add failing tests for Active toggle behavior
+- **Last Completed:** T84 — Implement deposit in WorkerManager and remove passive Lumber Camp production
+- **Total Progress:** 84 / 91
 
 ---
 
@@ -374,7 +374,7 @@
   - `LumberCamp.delivered_wood` increments by 1 per delivery.
   - Multiple lumberjacks at multiple camps deposit independently into their own counters.
 
-- [ ] **T84**: Implement deposit in `WorkerManager` and remove passive Lumber Camp production:
+- [x] **T84**: Implement deposit in `WorkerManager` and remove passive Lumber Camp production:
   - On `depositing` tick: `resources.add("wood", 1)`, `camp.record_wood_delivered(1)`.
   - In `apply_production_tick` and `sync_resources_per_cycle`: do NOT count `LUMBER_CAMP` toward passive income (the loop already filters via `working_buildings()` + per-tick income; ensure `LumberCamp.income()` is `{}` and nothing else special-cases it).
   - Sanity check: full test suite green; specifically the previous Phase 7 passive lumber tests are either updated (recommended) or removed (only if they truly assert deprecated behavior).

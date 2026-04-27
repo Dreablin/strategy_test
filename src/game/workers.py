@@ -6,6 +6,7 @@ from collections.abc import Callable
 from typing import Any
 
 from game.buildings.base import Building
+from game.characteristics import Characteristics
 from game.config import TOWN_HALL_MIN_LEVEL_FOR_HIRE, WORKER_HIRE_COSTS, WORKER_TILE_TRAVEL_MS
 from game.pathfinding import find_path_bfs
 from game.resources import ResourceManager
@@ -13,6 +14,8 @@ from game.world import find_nearest_free_tree
 
 CHOP_DURATION_MS = 10_000
 LUMBERJACK_REST_MS = 5_000
+MOVE_SPEED_PER_LEVEL = 0.05
+GATHER_SPEED_PER_LEVEL = 0.05
 
 
 def building_center_tile(building: Building) -> tuple[int, int]:
@@ -54,6 +57,7 @@ class Worker:
         "carrying",
         "target_tree",
         "chop_started_ms",
+        "characteristics",
     )
 
     def __init__(self, type_tag: str, *, stand_tile: tuple[int, int] = (17, 19)) -> None:
@@ -72,6 +76,7 @@ class Worker:
         self.carrying: str | None = None
         self.target_tree: tuple[int, int] | None = None
         self.chop_started_ms = 0
+        self.characteristics = Characteristics()
 
     def start_move(self, path: list[tuple[int, int]], started_ms: int, *, move_state: str = "moving") -> None:
         if len(path) < 2:
@@ -157,6 +162,7 @@ class WorkerManager:
         return [w for w in self._workers if w.idle]
 
     def assign_to_building(self, worker: Worker, building: Building) -> None:
+        self._clear_building_bonus(worker)
         worker.assigned_building = building
         worker.idle = False
         worker.stand_tile = building_center_tile(building)
@@ -166,6 +172,7 @@ class WorkerManager:
         worker.segment_started_ms = 0
         worker.segment_progress = 0.0
         worker.state = "working"
+        self._apply_building_bonus(worker, building)
 
     def is_staffed(self, building: Building) -> bool:
         return any(w.assigned_building is building for w in self._workers)
@@ -246,6 +253,7 @@ class WorkerManager:
             if w.assigned_building is building:
                 if world is not None:
                     world.release_reservations_for(w)
+                self._clear_building_bonus(w)
                 w.assigned_building = None
                 w.idle = True
                 w.stand_tile = w.current_tile
@@ -304,10 +312,12 @@ class WorkerManager:
                 if best_path is None:
                     continue
                 worker.assigned_building = target
+                self._apply_building_bonus(worker, target)
                 worker.start_move(best_path, started_ms=now_ms)
                 assigned = True
                 break
             if not assigned:
+                self._clear_building_bonus(worker)
                 worker.assigned_building = None
                 worker.idle = True
                 worker.state = "idle"
@@ -318,6 +328,13 @@ class WorkerManager:
                 worker.carrying = None
                 worker.target_tree = None
                 worker.chop_started_ms = 0
+
+    def refresh_worker_bonuses(self) -> None:
+        """Recompute building-level permanent bonuses for assigned workers."""
+        for worker in self._workers:
+            self._clear_building_bonus(worker)
+            if worker.assigned_building is not None and not worker.idle:
+                self._apply_building_bonus(worker, worker.assigned_building)
 
     def _approach_tiles(self, building: Building) -> list[tuple[int, int]]:
         pos = building.grid_pos
@@ -420,6 +437,7 @@ class WorkerManager:
         if not self._approach_tiles(camp):
             worker.idle = True
             worker.state = "idle"
+            self._clear_building_bonus(worker)
             return False
         world.release_reservations_for(worker)
         blocked = {
@@ -433,10 +451,12 @@ class WorkerManager:
         if tree_tile is None:
             worker.idle = True
             worker.state = "idle"
+            self._clear_building_bonus(worker)
             return False
         if not world.reserve_tree(tree_tile[0], tree_tile[1], worker):
             worker.idle = True
             worker.state = "idle"
+            self._clear_building_bonus(worker)
             return False
 
         tx, ty = tree_tile
@@ -462,12 +482,14 @@ class WorkerManager:
             world.release_tree(*tree_tile)
             worker.idle = True
             worker.state = "idle"
+            self._clear_building_bonus(worker)
             return False
         path = find_path_bfs(world, worker.current_tile, approach, tree_blocked)
         if path is None:
             world.release_tree(*tree_tile)
             worker.idle = True
             worker.state = "idle"
+            self._clear_building_bonus(worker)
             return False
         worker.target_tree = tree_tile
         worker.start_move(path, started_ms=now_ms, move_state="going_to_tree")
@@ -510,3 +532,20 @@ class WorkerManager:
         worker.segment_progress = 0.0
         worker.idle = False
         worker.state = "working"
+
+    @staticmethod
+    def _building_bonus_source(building: Building) -> tuple[str, int]:
+        return ("building_level", id(building))
+
+    def _clear_building_bonus(self, worker: Worker) -> None:
+        building = worker.assigned_building
+        if building is None:
+            return
+        worker.characteristics.remove_source(self._building_bonus_source(building))
+
+    def _apply_building_bonus(self, worker: Worker, building: Building) -> None:
+        delta = (building.level - 1) * MOVE_SPEED_PER_LEVEL
+        source = self._building_bonus_source(building)
+        worker.characteristics.add_permanent(source, "move_speed_mult", delta)
+        gather_delta = (building.level - 1) * GATHER_SPEED_PER_LEVEL
+        worker.characteristics.add_permanent(source, "gather_speed_mult", gather_delta)

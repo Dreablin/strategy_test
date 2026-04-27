@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T95 — Wire `Characteristics` into `Worker`
-- **Last Completed:** T94 — Add failing tests for Worker integration
-- **Total Progress:** 94 / 111
+- **Next Task:** T96 — Add failing tests for movement-speed application
+- **Last Completed:** T95 — Wire `Characteristics` into `Worker`
+- **Total Progress:** 95 / 111
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -135,7 +135,7 @@
   - Reassigning a worker to a different building swaps the source.
   Tests must FAIL first.
 
-- [ ] **T95**: Wire `Characteristics` into `Worker` (`src/game/workers.py`):
+- [x] **T95**: Wire `Characteristics` into `Worker` (`src/game/workers.py`):
   - Extend `__slots__`, initialise in `__init__`.
   - On `assign_to_building` / `reassign_all` success: call
     `worker.characteristics.remove_source(("building_level", id(prev_camp)))`,

@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T111 — Implement deterministic world stone generation
-- **Last Completed:** T110 — Add failing tests for deterministic stone generation
-- **Total Progress:** 110 / 111
+- **Next Task:** — (All tasks complete)
+- **Last Completed:** T111 — Implement deterministic world stone generation
+- **Total Progress:** 111 / 111
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -298,7 +298,7 @@
     `World()` produces identical output.
   Tests must FAIL first.
 
-- [ ] **T111**: Implement deterministic stone generation in
+- [x] **T111**: Implement deterministic stone generation in
   `World._init_stones()` (called from `__init__`):
   - Use a stable PRNG derived from a constant seed (or `GRID_SIZE`-based
     seed already used for trees) so tests are reproducible.

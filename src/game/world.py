@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 from collections import deque
+import random
 
 from game.config import GRID_SIZE
 from game.stones import Stone
 from game.trees import Tree, stage_from_tile_seed
 
 _TREE_EDGE_BAND = 8
+_STONE_CENTER_COUNT = 3
+_STONE_MIN_DISTANCE_FROM_TOWN_HALL = 12
 _NEIGHBORS_8: tuple[tuple[int, int], ...] = (
     (0, -1),
     (1, -1),
@@ -24,7 +27,14 @@ _NEIGHBORS_8: tuple[tuple[int, int], ...] = (
 class World:
     """Square `GRID_SIZE`×`GRID_SIZE` grass field with occupancy and trees."""
 
-    __slots__ = ("_occupied", "_trees", "_stones", "_tree_reservations", "_stone_reservations")
+    __slots__ = (
+        "_occupied",
+        "_trees",
+        "_stones",
+        "_tree_reservations",
+        "_stone_reservations",
+        "_stone_centers",
+    )
 
     def __init__(self) -> None:
         self._occupied: list[list[bool]] = [
@@ -34,7 +44,9 @@ class World:
         self._stones: dict[tuple[int, int], Stone] = {}
         self._tree_reservations: dict[tuple[int, int], object] = {}
         self._stone_reservations: dict[tuple[int, int], object] = {}
+        self._stone_centers: list[tuple[int, int]] = []
         self._init_trees()
+        self._init_stones()
 
     @property
     def width(self) -> int:
@@ -165,6 +177,38 @@ class World:
                 threshold = 0.78 - (0.36 * (edge_dist / (_TREE_EDGE_BAND - 1)))
                 if noise < threshold:
                     self._trees[(gx, gy)] = Tree(stage=stage_from_tile_seed(seed))
+
+    def _init_stones(self) -> None:
+        rng = random.Random(GRID_SIZE * 104_729 + 17)
+        self._stone_centers = []
+        protected = {(x, y) for y in range(16, 19) for x in range(16, 19)}
+        candidates = [(x, y) for y in range(GRID_SIZE) for x in range(GRID_SIZE)]
+        rng.shuffle(candidates)
+        for cx, cy in candidates:
+            if len(self._stone_centers) >= _STONE_CENTER_COUNT:
+                break
+            if any(
+                max(abs(cx - tx), abs(cy - ty)) < _STONE_MIN_DISTANCE_FROM_TOWN_HALL
+                for tx, ty in protected
+            ):
+                continue
+            if not self.is_in_grass(cx, cy):
+                continue
+            self._stone_centers.append((cx, cy))
+
+        for cx, cy in self._stone_centers:
+            radius = rng.randint(3, 6)
+            for y in range(cy - radius, cy + radius + 1):
+                for x in range(cx - radius, cx + radius + 1):
+                    if not self.is_in_grass(x, y):
+                        continue
+                    if max(abs(x - cx), abs(y - cy)) > radius:
+                        continue
+                    if self.is_tree_blocking(x, y):
+                        continue
+                    if (x, y) in self._stones:
+                        continue
+                    self._stones[(x, y)] = Stone()
 
     @staticmethod
     def _tile_noise(gx: int, gy: int) -> float:

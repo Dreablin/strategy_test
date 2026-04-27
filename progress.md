@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T100 — Add failing tests for registry upgrade side-effects
-- **Last Completed:** T99 — Implement gather-duration scaling snapshot
-- **Total Progress:** 99 / 111
+- **Next Task:** T101 — Implement registry to worker bonus refresh
+- **Last Completed:** T100 — Add failing tests for registry upgrade side-effects
+- **Total Progress:** 100 / 111
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -186,7 +186,7 @@
   - Use that snapshot for the `now_ms - chop_started_ms >= …` check.
   - Run all lumberjack tests — green.
 
-- [ ] **T100**: Add failing tests for `BuildingRegistry.upgrade_building`
+- [x] **T100**: Add failing tests for `BuildingRegistry.upgrade_building`
   side-effects in `tests/test_registry.py`:
   - Upgrading a camp keeps the building in the registry (regression for
     HF12-A; assert `camp in registry.all()` after upgrade).

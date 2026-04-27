@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T99 — Implement gather-duration scaling snapshot
-- **Last Completed:** T98 — Add failing tests for gather-duration scaling
-- **Total Progress:** 98 / 111
+- **Next Task:** T100 — Add failing tests for registry upgrade side-effects
+- **Last Completed:** T99 — Implement gather-duration scaling snapshot
+- **Total Progress:** 99 / 111
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -179,7 +179,7 @@
   - Demolish-during-chop still cancels deterministically.
   Tests must FAIL first.
 
-- [ ] **T99**: Update `WorkerManager.update` chop cycle:
+- [x] **T99**: Update `WorkerManager.update` chop cycle:
   - Compute `effective_chop_ms = max(1, int(round(CHOP_DURATION_MS /
     worker.characteristics.gather_speed_mult)))` at chop start (snapshot,
     not re-read mid-chop).

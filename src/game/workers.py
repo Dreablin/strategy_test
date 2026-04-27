@@ -57,6 +57,7 @@ class Worker:
         "carrying",
         "target_tree",
         "chop_started_ms",
+        "chop_duration_ms",
         "characteristics",
     )
 
@@ -76,6 +77,7 @@ class Worker:
         self.carrying: str | None = None
         self.target_tree: tuple[int, int] | None = None
         self.chop_started_ms = 0
+        self.chop_duration_ms = CHOP_DURATION_MS
         self.characteristics = Characteristics()
 
     def start_move(self, path: list[tuple[int, int]], started_ms: int, *, move_state: str = "moving") -> None:
@@ -273,6 +275,7 @@ class WorkerManager:
                 w.carrying = None
                 w.target_tree = None
                 w.chop_started_ms = 0
+                w.chop_duration_ms = CHOP_DURATION_MS
 
     def reassign_all(self) -> None:
         """Assign one idle worker per free matching building with path-to-approach."""
@@ -335,6 +338,7 @@ class WorkerManager:
                 worker.carrying = None
                 worker.target_tree = None
                 worker.chop_started_ms = 0
+                worker.chop_duration_ms = CHOP_DURATION_MS
 
     def refresh_worker_bonuses(self) -> None:
         """Recompute building-level permanent bonuses for assigned workers."""
@@ -406,10 +410,15 @@ class WorkerManager:
             if worker.state == "arrived_tree":
                 worker.state = "chopping"
                 worker.chop_started_ms = int(now_ms)
+                speed = worker.characteristics.gather_speed_mult
+                if speed <= 0.0:
+                    worker.chop_duration_ms = CHOP_DURATION_MS
+                else:
+                    worker.chop_duration_ms = max(1, int(round(CHOP_DURATION_MS / speed)))
                 continue
 
             if worker.state == "chopping":
-                if int(now_ms) - worker.chop_started_ms < CHOP_DURATION_MS:
+                if int(now_ms) - worker.chop_started_ms < worker.chop_duration_ms:
                     continue
                 tree_tile = worker.target_tree
                 if tree_tile is not None:
@@ -432,6 +441,7 @@ class WorkerManager:
                 worker.carrying = None
                 worker.target_tree = None
                 worker.chop_started_ms = 0
+                worker.chop_duration_ms = CHOP_DURATION_MS
                 self._park_lumberjack_inside_camp(worker, camp)
                 worker.camp_wait_until_ms = int(now_ms) + LUMBERJACK_REST_MS
 

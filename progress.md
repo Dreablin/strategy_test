@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T105 — Implement production storage gating
-- **Last Completed:** T104 — Add failing tests for production storage gating
-- **Total Progress:** 104 / 111
+- **Next Task:** T106 — Add failing tests for storage UI lines
+- **Last Completed:** T105 — Implement production storage gating
+- **Total Progress:** 105 / 111
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -236,7 +236,7 @@
     `stored >= capacity`.
   Tests must FAIL first.
 
-- [ ] **T105**: Implement storage gating:
+- [x] **T105**: Implement storage gating:
   - In `WorkerManager.update`, when a `LUMBERJACK` (resp. `STONECUTTER`)
     is in the `working` rest state and ready to start a new cycle, also
     require `not camp.is_storage_full()`.

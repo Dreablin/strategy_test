@@ -13,5 +13,7 @@ def apply_production_tick(
     for building in workers.working_buildings():
         if building not in placed:
             continue
+        if hasattr(building, "is_storage_full") and building.is_storage_full():
+            continue
         for name, amount in type(building).income(building.level).items():
             resources.add(name, amount)

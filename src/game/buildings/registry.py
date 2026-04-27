@@ -128,6 +128,8 @@ class BuildingRegistry:
         for b in self._buildings:
             if b not in staffed:
                 continue
+            if hasattr(b, "is_storage_full") and b.is_storage_full():
+                continue
             for name, amount in type(b).income(b.level).items():
                 totals[name] = totals.get(name, 0) + amount
         resources.set_per_cycle_totals(totals)

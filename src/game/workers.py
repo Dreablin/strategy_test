@@ -409,6 +409,10 @@ class WorkerManager:
                     continue
                 if not getattr(camp, "active", False):
                     continue
+                if hasattr(camp, "is_storage_full") and camp.is_storage_full():
+                    # Keep waiting inside the camp while storage is full.
+                    worker.camp_wait_until_ms = int(now_ms) + 1_000
+                    continue
                 depart_ms = worker.camp_wait_until_ms
                 if not self._start_lumberjack_cycle(worker, camp, depart_ms):
                     # No target tree/path right now: stay inside camp and retry later.
@@ -447,6 +451,8 @@ class WorkerManager:
             if worker.state == "depositing":
                 if worker.carrying == "wood" and self._resources is not None:
                     self._resources.add("wood", 1)
+                    if hasattr(camp, "add_to_storage"):
+                        camp.add_to_storage(1)
                     if hasattr(camp, "record_wood_delivered"):
                         camp.record_wood_delivered(1)
                 worker.carrying = None

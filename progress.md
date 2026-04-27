@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 10. Tree entities, blocking, layering
-- **Next Task:** T73 — Add failing render-layer tests
-- **Last Completed:** T72 — Implement tree asset loading
-- **Total Progress:** 72 / 74
+- **Next Task:** T74 — Implement tree rendering pass
+- **Last Completed:** T73 — Add failing render-layer tests
+- **Total Progress:** 73 / 74
 
 ---
 
@@ -288,7 +288,7 @@
   - Keep procedural fallback for missing files.
   - Run asset tests + full suite.
 
-- [ ] **T73**: Add failing render-layer tests in new `tests/test_render_tree_layering.py`:
+- [x] **T73**: Add failing render-layer tests in new `tests/test_render_tree_layering.py`:
   - Trees render above ground/buildings as tall sprites anchored at tile bottom.
   - Workers behind tree are occluded by tree (tree blit occurs after worker for same/deeper depth relation).
   - Workers in front of tree remain visible.

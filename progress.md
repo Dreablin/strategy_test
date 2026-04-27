@@ -38,7 +38,7 @@
 - **Phase 12** delivered worker `Characteristics`, +5 % movement / gather per
   building level (additive, source-keyed), per-building internal storage
   (`capacity(L) = 3 + 2·(L−1)`), stone deposits (`Stone(units=15)`, 3 clusters
-  Chebyshev ≥ 12 from the Town Hall, `r ∈ [3, 6]`), and an active stonecutter
+  Chebyshev ≥ 12 from the Town Hall, `r ∈ [1, 4]`), and an active stonecutter
   gather cycle that mirrors the lumberjack one. Passive income is fully gone
   for `LUMBER_CAMP` and `STONE_MINE`; `FARM` and `IRON_MINE` keep passive
   income but obey the storage cap.
@@ -402,7 +402,7 @@
 | 2026-04-27 | HF12-A  | Hit-resolve LumberCamp panel against `extra_bottom_px=72` only (drop legacy fallback).   | Legacy fallback returned `"demolish"` for clicks on the visible Upgrade button (28 px overlap).        |
 | 2026-04-27 | T96+    | Movement & gather speed bonuses are additive (per PRD F-CHAR-02), not multiplicative.    | Easier to reason about cumulative debuffs; user explicitly requested additive stacking.                |
 | 2026-04-27 | T103    | Storage capacity formula `3 + 2 × (L − 1)` = 3, 5, 7 … 21 over levels 1..10.             | User specified +2 per level on top of base 3.                                                          |
-| 2026-04-27 | T111    | 3 stone clusters (constant), centre Chebyshev ≥ 12 from Town Hall, radius `r ∈ [3, 6]`.  | Verbatim user spec.                                                                                    |
+| 2026-04-27 | T111    | 3 stone clusters (constant), centre Chebyshev ≥ 12 from Town Hall, radius `r ∈ [1, 4]`.  | Verbatim user spec.                                                                                    |
 | 2026-04-27 | F-WORK-13 | MINER and FARMER stay passive in Phase 12; only storage cap applies.                   | User chose "active_with_field" later → defer active gather to a follow-up phase.                       |
 | 2026-04-27 | T132    | BFS uses 4 neighbours only (N/E/S/W), no diagonal moves and no corner-cut handling.      | User asked workers to walk only horizontally/vertically. Side benefit: simpler BFS, fewer edge cases.  |
 | 2026-04-27 | T127    | `World` maintains shadow `set` indices for occupied / tree / stone tiles.                | Eliminates per-frame O(W·H) grid scans in worker dispatch; enables 10× larger maps without lag.        |

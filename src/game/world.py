@@ -329,7 +329,7 @@ class World:
             self._stone_centers.append((cx, cy))
 
         for cx, cy in self._stone_centers:
-            radius = rng.randint(3, 6)
+            radius = rng.randint(1, 4)
             for y in range(cy - radius, cy + radius + 1):
                 for x in range(cx - radius, cx + radius + 1):
                     if not self.is_in_grass(x, y):

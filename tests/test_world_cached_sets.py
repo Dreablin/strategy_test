@@ -62,3 +62,23 @@ def test_cached_set_getters_return_copies_not_internal_mutable_state() -> None:
     tiles = world.occupied_tiles()
     tiles.add((9, 9))
     assert (9, 9) not in world.occupied_tiles()
+
+
+def test_tree_layer_pop_updates_passability_caches() -> None:
+    world = World()
+    world._trees.clear()  # noqa: SLF001
+    world._trees[(2, 2)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
+    assert (2, 2) in world.blocked_tiles()
+    world._trees.pop((2, 2), None)
+    assert (2, 2) not in world.tree_tiles()
+    assert (2, 2) not in world.blocked_tiles()
+
+
+def test_stone_layer_pop_updates_passability_caches() -> None:
+    world = World()
+    world._stones.clear()  # noqa: SLF001
+    world._stones[(3, 3)] = Stone(units=1)  # noqa: SLF001
+    assert (3, 3) in world.blocked_tiles()
+    world._stones.pop((3, 3), None)
+    assert (3, 3) not in world.stone_tiles()
+    assert (3, 3) not in world.blocked_tiles()

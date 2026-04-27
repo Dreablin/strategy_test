@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import deque
 import random
+from typing import Any, cast
 
 from game.config import GRID_SIZE
 from game.stones import Stone
@@ -19,6 +20,8 @@ _NEIGHBORS_4: tuple[tuple[int, int], ...] = (
     (-1, 0),
 )
 
+_POP_MISSING = object()
+
 
 def _within_gather_search_radius(
     tile: tuple[int, int],
@@ -31,6 +34,78 @@ def _within_gather_search_radius(
     return max(abs(tx - ax), abs(ty - ay)) <= max_search_radius
 
 
+class _TreeLayerDict(dict[tuple[int, int], Tree]):
+    """`_trees` storage that keeps `_tree_tiles` / `_blocked_tiles` in sync on mutation."""
+
+    __slots__ = ("_owner",)
+
+    def __init__(self, owner: World) -> None:
+        super().__init__()
+        self._owner = owner
+
+    def __setitem__(self, key: tuple[int, int], value: Tree) -> None:
+        super().__setitem__(key, value)
+        if value.alive:
+            self._owner._tree_tiles.add(key)
+            self._owner._blocked_tiles.add(key)
+
+    def __delitem__(self, key: tuple[int, int]) -> None:
+        super().__delitem__(key)
+        self._owner._tree_tiles.discard(key)
+        self._owner._blocked_tiles.discard(key)
+
+    def pop(self, key: tuple[int, int], default: Any = _POP_MISSING) -> Tree:
+        """Like ``dict.pop`` but always runs :meth:`__delitem__` so passability caches stay valid."""
+        if key not in self:
+            if default is _POP_MISSING:
+                raise KeyError(key)
+            return cast("Tree", default)
+        value = super().__getitem__(key)
+        del self[key]
+        return value
+
+    def clear(self) -> None:
+        super().clear()
+        o = self._owner
+        o._tree_tiles.clear()
+        o._blocked_tiles = set(o._occupied_tiles) | o._stone_tiles
+
+
+class _StoneLayerDict(dict[tuple[int, int], Stone]):
+    """`_stones` storage that keeps `_stone_tiles` / `_blocked_tiles` in sync on mutation."""
+
+    __slots__ = ("_owner",)
+
+    def __init__(self, owner: World) -> None:
+        super().__init__()
+        self._owner = owner
+
+    def __setitem__(self, key: tuple[int, int], value: Stone) -> None:
+        super().__setitem__(key, value)
+        self._owner._stone_tiles.add(key)
+        self._owner._blocked_tiles.add(key)
+
+    def __delitem__(self, key: tuple[int, int]) -> None:
+        super().__delitem__(key)
+        self._owner._stone_tiles.discard(key)
+        self._owner._blocked_tiles.discard(key)
+
+    def pop(self, key: tuple[int, int], default: Any = _POP_MISSING) -> Stone:
+        if key not in self:
+            if default is _POP_MISSING:
+                raise KeyError(key)
+            return cast("Stone", default)
+        value = super().__getitem__(key)
+        del self[key]
+        return value
+
+    def clear(self) -> None:
+        super().clear()
+        o = self._owner
+        o._stone_tiles.clear()
+        o._blocked_tiles = set(o._occupied_tiles) | o._tree_tiles
+
+
 class World:
     """Square `GRID_SIZE`×`GRID_SIZE` grass field with occupancy and trees."""
 
@@ -41,6 +116,7 @@ class World:
         "_tree_tiles",
         "_stones",
         "_stone_tiles",
+        "_blocked_tiles",
         "_tree_reservations",
         "_stone_reservations",
         "_stone_centers",
@@ -51,10 +127,11 @@ class World:
             [False] * GRID_SIZE for _ in range(GRID_SIZE)
         ]
         self._occupied_tiles: set[tuple[int, int]] = set()
-        self._trees: dict[tuple[int, int], Tree] = {}
+        self._trees = _TreeLayerDict(self)
         self._tree_tiles: set[tuple[int, int]] = set()
-        self._stones: dict[tuple[int, int], Stone] = {}
+        self._stones = _StoneLayerDict(self)
         self._stone_tiles: set[tuple[int, int]] = set()
+        self._blocked_tiles: set[tuple[int, int]] = set()
         self._tree_reservations: dict[tuple[int, int], object] = {}
         self._stone_reservations: dict[tuple[int, int], object] = {}
         self._stone_centers: list[tuple[int, int]] = []
@@ -92,17 +169,28 @@ class World:
         return set(self._occupied_tiles)
 
     def tree_tiles(self) -> set[tuple[int, int]]:
-        # Keep cached set resilient to direct test fixtures mutating `_trees`.
-        self._tree_tiles = {(gx, gy) for (gx, gy), tree in self._trees.items() if tree.alive}
+        """Alive tree tiles; kept in sync via `_TreeLayerDict` mutations."""
         return set(self._tree_tiles)
 
     def stone_tiles(self) -> set[tuple[int, int]]:
-        # Keep cached set resilient to direct test fixtures mutating `_stones`.
-        self._stone_tiles = set(self._stones.keys())
+        """Stone tiles; maintained incrementally."""
         return set(self._stone_tiles)
 
     def blocked_tiles(self) -> set[tuple[int, int]]:
-        return self.occupied_tiles() | self.tree_tiles() | self.stone_tiles()
+        """Union of building footprints, alive trees, and stones — one set copy."""
+        return set(self._blocked_tiles)
+
+    def refresh_passability_tile_caches(self) -> None:
+        """Rebuild derived tile sets from `_trees`, `_stones`, and `_occupied_tiles`.
+
+        Normal gameplay keeps caches in sync via `_TreeLayerDict` / `_StoneLayerDict`,
+        `remove_tree`, `harvest_stone`, `mark_occupied`, and `free`. Call this only
+        after **test** code that replaces `_trees` or `_stones` with a plain `dict`
+        (e.g. ``world._stones = {...}``), which bypasses the tracking wrappers.
+        """
+        self._tree_tiles = {(gx, gy) for (gx, gy), tree in self._trees.items() if tree.alive}
+        self._stone_tiles = set(self._stones.keys())
+        self._blocked_tiles = set(self._occupied_tiles) | self._tree_tiles | self._stone_tiles
 
     def is_tree_blocking(self, gx: int, gy: int) -> bool:
         return self.tree_at(gx, gy) is not None
@@ -112,9 +200,9 @@ class World:
         if tree is None:
             return
         tree.remove()
-        self._trees.pop((gx, gy), None)
-        self._tree_tiles.discard((gx, gy))
-        self._tree_reservations.pop((gx, gy), None)
+        tile = (gx, gy)
+        self._trees.pop(tile, None)
+        self._tree_reservations.pop(tile, None)
 
     def reserve_tree(self, gx: int, gy: int, worker: object) -> bool:
         tile = (gx, gy)
@@ -157,9 +245,9 @@ class World:
             return None
         stone.harvest()
         if stone.is_depleted:
-            self._stones.pop((gx, gy), None)
-            self._stone_tiles.discard((gx, gy))
-            self._stone_reservations.pop((gx, gy), None)
+            tile = (gx, gy)
+            self._stones.pop(tile, None)
+            self._stone_reservations.pop(tile, None)
         return stone
 
     def reserve_stone(self, gx: int, gy: int, worker: object) -> bool:
@@ -183,14 +271,18 @@ class World:
             for tx in range(gx, gx + w):
                 if self.is_in_grass(tx, ty):
                     self._occupied[ty][tx] = True
-                    self._occupied_tiles.add((tx, ty))
+                    tile = (tx, ty)
+                    self._occupied_tiles.add(tile)
+                    self._blocked_tiles.add(tile)
 
     def free(self, gx: int, gy: int, w: int, h: int) -> None:
         for ty in range(gy, gy + h):
             for tx in range(gx, gx + w):
                 if self.is_in_grass(tx, ty):
                     self._occupied[ty][tx] = False
-                    self._occupied_tiles.discard((tx, ty))
+                    tile = (tx, ty)
+                    self._occupied_tiles.discard(tile)
+                    self._blocked_tiles.discard(tile)
 
     def _init_trees(self) -> None:
         cx = GRID_SIZE // 2
@@ -213,7 +305,6 @@ class World:
                 if noise < threshold:
                     tile = (gx, gy)
                     self._trees[tile] = Tree(stage=stage_from_tile_seed(seed))
-                    self._tree_tiles.add(tile)
 
     def _init_stones(self) -> None:
         rng = random.Random(GRID_SIZE * 104_729 + 17)
@@ -253,7 +344,6 @@ class World:
                         continue
                     tile = (x, y)
                     self._stones[tile] = Stone()
-                    self._stone_tiles.add(tile)
 
     @staticmethod
     def _tile_noise(gx: int, gy: int) -> float:

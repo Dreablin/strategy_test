@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T103 — Implement storage mixin for producing buildings
-- **Last Completed:** T102 — Add failing tests for building storage primitives
-- **Total Progress:** 102 / 111
+- **Next Task:** T104 — Add failing tests for production storage gating
+- **Last Completed:** T103 — Implement storage mixin for producing buildings
+- **Total Progress:** 103 / 111
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -219,7 +219,7 @@
     method missing).
   Tests must FAIL first.
 
-- [ ] **T103**: Add a mixin / base storage helper used by the four producing
+- [x] **T103**: Add a mixin / base storage helper used by the four producing
   buildings:
   - Recommend `src/game/buildings/storage.py` exposing a small mixin or a
     helper class that stores `stored: int` plus `storage_capacity(level)`

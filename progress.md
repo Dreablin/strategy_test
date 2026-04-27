@@ -2,10 +2,10 @@
 
 ## Current Status
 
-- **Phase:** 9. Worker movement & spacing
-- **Next Task:** None (all tasks complete)
-- **Last Completed:** T62 — End-to-end smoke test
-- **Total Progress:** 62 / 62
+- **Phase:** 10. Tree entities, blocking, layering
+- **Next Task:** T64 — Implement tree domain module
+- **Last Completed:** T63 — Add failing tree model tests
+- **Total Progress:** 63 / 74
 
 ---
 
@@ -219,6 +219,87 @@
    4. Before arrival, production tick adds 0 wood from that camp; after arrival, next tick adds `5 * level`.
    5. Build-adjacency rejection confirmed (touching placement fails, one-tile-gap passes).
    After passing tests, output `<promise>ALL_TASKS_COMPLETE</promise>` and create `.cursor/ralph/done`.
+
+### Phase 10 — Tree Entities, Placement Clearing, and Render Layering
+
+> **Scope added by user:** trees are no longer decorative-only border paint. Trees become per-tile entities with growth stages, block movement, can be removed (future chopping flow), are auto-cleared when placing a building on their tile, and must render as tall sprites that can occlude workers behind them.
+
+- [x] **T63**: Add failing model tests for tree entities in new `tests/test_trees.py`:
+  - `TreeStage` enum exists with ordered stages: `SAPLING`, `YOUNG`, `MATURE`, `ADULT`.
+  - `Tree` dataclass/class exists with `stage` and `alive` state.
+  - `Tree.stage_index` or equivalent deterministic ordering is testable (`SAPLING < ... < ADULT`).
+  - A `remove()` / `cut_down()` transition sets tree as absent/dead and returns the tile to plain grass semantics.
+  Tests must FAIL first.
+
+- [ ] **T64**: Implement tree domain module `src/game/trees.py`:
+  - Add `TreeStage` enum and `Tree` model (minimal API used by tests).
+  - Add helper for deterministic stage selection from tile seed (for initial map generation).
+  - Add explicit removed/dead state for post-chop behavior.
+  - Run `pytest -q tests/test_trees.py` — PASS.
+
+- [ ] **T65**: Add failing world-integration tests in `tests/test_world_trees.py`:
+  - World owns tree data by tile (e.g. `world.tree_at(gx, gy)`).
+  - Edge-biased generation still leaves a center-safe clearing.
+  - `is_tree_blocking(gx, gy)` returns True for alive trees and False otherwise.
+  - Removing a tree updates blocking state immediately.
+  Tests must FAIL first.
+
+- [ ] **T66**: Integrate trees into `src/game/world.py` generation/state:
+  - Replace renderer-only edge tree decision with world-owned tree map.
+  - Generate tree entities deterministically near edges with mixed stages.
+  - Preserve central buildable clearing.
+  - Add world API: query, remove, optional iteration over alive trees.
+  - Run targeted + full tests.
+
+- [ ] **T67**: Add failing path/movement tests in `tests/test_pathfinding.py` and `tests/test_workers.py`:
+  - BFS never steps onto alive tree tiles.
+  - Worker route detours around tree-blocked cells when possible.
+  - If tree removed, path can use that tile again.
+  Tests must FAIL first.
+
+- [ ] **T68**: Implement movement blocking by trees:
+  - In pathfinding walkability checks, treat alive tree tiles as blocked (like buildings).
+  - Keep existing no-corner-cutting and deterministic neighbor order intact.
+  - Ensure worker movement/regression suite remains green.
+
+- [ ] **T69**: Add failing placement tests in `tests/test_registry.py`:
+  - Placing building over tree tile is allowed.
+  - Trees inside placed footprint are removed automatically.
+  - Placement still respects bounds/overlap/spacing and resource costs.
+  Tests must FAIL first.
+
+- [ ] **T70**: Implement placement-clears-tree behavior in `src/game/buildings/registry.py`:
+  - During successful place, clear all trees in the new footprint before/with occupancy mark.
+  - Tree presence must never block valid building placement.
+  - Confirm no regressions in existing placement tests.
+
+- [ ] **T71**: Add placeholder tree assets and failing asset-loader tests:
+  - Create folders/files under `assets/trees/` for all stages:
+    - `assets/trees/sapling/default.png`
+    - `assets/trees/young/default.png`
+    - `assets/trees/mature/default.png`
+    - `assets/trees/adult/default.png`
+  - Add/extend `tests/test_assets.py` to verify stage-based tree sprite loading from files with procedural fallback.
+  Tests must FAIL first.
+
+- [ ] **T72**: Implement tree asset loading in `src/game/assets.py`:
+  - Add `tree_sprite(stage)` loading from `assets/trees/<stage>/default.png`.
+  - Support cache invalidation/hot-reload style consistent with other assets.
+  - Keep procedural fallback for missing files.
+  - Run asset tests + full suite.
+
+- [ ] **T73**: Add failing render-layer tests in new `tests/test_render_tree_layering.py`:
+  - Trees render above ground/buildings as tall sprites anchored at tile bottom.
+  - Workers behind tree are occluded by tree (tree blit occurs after worker for same/deeper depth relation).
+  - Workers in front of tree remain visible.
+  Tests must FAIL first.
+
+- [ ] **T74**: Implement tree rendering pass in `src/game/render.py`:
+  - Introduce combined depth ordering for dynamic occlusion (at minimum: ensure trees can draw over workers behind them).
+  - Use world tree entities + `assets.tree_sprite(stage)` with anchor support.
+  - Preserve camera offset handling and stable painter order.
+  - Add/adjust smoke test (phase-level) covering: movement blocking, placement-clears-tree, and occlusion.
+  - After all tasks are `[x]`, output `<promise>ALL_TASKS_COMPLETE</promise>` and create `.cursor/ralph/done`.
 
 ---
 

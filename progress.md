@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 11. Lumberjack chop cycle
-- **Next Task:** T88 — Add failing UI tests for Lumber Camp panel
-- **Last Completed:** T87 — Implement carrying sprite loading/render variant
-- **Total Progress:** 87 / 91
+- **Next Task:** T89 — Implement Lumber Camp panel additions
+- **Last Completed:** T88 — Add failing UI tests for Lumber Camp panel
+- **Total Progress:** 88 / 91
 
 ---
 
@@ -399,7 +399,7 @@
   - Update `Renderer.draw_workers` to use the carrying variant when `worker.carrying == "wood"`.
   - Add a render smoke test verifying carrying lumberjack uses a different sprite than empty.
 
-- [ ] **T88**: Add failing UI tests in new `tests/test_lumber_camp_panel.py`:
+- [x] **T88**: Add failing UI tests in new `tests/test_lumber_camp_panel.py`:
   - Lumber Camp panel layout exposes a Toggle button rect (e.g. `layout.toggle`).
   - Toggle button label reflects current state ("Active" / "Inactive").
   - Click on toggle returns `"toggle_active"`.

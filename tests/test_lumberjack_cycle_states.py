@@ -6,7 +6,7 @@ from game.buildings.town_hall import TownHall
 from game.resources import ResourceManager
 from game.trees import Tree, TreeStage
 from game.world import World
-from game.workers import LUMBERJACK_REST_MS, WorkerManager
+from game.workers import WorkerManager
 
 
 def _setup_lumberjack_cycle():

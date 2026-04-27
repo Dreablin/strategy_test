@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T93 — Implement `src/game/characteristics.py`
-- **Last Completed:** T92 — Add failing tests for worker characteristics module
-- **Total Progress:** 92 / 111
+- **Next Task:** T94 — Add failing tests for Worker integration
+- **Last Completed:** T93 — Implement `src/game/characteristics.py`
+- **Total Progress:** 93 / 111
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -117,7 +117,7 @@
     so workers never freeze.
   Tests must FAIL first.
 
-- [ ] **T93**: Implement `src/game/characteristics.py`:
+- [x] **T93**: Implement `src/game/characteristics.py`:
   - `Characteristics` class with two derived multipliers and an internal
     `dict[(source_key, kind), float]` of permanent deltas plus a list of
     `(kind, value, expires_at_ms)` for temporaries.

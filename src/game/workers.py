@@ -350,14 +350,7 @@ class WorkerManager:
                 continue
             targets = [b for b in self._registry.all() if b.type_tag == want and not self.is_staffed(b)]
             assigned = False
-            blocked = {
-                (x, y)
-                for y in range(world.height)
-                for x in range(world.width)
-                if world.is_occupied(x, y)
-            }
-            blocked.update({(x, y) for (x, y), _tree in world.iter_alive_trees()})
-            blocked.update({(x, y) for (x, y), _stone in world.iter_stones()})
+            blocked = world.blocked_tiles()
             # Workers may start on an occupied spawn tile (e.g., Town Hall center).
             blocked.discard(worker.current_tile)
             for target in targets:
@@ -557,12 +550,7 @@ class WorkerManager:
             self._clear_building_bonus(worker)
             return False
         world.release_reservations_for(worker)
-        blocked = {
-            (x, y)
-            for y in range(world.height)
-            for x in range(world.width)
-            if world.is_occupied(x, y)
-        }
+        blocked = world.blocked_tiles()
         blocked.discard(worker.current_tile)
         rejected_targets: set[tuple[int, int]] = set()
         while True:
@@ -659,12 +647,7 @@ class WorkerManager:
         world = getattr(self._registry, "_world", None)
         if world is None:
             return False
-        blocked = {
-            (x, y)
-            for y in range(world.height)
-            for x in range(world.width)
-            if world.is_occupied(x, y)
-        }
+        blocked = world.blocked_tiles()
         blocked.discard(worker.current_tile)
         best_path: list[tuple[int, int]] | None = None
         for tile in self._approach_tiles(worker.assigned_building):

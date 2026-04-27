@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 13. Performance optimisation & orthogonal pathfinding
-- **Next Task:** T129 — refactor worker blocked-set construction to `world.blocked_tiles()`.
-- **Last Completed:** T128 — add blocked_tiles no-grid-scan tests.
-- **Total Progress:** 128 / 148
+- **Next Task:** T130 — add blocked-tiles equivalence test.
+- **Last Completed:** T129 — use `world.blocked_tiles()` in worker manager paths.
+- **Total Progress:** 129 / 148
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -171,7 +171,7 @@
     is never called.
   Tests must FAIL first if the implementation falls back to `is_occupied`.
 
-- [ ] **T129**: Refactor `WorkerManager.reassign_all`,
+- [x] **T129**: Refactor `WorkerManager.reassign_all`,
   `WorkerManager._start_gather_cycle`, `WorkerManager._start_return_to_camp`
   in `src/game/workers.py`:
   - Replace each `blocked = {(x, y) for y in range(world.height) for x in range(world.width) if world.is_occupied(x, y)}`

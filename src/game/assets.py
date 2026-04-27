@@ -302,6 +302,17 @@ def _procedural_worker_carry_dot(w_type: str) -> pygame.Surface:
     return surf
 
 
+def _procedural_worker_carry_stone_dot(w_type: str) -> pygame.Surface:
+    """Stonecutter-specific carrying fallback: visible gray stone payload."""
+    surf = _procedural_worker_dot(w_type).copy()
+    w, h = surf.get_size()
+    cx = w // 2
+    cy = h // 2
+    pygame.draw.circle(surf, (164, 168, 176), (cx + 2, cy + 1), 3)
+    pygame.draw.circle(surf, (84, 88, 98), (cx + 2, cy + 1), 3, 1)
+    return surf
+
+
 @functools.lru_cache(maxsize=128)
 def _worker_dot_by_mtime(
     w_type: str,
@@ -322,6 +333,8 @@ def _worker_dot_by_mtime(
     if loaded is not None:
         return loaded
     if carrying:
+        if t == "STONECUTTER":
+            return _procedural_worker_carry_stone_dot(w_type)
         return _procedural_worker_carry_dot(w_type)
     return _procedural_worker_dot(w_type)
 

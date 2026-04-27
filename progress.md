@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T123 — Implement stonecutter carrying-sprite loading + render use
-- **Last Completed:** T122 — Add failing carrying-sprite tests for stonecutter
-- **Total Progress:** 122 / 125
+- **Next Task:** T124 — End-to-end smoke for phase 12
+- **Last Completed:** T123 — Implement stonecutter carrying sprites + render wiring
+- **Total Progress:** 123 / 125
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -404,7 +404,7 @@
   - Folder layout: `assets/npc/stonecutter/default.png` + `…/carrying.png`.
   Tests must FAIL first.
 
-- [ ] **T123**: Implement carrying-sprite loading for stonecutter (same
+- [x] **T123**: Implement carrying-sprite loading for stonecutter (same
   contract as lumberjack). Update `Renderer.draw_workers` to dispatch the
   carrying variant when `worker.carrying == "stone"`. Run render tests —
   green.

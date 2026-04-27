@@ -151,7 +151,10 @@ class Renderer:
         moving_states = {"moving", "going_to_tree", "returning"}
         entries: list[tuple[str, bool, float, float]] = []
         for worker in worker_manager.workers():
-            carrying = worker.carrying == "wood"
+            carrying = (
+                (worker.type_tag == "LUMBERJACK" and worker.carrying == "wood")
+                or (worker.type_tag == "STONECUTTER" and worker.carrying == "stone")
+            )
             if worker.state in moving_states and worker.target_tile is not None:
                 cx, cy = worker.current_tile
                 tx, ty = worker.target_tile

@@ -164,3 +164,27 @@ def test_draw_workers_uses_carrying_variant_for_lumberjack(monkeypatch) -> None:
     surface = pygame.Surface((1280, 720), pygame.SRCALPHA)
     Renderer.draw_workers(surface, world, registry, wm)
     assert calls == [True]
+
+
+def test_draw_workers_uses_carrying_variant_for_stonecutter(monkeypatch) -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, (16, 16))
+    wm = WorkerManager(resources, registry)
+    w = Worker("STONECUTTER", stand_tile=(22, 22))
+    w.carrying = "stone"
+    wm.add_worker(w)
+
+    calls: list[bool] = []
+    dot = pygame.Surface((1, 1), pygame.SRCALPHA)
+    dot.fill((255, 0, 0, 255))
+
+    def fake_worker_dot(_t: str, carrying: bool = False) -> pygame.Surface:
+        calls.append(carrying)
+        return dot
+
+    monkeypatch.setattr(assets, "worker_dot", fake_worker_dot)
+    surface = pygame.Surface((1280, 720), pygame.SRCALPHA)
+    Renderer.draw_workers(surface, world, registry, wm)
+    assert calls == [True]

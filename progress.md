@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 13. Performance optimisation & orthogonal pathfinding
-- **Next Task:** T148 — add end-of-phase smoke test.
-- **Last Completed:** T147 — add README performance note for Phase 13.
-- **Total Progress:** 147 / 148
+- **Next Task:** None — all Phase 13 tasks complete.
+- **Last Completed:** T148 — add end-of-phase smoke test.
+- **Total Progress:** 148 / 148
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -379,7 +379,7 @@
   independent of map size; supported map sizes scale to ~10× the default
   area.
 
-- [ ] **T148**: End-of-phase smoke `tests/test_smoke_phase13.py`
+- [x] **T148**: End-of-phase smoke `tests/test_smoke_phase13.py`
   (`SDL_VIDEODRIVER=dummy`):
   1. Boot a default `World()`. Place Town Hall + Lumber Camp + Stone Mine.
   2. Hire one lumberjack and one stonecutter. Advance 60_000 ms in 16 ms

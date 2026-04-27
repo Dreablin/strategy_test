@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T121 — Implement StoneMine panel and input wiring
-- **Last Completed:** T120 — Add failing UI tests for StoneMine panel
-- **Total Progress:** 120 / 125
+- **Next Task:** T122 — Add failing carrying-sprite tests for stonecutter
+- **Last Completed:** T121 — Implement StoneMine panel and input wiring
+- **Total Progress:** 121 / 125
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -389,7 +389,7 @@
     panel.
   Tests must FAIL first.
 
-- [ ] **T121**: Implement `src/game/ui/stone_mine_panel.py` similarly to
+- [x] **T121**: Implement `src/game/ui/stone_mine_panel.py` similarly to
   `LumberCampPanel` and wire it into `GameInput` so clicks on a
   `STONE_MINE` open the new panel; reuse the same `extra_bottom_px`
   pattern correctly (no double-resolution bug — see HF12-A).

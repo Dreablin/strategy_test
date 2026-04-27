@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 11. Lumberjack chop cycle
-- **Next Task:** T79 — Add failing tests for Lumberjack cycle states
-- **Last Completed:** T78 — Implement tree reservation in world
-- **Total Progress:** 78 / 91
+- **Next Task:** T80 — Implement Lumberjack cycle state machine
+- **Last Completed:** T79 — Add failing tests for Lumberjack cycle states
+- **Total Progress:** 79 / 91
 
 ---
 
@@ -341,7 +341,7 @@
   - Add a helper `find_nearest_free_tree(world, from_tile, *, blocked, skip_reserved=True) -> tuple[int,int] | None` (BFS over walkable tiles; nearest alive non-reserved tree).
   - Run new test file + full suite — all green.
 
-- [ ] **T79**: Add failing tests for the new Lumberjack state machine in new `tests/test_lumberjack_cycle_states.py`:
+- [x] **T79**: Add failing tests for the new Lumberjack state machine in new `tests/test_lumberjack_cycle_states.py`:
   - Worker state transitions for LUMBERJACK assigned to an active LumberCamp:
     `idle → going_to_tree → chopping → returning → depositing → going_to_tree (next cycle)`
   - `worker.carrying` is `None` until chop is finished; becomes `"wood"` when leaving the chop tile, back to `None` after deposit.

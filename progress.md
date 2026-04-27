@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** — (All tasks complete)
-- **Last Completed:** T111 — Implement deterministic world stone generation
-- **Total Progress:** 111 / 111
+- **Next Task:** T113 — Treat stones as blockers in pathfinding/registry
+- **Last Completed:** T112 — Add failing tests for stone blocking in movement/placement
+- **Total Progress:** 112 / 125
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -309,7 +309,7 @@
     `World.set_protected_tiles(set)` if needed).
   - Run `pytest -q tests/test_world.py` — green.
 
-- [ ] **T112**: Add failing tests for movement & placement blocking by stones
+- [x] **T112**: Add failing tests for movement & placement blocking by stones
   in `tests/test_pathfinding.py`, `tests/test_registry.py`,
   `tests/test_workers.py`:
   - BFS treats alive stone tiles as blocked (no path through).

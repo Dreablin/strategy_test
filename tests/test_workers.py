@@ -461,3 +461,23 @@ def test_reassign_all_can_use_tile_after_tree_removed() -> None:
     assert w.target_tree is None
     assert not w.idle
     assert w.state == "moving"
+
+
+def test_reassign_all_detours_around_alive_stone_tile() -> None:
+    from game.stones import Stone
+
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, (16, 16))
+    camp = registry.place(LumberCamp, (24, 24))
+    world._stones[(22, 22)] = Stone()  # noqa: SLF001
+    wm = WorkerManager(resources, registry)
+    w = Worker("LUMBERJACK", stand_tile=(20, 20))
+    wm.add_worker(w)
+
+    wm.reassign_all()
+
+    assert w.assigned_building is camp
+    assert w.path
+    assert (22, 22) not in w.path

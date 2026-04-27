@@ -85,3 +85,13 @@ def test_tree_removed_tile_becomes_walkable_for_path() -> None:
     path_after_remove = find_path_bfs(world, (10, 10), (14, 10), blocked=blocked)
     assert path_after_remove is not None
     assert (12, 10) in path_after_remove
+
+
+def test_bfs_avoids_alive_stone_tiles() -> None:
+    from game.stones import Stone
+
+    world = World()
+    world._stones[(12, 10)] = Stone()  # noqa: SLF001
+    path = find_path_bfs(world, (10, 10), (14, 10), blocked=set())
+    assert path is not None
+    assert (12, 10) not in path

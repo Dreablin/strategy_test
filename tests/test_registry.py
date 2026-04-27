@@ -191,6 +191,27 @@ def test_tree_presence_does_not_bypass_overlap_or_spacing_rules(
     assert not registry.can_place(StoneMine, (12, 10))
 
 
+def test_cannot_place_when_footprint_covers_stone_tile() -> None:
+    from game.stones import Stone
+
+    world = World()
+    registry = BuildingRegistry(world)
+    world._stones[(10, 10)] = Stone()  # noqa: SLF001
+    assert not registry.can_place(LumberCamp, (10, 10))
+
+
+def test_place_does_not_remove_stones_in_footprint() -> None:
+    from game.stones import Stone
+
+    world = World()
+    world._stones.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    world._stones[(10, 10)] = Stone()  # noqa: SLF001
+    placed = registry.place(LumberCamp, (10, 10))
+    assert placed is not None
+    assert world.stone_at(10, 10) is not None
+
+
 def test_upgrade_keeps_building_in_registry_list() -> None:
     world = World()
     registry = BuildingRegistry(world)

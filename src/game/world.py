@@ -6,7 +6,7 @@ from collections import deque
 import random
 from typing import Any, cast
 
-from game.config import GRID_SIZE
+from game.config import GRID_SIZE, town_hall_footprint_tiles
 from game.stones import Stone
 from game.trees import Tree, stage_from_tile_seed
 
@@ -377,11 +377,6 @@ class World:
                     self._stones[tile] = Stone()
 
 
-def _town_hall_footprint_tiles() -> set[tuple[int, int]]:
-    """Town Hall is placed at (16, 16) with footprint 3×3 in `main.py`."""
-    return {(x, y) for y in range(16, 19) for x in range(16, 19)}
-
-
 def _pick_far_cluster_centers(
     world: World,
     count: int,
@@ -392,7 +387,7 @@ def _pick_far_cluster_centers(
     """Pick up to `count` grass tiles outside the build clearing, Chebyshev ≥ TH distance."""
     mid = GRID_SIZE // 2
     center_clear_radius = max(8, GRID_SIZE // 4)
-    protected = _town_hall_footprint_tiles()
+    protected = town_hall_footprint_tiles()
     candidates = [(x, y) for y in range(GRID_SIZE) for x in range(GRID_SIZE)]
     rng.shuffle(candidates)
     centers: list[tuple[int, int]] = []

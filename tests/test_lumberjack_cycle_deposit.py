@@ -1,6 +1,7 @@
 """Failing tests for Lumberjack deposit and delivery counters (T83)."""
 
 from game.buildings.lumber_camp import LumberCamp
+from game.config import town_hall_origin_tile, near_town_hall_tile
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
 from game.resources import ResourceManager
@@ -13,12 +14,13 @@ def _setup_single_cycle():
     now_ms = [0]
     world = World()
     world._trees.clear()  # noqa: SLF001
-    world._trees[(20, 20)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
-    world._trees[(21, 20)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
     resources = ResourceManager()
     registry = BuildingRegistry(world)
-    registry.place(TownHall, (16, 16)).level = 3
-    camp = registry.place(LumberCamp, (22, 22))
+    registry.place(TownHall, town_hall_origin_tile()).level = 3
+    camp = registry.place(LumberCamp, near_town_hall_tile())
+    gx, gy = camp.grid_pos  # type: ignore[assignment]
+    world._trees[(gx + 3, gy)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
+    world._trees[(gx + 4, gy)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
     camp.level = 5
     workers = WorkerManager(resources, registry, now_ms_fn=lambda: now_ms[0])
     worker = workers.hire("LUMBERJACK")
@@ -71,15 +73,17 @@ def test_two_camps_track_deliveries_independently() -> None:
     now_ms = [0]
     world = World()
     world._trees.clear()  # noqa: SLF001
-    world._trees[(20, 20)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
-    world._trees[(30, 20)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
-    world._trees[(21, 20)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
-    world._trees[(29, 20)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
     resources = ResourceManager()
     registry = BuildingRegistry(world)
-    registry.place(TownHall, (16, 16)).level = 3
-    camp_a = registry.place(LumberCamp, (22, 22))
-    camp_b = registry.place(LumberCamp, (26, 22))
+    registry.place(TownHall, town_hall_origin_tile()).level = 3
+    camp_a = registry.place(LumberCamp, near_town_hall_tile())
+    ax, ay = camp_a.grid_pos  # type: ignore[assignment]
+    world._trees[(ax + 3, ay)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
+    world._trees[(ax + 4, ay)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
+    camp_b = registry.place(LumberCamp, near_town_hall_tile(18, 2))
+    bx, by = camp_b.grid_pos  # type: ignore[assignment]
+    world._trees[(bx + 3, by)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
+    world._trees[(bx + 4, by)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
     workers = WorkerManager(resources, registry, now_ms_fn=lambda: now_ms[0])
     assert workers.hire("LUMBERJACK") is not None
     assert workers.hire("LUMBERJACK") is not None

@@ -10,6 +10,7 @@ from game.buildings.stone_mine import StoneMine
 from game.buildings.town_hall import TownHall
 from game.buildings.registry import BuildingRegistry
 from game.resources import ResourceManager
+from game.config import GRID_SIZE, near_town_hall_tile, town_hall_origin_tile
 from game.world import World
 from game.workers import Worker, WorkerManager
 
@@ -38,8 +39,8 @@ def _min_chebyshev_between_footprints(
 
 
 def test_cannot_place_footprint_outside_grass(registry: BuildingRegistry) -> None:
-    assert not registry.can_place(LumberCamp, (54, 0))
-    assert not registry.can_place(LumberCamp, (0, 54))
+    assert not registry.can_place(LumberCamp, (GRID_SIZE - 1, 0))
+    assert not registry.can_place(LumberCamp, (0, GRID_SIZE - 1))
 
 
 def test_cannot_place_overlapping_buildings(registry: BuildingRegistry) -> None:
@@ -75,8 +76,8 @@ def test_distance_rule_uses_new_building_max_footprint(registry: BuildingRegistr
 
 
 def test_second_town_hall_always_rejected(registry: BuildingRegistry) -> None:
-    assert registry.can_place(TownHall, (16, 16))
-    registry.place(TownHall, (16, 16))
+    assert registry.can_place(TownHall, town_hall_origin_tile())
+    registry.place(TownHall, town_hall_origin_tile())
     assert not registry.can_place(TownHall, (0, 0))
     assert not registry.can_place(TownHall, (10, 10))
 
@@ -104,7 +105,7 @@ def test_demolish_with_worker_manager_notifies_before_removal(registry: Building
 
 
 def test_all_lists_placed_buildings(registry: BuildingRegistry) -> None:
-    th = registry.place(TownHall, (16, 16))
+    th = registry.place(TownHall, town_hall_origin_tile())
     th.level = 3
     registry.place(LumberCamp, (4, 4))
     registry.place(StoneMine, (20, 20))
@@ -125,7 +126,7 @@ def test_adjacent_corner_touch_rejected(registry: BuildingRegistry) -> None:
 
 
 def test_exactly_one_tile_gap_accepted(registry: BuildingRegistry) -> None:
-    th = registry.place(TownHall, (16, 16))
+    th = registry.place(TownHall, town_hall_origin_tile())
     th.level = 3
     registry.place(LumberCamp, (10, 10))
     # One tile horizontal gap between footprints.
@@ -141,14 +142,14 @@ def test_town_hall_and_resource_use_same_spacing_rule(registry: BuildingRegistry
 
 
 def test_stone_mine_requires_town_hall_level_3(registry: BuildingRegistry) -> None:
-    th = registry.place(TownHall, (16, 16))
+    th = registry.place(TownHall, town_hall_origin_tile())
     assert not registry.can_place(StoneMine, (8, 8))
     th.level = 3
     assert registry.can_place(StoneMine, (8, 8))
 
 
 def test_iron_mine_requires_town_hall_level_5(registry: BuildingRegistry) -> None:
-    th = registry.place(TownHall, (16, 16))
+    th = registry.place(TownHall, town_hall_origin_tile())
     assert not registry.can_place(IronMine, (8, 8))
     th.level = 4
     assert not registry.can_place(IronMine, (8, 8))
@@ -256,7 +257,7 @@ def test_demolish_after_upgrades_clears_move_and_gather_bonus_sources() -> None:
     world = World()
     registry = BuildingRegistry(world)
     resources = ResourceManager()
-    camp = registry.place(LumberCamp, (22, 22))
+    camp = registry.place(LumberCamp, near_town_hall_tile())
     workers = WorkerManager(resources, registry)
     worker = Worker("LUMBERJACK")
     workers.add_worker(worker)

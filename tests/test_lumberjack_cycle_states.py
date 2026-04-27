@@ -1,6 +1,7 @@
 """Failing tests for Lumberjack cycle states (T79)."""
 
 from game.buildings.lumber_camp import LumberCamp
+from game.config import town_hall_origin_tile, near_town_hall_tile
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
 from game.resources import ResourceManager
@@ -13,12 +14,13 @@ def _setup_lumberjack_cycle():
     now_ms = [0]
     world = World()
     world._trees.clear()  # noqa: SLF001
-    world._trees[(20, 20)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
-    world._trees[(21, 20)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
     resources = ResourceManager()
     registry = BuildingRegistry(world)
-    registry.place(TownHall, (16, 16)).level = 3
-    camp = registry.place(LumberCamp, (22, 22))
+    registry.place(TownHall, town_hall_origin_tile()).level = 3
+    camp = registry.place(LumberCamp, near_town_hall_tile())
+    gx, gy = camp.grid_pos  # type: ignore[assignment]
+    world._trees[(gx + 3, gy)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
+    world._trees[(gx + 4, gy)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
     workers = WorkerManager(resources, registry, now_ms_fn=lambda: now_ms[0])
     worker = workers.hire("LUMBERJACK")
     assert worker is not None

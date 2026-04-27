@@ -8,11 +8,12 @@ from game.buildings.lumber_camp import LumberCamp
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
 from game.camera import Camera
-from game.config import WINDOW_SIZE
+from game.config import WINDOW_SIZE, near_town_hall_tile, town_hall_origin_tile
 from game.input import GameInput
 from game.iso import world_to_screen
 from game.render import Renderer
 from game.resources import ResourceManager
+from game.trees import Tree, TreeStage
 from game.ui.bottom_bar import BUILD_MENU_SELECT
 from game.ui.placement import PlacementController
 from game.world import World
@@ -51,11 +52,12 @@ def test_smoke_phase9_worker_moves_and_production_gates() -> None:
     placement = PlacementController(world, registry, resources, camera)
     workers = WorkerManager(resources, registry)
     game_input = GameInput(world, registry, resources, placement, workers, camera)
-    registry.place(TownHall, (16, 16))
+    registry.place(TownHall, town_hall_origin_tile())
 
     # 1) Build Lumber Camp at a valid location through input routing.
     game_input.handle(screen, pygame.event.Event(BUILD_MENU_SELECT, building_type="LUMBER_CAMP"))
-    camp_click = _tile_click_pos(screen, world, camera, 22, 22)
+    cx, cy = near_town_hall_tile()
+    camp_click = _tile_click_pos(screen, world, camera, cx, cy)
     game_input.handle(
         screen, pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=camp_click)
     )
@@ -64,6 +66,9 @@ def test_smoke_phase9_worker_moves_and_production_gates() -> None:
     )
     camp = next((b for b in registry.all() if b.type_tag == "LUMBER_CAMP"), None)
     assert camp is not None
+    cgx, cgy = camp.grid_pos  # type: ignore[assignment]
+    world._trees[(cgx + 3, cgy)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
+    world._trees[(cgx + 4, cgy)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
 
     # 2) Hire a Lumberjack directly and trigger assignment recalculation.
     assert workers.hire("LUMBERJACK") is not None
@@ -87,8 +92,8 @@ def test_smoke_phase9_worker_moves_and_production_gates() -> None:
     world2 = World()
     resources2 = ResourceManager()
     registry2 = BuildingRegistry(world2)
-    registry2.place(TownHall, (16, 16))
-    registry2.place(LumberCamp, (24, 24))
+    registry2.place(TownHall, town_hall_origin_tile())
+    registry2.place(LumberCamp, near_town_hall_tile(14, 14))
     workers2 = WorkerManager(resources2, registry2)
     assert workers2.hire("LUMBERJACK") is not None
     workers2.reassign_all()
@@ -101,5 +106,5 @@ def test_smoke_phase9_worker_moves_and_production_gates() -> None:
     assert resources2.get("wood") == wood_before
 
     # 5) Spacing rule: touching is rejected, one-tile gap is accepted.
-    assert not registry.can_place(LumberCamp, (24, 22))
-    assert registry.can_place(LumberCamp, (25, 22))
+    assert not registry.can_place(LumberCamp, (cgx + 2, cgy))
+    assert registry.can_place(LumberCamp, (cgx + 3, cgy))

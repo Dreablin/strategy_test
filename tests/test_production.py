@@ -1,6 +1,7 @@
 """Production regression + end-to-end tick tests."""
 
 from game.buildings.costs import upgrade_cost
+from game.config import near_town_hall_tile, town_hall_origin_tile
 from game.buildings.farm import Farm
 from game.buildings.iron_mine import IronMine
 from game.buildings.stone_mine import StoneMine
@@ -15,7 +16,7 @@ def test_per_cycle_counts_only_staffed_buildings() -> None:
     world = World()
     registry = BuildingRegistry(world)
     resources = ResourceManager()
-    th = registry.place(TownHall, (16, 16))
+    th = registry.place(TownHall, town_hall_origin_tile())
     th.level = 3
     camp = registry.place(StoneMine, (10, 10))
     wm = WorkerManager(resources, registry)
@@ -30,7 +31,7 @@ def test_per_cycle_updates_after_upgrade_for_staffed_building() -> None:
     world = World()
     registry = BuildingRegistry(world)
     resources = ResourceManager()
-    th = registry.place(TownHall, (16, 16))
+    th = registry.place(TownHall, town_hall_origin_tile())
     th.level = 3
     camp = registry.place(StoneMine, (10, 10))
     wm = WorkerManager(resources, registry)
@@ -51,7 +52,7 @@ def test_staffed_level1_stone_mine_has_no_passive_tick_production() -> None:
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     workers = WorkerManager(resources, registry)
-    th = registry.place(TownHall, (16, 16))
+    th = registry.place(TownHall, town_hall_origin_tile())
     th.level = 3
     registry.place(StoneMine, (10, 10))
     assert workers.hire("STONECUTTER") is not None
@@ -68,7 +69,7 @@ def test_upgraded_stone_mine_still_has_no_passive_tick_production() -> None:
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     workers = WorkerManager(resources, registry)
-    th = registry.place(TownHall, (16, 16))
+    th = registry.place(TownHall, town_hall_origin_tile())
     th.level = 3
     camp = registry.place(StoneMine, (10, 10))
     assert workers.hire("STONECUTTER") is not None
@@ -92,9 +93,9 @@ def test_moving_worker_does_not_produce_until_working() -> None:
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     workers = WorkerManager(resources, registry)
-    th = registry.place(TownHall, (16, 16))
+    th = registry.place(TownHall, town_hall_origin_tile())
     th.level = 3
-    camp = registry.place(StoneMine, (24, 24))
+    camp = registry.place(StoneMine, near_town_hall_tile(10, 4))
     assert workers.hire("STONECUTTER") is not None
     workers.reassign_all()
 
@@ -122,7 +123,7 @@ def test_farm_has_no_passive_income_even_when_staffed() -> None:
     workers = WorkerManager(resources, registry)
     worker = workers.hire("FARMER")
     if worker is None:
-        th = registry.place(TownHall, (16, 16))
+        th = registry.place(TownHall, town_hall_origin_tile())
         th.level = 5
         worker = workers.hire("FARMER")
     assert worker is not None
@@ -137,7 +138,7 @@ def test_iron_mine_has_no_passive_income_even_when_staffed() -> None:
     world = World()
     registry = BuildingRegistry(world)
     resources = ResourceManager()
-    th = registry.place(TownHall, (16, 16))
+    th = registry.place(TownHall, town_hall_origin_tile())
     th.level = 5
     _mine = registry.place(IronMine, (10, 10))
     workers = WorkerManager(resources, registry)

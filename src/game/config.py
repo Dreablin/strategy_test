@@ -83,6 +83,23 @@ TILE_W = int(SETTINGS["world"]["tile_w"])
 TILE_H = int(SETTINGS["world"]["tile_h"])
 GRID_SIZE = int(SETTINGS["world"]["grid_size"])
 GATHER_RESOURCE_SEARCH_RADIUS = int(SETTINGS["world"].get("gather_resource_search_radius", 20))
+
+
+def town_hall_origin_tile() -> tuple[int, int]:
+    """Top-left grid tile for the initial 3×3 Town Hall (centred on the map)."""
+    mid = GRID_SIZE // 2
+    return (mid - 1, mid - 1)
+
+
+def town_hall_footprint_tiles() -> set[tuple[int, int]]:
+    gx0, gy0 = town_hall_origin_tile()
+    return {(x, y) for y in range(gy0, gy0 + 3) for x in range(gx0, gx0 + 3)}
+
+
+def near_town_hall_tile(dx: int = 6, dy: int = 6) -> tuple[int, int]:
+    """Grass anchor offset from Town Hall — used by many tests and smoke checks."""
+    x0, y0 = town_hall_origin_tile()
+    return (x0 + dx, y0 + dy)
 WINDOW_SIZE = tuple(SETTINGS["window"]["size"])
 MAX_LEVEL = int(SETTINGS["levels"]["max_level"])
 

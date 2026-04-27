@@ -6,7 +6,7 @@
   "world": {
     "tile_w": 64,
     "tile_h": 32,
-    "grid_size": 55,
+    "grid_size": 110,
     "gather_resource_search_radius": 20
   },
   "window": {

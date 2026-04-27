@@ -7,7 +7,7 @@ import pygame
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
 from game.camera import Camera
-from game.config import WINDOW_SIZE
+from game.config import WINDOW_SIZE, near_town_hall_tile, town_hall_origin_tile
 from game.input import GameInput
 from game.iso import world_to_screen
 from game.render import Renderer
@@ -50,7 +50,7 @@ def test_smoke_phase8_build_draw_and_rmb_pan() -> None:
     placement = PlacementController(world, registry, resources, camera)
     worker_manager = WorkerManager(resources, registry)
     game_input = GameInput(world, registry, resources, placement, worker_manager, camera)
-    town_hall = registry.place(TownHall, (16, 16))
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
 
     # 1) Initial render shows Town Hall.
     _render_frame(screen, world, registry, resources, worker_manager, placement, game_input, camera)
@@ -62,7 +62,7 @@ def test_smoke_phase8_build_draw_and_rmb_pan() -> None:
 
     # 2) Place a Lumber Camp through input events and verify render.
     game_input.handle(screen, pygame.event.Event(BUILD_MENU_SELECT, building_type="LUMBER_CAMP"))
-    psx, psy = world_to_screen(22, 22)
+    psx, psy = world_to_screen(*near_town_hall_tile())
     place_pos = (ox + psx + camera.offset[0] + 16, oy + psy + camera.offset[1] + 16)
     game_input.handle(
         screen, pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=place_pos)

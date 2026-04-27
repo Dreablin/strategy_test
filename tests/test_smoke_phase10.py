@@ -7,6 +7,7 @@ import pygame
 import game.assets as assets_mod
 import game.render as render_mod
 from game.buildings.lumber_camp import LumberCamp
+from game.config import town_hall_origin_tile, near_town_hall_tile
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
 from game.iso import world_to_screen
@@ -35,18 +36,19 @@ def test_smoke_phase10_tree_features(monkeypatch) -> None:
     # 2) Placement clears tree inside footprint.
     registry = BuildingRegistry(world)
     resources = ResourceManager()
-    th = registry.place(TownHall, (16, 16))
+    th = registry.place(TownHall, town_hall_origin_tile())
     th.level = 5
-    world._trees[(22, 22)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
-    assert world.is_tree_blocking(22, 22)
-    camp = registry.place(LumberCamp, (22, 22))
+    tx, ty = near_town_hall_tile()
+    world._trees[(tx, ty)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
+    assert world.is_tree_blocking(tx, ty)
+    camp = registry.place(LumberCamp, (tx, ty))
     assert camp is not None
-    assert not world.is_tree_blocking(22, 22)
+    assert not world.is_tree_blocking(tx, ty)
 
     # 3) Tree occludes worker behind on same tile.
     workers = WorkerManager(resources, registry)
-    workers.add_worker(Worker("LUMBERJACK", stand_tile=(22, 22)))
-    world._trees[(22, 22)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
+    workers.add_worker(Worker("LUMBERJACK", stand_tile=(tx, ty)))
+    world._trees[(tx, ty)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
 
     dot = pygame.Surface((1, 1), pygame.SRCALPHA)
     dot.fill((255, 0, 0, 255))
@@ -61,5 +63,5 @@ def test_smoke_phase10_tree_features(monkeypatch) -> None:
     Renderer.draw_buildings(surface, world, registry)
     Renderer.draw_workers(surface, world, registry, workers)
     Renderer.draw_trees(surface, world)
-    px = _tree_pixel(surface, world, 22, 22)
+    px = _tree_pixel(surface, world, tx, ty)
     assert surface.get_at(px)[:3] == (0, 255, 0)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from game.buildings.lumber_camp import LumberCamp
+from game.config import near_town_hall_tile, town_hall_footprint_tiles, town_hall_origin_tile
 from game.buildings.registry import BuildingRegistry
 from game.buildings.stone_mine import StoneMine
 from game.buildings.town_hall import TownHall
@@ -18,7 +19,7 @@ def test_world_boots_with_three_stone_clusters_far_from_town_hall_zone() -> None
     centers = world._stone_centers  # noqa: SLF001
     assert len(centers) == 3
 
-    protected = {(x, y) for y in range(16, 19) for x in range(16, 19)}
+    protected = town_hall_footprint_tiles()
     for cx, cy in centers:
         assert min(max(abs(cx - tx), abs(cy - ty)) for tx, ty in protected) >= 12
 
@@ -26,7 +27,7 @@ def test_world_boots_with_three_stone_clusters_far_from_town_hall_zone() -> None
 def test_stone_mine_placement_rejects_stone_tile_but_accepts_adjacent() -> None:
     world = World()
     registry = BuildingRegistry(world)
-    registry.place(TownHall, (16, 16)).level = 3
+    registry.place(TownHall, town_hall_origin_tile()).level = 3
 
     stone_tile, _stone = world.iter_stones()[0]
     sx, sy = stone_tile
@@ -61,18 +62,17 @@ def test_stonecutter_cycle_toggle_upgrade_and_storage_smoke() -> None:
     world = World()
     world._trees.clear()  # noqa: SLF001
     world._stones.clear()  # noqa: SLF001
-    world._trees[(24, 20)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
-    world._trees[(25, 20)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
-    world._trees[(26, 20)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
-    world._trees[(27, 20)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
-    world._stones[(30, 20)] = Stone(units=10)  # noqa: SLF001
-    world._stones[(31, 20)] = Stone(units=10)  # noqa: SLF001
-
     resources = ResourceManager()
     registry = BuildingRegistry(world)
-    registry.place(TownHall, (16, 16)).level = 3
-    camp = registry.place(LumberCamp, (22, 22))
-    mine = registry.place(StoneMine, (28, 22))
+    registry.place(TownHall, town_hall_origin_tile()).level = 3
+    camp = registry.place(LumberCamp, near_town_hall_tile())
+    gx, gy = camp.grid_pos  # type: ignore[assignment]
+    for i in range(4):
+        world._trees[(gx + 3 + i, gy)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
+    mine = registry.place(StoneMine, near_town_hall_tile(14, 0))
+    mx, my = mine.grid_pos  # type: ignore[assignment]
+    world._stones[(mx + 3, my)] = Stone(units=10)  # noqa: SLF001
+    world._stones[(mx + 4, my)] = Stone(units=10)  # noqa: SLF001
 
     now_ms = [0]
     workers = WorkerManager(resources, registry, now_ms_fn=lambda: now_ms[0])

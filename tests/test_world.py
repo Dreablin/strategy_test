@@ -2,7 +2,7 @@
 
 import pytest
 
-from game.config import GRID_SIZE
+from game.config import GRID_SIZE, town_hall_footprint_tiles
 from game.world import World
 
 
@@ -14,8 +14,8 @@ def _rect_fully_unoccupied(world: World, gx: int, gy: int, w: int, h: int) -> bo
 
 def test_grid_dimensions_match_config() -> None:
     world = World()
-    assert world.width == GRID_SIZE == 55
-    assert world.height == GRID_SIZE == 55
+    assert world.width == GRID_SIZE
+    assert world.height == GRID_SIZE
 
 
 def test_is_in_grass_playable_field() -> None:
@@ -73,7 +73,7 @@ def test_partial_footprint_still_occupied_after_partial_free() -> None:
 def test_stone_generation_picks_three_centers_far_from_town_hall() -> None:
     world = World()
     assert len(world._stone_centers) == 3  # noqa: SLF001
-    town_hall_tiles = {(x, y) for y in range(16, 19) for x in range(16, 19)}
+    town_hall_tiles = town_hall_footprint_tiles()
     for cx, cy in world._stone_centers:  # noqa: SLF001
         assert world.is_in_grass(cx, cy)
         min_dist = min(max(abs(cx - tx), abs(cy - ty)) for tx, ty in town_hall_tiles)
@@ -100,7 +100,7 @@ def test_stone_generation_is_deterministic_for_fresh_world() -> None:
 def test_tree_generation_picks_five_grove_centers_far_from_town_hall() -> None:
     world = World()
     assert len(world._tree_centers) == 5  # noqa: SLF001
-    town_hall_tiles = {(x, y) for y in range(16, 19) for x in range(16, 19)}
+    town_hall_tiles = town_hall_footprint_tiles()
     for cx, cy in world._tree_centers:  # noqa: SLF001
         assert world.is_in_grass(cx, cy)
         assert not world.is_stone_blocking(cx, cy)

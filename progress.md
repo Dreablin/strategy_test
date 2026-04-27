@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 11. Lumberjack chop cycle
-- **Next Task:** T87 — Implement carrying sprite loading/render variant
-- **Last Completed:** T86 — Add failing carrying sprite asset tests
-- **Total Progress:** 86 / 91
+- **Next Task:** T88 — Add failing UI tests for Lumber Camp panel
+- **Last Completed:** T87 — Implement carrying sprite loading/render variant
+- **Total Progress:** 87 / 91
 
 ---
 
@@ -393,7 +393,7 @@
   - Procedural fallback exists for both when files are missing.
   - Cache invalidation works (mtime-based, like building sprites).
 
-- [ ] **T87**: Implement carrying sprite loading and render variant:
+- [x] **T87**: Implement carrying sprite loading and render variant:
   - Add `assets/npc/lumberjack/default.png` (already exists) and `assets/npc/lumberjack/carrying.png` (placeholder PNG generated procedurally if absent).
   - Extend `assets.worker_dot(worker_type, carrying: bool = False)` (or a new `worker_carry_dot`); keep backward-compatible default.
   - Update `Renderer.draw_workers` to use the carrying variant when `worker.carrying == "wood"`.

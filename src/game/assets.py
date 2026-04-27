@@ -270,15 +270,57 @@ def _procedural_worker_dot(w_type: str) -> pygame.Surface:
     return surf
 
 
-@functools.lru_cache(maxsize=32)
-def worker_dot(w_type: str) -> pygame.Surface:
+def _procedural_worker_carry_dot(w_type: str) -> pygame.Surface:
+    surf = _procedural_worker_dot(w_type).copy()
+    w, h = surf.get_size()
+    box = pygame.Rect(w // 2 - 4, h // 2 - 1, 8, 5)
+    pygame.draw.rect(surf, (132, 92, 52), box, border_radius=1)
+    pygame.draw.rect(surf, (28, 24, 18), box, width=1, border_radius=1)
+    return surf
+
+
+@functools.lru_cache(maxsize=128)
+def _worker_dot_by_mtime(
+    w_type: str,
+    carrying: bool,
+    default_mtime_ns: int,
+    default_size: int,
+    carrying_mtime_ns: int,
+    carrying_size: int,
+) -> pygame.Surface:
+    _ = default_mtime_ns
+    _ = default_size
+    _ = carrying_mtime_ns
+    _ = carrying_size
+    t = w_type.upper().replace(" ", "_")
+    folder = _WORKER_FOLDER.get(t, t.lower())
+    name = "carrying.png" if carrying else "default.png"
+    loaded = _load_png(str(_NPC_ROOT / folder / name))
+    if loaded is not None:
+        return loaded
+    if carrying:
+        return _procedural_worker_carry_dot(w_type)
+    return _procedural_worker_dot(w_type)
+
+
+def worker_dot(w_type: str, carrying: bool = False) -> pygame.Surface:
     """Load worker icon from assets folder, fallback to procedural."""
     t = w_type.upper().replace(" ", "_")
     folder = _WORKER_FOLDER.get(t, t.lower())
-    loaded = _load_png(str(_NPC_ROOT / folder / "default.png"))
-    if loaded is not None:
-        return loaded
-    return _procedural_worker_dot(w_type)
+    default_path = _NPC_ROOT / folder / "default.png"
+    carrying_path = _NPC_ROOT / folder / "carrying.png"
+    default_mtime_ns = default_path.stat().st_mtime_ns if default_path.exists() else -1
+    default_size = default_path.stat().st_size if default_path.exists() else -1
+    carrying_mtime_ns = carrying_path.stat().st_mtime_ns if carrying_path.exists() else -1
+    carrying_size = carrying_path.stat().st_size if carrying_path.exists() else -1
+    return _worker_dot_by_mtime(
+        w_type,
+        carrying,
+        default_mtime_ns,
+        default_size,
+        carrying_mtime_ns,
+        carrying_size,
+    )
 
 
 def _hire_icon_fallback(w_type: str) -> pygame.Surface:
@@ -342,6 +384,6 @@ def clear_asset_caches() -> None:
     _load_png_by_mtime.cache_clear()
     _load_building_meta_by_mtime.cache_clear()
     _load_fixed_icon.cache_clear()
+    _worker_dot_by_mtime.cache_clear()
     tree_sprite.cache_clear()
-    worker_dot.cache_clear()
     resource_icon.cache_clear()

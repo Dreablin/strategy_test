@@ -33,6 +33,8 @@ def _advance_to_chopping(now_ms, workers, worker) -> None:
 
 
 def _complete_one_cycle(now_ms, workers) -> None:
+    now_ms[0] += 120_000
+    workers.update(now_ms[0])
     now_ms[0] += CHOP_DURATION_MS
     workers.update(now_ms[0])
     now_ms[0] += 120_000

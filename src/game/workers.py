@@ -263,6 +263,18 @@ class WorkerManager:
             want = self._WORKER_TO_BUILDING.get(worker.type_tag)
             if want is None:
                 continue
+            if (
+                worker.type_tag == "LUMBERJACK"
+                and worker.assigned_building is not None
+                and worker.assigned_building.type_tag == want
+            ):
+                camp = worker.assigned_building
+                if getattr(camp, "active", False):
+                    self._start_lumberjack_cycle(worker, camp, now_ms)
+                else:
+                    worker.idle = True
+                    worker.state = "idle"
+                continue
             targets = [b for b in self._registry.all() if b.type_tag == want and not self.is_staffed(b)]
             assigned = False
             blocked = {
@@ -277,6 +289,17 @@ class WorkerManager:
             for target in targets:
                 if worker.type_tag == "LUMBERJACK":
                     worker.assigned_building = target
+                    if not getattr(target, "active", False):
+                        worker.idle = True
+                        worker.state = "idle"
+                        worker.path = []
+                        worker.target_tile = None
+                        worker.segment_progress = 0.0
+                        worker.carrying = None
+                        worker.target_tree = None
+                        worker.chop_started_ms = 0
+                        assigned = True
+                        break
                     assigned = self._start_lumberjack_cycle(worker, target, now_ms)
                     if assigned:
                         break

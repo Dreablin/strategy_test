@@ -147,28 +147,32 @@ class Renderer:
 
         ox, oy = Renderer.map_origin(surface, world)
         cam_x, cam_y = (0, 0) if camera is None else camera.offset
-        entries: list[tuple[str, float, float]] = []
+        entries: list[tuple[str, bool, float, float]] = []
         for worker in worker_manager.workers():
+            carrying = worker.carrying == "wood"
             if worker.state == "moving" and worker.target_tile is not None:
                 cx, cy = worker.current_tile
                 tx, ty = worker.target_tile
                 t = max(0.0, min(1.0, worker.segment_progress))
-                entries.append((worker.type_tag, cx + (tx - cx) * t, cy + (ty - cy) * t))
+                entries.append((worker.type_tag, carrying, cx + (tx - cx) * t, cy + (ty - cy) * t))
                 continue
             if worker.assigned_building is not None:
                 if worker.state == "working":
                     wx, wy = building_center_tile(worker.assigned_building)
                 else:
                     wx, wy = worker.current_tile
-                entries.append((worker.type_tag, float(wx), float(wy)))
+                entries.append((worker.type_tag, carrying, float(wx), float(wy)))
                 continue
             sxg, syg = worker.stand_tile
-            entries.append((worker.type_tag, float(sxg), float(syg)))
+            entries.append((worker.type_tag, carrying, float(sxg), float(syg)))
 
-        entries.sort(key=lambda item: item[1] + item[2])
-        for worker_type, gx, gy in entries:
+        entries.sort(key=lambda item: item[2] + item[3])
+        for worker_type, carrying, gx, gy in entries:
             sx, sy = world_to_screen(gx, gy)
-            dot = worker_dot(worker_type)
+            try:
+                dot = worker_dot(worker_type, carrying=carrying)
+            except TypeError:
+                dot = worker_dot(worker_type)
             px = ox + cam_x + sx + TILE_W // 2 - dot.get_width() // 2
             py = oy + cam_y + sy + TILE_H // 2 - dot.get_height() // 2
             surface.blit(dot, (px, py))

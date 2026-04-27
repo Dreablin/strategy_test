@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T114 — Add failing render tests for stones
-- **Last Completed:** T113 — Treat stones as blockers in pathfinding/registry
-- **Total Progress:** 113 / 125
+- **Next Task:** T115 — Implement stone sprite asset + renderer pass
+- **Last Completed:** T114 — Add failing render tests for stones
+- **Total Progress:** 114 / 125
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -322,7 +322,7 @@
   (`src/game/buildings/registry.py`) to treat stones as blockers and
   un-buildable. Run all tests — green.
 
-- [ ] **T114**: Add failing render tests in
+- [x] **T114**: Add failing render tests in
   `tests/test_render_stones.py`:
   - World API: `world.iter_stones()` returns all stones.
   - `Renderer.draw_stones(surface, world, camera=None)` (or extension of

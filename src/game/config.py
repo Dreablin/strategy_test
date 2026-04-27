@@ -8,7 +8,12 @@ from pathlib import Path
 
 _DEFAULT_SETTINGS: dict = {
     "timing": {"tick_ms": 10_000, "worker_tile_travel_ms": 3_000},
-    "world": {"tile_w": 64, "tile_h": 32, "grid_size": 32},
+    "world": {
+        "tile_w": 64,
+        "tile_h": 32,
+        "grid_size": 32,
+        "gather_resource_search_radius": 20,
+    },
     "window": {"size": [1280, 720]},
     "economy": {
         "initial_resources": {"food": 200, "wood": 200, "stone": 0, "iron": 0},
@@ -77,6 +82,7 @@ WORKER_TILE_TRAVEL_MS = int(SETTINGS["timing"]["worker_tile_travel_ms"])
 TILE_W = int(SETTINGS["world"]["tile_w"])
 TILE_H = int(SETTINGS["world"]["tile_h"])
 GRID_SIZE = int(SETTINGS["world"]["grid_size"])
+GATHER_RESOURCE_SEARCH_RADIUS = int(SETTINGS["world"].get("gather_resource_search_radius", 20))
 WINDOW_SIZE = tuple(SETTINGS["window"]["size"])
 MAX_LEVEL = int(SETTINGS["levels"]["max_level"])
 

@@ -8,6 +8,7 @@ def test_config_constants_match_spec() -> None:
     assert config.TILE_W == 64
     assert config.TILE_H == 32
     assert config.GRID_SIZE == 55
+    assert config.GATHER_RESOURCE_SEARCH_RADIUS == 20
     assert config.INITIAL_RESOURCES == {
         "food": 200,
         "wood": 200,

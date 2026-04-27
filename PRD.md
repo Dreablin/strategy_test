@@ -137,10 +137,28 @@ class ResourceManager:
 - **F-CAM-04 (MUST):** `camera.clamp(viewport_size, world_bounds_px)` keeps the world's bounding box (grass + tree skirt) inside the viewport play area (between TopBar and BottomBar). When the world is bigger than the viewport, only previously off-screen parts can be revealed; when smaller, the offset is locked at the centering value.
 - **F-CAM-05 (MUST):** Camera UX = **"grab-and-drag the world"**: if the mouse moves by `(dx, dy)` while RMB is held, then `camera.offset += (dx, dy)` (the world moves with the cursor), then immediately clamped per F-CAM-04.
 
+### F-PATH — Pathfinding & Movement Rules
+
+- **F-PATH-01 (MUST):** Workers move only along the four cardinal directions
+  (N, E, S, W). Diagonal movement is forbidden. Every consecutive pair of
+  tiles in any worker path satisfies `abs(dx) + abs(dy) == 1`. Implemented in
+  `src/game/pathfinding.py` as a 4-direction BFS; resource-search BFS in
+  `src/game/world.py` (`find_nearest_free_tree`, `find_nearest_free_stone`)
+  uses the same neighbour set.
+- **F-PATH-02 (MUST):** A path is `None` (unreachable) iff there is no
+  4-connected sequence of walkable tiles from start to goal. There is no
+  diagonal corner-cutting fallback.
+- **F-PATH-03 (MUST):** `find_path_bfs` is deterministic for fixed inputs:
+  the same `(start, goal, blocked)` returns the exact same list of tiles.
+- **F-PATH-04 (MUST):** Worker dispatch (`reassign_all`,
+  `_start_gather_cycle`, `_start_return_to_camp`) must build the `blocked`
+  set via `World.blocked_tiles()` (cached union, see API spec). It must NOT
+  iterate `range(world.height) × range(world.width)`.
+
 ### F-WORLD — World
 
 - **F-WORLD-01 (MUST):** A `GRID_SIZE × GRID_SIZE` tile playable grass field (currently 55×55 in `game_settings.json`), centered on screen. Camera pan is required to see the whole map.
-- **F-WORLD-02 (MUST, **revised**):** Trees are world-owned entities (Phase 10) that block movement and can be chopped (Phase 11). They appear in an edge band, dense near the border, with a center clearing wide enough to build several dozen buildings.
+- **F-WORLD-02 (MUST, **revised**):** Trees are world-owned entities (Phase 10) that block movement and can be chopped (Phase 11). **Generation:** pick **5** grove centers the same way as stone-cluster centers (in-grass, outside the central build clearing, **Chebyshev distance ≥ 12** from every Town Hall footprint tile, centers not on stone). Around each center choose random `r ∈ [3, 6]` (Chebyshev). For each tile in that disk: skip if not in-grass, inside the build clearing, on stone, or already a tree; otherwise place a tree with **80%** independent probability (deterministic RNG seed). **Scatter pass:** then place up to **`floor(GRID_SIZE² × 0.02)`** additional trees on a shuffled list of all remaining eligible grass tiles (same clearing / stone / no-overlap rules; deterministic RNG). Stages use `stage_from_tile_seed` per placed tile.
 - **F-WORLD-03 (MUST):** Town Hall is placed at the grid center (`GRID_SIZE // 2, GRID_SIZE // 2`) on game start.
 - **F-WORLD-04 (MUST):** Stone deposits (see `F-STONE`) generate during world initialization in addition to trees.
 
@@ -153,7 +171,7 @@ class ResourceManager:
 - **F-STONE-05 (MUST):** Generation algorithm at world init:
   1. Compute the set of valid stone-center tiles: in-grass, **Chebyshev distance ≥ 12** from any Town Hall footprint tile, not occupied, not on a tree.
   2. Pick **3** centers at random (deterministically from a fixed seed for tests). If fewer valid candidates exist, pick as many as possible.
-  3. Around each center, pick a random radius `r ∈ [3, 6]` (Chebyshev). Fill **every** tile in the radius with a stone (units=15) provided the tile is in-grass, not a tree, not a building, not the Town Hall footprint, and not already a stone tile (idempotent merge).
+  3. Around each center, pick a random radius `r ∈ [1, 4]` (Chebyshev). Fill **every** tile in the radius with a stone (units=15) provided the tile is in-grass, not a tree, not a building, not the Town Hall footprint, and not already a stone tile (idempotent merge).
 - **F-STONE-06 (MUST):** A stonecutter harvests by:
   1. Walking from the camp to a tile **adjacent** (Chebyshev-1) to the chosen stone tile (the stonecutter cannot stand on the stone itself, since stones block movement).
   2. Mining for `MINE_DURATION_MS` (default `10_000` ms, modulated by gather speed bonuses).
@@ -346,6 +364,8 @@ class Building:
 |-----------|----------------|-----------------------------------------------------------------------------------------------|
 | NFR-PERF-01 | Performance  | Game must hold ≥ 55 FPS with up to 100 buildings + 100 workers on a 5-year-old laptop iGPU.   |
 | NFR-PERF-02 | Performance  | Memory footprint < 250 MB during play.                                                        |
+| NFR-PERF-03 | Performance  | Renderer iterates only the camera-visible tile range each frame; frame cost is independent of map size. |
+| NFR-PERF-04 | Performance  | Worker dispatch (assignment, gather scheduling, return paths) runs in O(buildings + entities), not O(W·H), per frame. |
 | NFR-REL-01  | Reliability  | No unhandled exceptions during a 10-minute play session reach the user; all logged to stderr. |
 | NFR-REL-02  | Cleanup      | On window close, `pygame.quit()` called, no zombie processes, no leaked file handles.         |
 | NFR-EXT-01  | Extensibility| Adding a new resource-building type = one subclass + one entry in the bottom-bar config.      |
@@ -429,7 +449,20 @@ find_path_bfs(
   blocked: set[tuple[int, int]],
 ) -> list[tuple[int, int]] | None
 # Returns inclusive path [start, ..., goal] or None when unreachable.
-# Uses 8-direction BFS, deterministic neighbor order, and no-corner-cutting.
+# Uses 4-direction BFS (N, E, S, W) with deterministic neighbor order.
+# Workers cannot move diagonally; every consecutive step satisfies
+# `abs(dx) + abs(dy) == 1`. See F-PATH-01.
+```
+
+### `game.world` (cached blocking sets, Phase 13)
+```python
+World.occupied_tiles() -> set[tuple[int, int]]   # building footprints
+World.tree_tiles()     -> set[tuple[int, int]]   # alive tree tiles
+World.stone_tiles()    -> set[tuple[int, int]]   # alive stone tiles
+World.blocked_tiles()  -> set[tuple[int, int]]   # union of the three
+# All four return fresh shallow copies; mutating the return value never
+# affects the world. Maintained in O(1) by `mark_occupied`, `free`,
+# `remove_tree`, `harvest_stone`, and the `_init_*` generators.
 ```
 
 ### `game.tick`
@@ -451,6 +484,11 @@ Camera(initial_offset=(0,0))
 ```python
 Renderer.draw_buildings(surface, world, registry, camera=None) -> None
 # All other draw_* methods accept an optional `camera` argument and apply offset.
+
+Renderer.visible_tile_range(surface, world, camera) -> tuple[int, int, int, int]
+# (gx_min, gy_min, gx_max_inclusive, gy_max_inclusive), clipped to grid,
+# widened by VISIBLE_TILE_MARGIN = 2. Returns an empty range
+# (gx_max < gx_min) when nothing on the world is visible. See NFR-PERF-03.
 ```
 
 ---
@@ -472,9 +510,10 @@ The full ordered task list is the source of truth in `progress.md`. Summary:
 | 9. Worker movement & spacing           | T52–T62  | done       |
 | 10. Tree entities & layering           | T63–T74  | done       |
 | 11. Lumberjack chop cycle              | T75–T91  | done       |
-| 12. Level bonuses, storage, stones     | T92+     | in-progress |
+| 12. Level bonuses, storage, stones     | T92–T125 | done       |
+| 13. Perf opt & orthogonal pathfinding  | T126–T148| in-progress |
 
-Phases 1–10 are summarised in `progress_archive.md`. Live phases (11+) live in
+Phases 1–12 are summarised in `progress_archive.md`. The active phase lives in
 `progress.md`. See `progress.md` for the canonical task list.
 
 ---

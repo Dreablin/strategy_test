@@ -7,7 +7,12 @@ from typing import Any
 
 from game.buildings.base import Building
 from game.characteristics import Characteristics
-from game.config import TOWN_HALL_MIN_LEVEL_FOR_HIRE, WORKER_HIRE_COSTS, WORKER_TILE_TRAVEL_MS
+from game.config import (
+    GATHER_RESOURCE_SEARCH_RADIUS,
+    TOWN_HALL_MIN_LEVEL_FOR_HIRE,
+    WORKER_HIRE_COSTS,
+    WORKER_TILE_TRAVEL_MS,
+)
 from game.pathfinding import find_path_bfs
 from game.resources import ResourceManager
 from game.world import find_nearest_free_stone, find_nearest_free_tree
@@ -349,15 +354,14 @@ class WorkerManager:
                 worker.camp_wait_until_ms = max(worker.camp_wait_until_ms, now_ms + rest_ms)
                 continue
             targets = [b for b in self._registry.all() if b.type_tag == want and not self.is_staffed(b)]
+            targets.sort(
+                key=lambda b: (
+                    abs(worker.current_tile[0] - building_center_tile(b)[0])
+                    + abs(worker.current_tile[1] - building_center_tile(b)[1])
+                )
+            )
             assigned = False
-            blocked = {
-                (x, y)
-                for y in range(world.height)
-                for x in range(world.width)
-                if world.is_occupied(x, y)
-            }
-            blocked.update({(x, y) for (x, y), _tree in world.iter_alive_trees()})
-            blocked.update({(x, y) for (x, y), _stone in world.iter_stones()})
+            blocked = world.blocked_tiles()
             # Workers may start on an occupied spawn tile (e.g., Town Hall center).
             blocked.discard(worker.current_tile)
             for target in targets:
@@ -412,6 +416,7 @@ class WorkerManager:
         world = getattr(self._registry, "_world", None)
         if world is None:
             return []
+        blocked = world.blocked_tiles()
         gx, gy = pos
         w, h = type(building).footprint
         x0, x1 = gx - 1, gx + w
@@ -424,9 +429,7 @@ class WorkerManager:
                     continue
                 if not world.is_in_grass(x, y):
                     continue
-                if world.is_occupied(x, y):
-                    continue
-                if world.is_tree_blocking(x, y):
+                if (x, y) in blocked:
                     continue
                 tiles.append((x, y))
         return tiles
@@ -557,18 +560,14 @@ class WorkerManager:
             self._clear_building_bonus(worker)
             return False
         world.release_reservations_for(worker)
-        blocked = {
-            (x, y)
-            for y in range(world.height)
-            for x in range(world.width)
-            if world.is_occupied(x, y)
-        }
+        blocked = world.blocked_tiles()
         blocked.discard(worker.current_tile)
         rejected_targets: set[tuple[int, int]] = set()
         while True:
             target_tile = self._find_nearest_gather_target(
                 world,
                 worker.current_tile,
+                camp=camp,
                 blocked=blocked,
                 world_query=world_query,
                 skip_targets=rejected_targets,
@@ -631,10 +630,13 @@ class WorkerManager:
         world: Any,
         from_tile: tuple[int, int],
         *,
+        camp: Building,
         blocked: set[tuple[int, int]],
         world_query: str,
         skip_targets: set[tuple[int, int]] | None = None,
     ) -> tuple[int, int] | None:
+        anchor = building_center_tile(camp)
+        radius = GATHER_RESOURCE_SEARCH_RADIUS
         if world_query == "tree":
             return find_nearest_free_tree(
                 world,
@@ -642,6 +644,8 @@ class WorkerManager:
                 blocked=blocked,
                 skip_reserved=True,
                 skip_targets=skip_targets,
+                search_anchor=anchor,
+                max_search_radius=radius,
             )
         if world_query == "stone":
             return find_nearest_free_stone(
@@ -650,6 +654,8 @@ class WorkerManager:
                 blocked=blocked,
                 skip_reserved=True,
                 skip_targets=skip_targets,
+                search_anchor=anchor,
+                max_search_radius=radius,
             )
         return None
 
@@ -659,12 +665,7 @@ class WorkerManager:
         world = getattr(self._registry, "_world", None)
         if world is None:
             return False
-        blocked = {
-            (x, y)
-            for y in range(world.height)
-            for x in range(world.width)
-            if world.is_occupied(x, y)
-        }
+        blocked = world.blocked_tiles()
         blocked.discard(worker.current_tile)
         best_path: list[tuple[int, int]] | None = None
         for tile in self._approach_tiles(worker.assigned_building):

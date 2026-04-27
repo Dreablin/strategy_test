@@ -1,8 +1,8 @@
-# Progress Archive — Phases 1–10
+# Progress Archive — Phases 1–12
 
 This archive holds the original detailed task lists for completed phases. The
 live task tracker (`progress.md`) keeps only the current phase plus the
-immediately preceding one (Phase 11) for ralph-loop input context.
+immediately preceding one for ralph-loop input context.
 
 All tasks below are `[x]` complete and documented here for traceability only —
 ralph-loop must NOT re-run them. New work belongs to a fresh phase in
@@ -103,11 +103,48 @@ ralph-loop must NOT re-run them. New work belongs to a fresh phase in
 > Trees become world-owned entities with growth stages; chopping is a future flow.
 
 - [x] **T63–T64**: `tests/test_trees.py` + `src/game/trees.py` (`TreeStage`, `Tree`).
-- [x] **T65–T66**: World owns trees by tile; edge-biased generation, center clearing.
+- [x] **T65–T66**: World owns trees by tile; sparse groves + scatter (see F-WORLD-02), center clearing.
 - [x] **T67–T68**: BFS treats alive tree tiles as blocked; movement detours.
 - [x] **T69–T70**: Placement clears trees inside the new footprint.
 - [x] **T71–T72**: Tree assets per stage; loader with procedural fallback.
 - [x] **T73–T74**: Render layering — trees draw above buildings/workers behind them.
+
+## Phase 11 — Lumberjack Chop Cycle
+
+> Lumber Camp no longer passively produces wood. A staffed Lumber Camp dispatches
+> its Lumberjack on a chop cycle: walk to a free tree → adjacent free tile →
+> chop for 10 s → carry wood back to the camp → deposit `+1 wood` and remove the
+> tree. Active/Inactive toggle on the camp; `delivered_wood` counter; `carrying`
+> flag on the worker. Two distinct lumberjack sprites (empty / carrying).
+> Lumberjack rests inside the camp for `LUMBERJACK_REST_MS = 5000 ms` between
+> trips and stays parked inside if the camp is toggled off.
+
+- [x] **T75–T91** — full coverage in `tests/test_lumber_camp_state.py`,
+  `test_lumberjack_cycle_states.py`, `test_lumber_camp_active_toggle.py`,
+  `test_smoke_phase11.py`, etc.
+
+## Phase 12 — Level Bonuses, Internal Storage, Stones
+
+> Per-level bonuses replace passive income for `LUMBER_CAMP` and `STONE_MINE`.
+> Workers gain a `Characteristics` block (additive `move_speed_mult`,
+> `gather_speed_mult`, +5 % per level above 1, sourced as
+> `("building_level", id(building))` so they can be removed atomically). All
+> producing buildings get an internal `stored / capacity(L)` slot
+> (`capacity(L) = 3 + 2 × (L − 1)`); workers stop launching new gather cycles
+> when storage is full. Stones are world entities with 15 units each, generated
+> in 3 random clusters at Chebyshev ≥ 12 from the Town Hall, radius
+> `r ∈ [1, 4]`, blocking movement and placement; they never share a tile with a
+> tree. Stonecutters mirror the lumberjack chop cycle.
+
+- [x] **T92–T125** — full coverage in `tests/test_worker_characteristics.py`,
+  `test_workers.py`, `test_worker_movement.py`, `test_lumberjack_speed_bonus.py`,
+  `test_registry.py`, `test_buildings.py`, `test_lumberjack_cycle_deposit.py`,
+  `test_production.py`, `test_lumber_camp_panel.py`,
+  `test_building_panel_storage.py`, `test_stones.py`, `test_world.py`,
+  `test_pathfinding.py`, `test_render_stones.py`, `test_stone_mine_state.py`,
+  `test_stonecutter_cycle.py`, `test_stone_mine_panel.py`, `test_assets.py`,
+  `test_smoke_phase12.py`. HF12-A regression preserved in
+  `test_lumber_camp_panel.py::test_lumber_camp_click_upgrade_returns_upgrade_not_demolish`.
 
 ---
 

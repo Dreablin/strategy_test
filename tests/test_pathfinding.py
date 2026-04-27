@@ -14,7 +14,7 @@ def _blocked_from_world(world: World) -> set[tuple[int, int]]:
     }
 
 
-def test_bfs_finds_8dir_path_around_obstacles() -> None:
+def test_bfs_finds_4dir_path_around_obstacles() -> None:
     world = World()
     start = (20, 20)
     goal = (24, 20)
@@ -29,6 +29,7 @@ def test_bfs_finds_8dir_path_around_obstacles() -> None:
     # BFS may choose either side opening depending on deterministic order.
     assert any(x == 22 and y not in blocked for x, y in path)
     assert all(tile not in blocked for tile in path)
+    assert all(abs(a[0] - b[0]) + abs(a[1] - b[1]) == 1 for a, b in zip(path, path[1:]))
 
 
 def test_path_never_steps_on_occupied_footprint_tiles() -> None:

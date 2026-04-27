@@ -23,7 +23,8 @@ def test_stone_harvest_raises_when_empty() -> None:
 
 def test_world_stone_lookup_and_blocking_and_iteration() -> None:
     world = World()
-    world._stones = {(5, 6): Stone()}  # noqa: SLF001
+    world._stones.clear()
+    world._stones[(5, 6)] = Stone()
 
     stone = world.stone_at(5, 6)
     assert stone is not None
@@ -34,7 +35,8 @@ def test_world_stone_lookup_and_blocking_and_iteration() -> None:
 
 def test_world_harvest_stone_removes_when_depleted() -> None:
     world = World()
-    world._stones = {(2, 3): Stone(units=1)}  # noqa: SLF001
+    world._stones.clear()
+    world._stones[(2, 3)] = Stone(units=1)
 
     harvested = world.harvest_stone(2, 3)
     assert harvested is not None
@@ -47,7 +49,8 @@ def test_world_stone_reservation_api_mirrors_tree_behavior() -> None:
     world = World()
     worker_a = object()
     worker_b = object()
-    world._stones = {(7, 8): Stone()}  # noqa: SLF001
+    world._stones.clear()
+    world._stones[(7, 8)] = Stone()
 
     assert world.reserve_stone(7, 8, worker_a) is True
     assert world.reserve_stone(7, 8, worker_b) is False

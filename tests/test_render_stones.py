@@ -14,7 +14,8 @@ _BG = (17, 19, 23)
 
 def test_world_iter_stones_returns_all_entries() -> None:
     world = World()
-    world._stones = {(4, 5): Stone(), (8, 9): Stone()}  # noqa: SLF001
+    world._stones.clear()
+    world._stones.update({(4, 5): Stone(), (8, 9): Stone()})
     entries = world.iter_stones()
     assert len(entries) == 2
     assert ((4, 5), world.stone_at(4, 5)) in entries
@@ -27,7 +28,8 @@ def test_renderer_has_draw_stones_callable() -> None:
 
 def test_draw_stones_blits_bottom_center_anchor(monkeypatch) -> None:
     world = World()
-    world._stones = {(27, 27): Stone()}  # noqa: SLF001
+    world._stones.clear()
+    world._stones[(27, 27)] = Stone()
     sprite = pygame.Surface((1, 1), pygame.SRCALPHA)
     sprite.fill((0, 255, 255, 255))
     monkeypatch.setattr(render_mod, "stone_sprite", lambda: sprite, raising=False)
@@ -46,7 +48,8 @@ def test_draw_stones_blits_bottom_center_anchor(monkeypatch) -> None:
 
 def test_draw_stones_respects_camera_offset(monkeypatch) -> None:
     world = World()
-    world._stones = {(27, 27): Stone()}  # noqa: SLF001
+    world._stones.clear()
+    world._stones[(27, 27)] = Stone()
     sprite = pygame.Surface((1, 1), pygame.SRCALPHA)
     sprite.fill((255, 0, 255, 255))
     monkeypatch.setattr(render_mod, "stone_sprite", lambda: sprite, raising=False)
@@ -66,7 +69,8 @@ def test_draw_stones_respects_camera_offset(monkeypatch) -> None:
 
 def test_draw_stones_uses_procedural_fallback_when_asset_missing(monkeypatch) -> None:
     world = World()
-    world._stones = {(10, 10): Stone()}  # noqa: SLF001
+    world._stones.clear()
+    world._stones[(10, 10)] = Stone()
     calls: list[str] = []
 
     def _fake_sprite() -> pygame.Surface:

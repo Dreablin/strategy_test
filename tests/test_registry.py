@@ -157,10 +157,9 @@ def test_iron_mine_requires_town_hall_level_5(registry: BuildingRegistry) -> Non
 
 
 def test_can_place_allows_footprint_with_trees_present(registry: BuildingRegistry, world: World) -> None:
-    world._trees[(10, 10)] = world._trees.get((10, 10)) or world.tree_at(0, 0)  # noqa: SLF001
-    if world._trees[(10, 10)] is None:  # noqa: SLF001
-        from game.trees import Tree, TreeStage
+    from game.trees import Tree, TreeStage
 
+    if world.tree_at(10, 10) is None:
         world._trees[(10, 10)] = Tree(stage=TreeStage.YOUNG)  # noqa: SLF001
     assert registry.can_place(LumberCamp, (10, 10))
 

@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 13. Performance optimisation & orthogonal pathfinding
-- **Next Task:** T135 — update tests that assumed diagonal pathing.
-- **Last Completed:** T134 — switch world resource search to 4-direction.
-- **Total Progress:** 134 / 148
+- **Next Task:** T136 — add failing render culling tests.
+- **Last Completed:** T135 — update tests for orthogonal-only pathing.
+- **Total Progress:** 135 / 148
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -238,7 +238,7 @@
     `pathfinding.py` if duplicated).
   - Run tests — green.
 
-- [ ] **T135**: Update existing tests that assumed diagonal pathing.
+- [x] **T135**: Update existing tests that assumed diagonal pathing.
   - Audit the suite: `grep -R "neighbors_8\|diagonal\|NEIGHBORS_8\|len(path) == 4\|corner-cut" tests/`.
   - For each test that asserts a specific path length / shape, update the
     expected value to the 4-dir Manhattan distance + 1, or rewrite the

@@ -108,7 +108,7 @@ class BuildingPanel:
             else:
                 upgrade_enabled = resources.has(cost)
 
-        text_rows = 5
+        text_rows = 5 + (1 if hasattr(building, "storage_capacity") and hasattr(building, "stored") else 0)
         btn_count = int(can_upgrade) + int(show_demolish)
         h = (
             _PANEL_PAD * 2
@@ -219,6 +219,12 @@ class BuildingPanel:
             worker_status = "assigned" if worker_assigned else "empty"
         wstat = f"Worker: {worker_status}"
         surface.blit(body_font.render(wstat, True, (200, 204, 214)), (layout.frame.left + _PANEL_PAD, y))
+        if hasattr(building, "storage_capacity") and hasattr(building, "stored"):
+            y += _ROW
+            surface.blit(
+                body_font.render(BuildingPanel.storage_line(building), True, (200, 204, 214)),
+                (layout.frame.left + _PANEL_PAD, y),
+            )
 
         if layout.upgrade is not None:
             u_en = layout.upgrade_enabled
@@ -275,3 +281,9 @@ class BuildingPanel:
         if layout.demolish is not None and layout.demolish.collidepoint(x, y):
             return "demolish"
         return None
+
+    @staticmethod
+    def storage_line(building: Building) -> str:
+        stored = int(getattr(building, "stored"))
+        capacity = int(building.storage_capacity())
+        return f"Storage: {stored} / {capacity}"

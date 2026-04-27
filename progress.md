@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T107 — Implement storage line rendering in panels
-- **Last Completed:** T106 — Add failing tests for storage UI lines
-- **Total Progress:** 106 / 111
+- **Next Task:** T108 — Add failing tests for stone domain model
+- **Last Completed:** T107 — Implement storage line rendering in panels
+- **Total Progress:** 107 / 111
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -257,7 +257,7 @@
     `BuildingPanel.storage_line(building)` (or string scrape; pick one).
   Tests must FAIL first.
 
-- [ ] **T107**: Implement storage line rendering in `BuildingPanel.draw` and
+- [x] **T107**: Implement storage line rendering in `BuildingPanel.draw` and
   `LumberCampPanel.draw`. Adjust the `extra_bottom_px` accumulator so the
   modal grows by one row, and update `BuildingPanelLayout` if necessary.
   Run UI tests — green.

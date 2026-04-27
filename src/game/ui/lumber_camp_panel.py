@@ -39,6 +39,10 @@ class LumberCampPanel:
         return f"Wood delivered: {camp.delivered_wood}"
 
     @staticmethod
+    def storage_line(camp: LumberCamp) -> str:
+        return BuildingPanel.storage_line(camp)
+
+    @staticmethod
     def layout(
         surface: pygame.Surface,
         camp: LumberCamp,
@@ -91,8 +95,11 @@ class LumberCampPanel:
         font = pygame.font.Font(None, 22)
         body = pygame.font.Font(None, 22)
         delivered = body.render(LumberCampPanel.delivered_line(camp), True, (200, 204, 214))
-        delivered_y = layout.toggle.top - 34
+        storage = body.render(LumberCampPanel.storage_line(camp), True, (200, 204, 214))
+        delivered_y = layout.toggle.top - 56
+        storage_y = layout.toggle.top - 30
         surface.blit(delivered, (layout.frame.left + _PANEL_PAD, delivered_y))
+        surface.blit(storage, (layout.frame.left + _PANEL_PAD, storage_y))
 
         active_bg = (84, 112, 84) if camp.active else (92, 64, 64)
         pygame.draw.rect(surface, active_bg, layout.toggle, border_radius=6)

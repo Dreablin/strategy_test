@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 11. Lumberjack chop cycle
-- **Next Task:** T91 — Add Phase 11 end-to-end smoke test
-- **Last Completed:** T90 — Clean up obsolete lumber passive behavior paths
-- **Total Progress:** 90 / 91
+- **Next Task:** None
+- **Last Completed:** T91 — Add Phase 11 end-to-end smoke test
+- **Total Progress:** 91 / 91
 
 ---
 
@@ -417,7 +417,7 @@
   - Search-and-prune obsolete tests that asserted the old passive Lumber Camp behavior.
   - Ensure `pytest -q` is clean and there is no lingering reference to the removed behavior.
 
-- [ ] **T91**: End-to-end smoke test in `tests/test_smoke_phase11.py`:
+- [x] **T91**: End-to-end smoke test in `tests/test_smoke_phase11.py`:
   1. Build a Lumber Camp; force a tree at a known free tile; hire a Lumberjack.
   2. Advance simulated time enough to: walk to tree, chop 10 s, walk back, deposit.
   3. Assert: tree gone from world, `+1` wood added, `camp.delivered_wood == 1`, worker reverted to next cycle (state `going_to_tree` or idle if no tree left).

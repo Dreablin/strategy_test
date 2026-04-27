@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 13. Performance optimisation & orthogonal pathfinding
-- **Next Task:** T136 — add failing render culling tests.
-- **Last Completed:** T135 — update tests for orthogonal-only pathing.
-- **Total Progress:** 135 / 148
+- **Next Task:** T137 — implement renderer viewport culling.
+- **Last Completed:** T136 — add failing render culling tests.
+- **Total Progress:** 136 / 148
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -248,7 +248,7 @@
 
 #### 13.3 Render viewport culling
 
-- [ ] **T136**: Add failing tests in `tests/test_render_culling.py`:
+- [x] **T136**: Add failing tests in `tests/test_render_culling.py`:
   - `Renderer.visible_tile_range(surface, world, camera)` returns
     `(gx_min, gy_min, gx_max, gy_max)` (max values inclusive), all clipped
     to `[0, world.width-1] × [0, world.height-1]`, widened by

@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 13. Performance optimisation & orthogonal pathfinding
-- **Next Task:** T130 — add blocked-tiles equivalence test.
-- **Last Completed:** T129 — use `world.blocked_tiles()` in worker manager paths.
-- **Total Progress:** 129 / 148
+- **Next Task:** T131 — add failing 4-direction pathfinding tests.
+- **Last Completed:** T130 — add blocked-tiles equivalence test.
+- **Total Progress:** 130 / 148
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -182,7 +182,7 @@
   - Run **the entire** test suite — green. No worker behaviour test should
     change.
 
-- [ ] **T130**: Add failing equivalence test in
+- [x] **T130**: Add failing equivalence test in
   `tests/test_workers_blocked_equivalence.py`:
   - Build a `World`, place 3 buildings, harvest one stone, leave others.
   - Compute `legacy = {(x, y) for y in range(world.height) for x in

@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 13. Performance optimisation & orthogonal pathfinding
-- **Next Task:** T142 — sort assignment targets by Manhattan distance.
-- **Last Completed:** T141 — add failing tests for localized worker assignment.
-- **Total Progress:** 141 / 148
+- **Next Task:** T143 — add failing perf-gate smoke test.
+- **Last Completed:** T142 — sort assignment targets by Manhattan distance.
+- **Total Progress:** 142 / 148
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -323,7 +323,7 @@
        tried at most 2 candidate buildings before locking the closest in).
   Tests must FAIL first.
 
-- [ ] **T142**: Modify `WorkerManager.reassign_all`:
+- [x] **T142**: Modify `WorkerManager.reassign_all`:
   - Sort `targets` by `manhattan(worker.current_tile,
     building_center_tile(target))` ascending before iterating.
   - Inside the loop, once a path is found, break — already done; just

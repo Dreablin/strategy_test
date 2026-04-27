@@ -349,6 +349,12 @@ class WorkerManager:
                 worker.camp_wait_until_ms = max(worker.camp_wait_until_ms, now_ms + rest_ms)
                 continue
             targets = [b for b in self._registry.all() if b.type_tag == want and not self.is_staffed(b)]
+            targets.sort(
+                key=lambda b: (
+                    abs(worker.current_tile[0] - building_center_tile(b)[0])
+                    + abs(worker.current_tile[1] - building_center_tile(b)[1])
+                )
+            )
             assigned = False
             blocked = world.blocked_tiles()
             # Workers may start on an occupied spawn tile (e.g., Town Hall center).

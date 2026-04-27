@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T122 — Add failing carrying-sprite tests for stonecutter
-- **Last Completed:** T121 — Implement StoneMine panel and input wiring
-- **Total Progress:** 121 / 125
+- **Next Task:** T123 — Implement stonecutter carrying-sprite loading + render use
+- **Last Completed:** T122 — Add failing carrying-sprite tests for stonecutter
+- **Total Progress:** 122 / 125
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -396,7 +396,7 @@
 
 #### 12.6 End-to-end smoke + cleanup
 
-- [ ] **T122**: Add failing carrying-sprite tests in `tests/test_assets.py`
+- [x] **T122**: Add failing carrying-sprite tests in `tests/test_assets.py`
   for the stonecutter:
   - `worker_dot("STONECUTTER", carrying=False)` and `(…, carrying=True)`
     return distinct surfaces.

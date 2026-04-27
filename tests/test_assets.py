@@ -73,6 +73,44 @@ def test_lumberjack_worker_dot_fallback_exists_for_empty_and_carrying(tmp_path, 
     clear_asset_caches()
 
 
+def test_stonecutter_worker_dot_supports_carrying_variant() -> None:
+    empty = worker_dot("STONECUTTER", carrying=False)
+    carrying = worker_dot("STONECUTTER", carrying=True)
+    _assert_nonempty_surface(empty)
+    _assert_nonempty_surface(carrying)
+    assert empty is not carrying
+
+
+def test_stonecutter_worker_dot_fallback_has_dedicated_stone_carry_helper(tmp_path, monkeypatch) -> None:
+    root = tmp_path / "npc"
+    monkeypatch.setattr(assets_mod, "_NPC_ROOT", root)
+    clear_asset_caches()
+
+    # Phase-12 contract: stonecutter carry fallback is a dedicated stone payload
+    # variant, not the generic carry box used by other workers.
+    assert hasattr(assets_mod, "_procedural_worker_carry_stone_dot")
+
+    empty = worker_dot("STONECUTTER", carrying=False)
+    carrying = worker_dot("STONECUTTER", carrying=True)
+    _assert_nonempty_surface(empty)
+    _assert_nonempty_surface(carrying)
+    clear_asset_caches()
+
+
+def test_stonecutter_worker_dot_prefers_stonecutter_folder_layout(tmp_path, monkeypatch) -> None:
+    root = tmp_path / "npc"
+    folder = root / "stonecutter"
+    _write_png(folder / "default.png", (11, 11), (20, 120, 160))
+    _write_png(folder / "carrying.png", (13, 13), (140, 140, 150))
+    monkeypatch.setattr(assets_mod, "_NPC_ROOT", root)
+    clear_asset_caches()
+    empty = worker_dot("STONECUTTER", carrying=False)
+    carrying = worker_dot("STONECUTTER", carrying=True)
+    assert empty.get_size() == (11, 11)
+    assert carrying.get_size() == (13, 13)
+    clear_asset_caches()
+
+
 def test_lumberjack_worker_dot_cache_invalidation_by_mtime(tmp_path, monkeypatch) -> None:
     root = tmp_path / "npc"
     folder = root / "lumberjack"

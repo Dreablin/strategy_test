@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T101 — Implement registry to worker bonus refresh
-- **Last Completed:** T100 — Add failing tests for registry upgrade side-effects
-- **Total Progress:** 100 / 111
+- **Next Task:** T102 — Add failing tests for building storage primitives
+- **Last Completed:** T101 — Implement registry to worker bonus refresh
+- **Total Progress:** 101 / 111
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -196,7 +196,7 @@
   - Demolish removes both bonus sources (move + gather) from the worker.
   Tests must FAIL first.
 
-- [ ] **T101**: Implement registry → worker bonus refresh:
+- [x] **T101**: Implement registry → worker bonus refresh:
   - In `BuildingRegistry.upgrade_building`, after `building.level += 1`,
     notify the `WorkerManager` (inject reference, or callback). The manager
     finds the staffed worker (if any) and calls

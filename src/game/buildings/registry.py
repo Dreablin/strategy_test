@@ -29,11 +29,16 @@ def _min_chebyshev_between_footprints(
 class BuildingRegistry:
     """Owns placed `Building` instances and mirrors their footprints on `World`."""
 
-    __slots__ = ("_buildings", "_world")
+    __slots__ = ("_buildings", "_world", "_worker_manager")
 
     def __init__(self, world: World) -> None:
         self._world = world
         self._buildings: list[Building] = []
+        self._worker_manager: WorkerManager | None = None
+
+    def bind_worker_manager(self, worker_manager: WorkerManager) -> None:
+        """Attach worker manager callbacks for upgrade-driven bonus refresh."""
+        self._worker_manager = worker_manager
 
     def all(self) -> list[Building]:
         return list(self._buildings)
@@ -141,6 +146,8 @@ class BuildingRegistry:
         if not resources.try_spend(cost):
             return False
         building.level += 1
+        if self._worker_manager is not None:
+            self._worker_manager.refresh_building_bonuses(building)
         self.sync_resources_per_cycle(resources, staffed_buildings=())
         return True
 

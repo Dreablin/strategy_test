@@ -159,6 +159,8 @@ class WorkerManager:
         self._registry = registry
         self._workers: list[Worker] = []
         self._now_ms_fn = now_ms_fn or (lambda: 0)
+        if registry is not None and hasattr(registry, "bind_worker_manager"):
+            registry.bind_worker_manager(self)
 
     def add_worker(self, worker: Worker) -> None:
         self._workers.append(worker)
@@ -346,6 +348,15 @@ class WorkerManager:
             self._clear_building_bonus(worker)
             if worker.assigned_building is not None and not worker.idle:
                 self._apply_building_bonus(worker, worker.assigned_building)
+
+    def refresh_building_bonuses(self, building: Building) -> None:
+        """Refresh permanent level bonuses for workers assigned to one building."""
+        for worker in self._workers:
+            if worker.assigned_building is not building:
+                continue
+            self._clear_building_bonus(worker)
+            if not worker.idle:
+                self._apply_building_bonus(worker, building)
 
     def _approach_tiles(self, building: Building) -> list[tuple[int, int]]:
         pos = building.grid_pos

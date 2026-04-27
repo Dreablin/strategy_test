@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 13. Performance optimisation & orthogonal pathfinding
-- **Next Task:** T141 — add failing tests for localized worker assignment.
-- **Last Completed:** T140 — replace render bounds/origin with closed-form corner-based versions.
-- **Total Progress:** 140 / 148
+- **Next Task:** T142 — sort assignment targets by Manhattan distance.
+- **Last Completed:** T141 — add failing tests for localized worker assignment.
+- **Total Progress:** 141 / 148
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -312,7 +312,7 @@
 
 #### 13.4 Localised worker assignment
 
-- [ ] **T141**: Add failing tests in `tests/test_workers_local_assignment.py`:
+- [x] **T141**: Add failing tests in `tests/test_workers_local_assignment.py`:
   - Place 1 idle worker and N=10 unstaffed buildings of the matching type
     spread across the world, with one of them obviously closer (Manhattan
     distance 3) than the rest (≥ 20).

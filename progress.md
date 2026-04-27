@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 13. Performance optimisation & orthogonal pathfinding
-- **Next Task:** T145 — cleanup pass and lint autofix.
-- **Last Completed:** T144 — fix perf-gate regressions without relaxing thresholds.
-- **Total Progress:** 144 / 148
+- **Next Task:** T146 — update PRD and decisions log for Phase 13 architecture.
+- **Last Completed:** T145 — cleanup pass and lint autofix.
+- **Total Progress:** 145 / 148
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -355,7 +355,7 @@
 
 #### 13.6 Cleanup, docs, end-of-phase smoke
 
-- [ ] **T145**: Cleanup pass:
+- [x] **T145**: Cleanup pass:
   - `grep -RIn "for y in range(world.height)" src/` and
     `grep -RIn "for x in range(world.width)" src/` MUST return zero hits.
   - Delete dead `_NEIGHBORS_8` symbols anywhere they remain.

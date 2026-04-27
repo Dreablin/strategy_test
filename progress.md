@@ -2,10 +2,10 @@
 
 ## Current Status
 
-- **Phase:** 10. Tree entities, blocking, layering
-- **Next Task:** None (all tasks complete)
-- **Last Completed:** T74 — Implement tree rendering pass
-- **Total Progress:** 74 / 74
+- **Phase:** 11. Lumberjack chop cycle
+- **Next Task:** T76 — Implement LumberCamp toggle and counter
+- **Last Completed:** T75 — Failing tests for LumberCamp toggle & deposit counter
+- **Total Progress:** 75 / 91
 
 ---
 
@@ -300,6 +300,130 @@
   - Preserve camera offset handling and stable painter order.
   - Add/adjust smoke test (phase-level) covering: movement blocking, placement-clears-tree, and occlusion.
   - After all tasks are `[x]`, output `<promise>ALL_TASKS_COMPLETE</promise>` and create `.cursor/ralph/done`.
+
+### Phase 11 — Lumberjack Chop Cycle
+
+> **Scope added by user:** Lumber Camp no longer passively produces wood. A staffed Lumber Camp dispatches its Lumberjack on a chop cycle: walk to a free tree → stand on adjacent free tile → chop for 10 s → carry wood back to its own camp → deposit `+1 wood` and disappear the tree. Each tree may be claimed by at most one Lumberjack. Lumber Camp gains an Active/Inactive toggle button: when inactive, no new expedition starts, but any already-running expedition completes. Lumber Camp panel shows a "Wood delivered: N" counter for that specific camp. Add two distinct lumberjack sprites: empty-handed (going to tree) and carrying-wood (returning). Tests must cover all of the above and old passive-income code for LUMBER_CAMP must be cleaned up.
+>
+> Constants/keys (suggested defaults; final names per implementation):
+>   - `CHOP_DURATION_MS = 10_000`
+>   - `LumberCamp.active: bool = True`
+>   - `LumberCamp.delivered_wood: int = 0`
+>   - Worker carrying flag: `worker.carrying = "wood" | None`
+>   - New worker states: `"going_to_tree"`, `"chopping"`, `"returning"` in addition to existing `idle`/`moving`/`working`.
+>   - Asset slots: `assets/npc/lumberjack/default.png` (empty), `assets/npc/lumberjack/carrying.png` (with wood). Procedural fallback for both.
+
+- [x] **T75**: Add failing tests for Lumber Camp toggle & delivered-wood counter in new `tests/test_lumber_camp_state.py`:
+  - `LumberCamp` instances default to `active is True` and `delivered_wood == 0`.
+  - `set_active(False)` flips the flag; flipping back to `True` is allowed.
+  - `delivered_wood` is increment-only via a dedicated method (e.g. `record_wood_delivered(n=1)`); negative values raise.
+  - Other building types (Farm, StoneMine, IronMine, TownHall) do NOT expose this API.
+
+- [ ] **T76**: Implement toggle and counter on `LumberCamp` (`src/game/buildings/lumber_camp.py`):
+  - Add `active: bool = True` and `delivered_wood: int = 0` (use `__slots__`).
+  - Add `set_active(value: bool)` and `record_wood_delivered(amount: int = 1)`.
+  - Keep `LumberCamp.income(level)` as `{}` (no passive production); regression: `Building.income` for other resource buildings unchanged.
+  - Run `pytest -q tests/test_lumber_camp_state.py` and ensure full suite still green.
+
+- [ ] **T77**: Add failing tests for tree reservation in new `tests/test_tree_reservation.py`:
+  - World/registry exposes `reserve_tree(gx, gy, worker)` and `release_tree(gx, gy)` (location TBD; recommend on `World`).
+  - A tree can be reserved by at most one worker; second reservation returns False.
+  - Reservation auto-releases when:
+    - the worker is reassigned to None / demolition,
+    - the tree is removed (chopped),
+    - the worker dies/idles for any reason.
+  - `find_free_tree(...)` skips reserved tiles.
+
+- [ ] **T78**: Implement tree reservation in `src/game/world.py` (and any helper module if needed):
+  - Add internal `_tree_reservations: dict[tuple[int,int], object]` mapping tile → worker id.
+  - Implement `reserve_tree`, `release_tree`, `is_tree_reserved`, `release_reservations_for(worker)`.
+  - Wire `World.remove_tree` to drop reservations for that tile.
+  - Add a helper `find_nearest_free_tree(world, from_tile, *, blocked, skip_reserved=True) -> tuple[int,int] | None` (BFS over walkable tiles; nearest alive non-reserved tree).
+  - Run new test file + full suite — all green.
+
+- [ ] **T79**: Add failing tests for the new Lumberjack state machine in new `tests/test_lumberjack_cycle_states.py`:
+  - Worker state transitions for LUMBERJACK assigned to an active LumberCamp:
+    `idle → going_to_tree → chopping → returning → depositing → going_to_tree (next cycle)`
+  - `worker.carrying` is `None` until chop is finished; becomes `"wood"` when leaving the chop tile, back to `None` after deposit.
+  - State transitions are deterministic given a fixed `now_ms_fn`.
+
+- [ ] **T80**: Implement new Lumberjack state machine in `src/game/workers.py`:
+  - Extend `Worker` with `carrying: str | None = None` and additional states.
+  - Add LUMBERJACK-specific dispatch in `WorkerManager.update(now_ms)` and `reassign_all()`:
+    - When idle and assigned to active LumberCamp: pick nearest free tree via `find_nearest_free_tree`, reserve it, set state `going_to_tree`, path to its approach tile.
+    - On arrival: set state `chopping`, store `chop_started_ms`.
+    - When `now_ms - chop_started_ms >= CHOP_DURATION_MS`: remove the tree from world, set `carrying = "wood"`, transition to `returning` with path back to camp's approach tile.
+    - On arrival back: state `depositing` for one tick, increment `camp.delivered_wood`, `resources.add("wood", 1)`, clear `carrying`, then either start next cycle (if camp.active) or go idle near camp.
+  - Other worker types unchanged.
+  - All other tests must remain green.
+
+- [ ] **T81**: Add failing tests for chopping interaction in `tests/test_lumberjack_cycle_chopping.py`:
+  - Tree exists, worker arrives at adjacent free tile.
+  - After exactly `CHOP_DURATION_MS`, tree disappears (`world.tree_at(...)` is None, blocking is False).
+  - Reservation is released for that tile; another lumberjack can target a different tree the same cycle.
+  - Demolishing the camp during `chopping` cancels the worker (state → idle, carrying=None, tree NOT removed before duration completes — but after chopping completes mid-flight, no deposit happens since camp is gone).
+
+- [ ] **T82**: Implement chopping completion logic in `WorkerManager.update`:
+  - Use `now_ms` boundary checks identical to `WORKER_TILE_TRAVEL_MS` style (deterministic).
+  - On chop completion: `world.remove_tree(tx, ty)` (which auto-releases reservation), set `carrying = "wood"`, recompute path back to camp.
+  - On demolition during chop / return / deposit: stop cycle, mark idle, drop reservation if held, set `carrying = None`. No deposit.
+
+- [ ] **T83**: Add failing tests for deposit and counter in `tests/test_lumberjack_cycle_deposit.py`:
+  - Wood is added to `ResourceManager` ONLY on deposit (not on chop, not on pickup).
+  - One full cycle adds exactly `+1` wood regardless of `LumberCamp.level` (passive income is gone).
+  - `LumberCamp.delivered_wood` increments by 1 per delivery.
+  - Multiple lumberjacks at multiple camps deposit independently into their own counters.
+
+- [ ] **T84**: Implement deposit in `WorkerManager` and remove passive Lumber Camp production:
+  - On `depositing` tick: `resources.add("wood", 1)`, `camp.record_wood_delivered(1)`.
+  - In `apply_production_tick` and `sync_resources_per_cycle`: do NOT count `LUMBER_CAMP` toward passive income (the loop already filters via `working_buildings()` + per-tick income; ensure `LumberCamp.income()` is `{}` and nothing else special-cases it).
+  - Sanity check: full test suite green; specifically the previous Phase 7 passive lumber tests are either updated (recommended) or removed (only if they truly assert deprecated behavior).
+
+- [ ] **T85**: Add failing tests for the Active toggle in `tests/test_lumber_camp_active_toggle.py`:
+  - Toggle False before assignment: lumberjack stays idle near camp; no expedition starts; `delivered_wood` stays 0.
+  - Toggle False during `going_to_tree`: worker continues, chops, deposits, then stops.
+  - Toggle False during `chopping`: chop completes, deposit happens, then stops.
+  - Toggle False during `returning`: deposit happens, then stops.
+  - Toggle False after deposit: no next cycle; worker remains idle at camp.
+  - Toggle back to True later: cycle resumes on the next reassignment update.
+
+- [ ] **T86**: Add failing asset tests in `tests/test_assets.py`:
+  - `worker_dot("LUMBERJACK", carrying=False)` returns the empty sprite.
+  - `worker_dot("LUMBERJACK", carrying=True)` returns the carrying sprite (different surface).
+  - Procedural fallback exists for both when files are missing.
+  - Cache invalidation works (mtime-based, like building sprites).
+
+- [ ] **T87**: Implement carrying sprite loading and render variant:
+  - Add `assets/npc/lumberjack/default.png` (already exists) and `assets/npc/lumberjack/carrying.png` (placeholder PNG generated procedurally if absent).
+  - Extend `assets.worker_dot(worker_type, carrying: bool = False)` (or a new `worker_carry_dot`); keep backward-compatible default.
+  - Update `Renderer.draw_workers` to use the carrying variant when `worker.carrying == "wood"`.
+  - Add a render smoke test verifying carrying lumberjack uses a different sprite than empty.
+
+- [ ] **T88**: Add failing UI tests in new `tests/test_lumber_camp_panel.py`:
+  - Lumber Camp panel layout exposes a Toggle button rect (e.g. `layout.toggle`).
+  - Toggle button label reflects current state ("Active" / "Inactive").
+  - Click on toggle returns `"toggle_active"`.
+  - Panel shows a "Wood delivered: N" line that mirrors `camp.delivered_wood`.
+  - Other building types (Farm, StoneMine, IronMine) do NOT show toggle/counter.
+
+- [ ] **T89**: Implement the Lumber Camp panel additions:
+  - Specialize `BuildingPanel` for `LUMBER_CAMP` (separate `LumberCampPanel` extending `BuildingPanel`, similar to `TownHallPanel`).
+  - Add toggle button + delivered counter line.
+  - Wire input handling in `GameInput` to dispatch `LUMBER_CAMP` clicks to `LumberCampPanel.click_action`; `"toggle_active"` calls `camp.set_active(not camp.active)` and triggers `worker_manager.reassign_all()`.
+
+- [ ] **T90**: Clean up obsolete code:
+  - Remove or generalize any code that assumed Lumber Camp emits `5×level` wood per tick.
+  - Remove now-unused fields/branches if any (e.g., dead-code paths after `LumberCamp.income()` returns `{}`).
+  - Search-and-prune obsolete tests that asserted the old passive Lumber Camp behavior.
+  - Ensure `pytest -q` is clean and there is no lingering reference to the removed behavior.
+
+- [ ] **T91**: End-to-end smoke test in `tests/test_smoke_phase11.py`:
+  1. Build a Lumber Camp; force a tree at a known free tile; hire a Lumberjack.
+  2. Advance simulated time enough to: walk to tree, chop 10 s, walk back, deposit.
+  3. Assert: tree gone from world, `+1` wood added, `camp.delivered_wood == 1`, worker reverted to next cycle (state `going_to_tree` or idle if no tree left).
+  4. Toggle camp Off mid-second-cycle; assert that the second cycle finishes, then no third cycle starts.
+  5. Two camps + two lumberjacks with one tree available: only one reserves; the other waits or picks a different tree if available.
+  6. After all tasks `[x]`, output `<promise>ALL_TASKS_COMPLETE</promise>` and create `.cursor/ralph/done`.
 
 ---
 

@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 10. Tree entities, blocking, layering
-- **Next Task:** T67 — Add failing path/movement tree-block tests
-- **Last Completed:** T66 — Integrate trees into world
-- **Total Progress:** 66 / 74
+- **Next Task:** T68 — Implement movement blocking by trees
+- **Last Completed:** T67 — Add failing path/movement tree-block tests
+- **Total Progress:** 67 / 74
 
 ---
 
@@ -251,7 +251,7 @@
   - Add world API: query, remove, optional iteration over alive trees.
   - Run targeted + full tests.
 
-- [ ] **T67**: Add failing path/movement tests in `tests/test_pathfinding.py` and `tests/test_workers.py`:
+- [x] **T67**: Add failing path/movement tests in `tests/test_pathfinding.py` and `tests/test_workers.py`:
   - BFS never steps onto alive tree tiles.
   - Worker route detours around tree-blocked cells when possible.
   - If tree removed, path can use that tile again.

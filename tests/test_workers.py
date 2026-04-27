@@ -7,6 +7,7 @@ from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
 from game.config import WORKER_HIRE_COST
 from game.resources import ResourceManager
+from game.trees import Tree, TreeStage
 from game.world import World
 from game.workers import Worker, WorkerManager, building_center_tile, town_hall_spawn_tile
 
@@ -351,3 +352,44 @@ def test_hire_miner_requires_town_hall_level_5() -> None:
     assert wm.hire("MINER") is None
     town_hall.level = 5
     assert wm.hire("MINER") is not None
+
+
+def test_reassign_all_detours_around_alive_tree_tile() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, (16, 16))
+    camp = registry.place(LumberCamp, (24, 24))
+    world._trees[(22, 22)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
+    wm = WorkerManager(resources, registry)
+    w = Worker("LUMBERJACK", stand_tile=(20, 20))
+    wm.add_worker(w)
+
+    wm.reassign_all()
+
+    assert w.assigned_building is camp
+    assert w.path
+    assert (22, 22) not in w.path
+
+
+def test_reassign_all_can_use_tile_after_tree_removed() -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, (16, 16))
+    registry.place(LumberCamp, (24, 24))
+    world._trees[(22, 22)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
+    wm = WorkerManager(resources, registry)
+    w = Worker("LUMBERJACK", stand_tile=(20, 20))
+    wm.add_worker(w)
+
+    wm.reassign_all()
+    assert (22, 22) not in w.path
+
+    w.assigned_building = None
+    w.idle = True
+    w.state = "idle"
+    w.path = []
+    world.remove_tree(22, 22)
+    wm.reassign_all()
+    assert (22, 22) in w.path

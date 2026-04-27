@@ -1,6 +1,7 @@
 """Failing pathfinding tests for Phase 9 (T56)."""
 
 from game.pathfinding import find_path_bfs
+from game.trees import Tree, TreeStage
 from game.world import World
 
 
@@ -62,3 +63,24 @@ def test_returns_none_when_goal_unreachable() -> None:
     path = find_path_bfs(world, (1, 1), goal, blocked)
 
     assert path is None
+
+
+def test_bfs_avoids_alive_tree_tiles() -> None:
+    world = World()
+    # Force a tree on the straight-line shortest route.
+    world._trees[(12, 10)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
+    path = find_path_bfs(world, (10, 10), (14, 10), blocked=set())
+    assert path is not None
+    assert (12, 10) not in path
+
+
+def test_tree_removed_tile_becomes_walkable_for_path() -> None:
+    world = World()
+    world._trees[(12, 10)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
+    blocked = {(12, 9), (12, 11)}
+    path_with_tree = find_path_bfs(world, (10, 10), (14, 10), blocked=blocked)
+    assert path_with_tree is None
+
+    world.remove_tree(12, 10)
+    path_after_remove = find_path_bfs(world, (10, 10), (14, 10), blocked=blocked)
+    assert path_after_remove is not None

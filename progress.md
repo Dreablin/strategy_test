@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T116 — Add failing tests for StoneMine state
-- **Last Completed:** T115 — Implement stone sprite asset + renderer pass
-- **Total Progress:** 115 / 125
+- **Next Task:** T117 — Implement StoneMine active toggle and counter
+- **Last Completed:** T116 — Add failing tests for StoneMine state
+- **Total Progress:** 116 / 125
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -343,7 +343,7 @@
 
 #### 12.5 Stonecutter active cycle
 
-- [ ] **T116**: Add failing tests for `StoneMine` state in new
+- [x] **T116**: Add failing tests for `StoneMine` state in new
   `tests/test_stone_mine_state.py`:
   - `StoneMine.active: bool = True`, `StoneMine.delivered_stone: int = 0`.
   - `set_active(False/True)` works; `record_stone_delivered(n)` is

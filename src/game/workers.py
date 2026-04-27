@@ -104,19 +104,20 @@ class Worker:
     def update(self, now_ms: int) -> None:
         if self.state not in {"moving", "going_to_tree", "returning"} or self.target_tile is None:
             return
+        travel_ms = self._effective_travel_ms()
         elapsed = max(0, int(now_ms) - self.segment_started_ms)
-        while elapsed >= WORKER_TILE_TRAVEL_MS:
+        while elapsed >= travel_ms:
             self.current_tile = self.target_tile
             self.path = self.path[1:] if self.path else []
             if len(self.path) >= 2:
                 self.target_tile = self.path[1]
-                self.segment_started_ms += WORKER_TILE_TRAVEL_MS
+                self.segment_started_ms += travel_ms
                 self.segment_progress = 0.0
                 elapsed = max(0, int(now_ms) - self.segment_started_ms)
                 continue
             self.target_tile = self.current_tile
             self.segment_progress = 1.0
-            self.arrival_ms = self.segment_started_ms + WORKER_TILE_TRAVEL_MS
+            self.arrival_ms = self.segment_started_ms + travel_ms
             if self.state == "going_to_tree":
                 self.state = "arrived_tree"
             elif self.state == "returning":
@@ -126,7 +127,13 @@ class Worker:
             self.idle = False
             self.stand_tile = self.current_tile
             return
-        self.segment_progress = elapsed / WORKER_TILE_TRAVEL_MS
+        self.segment_progress = elapsed / travel_ms
+
+    def _effective_travel_ms(self) -> int:
+        speed = self.characteristics.move_speed_mult
+        if speed <= 0.0:
+            return WORKER_TILE_TRAVEL_MS
+        return max(1, int(round(WORKER_TILE_TRAVEL_MS / speed)))
 
 
 class WorkerManager:

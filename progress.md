@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T97 — Apply move-speed multiplier in `Worker.update`
-- **Last Completed:** T96 — Add failing tests for movement-speed application
-- **Total Progress:** 96 / 111
+- **Next Task:** T98 — Add failing tests for gather-duration scaling
+- **Last Completed:** T97 — Apply move-speed multiplier in `Worker.update`
+- **Total Progress:** 97 / 111
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -160,7 +160,7 @@
     per tile.
   Tests must FAIL first.
 
-- [ ] **T97**: Update `Worker.update(now_ms)` (`src/game/workers.py`) to use the
+- [x] **T97**: Update `Worker.update(now_ms)` (`src/game/workers.py`) to use the
   effective per-tile duration:
   - `effective_travel_ms = max(1, int(round(WORKER_TILE_TRAVEL_MS /
     self.characteristics.move_speed_mult)))`.

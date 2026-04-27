@@ -39,7 +39,7 @@ def test_smoke_phase11_lumberjack_cycle_toggle_and_reservation() -> None:
     assert world.tree_at(*tree_a) is None or world.tree_at(*tree_b) is None
     assert resources.get("wood") == wood_before + 1
     assert camp.delivered_wood == 1
-    assert worker.state in {"going_to_tree", "idle"}
+    assert worker.state in {"going_to_tree", "working"}
 
     # 4) Toggle Off mid-second-cycle: second cycle finishes, no third starts.
     if worker.state == "idle":
@@ -55,7 +55,7 @@ def test_smoke_phase11_lumberjack_cycle_toggle_and_reservation() -> None:
     workers.update(now_ms[0])
     workers.update(now_ms[0] + 1)
     assert camp.delivered_wood == 2
-    assert worker.state == "idle"
+    assert worker.state == "working"
     assert worker.carrying is None
 
     # 5) Two camps + two lumberjacks with one tree: only one reservation owner.
@@ -72,6 +72,9 @@ def test_smoke_phase11_lumberjack_cycle_toggle_and_reservation() -> None:
     assert workers2.hire("LUMBERJACK") is not None
     assert workers2.hire("LUMBERJACK") is not None
     workers2.reassign_all()
+    # Both workers first walk to their respective camps; advance enough time for
+    # them to arrive and start their chop cycles.
+    workers2.update(120_000)
 
     reserved_by = [w for w in workers2.workers() if w.target_tree == lone_tree]
     assert len(reserved_by) == 1

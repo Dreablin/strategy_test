@@ -11,6 +11,7 @@ from game.render import Renderer
 from game.resources import ResourceManager
 from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT
 from game.ui.building_panel import BuildingPanel
+from game.ui.lumber_camp_panel import LumberCampPanel
 from game.ui.placement import PlacementController
 from game.ui.town_hall_panel import TownHallPanel
 from game.world import World
@@ -101,7 +102,9 @@ def test_close_button_closes_panel() -> None:
         surface,
         pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=_tile_center(surface, world, 22, 22)),
     )
-    layout = BuildingPanel.layout(surface, b, resources, worker_assigned=False)
+    # The panel is a LumberCamp panel, which is drawn with extra_bottom_px to fit
+    # the toggle row, so resolve the Close button against the matching layout.
+    layout = LumberCampPanel.layout(surface, b, resources, worker_assigned=False)
     cx, cy = layout.close.center
     inp.handle(surface, pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=(cx, cy)))
     assert inp.panel_building is None

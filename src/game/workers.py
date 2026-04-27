@@ -12,6 +12,7 @@ from game.resources import ResourceManager
 from game.world import find_nearest_free_tree
 
 CHOP_DURATION_MS = 10_000
+LUMBERJACK_REST_MS = 5_000
 
 
 def building_center_tile(building: Building) -> tuple[int, int]:
@@ -48,6 +49,8 @@ class Worker:
         "path",
         "segment_started_ms",
         "segment_progress",
+        "arrival_ms",
+        "camp_wait_until_ms",
         "carrying",
         "target_tree",
         "chop_started_ms",
@@ -64,6 +67,8 @@ class Worker:
         self.path: list[tuple[int, int]] = []
         self.segment_started_ms = 0
         self.segment_progress = 0.0
+        self.arrival_ms = 0
+        self.camp_wait_until_ms = 0
         self.carrying: str | None = None
         self.target_tree: tuple[int, int] | None = None
         self.chop_started_ms = 0
@@ -73,6 +78,7 @@ class Worker:
             self.path = [self.current_tile, self.current_tile]
             self.target_tile = self.current_tile
             self.segment_started_ms = int(started_ms)
+            self.arrival_ms = int(started_ms)
             self.segment_progress = 0.0
             if move_state == "going_to_tree":
                 self.state = "going_to_tree"
@@ -105,6 +111,7 @@ class Worker:
                 continue
             self.target_tile = self.current_tile
             self.segment_progress = 1.0
+            self.arrival_ms = self.segment_started_ms + WORKER_TILE_TRAVEL_MS
             if self.state == "going_to_tree":
                 self.state = "arrived_tree"
             elif self.state == "returning":
@@ -247,6 +254,7 @@ class WorkerManager:
                 w.segment_started_ms = 0
                 w.segment_progress = 0.0
                 w.state = "idle"
+                w.camp_wait_until_ms = 0
                 w.carrying = None
                 w.target_tree = None
                 w.chop_started_ms = 0
@@ -263,17 +271,16 @@ class WorkerManager:
             want = self._WORKER_TO_BUILDING.get(worker.type_tag)
             if want is None:
                 continue
+            # Lumberjack already at its camp (e.g., post-deposit with toggle off, then on):
+            # resume the chop cycle directly without walking back to the camp.
             if (
                 worker.type_tag == "LUMBERJACK"
                 and worker.assigned_building is not None
                 and worker.assigned_building.type_tag == want
             ):
                 camp = worker.assigned_building
-                if getattr(camp, "active", False):
-                    self._start_lumberjack_cycle(worker, camp, now_ms)
-                else:
-                    worker.idle = True
-                    worker.state = "idle"
+                self._park_lumberjack_inside_camp(worker, camp)
+                worker.camp_wait_until_ms = max(worker.camp_wait_until_ms, now_ms + LUMBERJACK_REST_MS)
                 continue
             targets = [b for b in self._registry.all() if b.type_tag == want and not self.is_staffed(b)]
             assigned = False
@@ -287,24 +294,6 @@ class WorkerManager:
             # Workers may start on an occupied spawn tile (e.g., Town Hall center).
             blocked.discard(worker.current_tile)
             for target in targets:
-                if worker.type_tag == "LUMBERJACK":
-                    worker.assigned_building = target
-                    if not getattr(target, "active", False):
-                        worker.idle = True
-                        worker.state = "idle"
-                        worker.path = []
-                        worker.target_tile = None
-                        worker.segment_progress = 0.0
-                        worker.carrying = None
-                        worker.target_tree = None
-                        worker.chop_started_ms = 0
-                        assigned = True
-                        break
-                    assigned = self._start_lumberjack_cycle(worker, target, now_ms)
-                    if assigned:
-                        break
-                    worker.assigned_building = None
-                    continue
                 best_path: list[tuple[int, int]] | None = None
                 for tile in self._approach_tiles(target):
                     path = find_path_bfs(world, worker.current_tile, tile, blocked)
@@ -325,6 +314,7 @@ class WorkerManager:
                 worker.path = []
                 worker.target_tile = None
                 worker.segment_progress = 0.0
+                worker.camp_wait_until_ms = 0
                 worker.carrying = None
                 worker.target_tree = None
                 worker.chop_started_ms = 0
@@ -369,6 +359,26 @@ class WorkerManager:
                 world.release_reservations_for(worker)
                 continue
 
+            # Lumberjack just walked into the camp: kick off the chop cycle from the
+            # actual arrival timestamp so leftover time in this tick still moves the
+            # worker further along the new (going_to_tree) path.
+            if worker.state == "working":
+                self._park_lumberjack_inside_camp(worker, camp)
+                if worker.camp_wait_until_ms <= 0:
+                    worker.camp_wait_until_ms = worker.arrival_ms + LUMBERJACK_REST_MS
+                if int(now_ms) < worker.camp_wait_until_ms:
+                    continue
+                if not getattr(camp, "active", False):
+                    continue
+                depart_ms = worker.camp_wait_until_ms
+                if not self._start_lumberjack_cycle(worker, camp, depart_ms):
+                    # No target tree/path right now: stay inside camp and retry later.
+                    self._park_lumberjack_inside_camp(worker, camp)
+                    worker.camp_wait_until_ms = int(now_ms) + 1_000
+                    continue
+                worker.camp_wait_until_ms = 0
+                worker.update(now_ms)
+
             if worker.state == "arrived_tree":
                 worker.state = "chopping"
                 worker.chop_started_ms = int(now_ms)
@@ -386,6 +396,7 @@ class WorkerManager:
                 continue
 
             if worker.state == "arrived_camp":
+                self._park_lumberjack_inside_camp(worker, camp)
                 worker.state = "depositing"
                 continue
 
@@ -397,14 +408,8 @@ class WorkerManager:
                 worker.carrying = None
                 worker.target_tree = None
                 worker.chop_started_ms = 0
-                if getattr(camp, "active", False):
-                    self._start_lumberjack_cycle(worker, camp, int(now_ms))
-                else:
-                    worker.idle = True
-                    worker.state = "idle"
-                    worker.path = []
-                    worker.target_tile = None
-                    worker.segment_progress = 0.0
+                self._park_lumberjack_inside_camp(worker, camp)
+                worker.camp_wait_until_ms = int(now_ms) + LUMBERJACK_REST_MS
 
     def _start_lumberjack_cycle(self, worker: Worker, camp: Building, now_ms: int) -> bool:
         if self._registry is None:
@@ -492,3 +497,16 @@ class WorkerManager:
             return False
         worker.start_move(best_path, started_ms=now_ms, move_state="returning")
         return True
+
+    def _park_lumberjack_inside_camp(self, worker: Worker, camp: Building) -> None:
+        world = getattr(self._registry, "_world", None) if self._registry is not None else None
+        if world is not None and world.is_occupied(*worker.current_tile):
+            approach_tiles = self._approach_tiles(camp)
+            if approach_tiles:
+                worker.current_tile = approach_tiles[0]
+        worker.stand_tile = worker.current_tile
+        worker.target_tile = worker.current_tile
+        worker.path = []
+        worker.segment_progress = 0.0
+        worker.idle = False
+        worker.state = "working"

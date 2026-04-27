@@ -139,9 +139,30 @@ class ResourceManager:
 
 ### F-WORLD — World
 
-- **F-WORLD-01 (MUST):** A 32×32 tile playable grass field, centered on screen.
-- **F-WORLD-02 (MUST):** A decorative tree border drawn outside the playable area (≥2 tiles thick on each side). Trees are visual only — they are not harvestable entities.
-- **F-WORLD-03 (MUST):** Town Hall is placed at grid (16,16) on game start.
+- **F-WORLD-01 (MUST):** A `GRID_SIZE × GRID_SIZE` tile playable grass field (currently 55×55 in `game_settings.json`), centered on screen. Camera pan is required to see the whole map.
+- **F-WORLD-02 (MUST, **revised**):** Trees are world-owned entities (Phase 10) that block movement and can be chopped (Phase 11). They appear in an edge band, dense near the border, with a center clearing wide enough to build several dozen buildings.
+- **F-WORLD-03 (MUST):** Town Hall is placed at the grid center (`GRID_SIZE // 2, GRID_SIZE // 2`) on game start.
+- **F-WORLD-04 (MUST):** Stone deposits (see `F-STONE`) generate during world initialization in addition to trees.
+
+### F-STONE — Stone Deposits
+
+- **F-STONE-01 (MUST):** A `Stone` is a per-tile world entity carrying `units: int` (default initial value `STONE_UNITS_PER_TILE = 15`). The `units` value is hidden from the UI; players never see a numeric value on the map.
+- **F-STONE-02 (MUST):** Stone tiles are **impassable** for pathfinding (same blocker treatment as alive trees and building footprints).
+- **F-STONE-03 (MUST):** Stone tiles are **un-buildable**: `BuildingRegistry.can_place` rejects placements whose footprint covers any stone tile. This is *unlike* trees, which auto-clear on placement.
+- **F-STONE-04 (MUST):** Trees never spawn on stone tiles (and vice-versa: stone generation skips tiles that already contain alive trees).
+- **F-STONE-05 (MUST):** Generation algorithm at world init:
+  1. Compute the set of valid stone-center tiles: in-grass, **Chebyshev distance ≥ 12** from any Town Hall footprint tile, not occupied, not on a tree.
+  2. Pick **3** centers at random (deterministically from a fixed seed for tests). If fewer valid candidates exist, pick as many as possible.
+  3. Around each center, pick a random radius `r ∈ [3, 6]` (Chebyshev). Fill **every** tile in the radius with a stone (units=15) provided the tile is in-grass, not a tree, not a building, not the Town Hall footprint, and not already a stone tile (idempotent merge).
+- **F-STONE-06 (MUST):** A stonecutter harvests by:
+  1. Walking from the camp to a tile **adjacent** (Chebyshev-1) to the chosen stone tile (the stonecutter cannot stand on the stone itself, since stones block movement).
+  2. Mining for `MINE_DURATION_MS` (default `10_000` ms, modulated by gather speed bonuses).
+  3. Decrementing the stone's `units` by 1; if `units` reaches 0, the stone is removed and the tile becomes plain walkable grass again.
+  4. Returning to the assigned `STONE_MINE` camp with `worker.carrying = "stone"`.
+  5. Depositing `+1 stone` into both the building's internal storage AND the global `ResourceManager`.
+- **F-STONE-07 (MUST):** Stone reservation works exactly like tree reservation: at most one worker may target a given stone tile at a time. Reservations are released on `release_reservations_for(worker)`, on demolition, on completion, and when the stone disappears.
+- **F-STONE-08 (MUST):** `assets/world/stone/default.png` is the placeholder asset (procedurally generated grey isometric pile if missing). Asset metadata supports `scale` and `anchor_norm` like buildings.
+- **F-STONE-09 (MUST):** Render order: stones draw with the same painter sort key as trees (anchor-bottom isometric; depth = `gx + gy`).
 
 ### F-BLD — Buildings (general)
 
@@ -220,8 +241,9 @@ class Building:
 - **F-UI-PANEL-02 (MUST):** Panel shows:
   - Building name + current level (`"Lumber Camp — Lv 3"`)
   - One-line description (e.g. `"Lumberjack chops trees for wood."`)
-  - Per-cycle income (`"+15 wood / 10 s"`)
-  - Worker status (`"Worker: assigned"` / `"Worker: empty"`)
+  - For producing buildings: an internal storage line `"Storage: stored / capacity"` (capacity = `3 + 2 × (L − 1)`) — see `F-STORE`.
+  - For Phase-11 active-cycle buildings (LUMBER_CAMP, STONE_MINE): the per-trip income line is informational only (`"+1 per delivery"`); legacy passive buildings (FARM, IRON_MINE) keep the `+5×level / 10 s` line.
+  - Worker status (`"Worker: assigned"` / `"Worker: empty"` / `"Worker: on the way"`).
   - **Upgrade** button with cost text (`"Upgrade to Lv 4 — 400 wood"`); disabled when level=10 or insufficient resources.
   - **Demolish** button (red).
   - Close [×] in top-right corner.
@@ -248,6 +270,32 @@ class Building:
 
 - **F-UPG-01 (MUST):** Upgrade deducts the resources (per F-BLD-05) and increments `level` by 1.
 - **F-UPG-02 (MUST):** Income is recalculated immediately; next cycle reflects new level.
+- **F-UPG-03 (MUST, **revised**):** For resource-producing buildings, leveling no longer increases passive `5 × level` income. Instead, each level beyond 1 grants the building's *staffed worker* the following permanent additive bonuses:
+  - **+5 % movement speed** per level above 1 (effective speed multiplier `1 + 0.05 × (level − 1)`, additive across other bonuses).
+  - **+5 % gathering speed** per level above 1 (chop, mine, harvest — applied to the duration of one cycle of work; e.g. level 3 ⇒ 10 % faster ⇒ chop time `CHOP_DURATION_MS / 1.10`).
+  - The bonus applies only while the worker is currently assigned to that building. On reassignment / demolition the bonus disappears.
+- **F-UPG-04 (MUST):** Town Hall remains non-upgradeable in the original sense (capped at level 1) **only** for the no-demolish/single-building rule; the actual Town Hall progression already implemented (levels 1..10 unlocking tech) stays as is.
+
+### F-CHAR — Worker Characteristics
+
+- **F-CHAR-01 (MUST):** Every worker has a `Characteristics` block with at least:
+  - `move_speed_mult: float` — multiplies `1 / WORKER_TILE_TRAVEL_MS` (i.e. effective travel time per tile = `WORKER_TILE_TRAVEL_MS / move_speed_mult`).
+  - `gather_speed_mult: float` — multiplies the cycle work rate (effective work duration = `WORK_BASE_MS / gather_speed_mult`).
+- **F-CHAR-02 (MUST):** Characteristics start at base `1.0`. Bonuses are accumulated **additively** in fixed-point fashion: a permanent +5 % from a level-2 building stacks with a separate temporary −10 % from some future debuff to give `1.0 + 0.05 − 0.10 = 0.95` (clamped at a positive minimum, e.g. `0.10`).
+- **F-CHAR-03 (MUST):** Two bonus categories MUST be supported:
+  - **Permanent** — tied to a stable source like the assigned building's level. Applied while the source is valid; removed on demolition/reassignment.
+  - **Temporary** — bound to an expiry timestamp; auto-expires at `now_ms ≥ expires_at_ms`.
+- **F-CHAR-04 (MUST):** Adding/removing bonuses is observable from tests: `worker.bonuses.add_permanent(source, kind, value)`, `worker.bonuses.add_temporary(kind, value, expires_at_ms)`, `worker.bonuses.remove_source(source)`. The `Characteristics` derived multipliers are recomputed lazily or on-mutation.
+- **F-CHAR-05 (MUST):** A LUMBERJACK assigned to a level-`L` Lumber Camp MUST always reflect bonuses `+0.05 × (L − 1)` to both `move_speed_mult` and `gather_speed_mult` from the source `("building_level", camp_id)`. Same rule applies to STONECUTTER, MINER, and FARMER once they have active gathering.
+
+### F-STORE — Production Building Internal Storage
+
+- **F-STORE-01 (MUST):** Every resource-producing building (`LUMBER_CAMP`, `STONE_MINE`, `IRON_MINE`, `FARM`) has an internal storage with a typed slot count and a `stored: int` counter (units currently held).
+- **F-STORE-02 (MUST):** Storage capacity scales with level: `capacity(L) = 3 + 2 × (L − 1)` (so 3 at L1, 5 at L2, … 21 at L10).
+- **F-STORE-03 (MUST):** A worker assigned to such a building MUST NOT start a new gathering cycle when `stored >= capacity(level)`. The worker waits inside the building until storage drops below capacity.
+- **F-STORE-04 (MUST):** Each completed gathering cycle deposits `+1` into the building's internal storage, **and** also adds `+1` to the global `ResourceManager` (this matches the current Lumber Camp behaviour). Future phases will move resources off-site to free up storage; this phase only fills it up.
+- **F-STORE-05 (MUST):** The building's panel shows a `Storage: stored / capacity` line. For `LumberCamp` the existing `Wood delivered: N` counter remains as a separate lifetime counter.
+- **F-STORE-06 (SHOULD):** The storage lines for FARM / STONE_MINE / IRON_MINE appear in their respective panels (`BuildingPanel`, generic) using `building.stored` and `building.storage_capacity()`.
 
 ### F-WORK — Workers
 
@@ -271,12 +319,16 @@ class Building:
 - **F-WORK-09 (MUST):** If a building is demolished while a worker is moving to it or working in it, that worker transitions to idle at its current tile and may be reassigned.
 - **F-WORK-10 (MUST):** Workers are visualized as small dots moving smoothly between tile centers (interpolated position each frame).
 - **F-WORK-11 (MUST):** The Town Hall does not consume a worker slot itself.
+- **F-WORK-12 (MUST):** STONECUTTER follows the same active-cycle state machine as LUMBERJACK (Phase 11) but on stone tiles instead of trees. States: `idle → moving (to camp) → working (rest) → going_to_stone → mining → returning → arrived_camp → depositing → working`. The `worker.carrying` flag carries `"stone"` instead of `"wood"` on the way back. Mining duration is `MINE_DURATION_MS` (gather-speed-bonus-aware).
+- **F-WORK-13 (SHOULD):** MINER and FARMER currently keep passive `5 × level` production (legacy income), **but** their internal storage gates production: a tick that would deposit when `stored >= capacity` is skipped. They will gain active gather cycles in a future phase (out of scope for Phase 12).
 
 ### F-PROD — Production
 
-- **F-PROD-01 (MUST):** Every 10 s, for every building with an assigned worker in `working` state:
-  `resources[building.resource] += 5 × building.level`
+- **F-PROD-01 (MUST, **revised**):** Production is no longer a flat `5 × level` per tick.
+  - For `LUMBER_CAMP` (Phase 11) and `STONE_MINE` (Phase 12): production happens on each completed gather cycle (`+1` resource, modulated by worker gather-speed bonuses), not per tick.
+  - For `FARM` and `IRON_MINE` (legacy): keep `5 × level` per tick **only while** internal storage has free space, otherwise no production this tick. (Active-cycle rework planned for a future phase.)
 - **F-PROD-02 (MUST):** Production is atomic per-tick (no fractional accumulation between ticks).
+- **F-PROD-03 (MUST):** All production also fills the source building's internal storage (F-STORE).
 
 ### F-INPUT — Input
 
@@ -407,19 +459,23 @@ Renderer.draw_buildings(surface, world, registry, camera=None) -> None
 
 The full ordered task list is the source of truth in `progress.md`. Summary:
 
-| Phase                          | Tasks    |
-|--------------------------------|----------|
-| 1. Project foundation          | T01–T07  |
-| 2. Resources & top bar         | T08–T11  |
-| 3. World & rendering           | T12–T15  |
-| 4. Buildings & placement       | T16–T25  |
-| 5. Building panel & actions    | T26–T30  |
-| 6. Workers                     | T31–T36  |
-| 7. Production, polish, package | T37–T42  |
-| 8. Render fixes & camera pan   | T43–T51  |
-| 9. Worker movement & spacing   | T52–T62  |
+| Phase                                  | Tasks    | Status     |
+|----------------------------------------|----------|------------|
+| 1. Project foundation                  | T01–T07  | done       |
+| 2. Resources & top bar                 | T08–T13  | done       |
+| 3. World & rendering                   | T14–T17  | done       |
+| 4. Buildings & placement               | T18–T25  | done       |
+| 5. Building panel & actions            | T26–T30  | done       |
+| 6. Workers                             | T31–T36  | done       |
+| 7. Production, polish, package         | T37–T42  | done       |
+| 8. Render fixes & camera pan           | T43–T51  | done       |
+| 9. Worker movement & spacing           | T52–T62  | done       |
+| 10. Tree entities & layering           | T63–T74  | done       |
+| 11. Lumberjack chop cycle              | T75–T91  | done       |
+| 12. Level bonuses, storage, stones     | T92+     | in-progress |
 
-42 atomic tasks total. See `progress.md`.
+Phases 1–10 are summarised in `progress_archive.md`. Live phases (11+) live in
+`progress.md`. See `progress.md` for the canonical task list.
 
 ---
 
@@ -442,14 +498,18 @@ into the final `.exe`, so the end user needs nothing preinstalled.
 ## 9. Out of Scope
 
 - Save / load, main menu, options screen, audio, music, sound effects.
-- Pathfinding, animated worker movement (workers teleport).
 - Combat, enemies, fog of war, day/night cycle.
 - Multiplayer, networking.
 - Localization (English only in UI).
 - Mod support.
-- Camera zoom / rotation / panning (camera is fixed).
-- Tree harvesting (trees are decorative).
+- Camera zoom / rotation (panning is supported via RMB drag).
 - Mac / Linux builds.
+
+### Out of scope for Phase 12 specifically
+
+- Active gather cycles for FARMER and MINER (they remain passive within a storage-capped tick; activation cycles will be added in a later phase together with farm fields and iron veins).
+- Off-site resource transport from production buildings (storage just fills up; pickup carts come later).
+- Stone respawn / regrowth — when a stone tile is depleted, it stays plain grass.
 
 ---
 

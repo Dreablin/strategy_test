@@ -147,10 +147,11 @@ class Renderer:
 
         ox, oy = Renderer.map_origin(surface, world)
         cam_x, cam_y = (0, 0) if camera is None else camera.offset
+        moving_states = {"moving", "going_to_tree", "returning"}
         entries: list[tuple[str, bool, float, float]] = []
         for worker in worker_manager.workers():
             carrying = worker.carrying == "wood"
-            if worker.state == "moving" and worker.target_tile is not None:
+            if worker.state in moving_states and worker.target_tile is not None:
                 cx, cy = worker.current_tile
                 tx, ty = worker.target_tile
                 t = max(0.0, min(1.0, worker.segment_progress))

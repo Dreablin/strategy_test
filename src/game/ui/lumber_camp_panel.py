@@ -111,16 +111,10 @@ class LumberCampPanel:
         *,
         worker_assigned: bool,
     ) -> str | None:
-        # Accept both default base panel hit targets (legacy tests) and expanded panel layout.
-        base_action = BuildingPanel.click_action(
-            surface,
-            pos,
-            camp,
-            resources,
-            worker_assigned=worker_assigned,
-        )
-        if base_action is not None:
-            return base_action
+        # Match the actually rendered layout: the panel is drawn with `extra_bottom_px`,
+        # so we MUST resolve hit-targets against that same extended frame. Calling the
+        # base resolver with the default (smaller) frame mis-maps clicks on Upgrade
+        # to Demolish (regression: lumber camp vanished on level-up).
         base_action = BuildingPanel.click_action(
             surface,
             pos,

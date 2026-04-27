@@ -73,7 +73,8 @@ def test_smoke_phase9_worker_moves_and_production_gates() -> None:
     workers.reassign_all()
     worker = workers.workers()[0]
     assert worker.assigned_building is camp
-    assert worker.state == "going_to_tree"
+    # Lumberjack first walks to the camp; the chop cycle starts on arrival.
+    assert worker.state == "moving"
 
     # 3) Advance simulated time: worker must move and eventually reach approach tile.
     start_tile = worker.current_tile

@@ -29,11 +29,15 @@ def _setup_two_tree_cycle():
 def test_chop_duration_removes_tree_and_releases_reservation() -> None:
     now_ms, world, _resources, _registry, _camp, workers, worker = _setup_two_tree_cycle()
 
-    tree_tile = worker.target_tree
-    assert tree_tile is not None
+    # Right after reassign_all the worker is still walking to the camp.
+    assert worker.state == "moving"
+    assert worker.target_tree is None
+
     now_ms[0] += 120_000
     workers.update(now_ms[0])
     assert worker.state == "chopping"
+    tree_tile = worker.target_tree
+    assert tree_tile is not None
     assert world.tree_at(*tree_tile) is not None
 
     now_ms[0] += CHOP_DURATION_MS
@@ -50,12 +54,16 @@ def test_second_lumberjack_can_target_another_tree_same_cycle() -> None:
     worker_b = workers.hire("LUMBERJACK")
     assert worker_b is not None
     workers.reassign_all()
+
+    now_ms[0] += 120_000
+    workers.update(now_ms[0])
+
+    # Both workers have reached their respective camps and started chopping
+    # on distinct tree targets.
     assert worker_a.target_tree is not None
     assert worker_b.target_tree is not None
     assert worker_a.target_tree != worker_b.target_tree
 
-    now_ms[0] += 120_000
-    workers.update(now_ms[0])
     now_ms[0] += CHOP_DURATION_MS
     workers.update(now_ms[0])
 
@@ -68,11 +76,11 @@ def test_second_lumberjack_can_target_another_tree_same_cycle() -> None:
 def test_demolish_during_chopping_cancels_without_tree_cut_or_deposit() -> None:
     now_ms, world, resources, registry, camp, workers, worker = _setup_two_tree_cycle()
 
-    tree_tile = worker.target_tree
-    assert tree_tile is not None
     now_ms[0] += 120_000
     workers.update(now_ms[0])
     assert worker.state == "chopping"
+    tree_tile = worker.target_tree
+    assert tree_tile is not None
 
     registry.demolish(camp, workers)
     assert worker.state == "idle"

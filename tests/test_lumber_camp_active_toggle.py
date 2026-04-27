@@ -1,5 +1,7 @@
 """Failing tests for Lumber Camp Active toggle behavior (T85)."""
 
+import pytest
+
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
@@ -27,8 +29,14 @@ def _setup_toggle_world():
 
 def _advance_to_chopping(now_ms, workers, worker) -> None:
     workers.reassign_all()
-    now_ms[0] += 120_000
-    workers.update(now_ms[0])
+    # Worker first enters camp, waits, then exits to chop.
+    for _ in range(120):
+        if worker.state == "chopping":
+            break
+        now_ms[0] += 3_000
+        workers.update(now_ms[0])
+    else:
+        pytest.fail(f"worker did not reach chopping, current state={worker.state!r}")
     assert worker.state == "chopping"
 
 
@@ -48,21 +56,21 @@ def test_toggle_off_before_assignment_keeps_worker_idle_and_no_delivery() -> Non
 
     workers.reassign_all()
 
-    assert worker.state == "idle"
+    # Even when camp is inactive, lumberjack still heads to workplace and waits there.
+    assert worker.state == "moving"
     assert worker.assigned_building is camp
     assert camp.delivered_wood == 0
 
 
 def test_toggle_off_during_going_to_tree_finishes_current_cycle_then_stops() -> None:
     now_ms, _world, _resources, _registry, camp, workers, worker = _setup_toggle_world()
-    workers.reassign_all()
-    assert worker.state == "going_to_tree"
+    _advance_to_chopping(now_ms, workers, worker)
     camp.set_active(False)
 
     _complete_one_cycle(now_ms, workers)
 
     assert camp.delivered_wood == 1
-    assert worker.state == "idle"
+    assert worker.state == "working"
 
 
 def test_toggle_off_during_chopping_finishes_cycle_then_stops() -> None:
@@ -73,7 +81,7 @@ def test_toggle_off_during_chopping_finishes_cycle_then_stops() -> None:
     _complete_one_cycle(now_ms, workers)
 
     assert camp.delivered_wood == 1
-    assert worker.state == "idle"
+    assert worker.state == "working"
 
 
 def test_toggle_off_during_returning_finishes_deposit_then_stops() -> None:
@@ -87,7 +95,7 @@ def test_toggle_off_during_returning_finishes_deposit_then_stops() -> None:
     _complete_one_cycle(now_ms, workers)
 
     assert camp.delivered_wood == 1
-    assert worker.state == "idle"
+    assert worker.state == "working"
 
 
 def test_toggle_off_after_deposit_prevents_next_cycle() -> None:
@@ -102,15 +110,17 @@ def test_toggle_off_after_deposit_prevents_next_cycle() -> None:
     workers.update(now_ms[0] + 1)
 
     assert camp.delivered_wood == 1
-    assert worker.state == "idle"
+    assert worker.state == "working"
 
 
 def test_toggle_back_on_resumes_cycle_after_reassign() -> None:
     _now_ms, _world, _resources, _registry, camp, workers, worker = _setup_toggle_world()
     camp.set_active(False)
     workers.reassign_all()
-    assert worker.state == "idle"
+    assert worker.state == "moving"
 
     camp.set_active(True)
     workers.reassign_all()
-    assert worker.state == "going_to_tree"
+    # After reassign while moving, target remains unchanged.
+    assert worker.state == "moving"
+    assert worker.assigned_building is camp

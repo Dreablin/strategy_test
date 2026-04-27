@@ -167,12 +167,13 @@ def test_reassign_all_sets_moving_path_to_reachable_approach_tile() -> None:
     wm.reassign_all()
 
     assert w.assigned_building is camp
-    assert w.state == "going_to_tree"
+    assert w.state == "moving"
     assert len(w.path) >= 2
     assert w.path[0] == (20, 20)
     end = w.path[-1]
     assert not world.is_occupied(*end)
-    assert w.target_tree is not None
+    # Tree is only picked after the lumberjack reaches the camp.
+    assert w.target_tree is None
 
 
 def test_reassign_all_uses_current_time_for_move_start_no_first_frame_teleport() -> None:
@@ -262,7 +263,7 @@ def test_demolish_moving_worker_becomes_idle_at_current_tile() -> None:
     wm.add_worker(w)
     wm.reassign_all()
     assert w.assigned_building is camp
-    assert w.state == "going_to_tree"
+    assert w.state == "moving"
 
     wm.update(1_500)
     before = w.current_tile
@@ -287,11 +288,11 @@ def test_reassign_all_does_not_retarget_worker_already_moving() -> None:
     wm.reassign_all()
     first_target = w.assigned_building
     assert first_target in {camp_a, camp_b}
-    assert w.state == "going_to_tree"
+    assert w.state == "moving"
 
     wm.reassign_all()
     assert w.assigned_building is first_target
-    assert w.state == "going_to_tree"
+    assert w.state == "moving"
 
 
 def test_reassign_all_one_slot_two_workers_only_one_assigned() -> None:
@@ -388,5 +389,8 @@ def test_reassign_all_can_use_tile_after_tree_removed() -> None:
     w.path = []
     world.remove_tree(22, 22)
     wm.reassign_all()
+    # After tree removal the worker can again walk toward the camp; tree target is
+    # only picked once the lumberjack has actually reached the camp.
     assert w.target_tree is None
-    assert w.idle
+    assert not w.idle
+    assert w.state == "moving"

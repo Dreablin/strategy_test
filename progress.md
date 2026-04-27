@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T110 — Add failing tests for deterministic stone generation
-- **Last Completed:** T109 — Implement stone model and world stone APIs
-- **Total Progress:** 109 / 111
+- **Next Task:** T111 — Implement deterministic world stone generation
+- **Last Completed:** T110 — Add failing tests for deterministic stone generation
+- **Total Progress:** 110 / 111
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -286,7 +286,7 @@
     to a more generic `_resource_reservations` or keep a parallel dict —
     consistent with existing design.
 
-- [ ] **T110**: Add failing tests for stone generation in
+- [x] **T110**: Add failing tests for stone generation in
   `tests/test_world.py`:
   - With a fixed seed, exactly 3 generation centres are picked, all in
     grass, all at Chebyshev ≥ 12 from any Town Hall footprint tile.

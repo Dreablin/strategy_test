@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T108 — Add failing tests for stone domain model
-- **Last Completed:** T107 — Implement storage line rendering in panels
-- **Total Progress:** 107 / 111
+- **Next Task:** T109 — Implement stone model and world stone APIs
+- **Last Completed:** T108 — Add failing tests for stone domain model
+- **Total Progress:** 108 / 111
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -264,7 +264,7 @@
 
 #### 12.4 Stones on the map
 
-- [ ] **T108**: Add failing tests for the stone domain object in new
+- [x] **T108**: Add failing tests for the stone domain object in new
   `tests/test_stones.py`:
   - `Stone` model with `units: int = 15`, `harvest()` decrements by 1 and
     returns the new value; `harvest()` raises if `units == 0`.

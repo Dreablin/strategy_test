@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 13. Performance optimisation & orthogonal pathfinding
-- **Next Task:** T131 — add failing 4-direction pathfinding tests.
-- **Last Completed:** T130 — add blocked-tiles equivalence test.
-- **Total Progress:** 130 / 148
+- **Next Task:** T132 — switch pathfinding BFS to 4-direction.
+- **Last Completed:** T131 — add failing 4-direction pathfinding tests.
+- **Total Progress:** 131 / 148
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -196,7 +196,7 @@
 
 #### 13.2 Pathfinding: 4-direction only
 
-- [ ] **T131**: Add failing tests in `tests/test_pathfinding_4dir.py`:
+- [x] **T131**: Add failing tests in `tests/test_pathfinding_4dir.py`:
   - On an empty 6×6 world, `find_path_bfs(world, (0, 0), (3, 3), set())`
     returns a path whose length equals `Manhattan((0,0),(3,3)) + 1` = 7.
   - Every consecutive pair `(p[i], p[i+1])` satisfies

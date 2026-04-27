@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T96 — Add failing tests for movement-speed application
-- **Last Completed:** T95 — Wire `Characteristics` into `Worker`
-- **Total Progress:** 95 / 111
+- **Next Task:** T97 — Apply move-speed multiplier in `Worker.update`
+- **Last Completed:** T96 — Add failing tests for movement-speed application
+- **Total Progress:** 96 / 111
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -149,7 +149,7 @@
 
 #### 12.2 Apply level bonuses to movement and gather speed
 
-- [ ] **T96**: Add failing tests for movement-speed application in
+- [x] **T96**: Add failing tests for movement-speed application in
   `tests/test_worker_movement.py`:
   - With `move_speed_mult == 1.0`, traversing one tile takes
     `WORKER_TILE_TRAVEL_MS` (already covered).

@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 11. Lumberjack chop cycle
-- **Next Task:** T86 — Add failing asset tests for carrying Lumberjack sprite
-- **Last Completed:** T85 — Add failing tests for Lumber Camp Active toggle
-- **Total Progress:** 85 / 91
+- **Next Task:** T87 — Implement carrying sprite loading/render variant
+- **Last Completed:** T86 — Add failing carrying sprite asset tests
+- **Total Progress:** 86 / 91
 
 ---
 
@@ -387,7 +387,7 @@
   - Toggle False after deposit: no next cycle; worker remains idle at camp.
   - Toggle back to True later: cycle resumes on the next reassignment update.
 
-- [ ] **T86**: Add failing asset tests in `tests/test_assets.py`:
+- [x] **T86**: Add failing asset tests in `tests/test_assets.py`:
   - `worker_dot("LUMBERJACK", carrying=False)` returns the empty sprite.
   - `worker_dot("LUMBERJACK", carrying=True)` returns the carrying sprite (different surface).
   - Procedural fallback exists for both when files are missing.

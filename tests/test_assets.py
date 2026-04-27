@@ -54,6 +54,41 @@ def test_worker_dot_smoke() -> None:
         _assert_nonempty_surface(worker_dot(w_type))
 
 
+def test_lumberjack_worker_dot_supports_carrying_variant() -> None:
+    empty = worker_dot("LUMBERJACK", carrying=False)
+    carrying = worker_dot("LUMBERJACK", carrying=True)
+    _assert_nonempty_surface(empty)
+    _assert_nonempty_surface(carrying)
+    assert empty is not carrying
+
+
+def test_lumberjack_worker_dot_fallback_exists_for_empty_and_carrying(tmp_path, monkeypatch) -> None:
+    root = tmp_path / "npc"
+    monkeypatch.setattr(assets_mod, "_NPC_ROOT", root)
+    clear_asset_caches()
+    empty = worker_dot("LUMBERJACK", carrying=False)
+    carrying = worker_dot("LUMBERJACK", carrying=True)
+    _assert_nonempty_surface(empty)
+    _assert_nonempty_surface(carrying)
+    clear_asset_caches()
+
+
+def test_lumberjack_worker_dot_cache_invalidation_by_mtime(tmp_path, monkeypatch) -> None:
+    root = tmp_path / "npc"
+    folder = root / "lumberjack"
+    _write_png(folder / "default.png", (10, 10), (10, 120, 10))
+    _write_png(folder / "carrying.png", (12, 12), (120, 10, 10))
+    monkeypatch.setattr(assets_mod, "_NPC_ROOT", root)
+    clear_asset_caches()
+    first = worker_dot("LUMBERJACK", carrying=True)
+    assert first.get_size() == (12, 12)
+
+    _write_png(folder / "carrying.png", (18, 18), (120, 10, 10))
+    second = worker_dot("LUMBERJACK", carrying=True)
+    assert second.get_size() == (18, 18)
+    clear_asset_caches()
+
+
 def test_resource_icon_smoke() -> None:
     for name in ("food", "wood", "stone", "iron"):
         _assert_nonempty_surface(resource_icon(name))

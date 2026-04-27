@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 11. Lumberjack chop cycle
-- **Next Task:** T89 — Implement Lumber Camp panel additions
-- **Last Completed:** T88 — Add failing UI tests for Lumber Camp panel
-- **Total Progress:** 88 / 91
+- **Next Task:** T90 — Clean up obsolete lumber passive behavior paths
+- **Last Completed:** T89 — Implement Lumber Camp panel additions
+- **Total Progress:** 89 / 91
 
 ---
 
@@ -406,7 +406,7 @@
   - Panel shows a "Wood delivered: N" line that mirrors `camp.delivered_wood`.
   - Other building types (Farm, StoneMine, IronMine) do NOT show toggle/counter.
 
-- [ ] **T89**: Implement the Lumber Camp panel additions:
+- [x] **T89**: Implement the Lumber Camp panel additions:
   - Specialize `BuildingPanel` for `LUMBER_CAMP` (separate `LumberCampPanel` extending `BuildingPanel`, similar to `TownHallPanel`).
   - Add toggle button + delivered counter line.
   - Wire input handling in `GameInput` to dispatch `LUMBER_CAMP` clicks to `LumberCampPanel.click_action`; `"toggle_active"` calls `camp.set_active(not camp.active)` and triggers `worker_manager.reassign_all()`.

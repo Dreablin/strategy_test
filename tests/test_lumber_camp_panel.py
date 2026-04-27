@@ -21,9 +21,7 @@ def test_lumber_camp_layout_exposes_toggle_rect() -> None:
 
 
 def test_lumber_camp_toggle_label_reflects_active_state() -> None:
-    surface = pygame.Surface((800, 600))
     camp = LumberCamp(level=1, grid_pos=(10, 10))
-    resources = ResourceManager()
 
     camp.set_active(True)
     assert LumberCampPanel.toggle_label(camp) == "Active"
@@ -44,9 +42,7 @@ def test_lumber_camp_click_toggle_returns_toggle_action() -> None:
 
 
 def test_lumber_camp_panel_shows_delivered_counter_line() -> None:
-    surface = pygame.Surface((800, 600))
     camp = LumberCamp(level=1, grid_pos=(10, 10))
-    resources = ResourceManager()
     camp.record_wood_delivered(7)
 
     assert LumberCampPanel.delivered_line(camp) == "Wood delivered: 7"

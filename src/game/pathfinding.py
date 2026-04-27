@@ -38,9 +38,15 @@ def find_path_bfs(
     blocked: set[tuple[int, int]],
 ) -> list[tuple[int, int]] | None:
     """Return inclusive `[start..goal]` path, or `None` when unreachable."""
+    def is_walkable(tile: tuple[int, int]) -> bool:
+        x, y = tile
+        return world.is_in_grass(x, y) and tile not in blocked and not world.is_tree_blocking(x, y)
+
     if not world.is_in_grass(*start) or not world.is_in_grass(*goal):
         return None
     if start != goal and (start in blocked or goal in blocked):
+        return None
+    if start != goal and (world.is_tree_blocking(*start) or world.is_tree_blocking(*goal)):
         return None
     if start == goal:
         return [start]
@@ -57,9 +63,7 @@ def find_path_bfs(
             nx, ny = cx + dx, cy + dy
             nxt = (nx, ny)
 
-            if not world.is_in_grass(nx, ny):
-                continue
-            if nxt in blocked:
+            if not is_walkable(nxt):
                 continue
             if nxt in came_from:
                 continue
@@ -69,8 +73,8 @@ def find_path_bfs(
             if dx != 0 and dy != 0:
                 side_a = (cx + dx, cy)
                 side_b = (cx, cy + dy)
-                a_walkable = world.is_in_grass(*side_a) and side_a not in blocked
-                b_walkable = world.is_in_grass(*side_b) and side_b not in blocked
+                a_walkable = is_walkable(side_a)
+                b_walkable = is_walkable(side_b)
                 if not (a_walkable or b_walkable):
                     continue
 

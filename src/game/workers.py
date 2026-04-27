@@ -245,6 +245,7 @@ class WorkerManager:
                 for x in range(world.width)
                 if world.is_occupied(x, y)
             }
+            blocked.update({(x, y) for (x, y), _tree in world.iter_alive_trees()})
             # Workers may start on an occupied spawn tile (e.g., Town Hall center).
             blocked.discard(worker.current_tile)
             for target in targets:
@@ -289,6 +290,8 @@ class WorkerManager:
                 if not world.is_in_grass(x, y):
                     continue
                 if world.is_occupied(x, y):
+                    continue
+                if world.is_tree_blocking(x, y):
                     continue
                 tiles.append((x, y))
         return tiles

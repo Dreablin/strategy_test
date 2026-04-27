@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 10. Tree entities, blocking, layering
-- **Next Task:** T68 — Implement movement blocking by trees
-- **Last Completed:** T67 — Add failing path/movement tree-block tests
-- **Total Progress:** 67 / 74
+- **Next Task:** T69 — Add failing placement tree-clear tests
+- **Last Completed:** T68 — Implement movement blocking by trees
+- **Total Progress:** 68 / 74
 
 ---
 
@@ -257,7 +257,7 @@
   - If tree removed, path can use that tile again.
   Tests must FAIL first.
 
-- [ ] **T68**: Implement movement blocking by trees:
+- [x] **T68**: Implement movement blocking by trees:
   - In pathfinding walkability checks, treat alive tree tiles as blocked (like buildings).
   - Keep existing no-corner-cutting and deterministic neighbor order intact.
   - Ensure worker movement/regression suite remains green.

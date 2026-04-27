@@ -77,10 +77,11 @@ def test_bfs_avoids_alive_tree_tiles() -> None:
 def test_tree_removed_tile_becomes_walkable_for_path() -> None:
     world = World()
     world._trees[(12, 10)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
-    blocked = {(12, 9), (12, 11)}
+    blocked = {(x, 9) for x in range(world.width)} | {(x, 11) for x in range(world.width)}
     path_with_tree = find_path_bfs(world, (10, 10), (14, 10), blocked=blocked)
     assert path_with_tree is None
 
     world.remove_tree(12, 10)
     path_after_remove = find_path_bfs(world, (10, 10), (14, 10), blocked=blocked)
     assert path_after_remove is not None
+    assert (12, 10) in path_after_remove

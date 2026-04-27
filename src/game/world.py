@@ -73,10 +73,9 @@ class World:
                 if abs(gx - cx) <= 3 and abs(gy - cy) <= 3:
                     continue
                 edge_dist = min(gx, gy, GRID_SIZE - 1 - gx, GRID_SIZE - 1 - gy)
-                if edge_dist > 4:
+                if edge_dist != 0:
                     continue
                 seed = gx * 92821 + gy * 68917 + GRID_SIZE * 37
-                # Denser near edge, still deterministic and varied.
-                threshold = 92 - (edge_dist * 12)
-                if (seed % 100) < threshold:
+                # Sparse deterministic border trees to avoid cluttering gameplay interior.
+                if (seed % 100) < 35:
                     self._trees[(gx, gy)] = Tree(stage=stage_from_tile_seed(seed))

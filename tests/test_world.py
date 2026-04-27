@@ -95,3 +95,22 @@ def test_stone_generation_is_deterministic_for_fresh_world() -> None:
     a_tiles = sorted((pos, stone.units) for pos, stone in a.iter_stones())
     b_tiles = sorted((pos, stone.units) for pos, stone in b.iter_stones())
     assert a_tiles == b_tiles
+
+
+def test_tree_generation_picks_three_grove_centers_far_from_town_hall() -> None:
+    world = World()
+    assert len(world._tree_centers) == 3  # noqa: SLF001
+    town_hall_tiles = {(x, y) for y in range(16, 19) for x in range(16, 19)}
+    for cx, cy in world._tree_centers:  # noqa: SLF001
+        assert world.is_in_grass(cx, cy)
+        assert not world.is_stone_blocking(cx, cy)
+        min_dist = min(max(abs(cx - tx), abs(cy - ty)) for tx, ty in town_hall_tiles)
+        assert min_dist >= 12
+
+
+def test_tree_generation_is_deterministic_for_fresh_world() -> None:
+    a = World()
+    b = World()
+    a_trees = sorted((pos, tree.stage) for pos, tree in a.iter_alive_trees())
+    b_trees = sorted((pos, tree.stage) for pos, tree in b.iter_alive_trees())
+    assert a_trees == b_trees

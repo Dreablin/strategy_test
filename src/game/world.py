@@ -10,9 +10,12 @@ from game.config import GRID_SIZE
 from game.stones import Stone
 from game.trees import Tree, stage_from_tile_seed
 
-_TREE_EDGE_BAND = 8
 _STONE_CENTER_COUNT = 3
+_TREE_GROVE_COUNT = 3
 _STONE_MIN_DISTANCE_FROM_TOWN_HALL = 12
+_TREE_GROVE_RADIUS_MIN = 3
+_TREE_GROVE_RADIUS_MAX = 6
+_TREE_GROVE_FILL_PROBABILITY = 0.8
 _NEIGHBORS_4: tuple[tuple[int, int], ...] = (
     (0, -1),
     (1, 0),
@@ -120,6 +123,7 @@ class World:
         "_tree_reservations",
         "_stone_reservations",
         "_stone_centers",
+        "_tree_centers",
     )
 
     def __init__(self) -> None:
@@ -135,6 +139,7 @@ class World:
         self._tree_reservations: dict[tuple[int, int], object] = {}
         self._stone_reservations: dict[tuple[int, int], object] = {}
         self._stone_centers: list[tuple[int, int]] = []
+        self._tree_centers: list[tuple[int, int]] = []
         self._init_stones()
         self._init_trees()
 
@@ -285,48 +290,38 @@ class World:
                     self._blocked_tiles.discard(tile)
 
     def _init_trees(self) -> None:
-        cx = GRID_SIZE // 2
-        cy = GRID_SIZE // 2
+        rng = random.Random(GRID_SIZE * 91_237 + 43)
+        self._tree_centers = _pick_far_cluster_centers(
+            self, _TREE_GROVE_COUNT, rng, forbid_stone_center=True
+        )
+        mid = GRID_SIZE // 2
         center_clear_radius = max(8, GRID_SIZE // 4)
-        for gy in range(GRID_SIZE):
-            for gx in range(GRID_SIZE):
-                if max(abs(gx - cx), abs(gy - cy)) <= center_clear_radius:
-                    continue
-                edge_dist = min(gx, gy, GRID_SIZE - 1 - gx, GRID_SIZE - 1 - gy)
-                if edge_dist >= _TREE_EDGE_BAND:
-                    continue
-                if self.is_stone_blocking(gx, gy):
-                    continue
-                seed = gx * 92821 + gy * 68917 + GRID_SIZE * 37
-                noise = self._tile_noise(gx, gy)
-                # Dense near border, still populated deeper into 5-8 edge rows.
-                # edge_dist=0 -> 0.78, edge_dist=7 -> 0.42
-                threshold = 0.78 - (0.36 * (edge_dist / (_TREE_EDGE_BAND - 1)))
-                if noise < threshold:
-                    tile = (gx, gy)
-                    self._trees[tile] = Tree(stage=stage_from_tile_seed(seed))
+        for cx, cy in self._tree_centers:
+            radius = rng.randint(_TREE_GROVE_RADIUS_MIN, _TREE_GROVE_RADIUS_MAX)
+            for y in range(cy - radius, cy + radius + 1):
+                for x in range(cx - radius, cx + radius + 1):
+                    if not self.is_in_grass(x, y):
+                        continue
+                    if max(abs(x - mid), abs(y - mid)) <= center_clear_radius:
+                        continue
+                    if max(abs(x - cx), abs(y - cy)) > radius:
+                        continue
+                    if self.is_stone_blocking(x, y):
+                        continue
+                    if (x, y) in self._trees:
+                        continue
+                    if rng.random() >= _TREE_GROVE_FILL_PROBABILITY:
+                        continue
+                    seed = x * 92821 + y * 68917 + GRID_SIZE * 37
+                    self._trees[(x, y)] = Tree(stage=stage_from_tile_seed(seed))
 
     def _init_stones(self) -> None:
         rng = random.Random(GRID_SIZE * 104_729 + 17)
-        self._stone_centers = []
+        self._stone_centers = _pick_far_cluster_centers(
+            self, _STONE_CENTER_COUNT, rng, forbid_stone_center=False
+        )
         mid = GRID_SIZE // 2
         center_clear_radius = max(8, GRID_SIZE // 4)
-        protected = {(x, y) for y in range(16, 19) for x in range(16, 19)}
-        candidates = [(x, y) for y in range(GRID_SIZE) for x in range(GRID_SIZE)]
-        rng.shuffle(candidates)
-        for cx, cy in candidates:
-            if len(self._stone_centers) >= _STONE_CENTER_COUNT:
-                break
-            if max(abs(cx - mid), abs(cy - mid)) <= center_clear_radius:
-                continue
-            if any(
-                max(abs(cx - tx), abs(cy - ty)) < _STONE_MIN_DISTANCE_FROM_TOWN_HALL
-                for tx, ty in protected
-            ):
-                continue
-            if not self.is_in_grass(cx, cy):
-                continue
-            self._stone_centers.append((cx, cy))
 
         for cx, cy in self._stone_centers:
             radius = rng.randint(1, 4)
@@ -345,16 +340,42 @@ class World:
                     tile = (x, y)
                     self._stones[tile] = Stone()
 
-    @staticmethod
-    def _tile_noise(gx: int, gy: int) -> float:
-        """Stable pseudo-random [0,1) value per tile with low visible patterns."""
-        n = (gx * 0x9E3779B1) ^ (gy * 0x85EBCA77) ^ 0xC2B2AE3D
-        n ^= n >> 16
-        n = (n * 0x7FEB352D) & 0xFFFFFFFF
-        n ^= n >> 15
-        n = (n * 0x846CA68B) & 0xFFFFFFFF
-        n ^= n >> 16
-        return n / 0x100000000
+
+def _town_hall_footprint_tiles() -> set[tuple[int, int]]:
+    """Town Hall is placed at (16, 16) with footprint 3×3 in `main.py`."""
+    return {(x, y) for y in range(16, 19) for x in range(16, 19)}
+
+
+def _pick_far_cluster_centers(
+    world: World,
+    count: int,
+    rng: random.Random,
+    *,
+    forbid_stone_center: bool,
+) -> list[tuple[int, int]]:
+    """Pick up to `count` grass tiles outside the build clearing, Chebyshev ≥ TH distance."""
+    mid = GRID_SIZE // 2
+    center_clear_radius = max(8, GRID_SIZE // 4)
+    protected = _town_hall_footprint_tiles()
+    candidates = [(x, y) for y in range(GRID_SIZE) for x in range(GRID_SIZE)]
+    rng.shuffle(candidates)
+    centers: list[tuple[int, int]] = []
+    for cx, cy in candidates:
+        if len(centers) >= count:
+            break
+        if max(abs(cx - mid), abs(cy - mid)) <= center_clear_radius:
+            continue
+        if any(
+            max(abs(cx - tx), abs(cy - ty)) < _STONE_MIN_DISTANCE_FROM_TOWN_HALL
+            for tx, ty in protected
+        ):
+            continue
+        if not world.is_in_grass(cx, cy):
+            continue
+        if forbid_stone_center and world.is_stone_blocking(cx, cy):
+            continue
+        centers.append((cx, cy))
+    return centers
 
 
 def find_nearest_free_tree(

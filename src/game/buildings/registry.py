@@ -71,6 +71,8 @@ class BuildingRegistry:
             return False
         if self._world_footprint_overlaps_occupied(gx, gy, w, h):
             return False
+        if self._world_footprint_overlaps_stones(gx, gy, w, h):
+            return False
         # Require at least one empty tile between any two footprints.
         min_allowed = 2
         for b in self._buildings:
@@ -164,5 +166,12 @@ class BuildingRegistry:
         for ty in range(gy, gy + h):
             for tx in range(gx, gx + w):
                 if self._world.is_occupied(tx, ty):
+                    return True
+        return False
+
+    def _world_footprint_overlaps_stones(self, gx: int, gy: int, w: int, h: int) -> bool:
+        for ty in range(gy, gy + h):
+            for tx in range(gx, gx + w):
+                if self._world.is_stone_blocking(tx, ty):
                     return True
         return False

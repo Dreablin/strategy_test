@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T113 — Treat stones as blockers in pathfinding/registry
-- **Last Completed:** T112 — Add failing tests for stone blocking in movement/placement
-- **Total Progress:** 112 / 125
+- **Next Task:** T114 — Add failing render tests for stones
+- **Last Completed:** T113 — Treat stones as blockers in pathfinding/registry
+- **Total Progress:** 113 / 125
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -318,7 +318,7 @@
   - `BuildingRegistry.place` does NOT remove stones (unlike trees).
   Tests must FAIL first.
 
-- [ ] **T113**: Update pathfinding (`src/game/pathfinding.py`) and registry
+- [x] **T113**: Update pathfinding (`src/game/pathfinding.py`) and registry
   (`src/game/buildings/registry.py`) to treat stones as blockers and
   un-buildable. Run all tests — green.
 

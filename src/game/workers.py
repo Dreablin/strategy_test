@@ -311,6 +311,7 @@ class WorkerManager:
                 if world.is_occupied(x, y)
             }
             blocked.update({(x, y) for (x, y), _tree in world.iter_alive_trees()})
+            blocked.update({(x, y) for (x, y), _stone in world.iter_stones()})
             # Workers may start on an occupied spawn tile (e.g., Town Hall center).
             blocked.discard(worker.current_tile)
             for target in targets:

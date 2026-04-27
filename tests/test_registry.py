@@ -200,15 +200,15 @@ def test_cannot_place_when_footprint_covers_stone_tile() -> None:
     assert not registry.can_place(LumberCamp, (10, 10))
 
 
-def test_place_does_not_remove_stones_in_footprint() -> None:
+def test_rejected_place_does_not_remove_stones_in_footprint() -> None:
     from game.stones import Stone
 
     world = World()
     world._stones.clear()  # noqa: SLF001
     registry = BuildingRegistry(world)
     world._stones[(10, 10)] = Stone()  # noqa: SLF001
-    placed = registry.place(LumberCamp, (10, 10))
-    assert placed is not None
+    with pytest.raises(ValueError):
+        registry.place(LumberCamp, (10, 10))
     assert world.stone_at(10, 10) is not None
 
 

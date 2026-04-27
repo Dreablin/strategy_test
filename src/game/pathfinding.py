@@ -40,13 +40,23 @@ def find_path_bfs(
     """Return inclusive `[start..goal]` path, or `None` when unreachable."""
     def is_walkable(tile: tuple[int, int]) -> bool:
         x, y = tile
-        return world.is_in_grass(x, y) and tile not in blocked and not world.is_tree_blocking(x, y)
+        return (
+            world.is_in_grass(x, y)
+            and tile not in blocked
+            and not world.is_tree_blocking(x, y)
+            and not world.is_stone_blocking(x, y)
+        )
 
     if not world.is_in_grass(*start) or not world.is_in_grass(*goal):
         return None
     if start != goal and (start in blocked or goal in blocked):
         return None
-    if start != goal and (world.is_tree_blocking(*start) or world.is_tree_blocking(*goal)):
+    if start != goal and (
+        world.is_tree_blocking(*start)
+        or world.is_tree_blocking(*goal)
+        or world.is_stone_blocking(*start)
+        or world.is_stone_blocking(*goal)
+    ):
         return None
     if start == goal:
         return [start]

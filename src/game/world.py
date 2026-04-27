@@ -181,12 +181,16 @@ class World:
     def _init_stones(self) -> None:
         rng = random.Random(GRID_SIZE * 104_729 + 17)
         self._stone_centers = []
+        mid = GRID_SIZE // 2
+        center_clear_radius = max(8, GRID_SIZE // 4)
         protected = {(x, y) for y in range(16, 19) for x in range(16, 19)}
         candidates = [(x, y) for y in range(GRID_SIZE) for x in range(GRID_SIZE)]
         rng.shuffle(candidates)
         for cx, cy in candidates:
             if len(self._stone_centers) >= _STONE_CENTER_COUNT:
                 break
+            if max(abs(cx - mid), abs(cy - mid)) <= center_clear_radius:
+                continue
             if any(
                 max(abs(cx - tx), abs(cy - ty)) < _STONE_MIN_DISTANCE_FROM_TOWN_HALL
                 for tx, ty in protected
@@ -201,6 +205,8 @@ class World:
             for y in range(cy - radius, cy + radius + 1):
                 for x in range(cx - radius, cx + radius + 1):
                     if not self.is_in_grass(x, y):
+                        continue
+                    if max(abs(x - mid), abs(y - mid)) <= center_clear_radius:
                         continue
                     if max(abs(x - cx), abs(y - cy)) > radius:
                         continue

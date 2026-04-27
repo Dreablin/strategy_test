@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 11. Lumberjack chop cycle
-- **Next Task:** T83 — Add failing tests for deposit and counter
-- **Last Completed:** T82 — Implement chopping completion logic
-- **Total Progress:** 82 / 91
+- **Next Task:** T84 — Implement deposit in WorkerManager and remove passive Lumber Camp production
+- **Last Completed:** T83 — Add deposit and counter coverage
+- **Total Progress:** 83 / 91
 
 ---
 
@@ -368,7 +368,7 @@
   - On chop completion: `world.remove_tree(tx, ty)` (which auto-releases reservation), set `carrying = "wood"`, recompute path back to camp.
   - On demolition during chop / return / deposit: stop cycle, mark idle, drop reservation if held, set `carrying = None`. No deposit.
 
-- [ ] **T83**: Add failing tests for deposit and counter in `tests/test_lumberjack_cycle_deposit.py`:
+- [x] **T83**: Add failing tests for deposit and counter in `tests/test_lumberjack_cycle_deposit.py`:
   - Wood is added to `ResourceManager` ONLY on deposit (not on chop, not on pickup).
   - One full cycle adds exactly `+1` wood regardless of `LumberCamp.level` (passive income is gone).
   - `LumberCamp.delivered_wood` increments by 1 per delivery.

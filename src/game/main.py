@@ -79,6 +79,7 @@ def main() -> int:
             Renderer.draw_world(screen, world, camera)
             Renderer.draw_buildings(screen, world, registry, camera)
             Renderer.draw_workers(screen, world, registry, worker_manager, camera)
+            Renderer.draw_trees(screen, world, camera)
             TopBar.draw(screen, resources)
             BottomBar.draw(screen, resources)
             placement.draw(screen, camera)

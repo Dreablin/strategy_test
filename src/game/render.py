@@ -1,15 +1,21 @@
-"""Isometric world drawing (grass field and decorative tree skirt)."""
+"""Isometric world drawing with buildings, workers, and tree layering."""
 
 import pygame
 
-from game.assets import building_sprite, building_sprite_anchor, grass_tile, tree_tile
+from game.assets import (
+    building_sprite,
+    building_sprite_anchor,
+    grass_tile,
+    tree_sprite,
+    tree_tile,
+)
 from game.buildings.registry import BuildingRegistry
 from game.config import TILE_H, TILE_W
 from game.iso import world_to_screen
 from game.world import World
 from game.workers import WorkerManager, building_center_tile
 
-_TREE_RING_TILES = 2
+_EDGE_TREE_BAND = 6
 
 
 def _compute_grass_origin(surface: pygame.Surface, world: World) -> tuple[int, int]:
@@ -29,7 +35,7 @@ def _compute_grass_origin(surface: pygame.Surface, world: World) -> tuple[int, i
 
 
 class Renderer:
-    """Draws the static grass map plus an outer ring of non-playable tree tiles."""
+    """Draws the grass map, buildings, workers, and tree sprites."""
 
     @staticmethod
     def map_origin(surface: pygame.Surface, world: World) -> tuple[int, int]:
@@ -38,14 +44,11 @@ class Renderer:
 
     @staticmethod
     def world_pixel_bounds(world: World) -> tuple[int, int, int, int]:
-        """World bounds in pre-centered pixel space including tree-skirt tiles."""
-        lo = -_TREE_RING_TILES
-        hi_w = world.width + _TREE_RING_TILES
-        hi_h = world.height + _TREE_RING_TILES
+        """World bounds in pre-centered pixel space for playable grass field."""
         min_x = min_y = 10**9
         max_x = max_y = -10**9
-        for gx in range(lo, hi_w):
-            for gy in range(lo, hi_h):
+        for gx in range(world.width):
+            for gy in range(world.height):
                 sx, sy = world_to_screen(gx, gy)
                 min_x = min(min_x, sx)
                 min_y = min(min_y, sy)
@@ -54,25 +57,45 @@ class Renderer:
         return (min_x, min_y, max_x, max_y)
 
     @staticmethod
+    def has_edge_tree(world: World, gx: int, gy: int) -> bool:
+        """Deterministic, pseudo-random tree placement concentrated near map edges."""
+        if not world.is_in_grass(gx, gy):
+            return False
+        edge_dist = min(gx, gy, world.width - 1 - gx, world.height - 1 - gy)
+        if edge_dist >= _EDGE_TREE_BAND:
+            return False
+
+        cx = world.width // 2
+        cy = world.height // 2
+        center_clear_radius = max(8, min(world.width, world.height) // 5)
+        if max(abs(gx - cx), abs(gy - cy)) <= center_clear_radius:
+            return False
+
+        # Dense at edge, thinner toward inner band.
+        # edge_dist=0 -> ~45%, edge_dist=5 -> ~15%
+        threshold = max(0.15, 0.45 - 0.06 * edge_dist)
+        h = ((gx * 73856093) ^ (gy * 19349663)) & 1023
+        return (h / 1023.0) < threshold
+
+    @staticmethod
     def draw_world(surface: pygame.Surface, world: World, camera=None) -> None:
         origin_x, origin_y = Renderer.map_origin(surface, world)
         cam_x, cam_y = (0, 0) if camera is None else camera.offset
-        lo = -_TREE_RING_TILES
-        hi_w = world.width + _TREE_RING_TILES
-        hi_h = world.height + _TREE_RING_TILES
 
-        cells: list[tuple[int, int, bool]] = []
-        for gx in range(lo, hi_w):
-            for gy in range(lo, hi_h):
-                cells.append((gx, gy, world.is_in_grass(gx, gy)))
+        cells: list[tuple[int, int]] = []
+        for gx in range(world.width):
+            for gy in range(world.height):
+                cells.append((gx, gy))
         cells.sort(key=lambda c: (c[0] + c[1], c[0]))
 
         g_tile = grass_tile()
         t_tile = tree_tile()
-        for gx, gy, in_grass in cells:
+        for gx, gy in cells:
             sx, sy = world_to_screen(gx, gy)
-            tile = g_tile if in_grass else t_tile
-            surface.blit(tile, (origin_x + cam_x + sx, origin_y + cam_y + sy))
+            px, py = origin_x + cam_x + sx, origin_y + cam_y + sy
+            surface.blit(g_tile, (px, py))
+            if Renderer.has_edge_tree(world, gx, gy):
+                surface.blit(t_tile, (px, py))
 
     @staticmethod
     def draw_buildings(
@@ -176,3 +199,16 @@ class Renderer:
             px = ox + cam_x + sx + TILE_W // 2 - dot.get_width() // 2
             py = oy + cam_y + sy + TILE_H // 2 - dot.get_height() // 2
             surface.blit(dot, (px, py))
+
+    @staticmethod
+    def draw_trees(surface: pygame.Surface, world: World, camera=None) -> None:
+        """Draw world-owned trees as tall sprites anchored at tile bottom-center."""
+        ox, oy = Renderer.map_origin(surface, world)
+        cam_x, cam_y = (0, 0) if camera is None else camera.offset
+        entries = sorted(world.iter_alive_trees(), key=lambda item: (item[0][0] + item[0][1], item[0][0]))
+        for (gx, gy), tree in entries:
+            sx, sy = world_to_screen(gx, gy)
+            spr = tree_sprite(tree.stage.name.lower())
+            px = ox + cam_x + sx + TILE_W // 2 - spr.get_width() // 2
+            py = oy + cam_y + sy + TILE_H - spr.get_height()
+            surface.blit(spr, (px, py))

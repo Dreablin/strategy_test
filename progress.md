@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 10. Tree entities, blocking, layering
-- **Next Task:** T74 — Implement tree rendering pass
-- **Last Completed:** T73 — Add failing render-layer tests
-- **Total Progress:** 73 / 74
+- **Next Task:** None (all tasks complete)
+- **Last Completed:** T74 — Implement tree rendering pass
+- **Total Progress:** 74 / 74
 
 ---
 
@@ -294,7 +294,7 @@
   - Workers in front of tree remain visible.
   Tests must FAIL first.
 
-- [ ] **T74**: Implement tree rendering pass in `src/game/render.py`:
+- [x] **T74**: Implement tree rendering pass in `src/game/render.py`:
   - Introduce combined depth ordering for dynamic occlusion (at minimum: ensure trees can draw over workers behind them).
   - Use world tree entities + `assets.tree_sprite(stage)` with anchor support.
   - Preserve camera offset handling and stable painter order.

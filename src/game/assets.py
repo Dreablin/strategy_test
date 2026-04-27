@@ -83,7 +83,9 @@ def _procedural_tree_sprite(stage: str) -> pygame.Surface:
 @functools.lru_cache(maxsize=32)
 def tree_sprite(stage: str) -> pygame.Surface:
     """Load stage tree sprite from disk, fallback to procedural."""
-    stage_key = stage.lower().strip()
+    stage_key = str(stage).lower().strip()
+    if "." in stage_key:
+        stage_key = stage_key.split(".")[-1]
     loaded = _load_png(str(_TREES_ROOT / stage_key / "default.png"))
     if loaded is not None:
         return loaded

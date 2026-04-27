@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 11. Lumberjack chop cycle
-- **Next Task:** T85 — Add failing tests for Active toggle behavior
-- **Last Completed:** T84 — Implement deposit in WorkerManager and remove passive Lumber Camp production
-- **Total Progress:** 84 / 91
+- **Next Task:** T86 — Add failing asset tests for carrying Lumberjack sprite
+- **Last Completed:** T85 — Add failing tests for Lumber Camp Active toggle
+- **Total Progress:** 85 / 91
 
 ---
 
@@ -379,7 +379,7 @@
   - In `apply_production_tick` and `sync_resources_per_cycle`: do NOT count `LUMBER_CAMP` toward passive income (the loop already filters via `working_buildings()` + per-tick income; ensure `LumberCamp.income()` is `{}` and nothing else special-cases it).
   - Sanity check: full test suite green; specifically the previous Phase 7 passive lumber tests are either updated (recommended) or removed (only if they truly assert deprecated behavior).
 
-- [ ] **T85**: Add failing tests for the Active toggle in `tests/test_lumber_camp_active_toggle.py`:
+- [x] **T85**: Add failing tests for the Active toggle in `tests/test_lumber_camp_active_toggle.py`:
   - Toggle False before assignment: lumberjack stays idle near camp; no expedition starts; `delivered_wood` stays 0.
   - Toggle False during `going_to_tree`: worker continues, chops, deposits, then stops.
   - Toggle False during `chopping`: chop completes, deposit happens, then stops.

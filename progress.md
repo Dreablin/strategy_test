@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 12. Level bonuses, internal storage, stones
-- **Next Task:** T124 — End-to-end smoke for phase 12
-- **Last Completed:** T123 — Implement stonecutter carrying sprites + render wiring
-- **Total Progress:** 123 / 125
+- **Next Task:** T125 — Cleanup pass
+- **Last Completed:** T124 — Add phase 12 end-to-end smoke suite
+- **Total Progress:** 124 / 125
 
 > Phases 1–10 are summarised in `progress_archive.md`. Phase 11 stays here for
 > ralph-loop input context (it is the immediate precursor to Phase 12). When
@@ -409,7 +409,7 @@
   carrying variant when `worker.carrying == "stone"`. Run render tests —
   green.
 
-- [ ] **T124**: End-to-end smoke `tests/test_smoke_phase12.py`
+- [x] **T124**: End-to-end smoke `tests/test_smoke_phase12.py`
   (`SDL_VIDEODRIVER=dummy`):
   1. World boots with 3 stone clusters, all ≥ 12 tiles from the Town Hall.
   2. Build a Stone Mine adjacent to a stone cluster; placement on stone

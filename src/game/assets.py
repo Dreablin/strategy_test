@@ -11,6 +11,7 @@ from game.config import TILE_H, TILE_W
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _ASSETS_ROOT = _PROJECT_ROOT / "assets"
 _BUILDINGS_ROOT = _ASSETS_ROOT / "buildings"
+_TREES_ROOT = _ASSETS_ROOT / "trees"
 _NPC_ROOT = _ASSETS_ROOT / "npc"
 _ICONS_ROOT = _ASSETS_ROOT / "icons"
 
@@ -59,6 +60,34 @@ def tree_tile() -> pygame.Surface:
     pygame.draw.circle(surf, (28, 110, 48), (cx, top + 4), TILE_H // 3)
     pygame.draw.rect(surf, (86, 52, 28), (cx - 4, top + 8, 8, TILE_H // 2))
     return surf
+
+
+def _procedural_tree_sprite(stage: str) -> pygame.Surface:
+    """Fallback tall tree sprite used when no staged asset exists."""
+    w, h = 48, 72
+    surf = pygame.Surface((w, h), pygame.SRCALPHA)
+    palette: dict[str, tuple[int, int, int]] = {
+        "sapling": (125, 195, 115),
+        "young": (88, 168, 92),
+        "mature": (58, 138, 78),
+        "adult": (36, 108, 62),
+    }
+    canopy = palette.get(stage, (58, 138, 78))
+    trunk_x = w // 2 - 3
+    pygame.draw.rect(surf, (86, 52, 28), (trunk_x, h - 24, 6, 24))
+    pygame.draw.circle(surf, canopy, (w // 2, h - 36), 16)
+    pygame.draw.circle(surf, (20, 56, 30), (w // 2, h - 36), 16, 1)
+    return surf
+
+
+@functools.lru_cache(maxsize=32)
+def tree_sprite(stage: str) -> pygame.Surface:
+    """Load stage tree sprite from disk, fallback to procedural."""
+    stage_key = stage.lower().strip()
+    loaded = _load_png(str(_TREES_ROOT / stage_key / "default.png"))
+    if loaded is not None:
+        return loaded
+    return _procedural_tree_sprite(stage_key)
 
 
 def _building_palette(b_type: str) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
@@ -324,5 +353,6 @@ def clear_asset_caches() -> None:
     _load_png_by_mtime.cache_clear()
     _load_building_meta_by_mtime.cache_clear()
     _load_fixed_icon.cache_clear()
+    tree_sprite.cache_clear()
     worker_dot.cache_clear()
     resource_icon.cache_clear()

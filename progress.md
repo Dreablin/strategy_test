@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 10. Tree entities, blocking, layering
-- **Next Task:** T72 — Implement tree asset loading
-- **Last Completed:** T71 — Add placeholder tree assets and failing asset-loader tests
-- **Total Progress:** 71 / 74
+- **Next Task:** T73 — Add failing render-layer tests
+- **Last Completed:** T72 — Implement tree asset loading
+- **Total Progress:** 72 / 74
 
 ---
 
@@ -282,7 +282,7 @@
   - Add/extend `tests/test_assets.py` to verify stage-based tree sprite loading from files with procedural fallback.
   Tests must FAIL first.
 
-- [ ] **T72**: Implement tree asset loading in `src/game/assets.py`:
+- [x] **T72**: Implement tree asset loading in `src/game/assets.py`:
   - Add `tree_sprite(stage)` loading from `assets/trees/<stage>/default.png`.
   - Support cache invalidation/hot-reload style consistent with other assets.
   - Keep procedural fallback for missing files.

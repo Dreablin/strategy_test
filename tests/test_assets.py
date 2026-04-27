@@ -13,7 +13,6 @@ from game.assets import (
     hire_ui_icon,
     resource_icon,
     tree_sprite,
-    tree_tile,
     worker_dot,
     worker_ui_icon,
 )
@@ -38,10 +37,6 @@ def _assert_nonempty_surface(surf) -> None:
 def test_grass_tile_smoke() -> None:
     _assert_nonempty_surface(grass_tile())
     assert grass_tile() is grass_tile()
-
-
-def test_tree_tile_smoke() -> None:
-    _assert_nonempty_surface(tree_tile())
 
 
 def test_building_sprite_smoke() -> None:

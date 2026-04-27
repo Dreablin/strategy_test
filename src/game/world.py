@@ -3,6 +3,8 @@
 from game.config import GRID_SIZE
 from game.trees import Tree, stage_from_tile_seed
 
+_TREE_EDGE_BAND = 8
+
 
 class World:
     """Square `GRID_SIZE`×`GRID_SIZE` grass field with occupancy and trees."""
@@ -68,14 +70,29 @@ class World:
     def _init_trees(self) -> None:
         cx = GRID_SIZE // 2
         cy = GRID_SIZE // 2
+        center_clear_radius = max(8, GRID_SIZE // 4)
         for gy in range(GRID_SIZE):
             for gx in range(GRID_SIZE):
-                if abs(gx - cx) <= 3 and abs(gy - cy) <= 3:
+                if max(abs(gx - cx), abs(gy - cy)) <= center_clear_radius:
                     continue
                 edge_dist = min(gx, gy, GRID_SIZE - 1 - gx, GRID_SIZE - 1 - gy)
-                if edge_dist != 0:
+                if edge_dist >= _TREE_EDGE_BAND:
                     continue
                 seed = gx * 92821 + gy * 68917 + GRID_SIZE * 37
-                # Sparse deterministic border trees to avoid cluttering gameplay interior.
-                if (seed % 100) < 35:
+                noise = self._tile_noise(gx, gy)
+                # Dense near border, still populated deeper into 5-8 edge rows.
+                # edge_dist=0 -> 0.78, edge_dist=7 -> 0.42
+                threshold = 0.78 - (0.36 * (edge_dist / (_TREE_EDGE_BAND - 1)))
+                if noise < threshold:
                     self._trees[(gx, gy)] = Tree(stage=stage_from_tile_seed(seed))
+
+    @staticmethod
+    def _tile_noise(gx: int, gy: int) -> float:
+        """Stable pseudo-random [0,1) value per tile with low visible patterns."""
+        n = (gx * 0x9E3779B1) ^ (gy * 0x85EBCA77) ^ 0xC2B2AE3D
+        n ^= n >> 16
+        n = (n * 0x7FEB352D) & 0xFFFFFFFF
+        n ^= n >> 15
+        n = (n * 0x846CA68B) & 0xFFFFFFFF
+        n ^= n >> 16
+        return n / 0x100000000

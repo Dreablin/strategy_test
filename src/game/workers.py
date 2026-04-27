@@ -47,7 +47,7 @@ class Worker:
         "segment_progress",
     )
 
-    def __init__(self, type_tag: str, *, stand_tile: tuple[int, int] = (0, 0)) -> None:
+    def __init__(self, type_tag: str, *, stand_tile: tuple[int, int] = (17, 19)) -> None:
         self.type_tag = type_tag
         self.assigned_building: Building | None = None
         self.idle = True
@@ -181,7 +181,7 @@ class WorkerManager:
         if not self._resources.try_spend(cost):
             return None
         town_hall = next((b for b in self._registry.all() if b.type_tag == "TOWN_HALL"), None)
-        stand = (0, 0)
+        stand = (17, 19)
         if town_hall is not None:
             stand = town_hall_spawn_tile(town_hall)
             world = getattr(self._registry, "_world", None)

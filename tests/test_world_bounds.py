@@ -1,4 +1,4 @@
-"""World bounds helper should include tree-skirt ring."""
+"""World bounds helper should match playable grass field extents."""
 
 from game.config import GRID_SIZE, TILE_H, TILE_W
 from game.iso import world_to_screen
@@ -10,9 +10,8 @@ def test_world_pixel_bounds_include_tree_skirt() -> None:
     world = World()
     min_x, min_y, max_x, max_y = Renderer.world_pixel_bounds(world)
 
-    # Tree skirt is two tiles around the playable grid.
-    lo = -2
-    hi = GRID_SIZE + 2
+    lo = 0
+    hi = GRID_SIZE
     expected_min_x = expected_min_y = 10**9
     expected_max_x = expected_max_y = -10**9
     for gx in range(lo, hi):

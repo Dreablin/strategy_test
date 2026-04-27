@@ -37,8 +37,8 @@ def _min_chebyshev_between_footprints(
 
 
 def test_cannot_place_footprint_outside_grass(registry: BuildingRegistry) -> None:
-    assert not registry.can_place(LumberCamp, (44, 0))
-    assert not registry.can_place(LumberCamp, (0, 44))
+    assert not registry.can_place(LumberCamp, (54, 0))
+    assert not registry.can_place(LumberCamp, (0, 54))
 
 
 def test_cannot_place_overlapping_buildings(registry: BuildingRegistry) -> None:

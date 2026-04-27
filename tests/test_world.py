@@ -14,19 +14,19 @@ def _rect_fully_unoccupied(world: World, gx: int, gy: int, w: int, h: int) -> bo
 
 def test_grid_dimensions_match_config() -> None:
     world = World()
-    assert world.width == GRID_SIZE == 32
-    assert world.height == GRID_SIZE == 32
+    assert world.width == GRID_SIZE == 55
+    assert world.height == GRID_SIZE == 55
 
 
 def test_is_in_grass_playable_field() -> None:
     world = World()
     assert world.is_in_grass(0, 0)
-    assert world.is_in_grass(31, 31)
-    assert world.is_in_grass(16, 16)
+    assert world.is_in_grass(GRID_SIZE - 1, GRID_SIZE - 1)
+    assert world.is_in_grass(GRID_SIZE // 2, GRID_SIZE // 2)
     assert not world.is_in_grass(-1, 0)
     assert not world.is_in_grass(0, -1)
-    assert not world.is_in_grass(32, 0)
-    assert not world.is_in_grass(0, 32)
+    assert not world.is_in_grass(GRID_SIZE, 0)
+    assert not world.is_in_grass(0, GRID_SIZE)
 
 
 @pytest.mark.parametrize(

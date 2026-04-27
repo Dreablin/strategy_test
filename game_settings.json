@@ -6,7 +6,7 @@
   "world": {
     "tile_w": 64,
     "tile_h": 32,
-    "grid_size": 32
+    "grid_size": 55
   },
   "window": {
     "size": [1280, 720]

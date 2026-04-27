@@ -68,9 +68,9 @@ def test_building_panel_shows_upgrade_for_town_hall() -> None:
 
 def test_income_line_is_zero_while_worker_not_arrived() -> None:
     building = LumberCamp(level=3, grid_pos=(4, 4))
-    assert _income_line(building, worker_working=False) == "Income: +0 wood / 10 s"
+    assert _income_line(building, worker_working=False) == "Income: —"
 
 
 def test_income_line_shows_full_value_when_worker_working() -> None:
     building = LumberCamp(level=3, grid_pos=(4, 4))
-    assert _income_line(building, worker_working=True) == "Income: +15 wood / 10 s"
+    assert _income_line(building, worker_working=True) == "Income: —"

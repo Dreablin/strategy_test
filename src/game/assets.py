@@ -50,18 +50,6 @@ def grass_tile() -> pygame.Surface:
     return surf
 
 
-@functools.lru_cache(maxsize=1)
-def tree_tile() -> pygame.Surface:
-    """Tree skirt tile is still procedural for now."""
-    surf = pygame.Surface((TILE_W, TILE_H), pygame.SRCALPHA)
-    pts = _diamond_points(TILE_W, TILE_H)
-    pygame.draw.polygon(surf, (34, 58, 34), pts)
-    cx, top = TILE_W // 2, TILE_H // 4
-    pygame.draw.circle(surf, (28, 110, 48), (cx, top + 4), TILE_H // 3)
-    pygame.draw.rect(surf, (86, 52, 28), (cx - 4, top + 8, 8, TILE_H // 2))
-    return surf
-
-
 def _procedural_tree_sprite(stage: str) -> pygame.Surface:
     """Fallback tall tree sprite used when no staged asset exists."""
     w, h = 48, 72
@@ -351,7 +339,6 @@ def resource_icon(name: str) -> pygame.Surface:
 def clear_asset_caches() -> None:
     """Clear all in-memory asset caches (used by dev reload button)."""
     grass_tile.cache_clear()
-    tree_tile.cache_clear()
     _load_png_by_mtime.cache_clear()
     _load_building_meta_by_mtime.cache_clear()
     _load_fixed_icon.cache_clear()

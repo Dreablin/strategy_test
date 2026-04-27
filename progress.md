@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 11. Lumberjack chop cycle
-- **Next Task:** T76 — Implement LumberCamp toggle and counter
-- **Last Completed:** T75 — Failing tests for LumberCamp toggle & deposit counter
-- **Total Progress:** 75 / 91
+- **Next Task:** T77 — Add failing tests for tree reservation
+- **Last Completed:** T76 — Implement LumberCamp toggle and counter
+- **Total Progress:** 76 / 91
 
 ---
 
@@ -319,7 +319,7 @@
   - `delivered_wood` is increment-only via a dedicated method (e.g. `record_wood_delivered(n=1)`); negative values raise.
   - Other building types (Farm, StoneMine, IronMine, TownHall) do NOT expose this API.
 
-- [ ] **T76**: Implement toggle and counter on `LumberCamp` (`src/game/buildings/lumber_camp.py`):
+- [x] **T76**: Implement toggle and counter on `LumberCamp` (`src/game/buildings/lumber_camp.py`):
   - Add `active: bool = True` and `delivered_wood: int = 0` (use `__slots__`).
   - Add `set_active(value: bool)` and `record_wood_delivered(amount: int = 1)`.
   - Keep `LumberCamp.income(level)` as `{}` (no passive production); regression: `Building.income` for other resource buildings unchanged.

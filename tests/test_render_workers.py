@@ -63,8 +63,8 @@ def test_draw_workers_moving_worker_pixel_shifts_between_frames(monkeypatch) -> 
     resources = ResourceManager()
     registry.place(TownHall, (16, 16))
     wm = WorkerManager(resources, registry)
-    w = Worker("LUMBERJACK", stand_tile=(5, 5))
-    w.start_move([(5, 5), (6, 5)], started_ms=0)
+    w = Worker("LUMBERJACK", stand_tile=(22, 22))
+    w.start_move([(22, 22), (23, 22)], started_ms=0)
     wm.add_worker(w)
 
     dot = pygame.Surface((1, 1), pygame.SRCALPHA)

@@ -41,10 +41,14 @@ def test_building_footprint(cls: type, expected_footprint: tuple[int, int]) -> N
 
 
 def test_resource_income_scales_with_level() -> None:
-    assert LumberCamp.income(4) == {"wood": 20}
     assert StoneMine.income(3) == {"stone": 15}
     assert IronMine.income(2) == {"iron": 10}
     assert Farm.income(5) == {"food": 25}
+
+
+def test_lumber_camp_income_is_empty() -> None:
+    assert LumberCamp.income(1) == {}
+    assert LumberCamp.income(5) == {}
 
 
 def test_town_hall_income_always_empty() -> None:
@@ -101,13 +105,16 @@ def test_upgrade_updates_per_cycle_when_building_is_staffed() -> None:
     world = World()
     registry = BuildingRegistry(world)
     resources = ResourceManager()
-    b = registry.place(LumberCamp, (14, 14))
+    th = registry.place(TownHall, (16, 16))
+    th.level = 3
+    b = registry.place(StoneMine, (10, 10))
     registry.sync_resources_per_cycle(resources, staffed_buildings={b})
-    assert resources.per_cycle["wood"] == 5
+    assert resources.per_cycle["stone"] == 5
     resources.add("wood", 2000)
+    resources.add("stone", 2000)
     assert registry.upgrade_building(b, resources)
     registry.sync_resources_per_cycle(resources, staffed_buildings={b})
-    assert resources.per_cycle["wood"] == 10
+    assert resources.per_cycle["stone"] == 10
 
 
 def test_upgrade_rejected_at_max_level() -> None:

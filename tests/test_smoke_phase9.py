@@ -58,7 +58,7 @@ def test_smoke_phase9_worker_moves_and_production_gates() -> None:
 
     # 1) Build Lumber Camp at a valid location through input routing.
     game_input.handle(screen, pygame.event.Event(BUILD_MENU_SELECT, building_type="LUMBER_CAMP"))
-    camp_click = _tile_click_pos(screen, world, camera, 10, 10)
+    camp_click = _tile_click_pos(screen, world, camera, 22, 22)
     game_input.handle(
         screen, pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=camp_click)
     )
@@ -85,12 +85,12 @@ def test_smoke_phase9_worker_moves_and_production_gates() -> None:
     assert worker.state == "working"
     assert _is_approach_tile(camp, end_tile)
 
-    # 4) Production gating: before arrival yields 0, after arrival yields +5*level.
+    # 4) Production gating: Lumber Camp has no passive production in Phase 11.
     world2 = World()
     resources2 = ResourceManager()
     registry2 = BuildingRegistry(world2)
     registry2.place(TownHall, (16, 16))
-    camp2 = registry2.place(LumberCamp, (24, 24))
+    registry2.place(LumberCamp, (24, 24))
     workers2 = WorkerManager(resources2, registry2)
     assert workers2.hire("LUMBERJACK") is not None
     workers2.reassign_all()
@@ -102,8 +102,8 @@ def test_smoke_phase9_worker_moves_and_production_gates() -> None:
     wood_before = resources2.get("wood")
     assert scheduler.update(20_000) is True
     apply_production_tick(registry2, resources2, workers2)
-    assert resources2.get("wood") == wood_before + (5 * camp2.level)
+    assert resources2.get("wood") == wood_before
 
     # 5) Spacing rule: touching is rejected, one-tile gap is accepted.
-    assert not registry.can_place(LumberCamp, (12, 10))
-    assert registry.can_place(LumberCamp, (13, 10))
+    assert not registry.can_place(LumberCamp, (24, 22))
+    assert registry.can_place(LumberCamp, (25, 22))

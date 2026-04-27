@@ -161,7 +161,7 @@ def test_reassign_all_sets_moving_path_to_reachable_approach_tile() -> None:
     registry.place(TownHall, (16, 16))
     camp = registry.place(LumberCamp, (24, 24))
     wm = WorkerManager(resources, registry)
-    w = Worker("LUMBERJACK", stand_tile=(2, 2))
+    w = Worker("LUMBERJACK", stand_tile=(20, 20))
     wm.add_worker(w)
 
     wm.reassign_all()
@@ -169,7 +169,7 @@ def test_reassign_all_sets_moving_path_to_reachable_approach_tile() -> None:
     assert w.assigned_building is camp
     assert w.state == "moving"
     assert len(w.path) >= 2
-    assert w.path[0] == (2, 2)
+    assert w.path[0] == (20, 20)
     end = w.path[-1]
     cx, cy = camp.grid_pos  # type: ignore[misc]
     cw, ch = type(camp).footprint
@@ -214,7 +214,7 @@ def test_reassign_all_keeps_worker_idle_when_no_approach_tile_reachable() -> Non
                 continue
             world.mark_occupied(x, y, 1, 1)
     wm = WorkerManager(resources, registry)
-    w = Worker("LUMBERJACK", stand_tile=(2, 2))
+    w = Worker("LUMBERJACK", stand_tile=(20, 20))
     wm.add_worker(w)
 
     wm.reassign_all()
@@ -231,7 +231,7 @@ def test_working_buildings_excludes_moving_worker_until_arrival() -> None:
     registry.place(TownHall, (16, 16))
     camp = registry.place(LumberCamp, (24, 24))
     wm = WorkerManager(resources, registry)
-    w = Worker("LUMBERJACK", stand_tile=(2, 2))
+    w = Worker("LUMBERJACK", stand_tile=(20, 20))
     wm.add_worker(w)
     wm.reassign_all()
 
@@ -247,7 +247,7 @@ def test_worker_status_for_building_reports_on_the_way_then_assigned() -> None:
     registry.place(TownHall, (16, 16))
     camp = registry.place(LumberCamp, (24, 24))
     wm = WorkerManager(resources, registry)
-    w = Worker("LUMBERJACK", stand_tile=(2, 2))
+    w = Worker("LUMBERJACK", stand_tile=(20, 20))
     wm.add_worker(w)
     wm.reassign_all()
 
@@ -263,7 +263,7 @@ def test_demolish_moving_worker_becomes_idle_at_current_tile() -> None:
     registry.place(TownHall, (16, 16))
     camp = registry.place(LumberCamp, (24, 24))
     wm = WorkerManager(resources, registry)
-    w = Worker("LUMBERJACK", stand_tile=(2, 2))
+    w = Worker("LUMBERJACK", stand_tile=(20, 20))
     wm.add_worker(w)
     wm.reassign_all()
     assert w.assigned_building is camp
@@ -287,7 +287,7 @@ def test_reassign_all_does_not_retarget_worker_already_moving() -> None:
     camp_a = registry.place(LumberCamp, (22, 22))
     camp_b = registry.place(LumberCamp, (26, 26))
     wm = WorkerManager(resources, registry)
-    w = Worker("LUMBERJACK", stand_tile=(2, 2))
+    w = Worker("LUMBERJACK", stand_tile=(20, 20))
     wm.add_worker(w)
     wm.reassign_all()
     first_target = w.assigned_building
@@ -306,8 +306,8 @@ def test_reassign_all_one_slot_two_workers_only_one_assigned() -> None:
     registry.place(TownHall, (16, 16))
     camp = registry.place(LumberCamp, (24, 24))
     wm = WorkerManager(resources, registry)
-    w1 = Worker("LUMBERJACK", stand_tile=(2, 2))
-    w2 = Worker("LUMBERJACK", stand_tile=(3, 2))
+    w1 = Worker("LUMBERJACK", stand_tile=(20, 20))
+    w2 = Worker("LUMBERJACK", stand_tile=(21, 20))
     wm.add_worker(w1)
     wm.add_worker(w2)
 

@@ -7,15 +7,12 @@ from game.assets import (
     building_sprite_anchor,
     grass_tile,
     tree_sprite,
-    tree_tile,
 )
 from game.buildings.registry import BuildingRegistry
 from game.config import TILE_H, TILE_W
 from game.iso import world_to_screen
 from game.world import World
 from game.workers import WorkerManager, building_center_tile
-
-_EDGE_TREE_BAND = 6
 
 
 def _compute_grass_origin(surface: pygame.Surface, world: World) -> tuple[int, int]:
@@ -57,27 +54,6 @@ class Renderer:
         return (min_x, min_y, max_x, max_y)
 
     @staticmethod
-    def has_edge_tree(world: World, gx: int, gy: int) -> bool:
-        """Deterministic, pseudo-random tree placement concentrated near map edges."""
-        if not world.is_in_grass(gx, gy):
-            return False
-        edge_dist = min(gx, gy, world.width - 1 - gx, world.height - 1 - gy)
-        if edge_dist >= _EDGE_TREE_BAND:
-            return False
-
-        cx = world.width // 2
-        cy = world.height // 2
-        center_clear_radius = max(8, min(world.width, world.height) // 5)
-        if max(abs(gx - cx), abs(gy - cy)) <= center_clear_radius:
-            return False
-
-        # Dense at edge, thinner toward inner band.
-        # edge_dist=0 -> ~45%, edge_dist=5 -> ~15%
-        threshold = max(0.15, 0.45 - 0.06 * edge_dist)
-        h = ((gx * 73856093) ^ (gy * 19349663)) & 1023
-        return (h / 1023.0) < threshold
-
-    @staticmethod
     def draw_world(surface: pygame.Surface, world: World, camera=None) -> None:
         origin_x, origin_y = Renderer.map_origin(surface, world)
         cam_x, cam_y = (0, 0) if camera is None else camera.offset
@@ -89,13 +65,10 @@ class Renderer:
         cells.sort(key=lambda c: (c[0] + c[1], c[0]))
 
         g_tile = grass_tile()
-        t_tile = tree_tile()
         for gx, gy in cells:
             sx, sy = world_to_screen(gx, gy)
             px, py = origin_x + cam_x + sx, origin_y + cam_y + sy
             surface.blit(g_tile, (px, py))
-            if Renderer.has_edge_tree(world, gx, gy):
-                surface.blit(t_tile, (px, py))
 
     @staticmethod
     def draw_buildings(

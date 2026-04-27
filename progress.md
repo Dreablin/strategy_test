@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 13. Performance optimisation & orthogonal pathfinding
-- **Next Task:** T137 — implement renderer viewport culling.
-- **Last Completed:** T136 — add failing render culling tests.
-- **Total Progress:** 136 / 148
+- **Next Task:** T138 — add failing pixel-equivalence test for render culling.
+- **Last Completed:** T137 — implement renderer viewport culling.
+- **Total Progress:** 137 / 148
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -264,7 +264,7 @@
     forbidden — assert call count `< 2_000`. (Today it would be ~ 4·10_000.)
   Tests must FAIL first.
 
-- [ ] **T137**: Implement viewport culling in `src/game/render.py`:
+- [x] **T137**: Implement viewport culling in `src/game/render.py`:
   - Add module constant `VISIBLE_TILE_MARGIN = 2`.
   - Implement `Renderer.visible_tile_range(surface, world, camera)` using
     the inverse iso transform on the four screen corners and clamping to

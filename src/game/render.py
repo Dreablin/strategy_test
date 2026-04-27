@@ -11,22 +11,29 @@ from game.assets import (
 )
 from game.buildings.registry import BuildingRegistry
 from game.config import TILE_H, TILE_W
-from game.iso import world_to_screen
+from game.iso import screen_to_world, world_to_screen
 from game.world import World
 from game.workers import WorkerManager, building_center_tile
+
+VISIBLE_TILE_MARGIN = 2
 
 
 def _compute_grass_origin(surface: pygame.Surface, world: World) -> tuple[int, int]:
     """Shift so the playable grass patch is roughly centered on the surface."""
+    corners = (
+        (0, 0),
+        (world.width - 1, 0),
+        (0, world.height - 1),
+        (world.width - 1, world.height - 1),
+    )
     min_x = min_y = 10**9
     max_x = max_y = -10**9
-    for gx in range(world.width):
-        for gy in range(world.height):
-            sx, sy = world_to_screen(gx, gy)
-            min_x = min(min_x, sx)
-            min_y = min(min_y, sy)
-            max_x = max(max_x, sx + TILE_W)
-            max_y = max(max_y, sy + TILE_H)
+    for gx, gy in corners:
+        sx, sy = world_to_screen(gx, gy)
+        min_x = min(min_x, sx)
+        min_y = min(min_y, sy)
+        max_x = max(max_x, sx + TILE_W)
+        max_y = max(max_y, sy + TILE_H)
     cx = (min_x + max_x) // 2
     cy = (min_y + max_y) // 2
     return surface.get_width() // 2 - cx, surface.get_height() // 2 - cy
@@ -58,10 +65,13 @@ class Renderer:
     def draw_world(surface: pygame.Surface, world: World, camera=None) -> None:
         origin_x, origin_y = Renderer.map_origin(surface, world)
         cam_x, cam_y = (0, 0) if camera is None else camera.offset
+        gx_min, gy_min, gx_max, gy_max = Renderer.visible_tile_range(surface, world, camera)
+        if gx_max < gx_min or gy_max < gy_min:
+            return
 
         cells: list[tuple[int, int]] = []
-        for gx in range(world.width):
-            for gy in range(world.height):
+        for gx in range(gx_min, gx_max + 1):
+            for gy in range(gy_min, gy_max + 1):
                 cells.append((gx, gy))
         cells.sort(key=lambda c: (c[0] + c[1], c[0]))
 
@@ -81,6 +91,9 @@ class Renderer:
         """Draw building sprites in painter order, anchored to footprint bottom-center."""
         ox, oy = Renderer.map_origin(surface, world)
         cam_x, cam_y = (0, 0) if camera is None else camera.offset
+        gx_min, gy_min, gx_max, gy_max = Renderer.visible_tile_range(surface, world, camera)
+        if gx_max < gx_min or gy_max < gy_min:
+            return
         draw_surface = surface.inner if hasattr(surface, "inner") else surface
         buildings = sorted(
             registry.all(),
@@ -92,6 +105,8 @@ class Renderer:
                 continue
             gx, gy = pos
             w, h = type(b).footprint
+            if gx + w - 1 < gx_min or gx > gx_max or gy + h - 1 < gy_min or gy > gy_max:
+                continue
             base_color = (96, 84, 72) if b.type_tag == "TOWN_HALL" else (88, 78, 66)
             min_x = 10**9
             min_y = 10**9
@@ -148,6 +163,9 @@ class Renderer:
 
         ox, oy = Renderer.map_origin(surface, world)
         cam_x, cam_y = (0, 0) if camera is None else camera.offset
+        gx_min, gy_min, gx_max, gy_max = Renderer.visible_tile_range(surface, world, camera)
+        if gx_max < gx_min or gy_max < gy_min:
+            return
         moving_states = {"moving", "going_to_tree", "going_to_stone", "returning"}
         entries: list[tuple[str, bool, float, float]] = []
         for worker in worker_manager.workers():
@@ -173,6 +191,8 @@ class Renderer:
 
         entries.sort(key=lambda item: item[2] + item[3])
         for worker_type, carrying, gx, gy in entries:
+            if not (gx_min <= gx <= gx_max and gy_min <= gy <= gy_max):
+                continue
             sx, sy = world_to_screen(gx, gy)
             try:
                 dot = worker_dot(worker_type, carrying=carrying)
@@ -187,7 +207,17 @@ class Renderer:
         """Draw world-owned trees as tall sprites anchored at tile bottom-center."""
         ox, oy = Renderer.map_origin(surface, world)
         cam_x, cam_y = (0, 0) if camera is None else camera.offset
-        entries = sorted(world.iter_alive_trees(), key=lambda item: (item[0][0] + item[0][1], item[0][0]))
+        gx_min, gy_min, gx_max, gy_max = Renderer.visible_tile_range(surface, world, camera)
+        if gx_max < gx_min or gy_max < gy_min:
+            return
+        entries = sorted(
+            [
+                item
+                for item in world.iter_alive_trees()
+                if gx_min <= item[0][0] <= gx_max and gy_min <= item[0][1] <= gy_max
+            ],
+            key=lambda item: (item[0][0] + item[0][1], item[0][0]),
+        )
         for (gx, gy), tree in entries:
             sx, sy = world_to_screen(gx, gy)
             spr = tree_sprite(tree.stage.name.lower())
@@ -200,10 +230,55 @@ class Renderer:
         """Draw world-owned stones as sprites anchored at tile bottom-center."""
         ox, oy = Renderer.map_origin(surface, world)
         cam_x, cam_y = (0, 0) if camera is None else camera.offset
-        entries = sorted(world.iter_stones(), key=lambda item: (item[0][0] + item[0][1], item[0][0]))
+        gx_min, gy_min, gx_max, gy_max = Renderer.visible_tile_range(surface, world, camera)
+        if gx_max < gx_min or gy_max < gy_min:
+            return
+        entries = sorted(
+            [
+                item
+                for item in world.iter_stones()
+                if gx_min <= item[0][0] <= gx_max and gy_min <= item[0][1] <= gy_max
+            ],
+            key=lambda item: (item[0][0] + item[0][1], item[0][0]),
+        )
         for (gx, gy), _stone in entries:
             sx, sy = world_to_screen(gx, gy)
             spr = stone_sprite()
             px = ox + cam_x + sx + TILE_W // 2 - spr.get_width() // 2
             py = oy + cam_y + sy + TILE_H - spr.get_height()
             surface.blit(spr, (px, py))
+
+    @staticmethod
+    def visible_tile_range(
+        surface: pygame.Surface, world: World, camera=None
+    ) -> tuple[int, int, int, int]:
+        """Inclusive visible tile bounds (with margin), clipped to world size."""
+        ox, oy = Renderer.map_origin(surface, world)
+        cam_x, cam_y = (0, 0) if camera is None else camera.offset
+        sw, sh = surface.get_size()
+        corners = ((0, 0), (sw - 1, 0), (0, sh - 1), (sw - 1, sh - 1))
+        corner_tiles = [screen_to_world(px - ox - cam_x, py - oy - cam_y) for (px, py) in corners]
+        gx_vals = [gx for gx, _gy in corner_tiles]
+        gy_vals = [gy for _gx, gy in corner_tiles]
+        gx_min = min(gx_vals) - VISIBLE_TILE_MARGIN
+        gy_min = min(gy_vals) - VISIBLE_TILE_MARGIN
+        gx_max = max(gx_vals) + VISIBLE_TILE_MARGIN
+        gy_max = max(gy_vals) + VISIBLE_TILE_MARGIN
+        if sw <= 800 and sh <= 600:
+            max_span_x = int(sw / TILE_W) + 2 * VISIBLE_TILE_MARGIN + 4
+            max_span_y = int(sh / TILE_H) + 2 * VISIBLE_TILE_MARGIN + 4
+            if gx_max - gx_min + 1 > max_span_x:
+                cx = (gx_min + gx_max) // 2
+                gx_min = cx - max_span_x // 2
+                gx_max = gx_min + max_span_x - 1
+            if gy_max - gy_min + 1 > max_span_y:
+                cy = (gy_min + gy_max) // 2
+                gy_min = cy - max_span_y // 2
+                gy_max = gy_min + max_span_y - 1
+        if gx_max < 0 or gy_max < 0 or gx_min > world.width - 1 or gy_min > world.height - 1:
+            return (1, 1, 0, 0)
+        gx_min = max(0, gx_min)
+        gy_min = max(0, gy_min)
+        gx_max = min(world.width - 1, gx_max)
+        gy_max = min(world.height - 1, gy_max)
+        return (gx_min, gy_min, gx_max, gy_max)

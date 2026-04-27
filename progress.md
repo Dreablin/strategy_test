@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 11. Lumberjack chop cycle
-- **Next Task:** T78 — Implement tree reservation in world
-- **Last Completed:** T77 — Add failing tests for tree reservation
-- **Total Progress:** 77 / 91
+- **Next Task:** T79 — Add failing tests for Lumberjack cycle states
+- **Last Completed:** T78 — Implement tree reservation in world
+- **Total Progress:** 78 / 91
 
 ---
 
@@ -334,7 +334,7 @@
     - the worker dies/idles for any reason.
   - `find_free_tree(...)` skips reserved tiles.
 
-- [ ] **T78**: Implement tree reservation in `src/game/world.py` (and any helper module if needed):
+- [x] **T78**: Implement tree reservation in `src/game/world.py` (and any helper module if needed):
   - Add internal `_tree_reservations: dict[tuple[int,int], object]` mapping tile → worker id.
   - Implement `reserve_tree`, `release_tree`, `is_tree_reserved`, `release_reservations_for(worker)`.
   - Wire `World.remove_tree` to drop reservations for that tile.

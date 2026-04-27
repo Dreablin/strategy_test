@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 13. Performance optimisation & orthogonal pathfinding
-- **Next Task:** T140 — replace render bounds/origin with closed-form corner-based versions.
-- **Last Completed:** T139 — add failing test for O(1) render pixel bounds.
-- **Total Progress:** 139 / 148
+- **Next Task:** T141 — add failing tests for localized worker assignment.
+- **Last Completed:** T140 — replace render bounds/origin with closed-form corner-based versions.
+- **Total Progress:** 140 / 148
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -301,7 +301,7 @@
   - Returned bounds equal the legacy (full-grid) computation on a small world.
   Tests must FAIL first (today both methods iterate the entire grid).
 
-- [ ] **T140**: Replace `_compute_grass_origin` and
+- [x] **T140**: Replace `_compute_grass_origin` and
   `Renderer.world_pixel_bounds` with closed-form versions:
   - The min/max screen coordinates of the grid are achieved at the four
     grid corners only: `(0, 0)`, `(W-1, 0)`, `(0, H-1)`, `(W-1, H-1)`.

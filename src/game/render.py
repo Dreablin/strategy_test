@@ -37,21 +37,16 @@ def _world_screen_extents(world: World) -> tuple[int, int, int, int]:
     return (min_x, min_y, max_x, max_y)
 
 
-def _compute_grass_origin(surface: pygame.Surface, world: World) -> tuple[int, int]:
-    """Shift so the playable grass patch is roughly centered on the surface."""
-    min_x, min_y, max_x, max_y = _world_screen_extents(world)
-    cx = (min_x + max_x) // 2
-    cy = (min_y + max_y) // 2
-    return surface.get_width() // 2 - cx, surface.get_height() // 2 - cy
-
-
 class Renderer:
     """Draws the grass map, buildings, workers, and tree sprites."""
 
     @staticmethod
     def map_origin(surface: pygame.Surface, world: World) -> tuple[int, int]:
         """Screen offset for `world_to_screen` so the grass patch matches `draw_world`."""
-        return _compute_grass_origin(surface, world)
+        min_x, min_y, max_x, max_y = Renderer.world_pixel_bounds(world)
+        cx = (min_x + max_x) // 2
+        cy = (min_y + max_y) // 2
+        return surface.get_width() // 2 - cx, surface.get_height() // 2 - cy
 
     @staticmethod
     def world_pixel_bounds(world: World) -> tuple[int, int, int, int]:

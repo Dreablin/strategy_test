@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 11. Lumberjack chop cycle
-- **Next Task:** T80 — Implement Lumberjack cycle state machine
-- **Last Completed:** T79 — Add failing tests for Lumberjack cycle states
-- **Total Progress:** 79 / 91
+- **Next Task:** T81 — Add failing tests for chopping interaction
+- **Last Completed:** T80 — Implement Lumberjack cycle state machine
+- **Total Progress:** 80 / 91
 
 ---
 
@@ -347,7 +347,7 @@
   - `worker.carrying` is `None` until chop is finished; becomes `"wood"` when leaving the chop tile, back to `None` after deposit.
   - State transitions are deterministic given a fixed `now_ms_fn`.
 
-- [ ] **T80**: Implement new Lumberjack state machine in `src/game/workers.py`:
+- [x] **T80**: Implement new Lumberjack state machine in `src/game/workers.py`:
   - Extend `Worker` with `carrying: str | None = None` and additional states.
   - Add LUMBERJACK-specific dispatch in `WorkerManager.update(now_ms)` and `reassign_all()`:
     - When idle and assigned to active LumberCamp: pick nearest free tree via `find_nearest_free_tree`, reserve it, set state `going_to_tree`, path to its approach tile.

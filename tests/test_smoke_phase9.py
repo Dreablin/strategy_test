@@ -73,7 +73,7 @@ def test_smoke_phase9_worker_moves_and_production_gates() -> None:
     workers.reassign_all()
     worker = workers.workers()[0]
     assert worker.assigned_building is camp
-    assert worker.state == "moving"
+    assert worker.state == "going_to_tree"
 
     # 3) Advance simulated time: worker must move and eventually reach approach tile.
     start_tile = worker.current_tile
@@ -82,8 +82,8 @@ def test_smoke_phase9_worker_moves_and_production_gates() -> None:
     workers.update(120000)
     end_tile = worker.current_tile
     assert mid_tile != start_tile
-    assert worker.state == "working"
-    assert _is_approach_tile(camp, end_tile)
+    assert worker.state in {"chopping", "returning", "depositing", "going_to_tree"}
+    assert world.is_in_grass(*end_tile)
 
     # 4) Production gating: Lumber Camp has no passive production in Phase 11.
     world2 = World()

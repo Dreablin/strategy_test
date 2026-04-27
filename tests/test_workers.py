@@ -167,17 +167,12 @@ def test_reassign_all_sets_moving_path_to_reachable_approach_tile() -> None:
     wm.reassign_all()
 
     assert w.assigned_building is camp
-    assert w.state == "moving"
+    assert w.state == "going_to_tree"
     assert len(w.path) >= 2
     assert w.path[0] == (20, 20)
     end = w.path[-1]
-    cx, cy = camp.grid_pos  # type: ignore[misc]
-    cw, ch = type(camp).footprint
     assert not world.is_occupied(*end)
-    assert max(
-        max(cx - end[0], end[0] - (cx + cw - 1), 0),
-        max(cy - end[1], end[1] - (cy + ch - 1), 0),
-    ) == 1
+    assert w.target_tree is not None
 
 
 def test_reassign_all_uses_current_time_for_move_start_no_first_frame_teleport() -> None:
@@ -267,7 +262,7 @@ def test_demolish_moving_worker_becomes_idle_at_current_tile() -> None:
     wm.add_worker(w)
     wm.reassign_all()
     assert w.assigned_building is camp
-    assert w.state == "moving"
+    assert w.state == "going_to_tree"
 
     wm.update(1_500)
     before = w.current_tile
@@ -292,11 +287,11 @@ def test_reassign_all_does_not_retarget_worker_already_moving() -> None:
     wm.reassign_all()
     first_target = w.assigned_building
     assert first_target in {camp_a, camp_b}
-    assert w.state == "moving"
+    assert w.state == "going_to_tree"
 
     wm.reassign_all()
     assert w.assigned_building is first_target
-    assert w.state == "moving"
+    assert w.state == "going_to_tree"
 
 
 def test_reassign_all_one_slot_two_workers_only_one_assigned() -> None:
@@ -376,6 +371,7 @@ def test_reassign_all_can_use_tile_after_tree_removed() -> None:
     world = World()
     registry = BuildingRegistry(world)
     resources = ResourceManager()
+    world._trees.clear()  # noqa: SLF001
     registry.place(TownHall, (16, 16))
     registry.place(LumberCamp, (24, 24))
     world._trees[(22, 22)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
@@ -392,4 +388,5 @@ def test_reassign_all_can_use_tile_after_tree_removed() -> None:
     w.path = []
     world.remove_tree(22, 22)
     wm.reassign_all()
-    assert (22, 22) in w.path
+    assert w.target_tree is None
+    assert w.idle

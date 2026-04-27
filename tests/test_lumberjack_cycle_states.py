@@ -14,6 +14,7 @@ def _setup_lumberjack_cycle():
     world = World()
     world._trees.clear()  # noqa: SLF001
     world._trees[(20, 20)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
+    world._trees[(21, 20)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
     resources = ResourceManager()
     registry = BuildingRegistry(world)
     registry.place(TownHall, (16, 16)).level = 3

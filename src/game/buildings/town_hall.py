@@ -12,7 +12,7 @@ class TownHall(Building):
 
     def __init__(self, level: int = 1, grid_pos: tuple[int, int] | None = None) -> None:
         super().__init__(level=level, grid_pos=grid_pos)
-        self.warehouse: dict[str, int] = {"wood": 0, "stone": 0, "iron": 0, "wheat": 0}
+        self.warehouse: dict[str, int] = {"wood": 0, "stone": 0, "iron": 0, "wheat": 0, "boards": 0}
 
     @classmethod
     def max_level(cls) -> int:

@@ -1,11 +1,11 @@
-"""Player resource balances (wheat/food, wood, stone, iron)."""
+"""Player resource balances (wheat/food, wood, stone, iron, boards)."""
 
 from collections.abc import Mapping
 from typing import Final
 
 from game.config import INITIAL_RESOURCES
 
-_RESOURCE_NAMES: Final[tuple[str, ...]] = ("food", "wood", "stone", "iron")
+_RESOURCE_NAMES: Final[tuple[str, ...]] = ("food", "wood", "stone", "iron", "boards")
 
 
 def _normalize_name(name: str) -> str:

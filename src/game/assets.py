@@ -35,6 +35,7 @@ _WORKER_FOLDER: dict[str, str] = {
     "FARMER": "farmer",
     "FORESTER": "forester",
     "CARRIER": "carrier",
+    "BUILDER": "builder",
 }
 
 
@@ -311,6 +312,7 @@ def _worker_color(w_type: str) -> tuple[int, int, int]:
         "FARMER": (230, 200, 60),
         "FORESTER": (88, 170, 96),
         "CARRIER": (170, 140, 92),
+        "BUILDER": (186, 132, 96),
     }
     return colors.get(t, (200, 200, 220))
 
@@ -433,6 +435,7 @@ def _resource_colors(name: str) -> tuple[int, int, int]:
         "wood": (150, 100, 60),
         "stone": (170, 170, 180),
         "iron": (190, 120, 110),
+        "boards": (210, 156, 102),
     }
     return colors.get(key, (160, 160, 200))
 

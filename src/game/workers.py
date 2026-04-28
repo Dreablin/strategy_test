@@ -183,7 +183,7 @@ class WorkerManager:
         "FARMER": "FARM",
         "FORESTER": "FORESTER_HUT",
     }
-    _HIRABLE_WORKERS: set[str] = set(_WORKER_TO_BUILDING) | {"CARRIER"}
+    _HIRABLE_WORKERS: set[str] = set(_WORKER_TO_BUILDING) | {"CARRIER", "BUILDER"}
 
     def __init__(
         self,

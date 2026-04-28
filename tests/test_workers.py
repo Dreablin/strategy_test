@@ -483,6 +483,20 @@ def test_hire_carrier_succeeds_and_worker_stays_unassigned() -> None:
     assert carrier.assigned_building is None
 
 
+def test_hire_builder_succeeds_and_worker_stays_unassigned() -> None:
+    world = World(world_seed=0)
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, town_hall_origin_tile())
+    wm = WorkerManager(resources, registry)
+
+    builder = wm.hire("BUILDER")
+    assert builder is not None
+    assert builder.type_tag == "BUILDER"
+    wm.reassign_all()
+    assert builder.assigned_building is None
+
+
 def test_carrier_transports_from_lumber_camp_to_town_hall_warehouse() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)

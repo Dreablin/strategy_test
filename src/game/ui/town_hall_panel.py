@@ -19,6 +19,7 @@ _STORAGE_GAP = 12
 _STORAGE_PANEL_W = 300
 _STORAGE_ROWS: tuple[tuple[str, str], ...] = (
     ("wood", "Wood"),
+    ("boards", "Boards"),
     ("stone", "Stone"),
     ("iron", "Iron"),
     ("wheat", "Wheat"),
@@ -118,9 +119,12 @@ class TownHallPanel:
         inner_w = sf.width - _PANEL_PAD * 2
         cell_w = max(1, (inner_w - cell_gap * (cols - 1)) // cols)
         cell_h = 72
-        y = sf.top + _PANEL_PAD + 32
+        start_y = sf.top + _PANEL_PAD + 32
         for idx, (res_key, res_label) in enumerate(_STORAGE_ROWS):
-            x = sf.left + _PANEL_PAD + idx * (cell_w + cell_gap)
+            row = idx // cols
+            col = idx % cols
+            x = sf.left + _PANEL_PAD + col * (cell_w + cell_gap)
+            y = start_y + row * (cell_h + cell_gap)
             cell = pygame.Rect(x, y, cell_w, cell_h)
             pygame.draw.rect(surface, (52, 56, 64), cell, border_radius=6)
             pygame.draw.rect(surface, (92, 98, 112), cell, width=1, border_radius=6)

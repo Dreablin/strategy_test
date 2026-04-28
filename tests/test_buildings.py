@@ -169,9 +169,12 @@ def test_town_hall_exposes_warehouse_api() -> None:
     th = TownHall(level=1, grid_pos=town_hall_origin_tile())
     assert th.warehouse_amount("wood") == 0
     assert th.warehouse_amount("wheat") == 0
+    assert th.warehouse_amount("boards") == 0
     th.add_to_warehouse("wood", 2)
     th.add_to_warehouse("food", 1)
+    th.add_to_warehouse("boards", 3)
     assert th.warehouse_amount("wood") == 2
     assert th.warehouse_amount("wheat") == 1
+    assert th.warehouse_amount("boards") == 3
     th.take_from_warehouse("wood", 1)
     assert th.warehouse_amount("wood") == 1

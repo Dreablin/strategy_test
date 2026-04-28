@@ -1,4 +1,4 @@
-"""Tests for ResourceManager (food, wood, stone, iron)."""
+"""Tests for ResourceManager (food, wood, stone, iron, boards)."""
 
 from game.config import INITIAL_RESOURCES
 from game.resources import ResourceManager
@@ -16,6 +16,8 @@ def test_add_increments() -> None:
     assert rm.get("wood") == 250
     rm.add("stone", 10)
     assert rm.get("stone") == 10
+    rm.add("boards", 4)
+    assert rm.get("boards") == 4
 
 
 def test_non_negative_after_add() -> None:

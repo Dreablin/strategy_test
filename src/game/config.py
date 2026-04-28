@@ -16,7 +16,7 @@ _DEFAULT_SETTINGS: dict = {
     },
     "window": {"size": [1280, 720]},
     "economy": {
-        "initial_resources": {"food": 200, "wood": 200, "stone": 0, "iron": 0},
+        "initial_resources": {"food": 200, "wood": 200, "stone": 0, "iron": 0, "boards": 0},
     },
     "gates": {
         "building_min_town_hall_level": {
@@ -26,7 +26,14 @@ _DEFAULT_SETTINGS: dict = {
             "SCHOOL": 1,
             "HOUSE": 1,
         },
-        "hire_min_town_hall_level": {"LUMBERJACK": 1, "STONECUTTER": 3, "MINER": 5, "FARMER": 1, "CARRIER": 1},
+        "hire_min_town_hall_level": {
+            "LUMBERJACK": 1,
+            "STONECUTTER": 3,
+            "MINER": 5,
+            "FARMER": 1,
+            "CARRIER": 1,
+            "BUILDER": 1,
+        },
     },
     "levels": {"max_level": 10},
 }

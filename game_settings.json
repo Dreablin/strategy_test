@@ -17,7 +17,8 @@
       "food": 200,
       "wood": 200,
       "stone": 0,
-      "iron": 0
+      "iron": 0,
+      "boards": 0
     }
   },
   "gates": {
@@ -34,7 +35,8 @@
       "MINER": 5,
       "FARMER": 1,
       "FORESTER": 1,
-      "CARRIER": 1
+      "CARRIER": 1,
+      "BUILDER": 1
     }
   },
   "levels": {

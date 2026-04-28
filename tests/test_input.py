@@ -226,6 +226,37 @@ def test_hire_from_second_school_spawns_near_second_school() -> None:
     assert hired.current_tile == (s2x + s2w // 2, s2y + s2h)
 
 
+def test_school_enqueue_does_not_consume_food_or_spawn_instantly() -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    school = registry.place(School, near_town_hall_tile(8, 8))
+    resources = ResourceManager()
+    resources.add("food", 500)
+    food_before = resources.get("food")
+    camera = Camera()
+    placement = PlacementController(world, registry, resources, camera)
+    workers = WorkerManager(resources, registry)
+    inp = GameInput(world, registry, resources, placement, workers, camera)
+
+    inp._panel = school
+    layout = SchoolPanel.layout(surface, school, resources, worker_assigned=False)
+    _, hire_button = layout.hire_buttons[0]
+    inp.handle(
+        surface,
+        pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=hire_button.center),
+    )
+    assert len(workers.workers()) == 0
+    assert resources.get("food") == food_before
+
+    workers.update(29_999)
+    assert len(workers.workers()) == 0
+    workers.update(30_000)
+    assert len(workers.workers()) == 1
+    assert resources.get("food") == food_before
+
+
 def test_top_bar_boundary_click_is_treated_as_map() -> None:
     """y == TOP_BAR_HEIGHT is considered map area for hover updates."""
     surface = pygame.Surface((1280, 720))

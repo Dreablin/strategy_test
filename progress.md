@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 14. Forestry expansion: forester hut, planting cycle, tree variants
-- **Next Task:** T159 — add end-to-end smoke test for forestry phase.
-- **Last Completed:** T158 — implement species-aware tree asset loading/render path.
-- **Total Progress:** 158 / 160
+- **Next Task:** T160 — docs/progress sync and phase completion.
+- **Last Completed:** T159 — add end-to-end forestry smoke coverage.
+- **Total Progress:** 159 / 160
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -533,7 +533,7 @@
 
 #### 14.6 End-to-end + docs
 
-- [ ] **T159**: Add end-to-end smoke test `tests/test_smoke_phase14.py`:
+- [x] **T159**: Add end-to-end smoke test `tests/test_smoke_phase14.py`:
   1. Boot world + TH + Forester Hut.
   2. Hire one forester, run simulated time until at least one planted tree appears.
   3. Advance time to mature that tree via growth ticks.

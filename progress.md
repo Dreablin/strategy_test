@@ -61,6 +61,14 @@
   map-centre clearing + TH footprint skip. Several tests re-pinned to
   `world_seed=2` for stable paths near the hub.
 
+### HF17 — Hiring moved to School spawn point (DONE)
+
+- Hiring via `TownHallPanel` removed entirely (Town Hall now has no hire rows and no hire click action).
+- School hiring now passes the clicked `School` building as a spawn anchor.
+- `WorkerManager.hire(..., source_building=...)` now spawns new workers by the source building
+  (with approach-tile fallback), instead of hardcoding Town Hall spawn for School hires.
+- Regression coverage updated in `tests/test_input.py` and `tests/test_town_hall_panel.py`.
+
 ---
 
 ## Recent context (do not re-run, kept only as input for ralph-loop)
@@ -564,6 +572,7 @@
 | 2026-04-27 | T137    | Rendering iterates only `Renderer.visible_tile_range(...)` plus 2-tile margin.           | Frame cost becomes a function of viewport size, not map size; pixel-equivalence test guards quality.   |
 | 2026-04-27 | T156    | Forester planting target selection is deterministic nearest-tile (radius 15), no RNG yet. | Keeps tests stable and reproducible; RNG-injected random policy can be layered later if required.       |
 | 2026-04-27 | T160    | Runtime growth scheduler source-of-truth is `WorkerManager.update` -> `world.update_tree_growth(now_ms)`. | Ensures planted-tree maturation advances in both gameplay and simulation tests without extra caller wiring. |
+| 2026-04-28 | HF17    | Worker hire spawn is anchored to the hiring building (`School`), and Town Hall hire UI is disabled. | Matches UX intent: all NPC hiring is centralized in School; new hires should appear there, not by Town Hall. |
 
 ## Issues & Blockers
 

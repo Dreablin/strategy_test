@@ -4,6 +4,7 @@ import pygame
 
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.registry import BuildingRegistry
+from game.buildings.school import School
 from game.buildings.town_hall import TownHall
 from game.camera import Camera
 from game.input import TOP_BAR_HEIGHT, GameInput, screen_to_grid
@@ -13,7 +14,7 @@ from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT
 from game.ui.building_panel import BuildingPanel
 from game.ui.lumber_camp_panel import LumberCampPanel
 from game.ui.placement import PlacementController
-from game.ui.town_hall_panel import TownHallPanel
+from game.ui.school_panel import SchoolPanel
 from game.world import World
 from game.workers import Worker, WorkerManager
 
@@ -166,38 +167,61 @@ def test_place_calls_reassign_all_and_assigns_idle_worker() -> None:
     assert workers.is_staffed(placed)
 
 
-def test_town_hall_hire_button_calls_worker_manager_hire() -> None:
+def test_school_hire_button_calls_worker_manager_hire_and_spawns_at_school() -> None:
     surface = pygame.Surface((1280, 720))
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
-    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    registry.place(TownHall, town_hall_origin_tile())
+    school = registry.place(School, near_town_hall_tile(8, 8))
     camp = registry.place(LumberCamp, near_town_hall_tile(12, 12))
     resources = ResourceManager()
+    resources.add("food", 500)
     camera = Camera()
     placement = PlacementController(world, registry, resources, camera)
     workers = WorkerManager(resources, registry)
     inp = GameInput(world, registry, resources, placement, workers, camera)
-    inp.handle(
-        surface,
-        pygame.event.Event(
-            pygame.MOUSEBUTTONDOWN,
-            button=pygame.BUTTON_LEFT,
-            pos=_tile_center(
-                surface,
-                world,
-                town_hall_origin_tile()[0] + 1,
-                town_hall_origin_tile()[1] + 1,
-            ),
-        ),
-    )
-    layout = TownHallPanel.layout(surface, town_hall, resources, worker_assigned=False)
+    inp._panel = school
+    layout = SchoolPanel.layout(surface, school, resources, worker_assigned=False)
     _, hire_button = layout.hire_buttons[0]
     inp.handle(
         surface,
         pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=hire_button.center),
     )
     assert len(workers.workers()) == 1
+    hired = workers.workers()[0]
+    sx, sy = school.grid_pos
+    sw, sh = school.footprint
+    assert hired.current_tile == (sx + sw // 2, sy + sh)
     assert workers.is_staffed(camp)
+
+
+def test_hire_from_second_school_spawns_near_second_school() -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    registry.place(School, near_town_hall_tile(8, 8))
+    school2 = registry.place(School, near_town_hall_tile(18, 8))
+    resources = ResourceManager()
+    resources.add("food", 500)
+    camera = Camera()
+    placement = PlacementController(world, registry, resources, camera)
+    workers = WorkerManager(resources, registry)
+    inp = GameInput(world, registry, resources, placement, workers, camera)
+
+    inp._panel = school2
+    layout = SchoolPanel.layout(surface, school2, resources, worker_assigned=False)
+    _, hire_button = layout.hire_buttons[0]
+    inp.handle(
+        surface,
+        pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=hire_button.center),
+    )
+
+    assert len(workers.workers()) == 1
+    hired = workers.workers()[0]
+    s2x, s2y = school2.grid_pos
+    s2w, s2h = school2.footprint
+    assert hired.current_tile == (s2x + s2w // 2, s2y + s2h)
 
 
 def test_top_bar_boundary_click_is_treated_as_map() -> None:

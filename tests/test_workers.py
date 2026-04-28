@@ -4,6 +4,7 @@ from game.buildings.farm import Farm
 from game.buildings.iron_mine import IronMine
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.registry import BuildingRegistry
+from game.buildings.school import School
 from game.buildings.town_hall import TownHall
 from game.characteristics import Characteristics
 from game.config import WORKER_HIRE_COST, near_town_hall_tile, town_hall_origin_tile
@@ -63,6 +64,23 @@ def test_hire_deducts_50_food_and_returns_worker() -> None:
     assert w.type_tag == "LUMBERJACK"
     assert w.current_tile == town_hall_spawn_tile(town_hall)
     assert resources.get("food") == food_before - WORKER_HIRE_COST["food"]
+
+
+def test_hire_without_explicit_source_uses_latest_school_when_present() -> None:
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    registry.place(School, near_town_hall_tile(8, 8))
+    school_b = registry.place(School, near_town_hall_tile(18, 8))
+    resources = ResourceManager()
+    resources.add("food", 500)
+    wm = WorkerManager(resources, registry)
+
+    hired = wm.hire("LUMBERJACK")
+    assert hired is not None
+    sx, sy = school_b.grid_pos
+    sw, sh = school_b.footprint
+    assert hired.current_tile == (sx + sw // 2, sy + sh)
 
 
 def test_hired_worker_has_characteristics_defaults() -> None:

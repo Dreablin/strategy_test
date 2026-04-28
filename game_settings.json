@@ -24,7 +24,8 @@
       "STONE_MINE": { "wood": 5 },
       "IRON_MINE": { "wood": 5 },
       "FARM": { "wood": 5 },
-      "FORESTER_HUT": { "wood": 5 }
+      "FORESTER_HUT": { "wood": 5 },
+      "SCHOOL": { "wood": 5 }
     },
     "upgrade_costs": {
       "DEFAULT": {
@@ -51,7 +52,8 @@
     "building_min_town_hall_level": {
       "STONE_MINE": 3,
       "IRON_MINE": 5,
-      "FORESTER_HUT": 1
+      "FORESTER_HUT": 1,
+      "SCHOOL": 1
     },
     "hire_min_town_hall_level": {
       "LUMBERJACK": 1,

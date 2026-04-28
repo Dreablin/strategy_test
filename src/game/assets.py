@@ -23,6 +23,7 @@ _BUILDING_FOLDER: dict[str, str] = {
     "IRON_MINE": "iron_mine",
     "FARM": "farm",
     "FORESTER_HUT": "forester_hut",
+    "SCHOOL": "school",
 }
 
 _WORKER_FOLDER: dict[str, str] = {
@@ -133,6 +134,7 @@ def _building_palette(b_type: str) -> tuple[tuple[int, int, int], tuple[int, int
         "iron_mine": ((150, 110, 100), (80, 55, 50)),
         "farm": ((170, 150, 90), (90, 120, 60)),
         "forester_hut": ((126, 112, 78), (68, 86, 54)),
+        "school": ((120, 124, 168), (62, 66, 108)),
     }
     return palettes.get(t, ((120, 120, 130), (60, 60, 70)))
 

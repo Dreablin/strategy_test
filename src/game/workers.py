@@ -285,7 +285,7 @@ class WorkerManager:
             and w.state in {"working", "chopping", "mining", "depositing"}
         }
 
-    def hire(self, worker_type: str) -> Worker | None:
+    def hire(self, worker_type: str, *, source_building: Building | None = None) -> Worker | None:
         """Hire a worker if town hall level and resources allow it."""
         if self._resources is None or self._registry is None:
             return None
@@ -302,19 +302,40 @@ class WorkerManager:
         cost = dict(WORKER_HIRE_COSTS.get(worker_type, {"food": 0}))
         if not self._resources.try_spend(cost):
             return None
-        town_hall = next((b for b in self._registry.all() if b.type_tag == "TOWN_HALL"), None)
+        spawn_anchor = source_building
+        all_buildings = self._registry.all()
+        if spawn_anchor not in all_buildings:
+            spawn_anchor = None
+        if spawn_anchor is None:
+            schools = [b for b in all_buildings if b.type_tag == "SCHOOL"]
+            if schools:
+                # Hiring is centralized in School; if caller did not pass explicit source,
+                # prefer the latest placed school over Town Hall legacy spawn.
+                spawn_anchor = schools[-1]
+            else:
+                spawn_anchor = next((b for b in all_buildings if b.type_tag == "TOWN_HALL"), None)
         stand = (17, 19)
-        if town_hall is not None:
-            stand = town_hall_spawn_tile(town_hall)
+        if spawn_anchor is not None:
+            if spawn_anchor.type_tag == "TOWN_HALL":
+                stand = town_hall_spawn_tile(spawn_anchor)
+            else:
+                pos = spawn_anchor.grid_pos
+                if pos is None:
+                    stand = building_center_tile(spawn_anchor)
+                else:
+                    gx, gy = pos
+                    w, h = type(spawn_anchor).footprint
+                    # For School hiring, spawn at the tile below the building center.
+                    stand = (gx + w // 2, gy + h)
             world = getattr(self._registry, "_world", None)
             if world is not None and (
                 not world.is_in_grass(*stand) or world.is_occupied(*stand)
             ):
-                approaches = self._approach_tiles(town_hall)
+                approaches = self._approach_tiles(spawn_anchor)
                 if approaches:
                     stand = approaches[0]
                 else:
-                    stand = building_center_tile(town_hall)
+                    stand = building_center_tile(spawn_anchor)
         worker = Worker(worker_type, stand_tile=stand)
         self._workers.append(worker)
         return worker

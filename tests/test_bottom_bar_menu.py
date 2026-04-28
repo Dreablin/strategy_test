@@ -40,8 +40,19 @@ def test_bottom_bar_social_school_posts_build_event() -> None:
     resources = ResourceManager()
     BottomBar._menu = "social"  # noqa: SLF001
     pygame.event.clear()
-    # Social menu layout: back, school.
-    BottomBar.handle_click(surface, (900, 700), resources)
+    # Social menu layout: back, school, house.
+    BottomBar.handle_click(surface, (600, 700), resources)
     events = [e for e in pygame.event.get() if e.type == BUILD_MENU_SELECT]
     assert events
     assert events[-1].building_type == "SCHOOL"
+
+
+def test_bottom_bar_social_house_posts_build_event() -> None:
+    surface = pygame.Surface((1200, 720))
+    resources = ResourceManager()
+    BottomBar._menu = "social"  # noqa: SLF001
+    pygame.event.clear()
+    BottomBar.handle_click(surface, (1000, 700), resources)
+    events = [e for e in pygame.event.get() if e.type == BUILD_MENU_SELECT]
+    assert events
+    assert events[-1].building_type == "HOUSE"

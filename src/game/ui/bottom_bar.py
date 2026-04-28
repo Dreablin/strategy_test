@@ -62,7 +62,7 @@ class BottomBar:
             return
 
         if menu == "social":
-            entries = (("back", "Back"), ("school", "School"))
+            entries = (("back", "Back"), ("school", "School"), ("house", "House"))
             rects = _button_rects(surface, len(entries))
             for rect, (key, label) in zip(rects, entries):
                 btn = rect.inflate(-6, -10)
@@ -71,6 +71,9 @@ class BottomBar:
                 surface.blit(text, (btn.centerx - text.get_width() // 2, btn.top + 10))
                 if key == "school":
                     spr = pygame.transform.smoothscale(building_sprite("school", 1), (40, 32))
+                    surface.blit(spr, (btn.centerx - spr.get_width() // 2, btn.bottom - 40))
+                elif key == "house":
+                    spr = pygame.transform.smoothscale(building_sprite("house", 1), (40, 32))
                     surface.blit(spr, (btn.centerx - spr.get_width() // 2, btn.bottom - 40))
             return
 
@@ -154,14 +157,16 @@ class BottomBar:
             return
 
         if menu == "social":
-            entries = ("back", "school")
+            entries = ("back", "school", "house")
             for rect, key in zip(_button_rects(surface, len(entries)), entries):
                 if not rect.collidepoint(pos):
                     continue
                 if key == "back":
                     BottomBar._menu = "main"
-                else:
+                elif key == "school":
                     pygame.event.post(pygame.event.Event(BUILD_MENU_SELECT, building_type="SCHOOL"))
+                else:
+                    pygame.event.post(pygame.event.Event(BUILD_MENU_SELECT, building_type="HOUSE"))
                 return
             return
 

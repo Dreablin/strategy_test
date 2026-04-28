@@ -24,6 +24,7 @@ _DEFAULT_SETTINGS: dict = {
             "FARM": {"wood": 5},
             "FORESTER_HUT": {"wood": 5},
             "SCHOOL": {"wood": 5},
+            "HOUSE": {"wood": 5},
         },
         "upgrade_costs": {
             "DEFAULT": {
@@ -46,7 +47,13 @@ _DEFAULT_SETTINGS: dict = {
         },
     },
     "gates": {
-        "building_min_town_hall_level": {"STONE_MINE": 3, "IRON_MINE": 5, "FORESTER_HUT": 1, "SCHOOL": 1},
+        "building_min_town_hall_level": {
+            "STONE_MINE": 3,
+            "IRON_MINE": 5,
+            "FORESTER_HUT": 1,
+            "SCHOOL": 1,
+            "HOUSE": 1,
+        },
         "hire_min_town_hall_level": {"LUMBERJACK": 1, "STONECUTTER": 3, "MINER": 5, "FARMER": 1},
     },
     "levels": {"max_level": 10},

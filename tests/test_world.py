@@ -2,7 +2,7 @@
 
 import pytest
 
-from game.config import GRID_SIZE
+from game.config import GRID_SIZE, town_hall_footprint_tiles
 from game.world import World
 
 
@@ -14,8 +14,8 @@ def _rect_fully_unoccupied(world: World, gx: int, gy: int, w: int, h: int) -> bo
 
 def test_grid_dimensions_match_config() -> None:
     world = World()
-    assert world.width == GRID_SIZE == 55
-    assert world.height == GRID_SIZE == 55
+    assert world.width == GRID_SIZE
+    assert world.height == GRID_SIZE
 
 
 def test_is_in_grass_playable_field() -> None:
@@ -70,10 +70,16 @@ def test_partial_footprint_still_occupied_after_partial_free() -> None:
     assert world.is_occupied(6, 6)
 
 
-def test_stone_generation_picks_three_centers_far_from_town_hall() -> None:
+def test_stone_generation_six_centers_one_on_th_chebyshev_ring_twenty() -> None:
     world = World()
-    assert len(world._stone_centers) == 3  # noqa: SLF001
-    town_hall_tiles = {(x, y) for y in range(16, 19) for x in range(16, 19)}
+    assert len(world._stone_centers) == 6  # noqa: SLF001
+    town_hall_tiles = town_hall_footprint_tiles()
+    ring_twenty = [
+        (cx, cy)
+        for cx, cy in world._stone_centers  # noqa: SLF001
+        if min(max(abs(cx - tx), abs(cy - ty)) for tx, ty in town_hall_tiles) == 20
+    ]
+    assert len(ring_twenty) >= 1
     for cx, cy in world._stone_centers:  # noqa: SLF001
         assert world.is_in_grass(cx, cy)
         min_dist = min(max(abs(cx - tx), abs(cy - ty)) for tx, ty in town_hall_tiles)
@@ -89,28 +95,50 @@ def test_generated_stones_have_units_and_never_overlap_trees() -> None:
         assert not world.is_tree_blocking(gx, gy)
 
 
-def test_stone_generation_is_deterministic_for_fresh_world() -> None:
-    a = World()
-    b = World()
+def test_near_town_hall_ring_cluster_places_stones_inside_map_clearing() -> None:
+    """Ring-20 center lies in build-clearing Chebyshev zone; stones must still spawn (F-STONE)."""
+    world = World(world_seed=0)
+    th = town_hall_footprint_tiles()
+
+    def min_th(x: int, y: int) -> int:
+        return min(max(abs(x - tx), abs(y - ty)) for tx, ty in th)
+
+    near_ring = [(x, y) for (x, y), _ in world.iter_stones() if 16 <= min_th(x, y) <= 24]
+    assert near_ring, "expected at least one stone on/near the TH distance-20 ring cluster"
+
+
+def test_stone_generation_is_reproducible_with_explicit_world_seed() -> None:
+    seed = 9_001_283
+    a = World(world_seed=seed)
+    b = World(world_seed=seed)
     a_tiles = sorted((pos, stone.units) for pos, stone in a.iter_stones())
     b_tiles = sorted((pos, stone.units) for pos, stone in b.iter_stones())
     assert a_tiles == b_tiles
 
 
-def test_tree_generation_picks_five_grove_centers_far_from_town_hall() -> None:
-    world = World()
-    assert len(world._tree_centers) == 5  # noqa: SLF001
-    town_hall_tiles = {(x, y) for y in range(16, 19) for x in range(16, 19)}
-    for cx, cy in world._tree_centers:  # noqa: SLF001
+def test_tree_generation_ten_grove_centers_including_priority_th_rings() -> None:
+    world = World(world_seed=2)
+    centers = world._tree_centers  # noqa: SLF001
+    assert len(centers) == 10
+    town_hall_tiles = town_hall_footprint_tiles()
+
+    def min_th(cx: int, cy: int) -> int:
+        return min(max(abs(cx - tx), abs(cy - ty)) for tx, ty in town_hall_tiles)
+
+    assert min_th(*centers[0]) == 12
+    assert min_th(*centers[1]) == 20
+    assert max(abs(centers[0][0] - centers[1][0]), abs(centers[0][1] - centers[1][1])) >= 17
+
+    for cx, cy in centers:
         assert world.is_in_grass(cx, cy)
         assert not world.is_stone_blocking(cx, cy)
-        min_dist = min(max(abs(cx - tx), abs(cy - ty)) for tx, ty in town_hall_tiles)
-        assert min_dist >= 12
+        assert min_th(cx, cy) >= 12
 
 
-def test_tree_generation_is_deterministic_for_fresh_world() -> None:
-    a = World()
-    b = World()
+def test_tree_generation_is_reproducible_with_explicit_world_seed() -> None:
+    seed = 9_001_283
+    a = World(world_seed=seed)
+    b = World(world_seed=seed)
     a_trees = sorted((pos, tree.stage) for pos, tree in a.iter_alive_trees())
     b_trees = sorted((pos, tree.stage) for pos, tree in b.iter_alive_trees())
     assert a_trees == b_trees

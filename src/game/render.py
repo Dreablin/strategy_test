@@ -158,7 +158,7 @@ class Renderer:
         gx_min, gy_min, gx_max, gy_max = Renderer.visible_tile_range(surface, world, camera)
         if gx_max < gx_min or gy_max < gy_min:
             return
-        moving_states = {"moving", "going_to_tree", "going_to_stone", "returning"}
+        moving_states = {"moving", "going_to_tree", "going_to_stone", "going_to_plant_tile", "returning"}
         entries: list[tuple[str, bool, float, float]] = []
         for worker in worker_manager.workers():
             carrying = (
@@ -212,7 +212,17 @@ class Renderer:
         )
         for (gx, gy), tree in entries:
             sx, sy = world_to_screen(gx, gy)
-            spr = tree_sprite(tree.stage.name.lower())
+            try:
+                spr = tree_sprite(tree.stage.name.lower(), species=getattr(tree, "species", 0))
+            except TypeError:
+                # Backward compatibility for tests monkeypatching legacy 1-arg tree_sprite.
+                spr = tree_sprite(tree.stage.name.lower())
+            except Exception:
+                # Renderer fallback: keep drawing even if a species-specific asset path fails.
+                try:
+                    spr = tree_sprite(tree.stage.name.lower(), species=0)
+                except TypeError:
+                    spr = tree_sprite(tree.stage.name.lower())
             px = ox + cam_x + sx + TILE_W // 2 - spr.get_width() // 2
             py = oy + cam_y + sy + TILE_H - spr.get_height()
             surface.blit(spr, (px, py))

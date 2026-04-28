@@ -1,6 +1,7 @@
 """Equivalence guard: cached blocked tiles equals legacy full-grid union (T130)."""
 
 from game.buildings.lumber_camp import LumberCamp
+from game.config import town_hall_origin_tile
 from game.buildings.registry import BuildingRegistry
 from game.buildings.stone_mine import StoneMine
 from game.buildings.town_hall import TownHall
@@ -35,7 +36,7 @@ def test_blocked_tiles_matches_legacy_scan_across_world_mutations() -> None:
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     workers = WorkerManager(resources, registry)
-    th = registry.place(TownHall, (16, 16))
+    th = registry.place(TownHall, town_hall_origin_tile())
     th.level = 3
     camp_a = registry.place(LumberCamp, (20, 20))
     _mine = registry.place(StoneMine, (24, 20))

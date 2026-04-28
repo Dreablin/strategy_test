@@ -23,6 +23,7 @@ _DISPLAY_NAME: dict[str, str] = {
     "STONE_MINE": "Stone Mine",
     "IRON_MINE": "Iron Mine",
     "FARM": "Farm",
+    "FORESTER_HUT": "Forester Hut",
 }
 
 _DESCRIPTION: dict[str, str] = {
@@ -31,6 +32,7 @@ _DESCRIPTION: dict[str, str] = {
     "STONE_MINE": "Stonecutter quarries stone.",
     "IRON_MINE": "Miner digs for iron.",
     "FARM": "Farmer grows food.",
+    "FORESTER_HUT": "Forester plants new trees around the hut.",
 }
 
 _RESOURCE_LABEL: dict[str, str] = {
@@ -110,7 +112,7 @@ class BuildingPanel:
                 upgrade_enabled = resources.has(cost)
 
         has_storage_row = hasattr(building, "storage_capacity") and hasattr(building, "stored")
-        has_status_row = has_storage_row and production_status is not None
+        has_status_row = production_status is not None
         text_rows = 5 + int(has_storage_row) + int(has_status_row)
         btn_count = int(can_upgrade) + int(show_demolish)
         h = (
@@ -230,12 +232,12 @@ class BuildingPanel:
                 body_font.render(BuildingPanel.storage_line(building), True, (200, 204, 214)),
                 (layout.frame.left + _PANEL_PAD, y),
             )
-            if production_status is not None:
-                y += _ROW
-                surface.blit(
-                    body_font.render(f"Status: {production_status}", True, (200, 204, 214)),
-                    (layout.frame.left + _PANEL_PAD, y),
-                )
+        if production_status is not None:
+            y += _ROW
+            surface.blit(
+                body_font.render(f"Status: {production_status}", True, (200, 204, 214)),
+                (layout.frame.left + _PANEL_PAD, y),
+            )
 
         if layout.upgrade is not None:
             u_en = layout.upgrade_enabled

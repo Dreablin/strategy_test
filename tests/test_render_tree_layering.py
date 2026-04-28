@@ -5,6 +5,7 @@ import pygame
 import game.assets as assets_mod
 import game.render as render_mod
 from game.buildings.registry import BuildingRegistry
+from game.config import town_hall_origin_tile, near_town_hall_tile
 from game.buildings.town_hall import TownHall
 from game.iso import world_to_screen
 from game.render import Renderer
@@ -49,11 +50,12 @@ def test_tree_occludes_worker_behind(monkeypatch) -> None:
     world = World()
     registry = BuildingRegistry(world)
     resources = ResourceManager()
-    registry.place(TownHall, (16, 16))
+    registry.place(TownHall, town_hall_origin_tile())
     workers = WorkerManager(resources, registry)
-    w = Worker("LUMBERJACK", stand_tile=(22, 22))
+    tx, ty = near_town_hall_tile()
+    w = Worker("LUMBERJACK", stand_tile=(tx, ty))
     workers.add_worker(w)
-    world._trees[(22, 22)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
+    world._trees[(tx, ty)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
 
     dot = pygame.Surface((1, 1), pygame.SRCALPHA)
     dot.fill((255, 0, 0, 255))
@@ -64,7 +66,7 @@ def test_tree_occludes_worker_behind(monkeypatch) -> None:
 
     surface = pygame.Surface((1280, 720), pygame.SRCALPHA)
     _draw_scene(surface, world, registry, workers)
-    px = _tree_pixel(surface, world, 22, 22)
+    px = _tree_pixel(surface, world, tx, ty)
     assert surface.get_at(px)[:3] == (0, 255, 0)
 
 
@@ -72,11 +74,12 @@ def test_worker_in_front_remains_visible(monkeypatch) -> None:
     world = World()
     registry = BuildingRegistry(world)
     resources = ResourceManager()
-    registry.place(TownHall, (16, 16))
+    registry.place(TownHall, town_hall_origin_tile())
     workers = WorkerManager(resources, registry)
-    w = Worker("LUMBERJACK", stand_tile=(23, 23))
+    tx, ty = near_town_hall_tile()
+    w = Worker("LUMBERJACK", stand_tile=(tx + 1, ty + 1))
     workers.add_worker(w)
-    world._trees[(22, 22)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
+    world._trees[(tx, ty)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
 
     dot = pygame.Surface((1, 1), pygame.SRCALPHA)
     dot.fill((255, 0, 0, 255))
@@ -87,7 +90,7 @@ def test_worker_in_front_remains_visible(monkeypatch) -> None:
 
     surface = pygame.Surface((1280, 720), pygame.SRCALPHA)
     _draw_scene(surface, world, registry, workers)
-    px_tree = _tree_pixel(surface, world, 22, 22)
-    px_worker = _worker_pixel(surface, world, 23, 23)
+    px_tree = _tree_pixel(surface, world, tx, ty)
+    px_worker = _worker_pixel(surface, world, tx + 1, ty + 1)
     assert surface.get_at(px_tree)[:3] == (0, 255, 0)
     assert surface.get_at(px_worker)[:3] == (255, 0, 0)

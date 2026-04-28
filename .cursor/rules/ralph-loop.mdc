@@ -6,8 +6,9 @@ alwaysApply: true
 # Project: Isometric Economy Strategy Game (Python + Pygame)
 
 A standalone, isometric, top-down economy strategy game packaged as a single
-Windows `.exe`. No engine, no main menu, no save/load. Pure Pygame + procedural
-assets. See `PRD.md` for the full spec; it is read-only.
+Windows `.exe`. No engine, no main menu, no save/load. Pure Pygame — disk-first
+small assets where the PRD specifies paths, procedural fallbacks otherwise.
+See `PRD.md` for the full spec (contract; read-only for Ralph loop).
 
 ## Per-turn workflow
 
@@ -50,8 +51,9 @@ assets. See `PRD.md` for the full spec; it is read-only.
 - If stuck on the same task **3 turns in a row**, mark it `- [!]`, add a row to
   *Issues & Blockers* in `progress.md`, and move on.
 - Use task statuses consistently: `[ ]` not started, `[~]` in progress, `[x]` done, `[!]` blocked.
-- All graphics are procedural via `src/game/assets.py` — never add binary asset
-  files to the repo.
+- All graphics default to procedural generation via `src/game/assets.py`; small
+  **placeholder PNGs** under `assets/` are allowed where the PRD names a disk path
+  (swap-friendly); do not commit large binary art packs.
 
 ## Code standards (Python / Pygame)
 

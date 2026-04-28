@@ -4,18 +4,24 @@ from __future__ import annotations
 
 from collections import deque
 import random
+import secrets
 from typing import Any, cast
 
-from game.config import GRID_SIZE
+from game.config import GRID_SIZE, town_hall_footprint_tiles
 from game.stones import Stone
-from game.trees import Tree, stage_from_tile_seed
+from game.trees import Tree, TreeStage, stage_from_tile_seed
 
-_STONE_CENTER_COUNT = 3
-_TREE_GROVE_COUNT = 5
+_STONE_CENTER_COUNT = 6
+_STONE_GUARANTEED_TH_RING_CHEB = 20  # one cluster center: min Chebyshev to TH footprint == this
+_TREE_GROVE_COUNT = 8
 _STONE_MIN_DISTANCE_FROM_TOWN_HALL = 12
-_TREE_GROVE_RADIUS_MIN = 3
-_TREE_GROVE_RADIUS_MAX = 6
-_TREE_GROVE_FILL_PROBABILITY = 0.8
+_TREE_GROVE_RADIUS_MIN = 5
+_TREE_GROVE_RADIUS_MAX = 8
+_TREE_GROVE_FILL_PROBABILITY = 0.7
+_PRIORITY_TREE_RING_NEAR = 12  # first bonus grove: min Chebyshev to TH footprint
+_PRIORITY_TREE_RING_FAR = 20  # second bonus grove
+# L∞ disks r≤R do not overlap if center separation > 2R (here R = max grove radius).
+_PRIORITY_TREE_PAIR_MIN_CENTER_SEP = 2 * _TREE_GROVE_RADIUS_MAX + 1
 _SCATTER_TREE_FRACTION = 0.02
 _NEIGHBORS_4: tuple[tuple[int, int], ...] = (
     (0, -1),
@@ -25,6 +31,21 @@ _NEIGHBORS_4: tuple[tuple[int, int], ...] = (
 )
 
 _POP_MISSING = object()
+
+
+def _world_generation_rng_pair(world_seed: int | None) -> tuple[random.Random, random.Random]:
+    """RNG for stones vs trees. ``world_seed`` set ⇒ reproducible (tests); else OS entropy."""
+    if world_seed is not None:
+        s = (world_seed % (2**31 - 2)) + 1
+        return (
+            random.Random(s * 1_047_269 + 17),
+            random.Random(s * 912_367 + 43),
+        )
+    buf = secrets.token_bytes(16)
+    return (
+        random.Random(int.from_bytes(buf[:8], "big")),
+        random.Random(int.from_bytes(buf[8:], "big")),
+    )
 
 
 def _within_gather_search_radius(
@@ -128,7 +149,7 @@ class World:
         "_scatter_trees_placed",
     )
 
-    def __init__(self) -> None:
+    def __init__(self, *, world_seed: int | None = None) -> None:
         self._occupied: list[list[bool]] = [
             [False] * GRID_SIZE for _ in range(GRID_SIZE)
         ]
@@ -143,8 +164,9 @@ class World:
         self._stone_centers: list[tuple[int, int]] = []
         self._tree_centers: list[tuple[int, int]] = []
         self._scatter_trees_placed = 0
-        self._init_stones()
-        self._init_trees()
+        stone_rng, tree_rng = _world_generation_rng_pair(world_seed)
+        self._init_stones(stone_rng)
+        self._init_trees(tree_rng)
 
     @property
     def width(self) -> int:
@@ -211,6 +233,29 @@ class World:
         tile = (gx, gy)
         self._trees.pop(tile, None)
         self._tree_reservations.pop(tile, None)
+
+    def plant_tree(self, gx: int, gy: int, *, now_ms: int, species: int) -> Tree | None:
+        """Plant a new sapling on a valid free tile, else return ``None``."""
+        tile = (gx, gy)
+        if not self.is_in_grass(gx, gy):
+            return None
+        if tile in town_hall_footprint_tiles():
+            return None
+        if self.is_occupied(gx, gy):
+            return None
+        if self.is_stone_blocking(gx, gy):
+            return None
+        if self.tree_at(gx, gy) is not None:
+            return None
+        planted = Tree(stage=TreeStage.SAPLING, species=species, next_growth_at_ms=int(now_ms) + 30_000)
+        self._trees[tile] = planted
+        return planted
+
+    def update_tree_growth(self, *, now_ms: int) -> None:
+        """Advance all alive trees with growth timers based on ``now_ms``."""
+        for tree in self._trees.values():
+            if tree.alive:
+                tree.update_growth(int(now_ms))
 
     def reserve_tree(self, gx: int, gy: int, worker: object) -> bool:
         tile = (gx, gy)
@@ -292,31 +337,58 @@ class World:
                     self._occupied_tiles.discard(tile)
                     self._blocked_tiles.discard(tile)
 
-    def _init_trees(self) -> None:
-        rng = random.Random(GRID_SIZE * 91_237 + 43)
-        self._tree_centers = _pick_far_cluster_centers(
-            self, _TREE_GROVE_COUNT, rng, forbid_stone_center=True
-        )
+    def _plant_tree_grove(
+        self,
+        cx: int,
+        cy: int,
+        rng: random.Random,
+        *,
+        mid: int,
+        center_clear_radius: int,
+        protected_th: set[tuple[int, int]],
+        relax_map_center_clear: bool,
+    ) -> None:
+        radius = rng.randint(_TREE_GROVE_RADIUS_MIN, _TREE_GROVE_RADIUS_MAX)
+        for y in range(cy - radius, cy + radius + 1):
+            for x in range(cx - radius, cx + radius + 1):
+                if not self.is_in_grass(x, y):
+                    continue
+                if (x, y) in protected_th:
+                    continue
+                if not relax_map_center_clear and max(abs(x - mid), abs(y - mid)) <= center_clear_radius:
+                    continue
+                if max(abs(x - cx), abs(y - cy)) > radius:
+                    continue
+                if self.is_stone_blocking(x, y):
+                    continue
+                if (x, y) in self._trees:
+                    continue
+                if rng.random() >= _TREE_GROVE_FILL_PROBABILITY:
+                    continue
+                seed = x * 92821 + y * 68917 + GRID_SIZE * 37
+                self._trees[(x, y)] = Tree(stage=stage_from_tile_seed(seed), species=seed % 3)
+
+    def _init_trees(self, rng: random.Random) -> None:
         mid = GRID_SIZE // 2
         center_clear_radius = max(8, GRID_SIZE // 4)
+        protected_th = town_hall_footprint_tiles()
+        priority = _pick_pair_priority_tree_grove_centers(self, rng)
+        exclude = set(priority)
+        far = _pick_far_cluster_centers(
+            self, _TREE_GROVE_COUNT, rng, forbid_stone_center=True, exclude=exclude
+        )
+        self._tree_centers = priority + far
+        priority_set = set(priority)
         for cx, cy in self._tree_centers:
-            radius = rng.randint(_TREE_GROVE_RADIUS_MIN, _TREE_GROVE_RADIUS_MAX)
-            for y in range(cy - radius, cy + radius + 1):
-                for x in range(cx - radius, cx + radius + 1):
-                    if not self.is_in_grass(x, y):
-                        continue
-                    if max(abs(x - mid), abs(y - mid)) <= center_clear_radius:
-                        continue
-                    if max(abs(x - cx), abs(y - cy)) > radius:
-                        continue
-                    if self.is_stone_blocking(x, y):
-                        continue
-                    if (x, y) in self._trees:
-                        continue
-                    if rng.random() >= _TREE_GROVE_FILL_PROBABILITY:
-                        continue
-                    seed = x * 92821 + y * 68917 + GRID_SIZE * 37
-                    self._trees[(x, y)] = Tree(stage=stage_from_tile_seed(seed))
+            self._plant_tree_grove(
+                cx,
+                cy,
+                rng,
+                mid=mid,
+                center_clear_radius=center_clear_radius,
+                protected_th=protected_th,
+                relax_map_center_clear=(cx, cy) in priority_set,
+            )
 
         self._scatter_random_trees(rng, mid, center_clear_radius)
 
@@ -347,25 +419,26 @@ class World:
             if placed >= target:
                 break
             seed = gx * 92821 + gy * 68917 + GRID_SIZE * 37
-            self._trees[(gx, gy)] = Tree(stage=stage_from_tile_seed(seed))
+            self._trees[(gx, gy)] = Tree(stage=stage_from_tile_seed(seed), species=seed % 3)
             placed += 1
         self._scatter_trees_placed = placed
 
-    def _init_stones(self) -> None:
-        rng = random.Random(GRID_SIZE * 104_729 + 17)
-        self._stone_centers = _pick_far_cluster_centers(
-            self, _STONE_CENTER_COUNT, rng, forbid_stone_center=False
-        )
+    def _init_stones(self, rng: random.Random) -> None:
+        self._stone_centers, ring_center = _pick_stone_cluster_centers(self, rng)
         mid = GRID_SIZE // 2
         center_clear_radius = max(8, GRID_SIZE // 4)
+        protected_th = town_hall_footprint_tiles()
 
         for cx, cy in self._stone_centers:
             radius = rng.randint(1, 4)
+            relax_center_clear = ring_center is not None and (cx, cy) == ring_center
             for y in range(cy - radius, cy + radius + 1):
                 for x in range(cx - radius, cx + radius + 1):
                     if not self.is_in_grass(x, y):
                         continue
-                    if max(abs(x - mid), abs(y - mid)) <= center_clear_radius:
+                    if (x, y) in protected_th:
+                        continue
+                    if not relax_center_clear and max(abs(x - mid), abs(y - mid)) <= center_clear_radius:
                         continue
                     if max(abs(x - cx), abs(y - cy)) > radius:
                         continue
@@ -377,9 +450,109 @@ class World:
                     self._stones[tile] = Stone()
 
 
-def _town_hall_footprint_tiles() -> set[tuple[int, int]]:
-    """Town Hall is placed at (16, 16) with footprint 3×3 in `main.py`."""
-    return {(x, y) for y in range(16, 19) for x in range(16, 19)}
+def _min_chebyshev_to_tiles(px: int, py: int, tiles: set[tuple[int, int]]) -> int:
+    return min(max(abs(px - tx), abs(py - ty)) for tx, ty in tiles)
+
+
+def _chebyshev_point_distance(a: tuple[int, int], b: tuple[int, int]) -> int:
+    return max(abs(a[0] - b[0]), abs(a[1] - b[1]))
+
+
+def _cheb_disk_has_no_stones(world: World, cx: int, cy: int, r: int) -> bool:
+    """True iff every in-bounds tile in the Chebyshev disk (Chebyshev ≤ r) has no stone."""
+    for y in range(cy - r, cy + r + 1):
+        for x in range(cx - r, cx + r + 1):
+            if not world.is_in_grass(x, y):
+                continue
+            if max(abs(x - cx), abs(y - cy)) > r:
+                continue
+            if world.is_stone_blocking(x, y):
+                return False
+    return True
+
+
+def _ring_center_candidates_no_stone_disk(
+    world: World, ring: int, disk_r: int
+) -> list[tuple[int, int]]:
+    protected = town_hall_footprint_tiles()
+    out: list[tuple[int, int]] = []
+    for cy in range(GRID_SIZE):
+        for cx in range(GRID_SIZE):
+            if not world.is_in_grass(cx, cy):
+                continue
+            if _min_chebyshev_to_tiles(cx, cy, protected) != ring:
+                continue
+            if world.is_stone_blocking(cx, cy):
+                continue
+            if not _cheb_disk_has_no_stones(world, cx, cy, disk_r):
+                continue
+            out.append((cx, cy))
+    return out
+
+
+def _pick_pair_priority_tree_grove_centers(world: World, rng: random.Random) -> list[tuple[int, int]]:
+    """Up to two centers: ring ``_PRIORITY_TREE_RING_NEAR`` then ``_PRIORITY_TREE_RING_FAR`` from TH.
+
+    The Chebyshev disks of radius ``_TREE_GROVE_RADIUS_MAX`` around each center must contain
+    no stone tiles; the two centers must be at least ``_PRIORITY_TREE_PAIR_MIN_CENTER_SEP``
+    apart (Chebyshev) so max-radius groves cannot overlap. Returns ``[]`` if no valid pair.
+    """
+    r_ball = _TREE_GROVE_RADIUS_MAX
+    ring_near = _ring_center_candidates_no_stone_disk(world, _PRIORITY_TREE_RING_NEAR, r_ball)
+    ring_far = _ring_center_candidates_no_stone_disk(world, _PRIORITY_TREE_RING_FAR, r_ball)
+    rng.shuffle(ring_near)
+    rng.shuffle(ring_far)
+    min_sep = _PRIORITY_TREE_PAIR_MIN_CENTER_SEP
+    for a in ring_near:
+        for b in ring_far:
+            if _chebyshev_point_distance(a, b) >= min_sep:
+                return [a, b]
+    return []
+
+
+def _pick_stone_cluster_centers(
+    world: World, rng: random.Random
+) -> tuple[list[tuple[int, int]], tuple[int, int] | None]:
+    """Pick ``_STONE_CENTER_COUNT`` centers; one on TH Chebyshev ring 20 if any candidate exists.
+
+    Returns ``(centers, ring_center)`` where ``ring_center`` is the mandatory ring tile (for
+    relaxed map-center clearing when filling stones) or ``None``.
+    """
+    protected = town_hall_footprint_tiles()
+    ring_candidates: list[tuple[int, int]] = []
+    for cy in range(GRID_SIZE):
+        for cx in range(GRID_SIZE):
+            if not world.is_in_grass(cx, cy):
+                continue
+            if _min_chebyshev_to_tiles(cx, cy, protected) != _STONE_GUARANTEED_TH_RING_CHEB:
+                continue
+            ring_candidates.append((cx, cy))
+    rng.shuffle(ring_candidates)
+    centers: list[tuple[int, int]] = []
+    exclude: set[tuple[int, int]] = set()
+    ring_center: tuple[int, int] | None = None
+    if ring_candidates:
+        ring_center = ring_candidates[0]
+        centers.append(ring_center)
+        exclude.add(ring_center)
+    need = _STONE_CENTER_COUNT - len(centers)
+    centers.extend(
+        _pick_far_cluster_centers(world, need, rng, forbid_stone_center=False, exclude=exclude)
+    )
+    exclude = set(centers)
+    while len(centers) < _STONE_CENTER_COUNT:
+        more = _pick_far_cluster_centers(
+            world,
+            _STONE_CENTER_COUNT - len(centers),
+            rng,
+            forbid_stone_center=False,
+            exclude=exclude,
+        )
+        if not more:
+            break
+        centers.extend(more)
+        exclude.update(more)
+    return centers, ring_center
 
 
 def _pick_far_cluster_centers(
@@ -388,17 +561,21 @@ def _pick_far_cluster_centers(
     rng: random.Random,
     *,
     forbid_stone_center: bool,
+    exclude: set[tuple[int, int]] | None = None,
 ) -> list[tuple[int, int]]:
     """Pick up to `count` grass tiles outside the build clearing, Chebyshev ≥ TH distance."""
     mid = GRID_SIZE // 2
     center_clear_radius = max(8, GRID_SIZE // 4)
-    protected = _town_hall_footprint_tiles()
+    protected = town_hall_footprint_tiles()
+    banned = exclude or set()
     candidates = [(x, y) for y in range(GRID_SIZE) for x in range(GRID_SIZE)]
     rng.shuffle(candidates)
     centers: list[tuple[int, int]] = []
     for cx, cy in candidates:
         if len(centers) >= count:
             break
+        if (cx, cy) in banned:
+            continue
         if max(abs(cx - mid), abs(cy - mid)) <= center_clear_radius:
             continue
         if any(
@@ -445,6 +622,7 @@ def find_nearest_free_tree(
     start_tree = world.tree_at(sx, sy)
     if (
         start_tree is not None
+        and start_tree.can_chop
         and from_tile not in skip
         and (not skip_reserved or not world.is_tree_reserved(sx, sy))
     ):
@@ -476,7 +654,8 @@ def find_nearest_free_tree(
                 continue
             if anchor is not None and radius is not None and not _within_gather_search_radius(nxt, anchor, radius):
                 continue
-            if world.tree_at(nx, ny) is not None:
+            tile_tree = world.tree_at(nx, ny)
+            if tile_tree is not None and tile_tree.can_chop:
                 if nxt in skip:
                     continue
                 if skip_reserved and world.is_tree_reserved(nx, ny):

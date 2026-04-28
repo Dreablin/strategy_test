@@ -5,6 +5,7 @@ from __future__ import annotations
 import pygame
 
 from game.assets import grass_tile
+from game.config import near_town_hall_tile, town_hall_origin_tile
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
@@ -31,14 +32,14 @@ def test_initial_town_hall_drawn() -> None:
     world = World()
     registry = BuildingRegistry(world)
     _resources = ResourceManager()
-    registry.place(TownHall, (16, 16))
+    registry.place(TownHall, town_hall_origin_tile())
     surface = pygame.Surface((1280, 720))
     surface.fill(_SENTINEL)
     Renderer.draw_world(surface, world)
     Renderer.draw_buildings(surface, world, registry)
 
-    # 3x3 center tile of Town Hall footprint at (16,16) is (17,17).
-    px, py = _tile_center_pixel(surface, world, 17, 17)
+    thx, thy = town_hall_origin_tile()
+    px, py = _tile_center_pixel(surface, world, thx + 1, thy + 1)
     color = surface.get_at((px, py))[:3]
     grass_color = grass_tile().get_at((32, 16))[:3]
     assert color != _SENTINEL
@@ -49,8 +50,8 @@ def test_placed_building_drawn() -> None:
     world = World()
     registry = BuildingRegistry(world)
     _resources = ResourceManager()
-    registry.place(TownHall, (16, 16))
-    camp = registry.place(LumberCamp, (20, 20))
+    registry.place(TownHall, town_hall_origin_tile())
+    camp = registry.place(LumberCamp, near_town_hall_tile(8, 8))
     surface = pygame.Surface((1280, 720))
     surface.fill(_SENTINEL)
     Renderer.draw_world(surface, world)
@@ -83,16 +84,16 @@ def test_painters_order() -> None:
     world = World()
     registry = BuildingRegistry(world)
     _resources = ResourceManager()
-    registry.place(TownHall, (16, 16))
-    registry.place(LumberCamp, (8, 8))
-    registry.place(LumberCamp, (20, 20))
+    registry.place(TownHall, town_hall_origin_tile())
+    registry.place(LumberCamp, near_town_hall_tile(8, 8))
+    registry.place(LumberCamp, near_town_hall_tile(15, 15))
     spy = _Spy(pygame.Surface((1280, 720)))
     Renderer.draw_buildings(spy, world, registry)
 
     # Building blits should follow painter's order by grid depth.
     dests = [args[1] for args, _kwargs in spy.calls if len(args) >= 2]
     assert len(dests) >= 3
-    # Order is (8,8) first, then town hall, then (20,20). We compare the two camps.
+    # First camp (smaller gx+gy), then town hall, then second camp.
     assert dests[0][1] < dests[2][1]
 
 
@@ -100,8 +101,8 @@ def test_draw_building_shifted_by_camera_offset() -> None:
     world = World()
     registry = BuildingRegistry(world)
     _resources = ResourceManager()
-    registry.place(TownHall, (16, 16))
-    camp = registry.place(LumberCamp, (20, 20))
+    registry.place(TownHall, town_hall_origin_tile())
+    camp = registry.place(LumberCamp, near_town_hall_tile(8, 8))
 
     no_cam = pygame.Surface((1280, 720))
     no_cam.fill(_SENTINEL)

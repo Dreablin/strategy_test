@@ -1,6 +1,7 @@
 """Failing tests for Lumberjack chopping interaction (T81)."""
 
 from game.buildings.lumber_camp import LumberCamp
+from game.config import town_hall_origin_tile, near_town_hall_tile
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
 from game.resources import ResourceManager
@@ -11,14 +12,15 @@ from game.workers import CHOP_DURATION_MS, WorkerManager
 
 def _setup_two_tree_cycle():
     now_ms = [0]
-    world = World()
+    world = World(world_seed=2)
     world._trees.clear()  # noqa: SLF001
-    world._trees[(20, 20)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
-    world._trees[(21, 20)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
     resources = ResourceManager()
     registry = BuildingRegistry(world)
-    registry.place(TownHall, (16, 16)).level = 3
-    camp = registry.place(LumberCamp, (22, 22))
+    registry.place(TownHall, town_hall_origin_tile()).level = 3
+    camp = registry.place(LumberCamp, near_town_hall_tile())
+    gx, gy = camp.grid_pos  # type: ignore[assignment]
+    world._trees[(gx + 3, gy)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
+    world._trees[(gx + 4, gy)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
     workers = WorkerManager(resources, registry, now_ms_fn=lambda: now_ms[0])
     worker = workers.hire("LUMBERJACK")
     assert worker is not None
@@ -63,8 +65,11 @@ def test_level1_chop_completes_on_exact_chop_duration_boundary() -> None:
 
 
 def test_second_lumberjack_can_target_another_tree_same_cycle() -> None:
-    now_ms, _world, resources, registry, _camp, workers, worker_a = _setup_two_tree_cycle()
-    registry.place(LumberCamp, (26, 22))
+    now_ms, world, resources, registry, camp_a, workers, worker_a = _setup_two_tree_cycle()
+    camp_b = registry.place(LumberCamp, near_town_hall_tile(18, 2))
+    bx, by = camp_b.grid_pos  # type: ignore[assignment]
+    world._trees[(bx + 3, by)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
+    world._trees[(bx + 4, by)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
 
     worker_b = workers.hire("LUMBERJACK")
     assert worker_b is not None

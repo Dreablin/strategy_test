@@ -22,6 +22,9 @@ _DEFAULT_SETTINGS: dict = {
             "STONE_MINE": {"wood": 5},
             "IRON_MINE": {"wood": 5},
             "FARM": {"wood": 5},
+            "FORESTER_HUT": {"wood": 5},
+            "SCHOOL": {"wood": 5},
+            "HOUSE": {"wood": 5},
         },
         "upgrade_costs": {
             "DEFAULT": {
@@ -44,7 +47,13 @@ _DEFAULT_SETTINGS: dict = {
         },
     },
     "gates": {
-        "building_min_town_hall_level": {"STONE_MINE": 3, "IRON_MINE": 5},
+        "building_min_town_hall_level": {
+            "STONE_MINE": 3,
+            "IRON_MINE": 5,
+            "FORESTER_HUT": 1,
+            "SCHOOL": 1,
+            "HOUSE": 1,
+        },
         "hire_min_town_hall_level": {"LUMBERJACK": 1, "STONECUTTER": 3, "MINER": 5, "FARMER": 1},
     },
     "levels": {"max_level": 10},
@@ -83,6 +92,23 @@ TILE_W = int(SETTINGS["world"]["tile_w"])
 TILE_H = int(SETTINGS["world"]["tile_h"])
 GRID_SIZE = int(SETTINGS["world"]["grid_size"])
 GATHER_RESOURCE_SEARCH_RADIUS = int(SETTINGS["world"].get("gather_resource_search_radius", 20))
+
+
+def town_hall_origin_tile() -> tuple[int, int]:
+    """Top-left grid tile for the initial 3×3 Town Hall (centred on the map)."""
+    mid = GRID_SIZE // 2
+    return (mid - 1, mid - 1)
+
+
+def town_hall_footprint_tiles() -> set[tuple[int, int]]:
+    gx0, gy0 = town_hall_origin_tile()
+    return {(x, y) for y in range(gy0, gy0 + 3) for x in range(gx0, gx0 + 3)}
+
+
+def near_town_hall_tile(dx: int = 6, dy: int = 6) -> tuple[int, int]:
+    """Grass anchor offset from Town Hall — used by many tests and smoke checks."""
+    x0, y0 = town_hall_origin_tile()
+    return (x0 + dx, y0 + dy)
 WINDOW_SIZE = tuple(SETTINGS["window"]["size"])
 MAX_LEVEL = int(SETTINGS["levels"]["max_level"])
 

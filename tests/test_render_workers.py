@@ -4,6 +4,7 @@ import pygame
 
 import game.assets as assets
 from game.buildings.lumber_camp import LumberCamp
+from game.config import town_hall_origin_tile, near_town_hall_tile
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
 from game.render import Renderer
@@ -16,8 +17,8 @@ def test_worker_grid_positions_assigned_worker_on_building_center() -> None:
     world = World()
     registry = BuildingRegistry(world)
     resources = ResourceManager()
-    registry.place(TownHall, (16, 16))
-    camp = registry.place(LumberCamp, (10, 10))
+    registry.place(TownHall, town_hall_origin_tile())
+    camp = registry.place(LumberCamp, near_town_hall_tile(8, 8))
     wm = WorkerManager(resources, registry)
     w = Worker("LUMBERJACK")
     wm.add_worker(w)
@@ -30,7 +31,7 @@ def test_worker_grid_positions_idle_workers_stay_on_their_stand_tiles() -> None:
     world = World()
     registry = BuildingRegistry(world)
     resources = ResourceManager()
-    town_hall = registry.place(TownHall, (16, 16))
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
     wm = WorkerManager(resources, registry)
     wm.add_worker(Worker("LUMBERJACK", stand_tile=building_center_tile(town_hall)))
     wm.add_worker(Worker("FARMER", stand_tile=(0, 0)))
@@ -45,8 +46,8 @@ def test_worker_grid_positions_orphan_stays_on_demolished_center() -> None:
     world = World()
     registry = BuildingRegistry(world)
     resources = ResourceManager()
-    registry.place(TownHall, (16, 16))
-    camp = registry.place(LumberCamp, (8, 8))
+    registry.place(TownHall, town_hall_origin_tile())
+    camp = registry.place(LumberCamp, near_town_hall_tile(8, 8))
     wm = WorkerManager(resources, registry)
     w = Worker("LUMBERJACK")
     wm.add_worker(w)
@@ -61,10 +62,11 @@ def test_draw_workers_moving_worker_pixel_shifts_between_frames(monkeypatch) -> 
     world = World()
     registry = BuildingRegistry(world)
     resources = ResourceManager()
-    registry.place(TownHall, (16, 16))
+    registry.place(TownHall, town_hall_origin_tile())
     wm = WorkerManager(resources, registry)
-    w = Worker("LUMBERJACK", stand_tile=(22, 22))
-    w.start_move([(22, 22), (23, 22)], started_ms=0)
+    c = near_town_hall_tile()
+    w = Worker("LUMBERJACK", stand_tile=c)
+    w.start_move([c, (c[0] + 1, c[1])], started_ms=0)
     wm.add_worker(w)
 
     dot = pygame.Surface((1, 1), pygame.SRCALPHA)
@@ -89,10 +91,11 @@ def test_draw_workers_lumberjack_going_to_tree_interpolates_between_tiles(monkey
     world = World()
     registry = BuildingRegistry(world)
     resources = ResourceManager()
-    registry.place(TownHall, (16, 16))
+    registry.place(TownHall, town_hall_origin_tile())
     wm = WorkerManager(resources, registry)
-    w = Worker("LUMBERJACK", stand_tile=(22, 22))
-    w.start_move([(22, 22), (23, 22)], started_ms=0, move_state="going_to_tree")
+    c = near_town_hall_tile()
+    w = Worker("LUMBERJACK", stand_tile=c)
+    w.start_move([c, (c[0] + 1, c[1])], started_ms=0, move_state="going_to_tree")
     wm.add_worker(w)
 
     dot = pygame.Surface((1, 1), pygame.SRCALPHA)
@@ -117,11 +120,12 @@ def test_draw_workers_lumberjack_returning_interpolates_between_tiles(monkeypatc
     world = World()
     registry = BuildingRegistry(world)
     resources = ResourceManager()
-    registry.place(TownHall, (16, 16))
+    registry.place(TownHall, town_hall_origin_tile())
     wm = WorkerManager(resources, registry)
-    w = Worker("LUMBERJACK", stand_tile=(22, 22))
+    c = near_town_hall_tile()
+    w = Worker("LUMBERJACK", stand_tile=c)
     w.carrying = "wood"
-    w.start_move([(22, 22), (23, 22)], started_ms=0, move_state="returning")
+    w.start_move([c, (c[0] + 1, c[1])], started_ms=0, move_state="returning")
     wm.add_worker(w)
 
     dot = pygame.Surface((1, 1), pygame.SRCALPHA)
@@ -146,10 +150,40 @@ def test_draw_workers_stonecutter_going_to_stone_interpolates_between_tiles(monk
     world = World()
     registry = BuildingRegistry(world)
     resources = ResourceManager()
-    registry.place(TownHall, (16, 16))
+    registry.place(TownHall, town_hall_origin_tile())
     wm = WorkerManager(resources, registry)
-    w = Worker("STONECUTTER", stand_tile=(22, 22))
-    w.start_move([(22, 22), (23, 22)], started_ms=0, move_state="going_to_stone")
+    c = near_town_hall_tile()
+    w = Worker("STONECUTTER", stand_tile=c)
+    w.start_move([c, (c[0] + 1, c[1])], started_ms=0, move_state="going_to_stone")
+    wm.add_worker(w)
+
+    dot = pygame.Surface((1, 1), pygame.SRCALPHA)
+    dot.fill((255, 0, 0, 255))
+    monkeypatch.setattr(assets, "worker_dot", lambda _t, carrying=False: dot)
+
+    surface = pygame.Surface((1280, 720), pygame.SRCALPHA)
+    Renderer.draw_workers(surface, world, registry, wm)
+    first = surface.get_bounding_rect()
+
+    wm.update(1500)
+    surface.fill((0, 0, 0, 0))
+    Renderer.draw_workers(surface, world, registry, wm)
+    second = surface.get_bounding_rect()
+
+    assert first.width == 1 and first.height == 1
+    assert second.width == 1 and second.height == 1
+    assert second.x > first.x
+
+
+def test_draw_workers_forester_going_to_plant_tile_interpolates_between_tiles(monkeypatch) -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, town_hall_origin_tile())
+    wm = WorkerManager(resources, registry)
+    c = near_town_hall_tile()
+    w = Worker("FORESTER", stand_tile=c)
+    w.start_move([c, (c[0] + 1, c[1])], started_ms=0, move_state="going_to_plant_tile")
     wm.add_worker(w)
 
     dot = pygame.Surface((1, 1), pygame.SRCALPHA)
@@ -174,9 +208,9 @@ def test_draw_workers_uses_carrying_variant_for_lumberjack(monkeypatch) -> None:
     world = World()
     registry = BuildingRegistry(world)
     resources = ResourceManager()
-    registry.place(TownHall, (16, 16))
+    registry.place(TownHall, town_hall_origin_tile())
     wm = WorkerManager(resources, registry)
-    w = Worker("LUMBERJACK", stand_tile=(22, 22))
+    w = Worker("LUMBERJACK", stand_tile=near_town_hall_tile())
     w.carrying = "wood"
     wm.add_worker(w)
 
@@ -198,9 +232,9 @@ def test_draw_workers_uses_carrying_variant_for_stonecutter(monkeypatch) -> None
     world = World()
     registry = BuildingRegistry(world)
     resources = ResourceManager()
-    registry.place(TownHall, (16, 16))
+    registry.place(TownHall, town_hall_origin_tile())
     wm = WorkerManager(resources, registry)
-    w = Worker("STONECUTTER", stand_tile=(22, 22))
+    w = Worker("STONECUTTER", stand_tile=near_town_hall_tile())
     w.carrying = "stone"
     wm.add_worker(w)
 

@@ -13,6 +13,7 @@ from game.assets import (
     clear_asset_caches,
     grass_tile,
     hire_ui_icon,
+    population_icon,
     resource_icon,
     tree_sprite,
     worker_dot,
@@ -136,6 +137,18 @@ def test_lumberjack_worker_dot_cache_invalidation_by_mtime(tmp_path, monkeypatch
 def test_resource_icon_smoke() -> None:
     for name in ("food", "wood", "stone", "iron"):
         _assert_nonempty_surface(resource_icon(name))
+
+
+def test_population_icon_smoke() -> None:
+    _assert_nonempty_surface(population_icon(24))
+
+
+def test_population_icon_falls_back_procedural_when_disk_asset_missing(tmp_path, monkeypatch) -> None:
+    root = tmp_path / "ui"
+    monkeypatch.setattr(assets_mod, "_UI_ROOT", root)
+    clear_asset_caches()
+    _assert_nonempty_surface(population_icon(24))
+    clear_asset_caches()
 
 
 def test_worker_and_hire_ui_icon_smoke() -> None:

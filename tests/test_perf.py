@@ -7,6 +7,7 @@ import time
 import pygame
 
 from game.buildings.lumber_camp import LumberCamp
+from game.config import town_hall_origin_tile
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
 from game.render import Renderer
@@ -21,7 +22,7 @@ def test_render_stress_scene_avg_fps_at_least_55() -> None:
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     workers = WorkerManager(resources, registry)
-    registry.place(TownHall, (16, 16))
+    registry.place(TownHall, town_hall_origin_tile())
 
     # Build up to 50 camps while respecting placement constraints.
     built = 0

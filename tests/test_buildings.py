@@ -3,6 +3,7 @@
 import pytest
 
 from game.buildings.farm import Farm
+from game.config import town_hall_origin_tile
 from game.buildings.iron_mine import IronMine
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.registry import BuildingRegistry
@@ -65,7 +66,7 @@ def test_town_hall_max_level_10() -> None:
 
 
 def test_upgrade_lumber_camp_spends_cost_and_increments_level() -> None:
-    world = World()
+    world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     b = registry.place(LumberCamp, (11, 11))
@@ -77,7 +78,7 @@ def test_upgrade_lumber_camp_spends_cost_and_increments_level() -> None:
 
 
 def test_upgrade_rejected_when_insufficient_resources() -> None:
-    world = World()
+    world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     b = registry.place(LumberCamp, (12, 12))
@@ -88,21 +89,21 @@ def test_upgrade_rejected_when_insufficient_resources() -> None:
 
 
 def test_upgrade_allowed_for_town_hall_below_cap() -> None:
-    world = World()
+    world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     resources.add("wood", 50)
-    th = registry.place(TownHall, (16, 16))
+    th = registry.place(TownHall, town_hall_origin_tile())
     assert registry.upgrade_building(th, resources)
     assert th.level == 2
 
 
 def test_upgrade_updates_per_cycle_when_building_is_staffed() -> None:
     """No passive per-cycle production should be exposed for active gatherers."""
-    world = World()
+    world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
-    th = registry.place(TownHall, (16, 16))
+    th = registry.place(TownHall, town_hall_origin_tile())
     th.level = 3
     b = registry.place(StoneMine, (10, 10))
     registry.sync_resources_per_cycle(resources, staffed_buildings={b})
@@ -115,7 +116,7 @@ def test_upgrade_updates_per_cycle_when_building_is_staffed() -> None:
 
 
 def test_upgrade_rejected_at_max_level() -> None:
-    world = World()
+    world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     resources.add("wood", 60_000)
@@ -165,7 +166,7 @@ def test_take_from_storage_rejects_overdraw(cls: type) -> None:
 
 
 def test_town_hall_does_not_expose_storage_api() -> None:
-    th = TownHall(level=1, grid_pos=(16, 16))
+    th = TownHall(level=1, grid_pos=town_hall_origin_tile())
     assert not hasattr(th, "stored")
     assert not hasattr(th, "storage_capacity")
     assert not hasattr(th, "add_to_storage")

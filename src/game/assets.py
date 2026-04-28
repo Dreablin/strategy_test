@@ -15,6 +15,7 @@ _TREES_ROOT = _ASSETS_ROOT / "trees"
 _WORLD_ROOT = _ASSETS_ROOT / "world"
 _NPC_ROOT = _ASSETS_ROOT / "npc"
 _ICONS_ROOT = _ASSETS_ROOT / "icons"
+_UI_ROOT = _ASSETS_ROOT / "ui"
 
 _BUILDING_FOLDER: dict[str, str] = {
     "TOWN_HALL": "town_hall",
@@ -22,6 +23,9 @@ _BUILDING_FOLDER: dict[str, str] = {
     "STONE_MINE": "stone_mine",
     "IRON_MINE": "iron_mine",
     "FARM": "farm",
+    "FORESTER_HUT": "forester_hut",
+    "SCHOOL": "school",
+    "HOUSE": "house",
 }
 
 _WORKER_FOLDER: dict[str, str] = {
@@ -29,6 +33,7 @@ _WORKER_FOLDER: dict[str, str] = {
     "STONECUTTER": "stonecutter",
     "MINER": "miner",
     "FARMER": "farmer",
+    "FORESTER": "forester",
 }
 
 
@@ -51,16 +56,31 @@ def grass_tile() -> pygame.Surface:
     return surf
 
 
-def _procedural_tree_sprite(stage: str) -> pygame.Surface:
+def _procedural_tree_sprite(stage: str, species: int = 0) -> pygame.Surface:
     """Fallback tall tree sprite used when no staged asset exists."""
     w, h = 48, 72
     surf = pygame.Surface((w, h), pygame.SRCALPHA)
-    palette: dict[str, tuple[int, int, int]] = {
-        "sapling": (125, 195, 115),
-        "young": (88, 168, 92),
-        "mature": (58, 138, 78),
-        "adult": (36, 108, 62),
+    species_palettes: dict[int, dict[str, tuple[int, int, int]]] = {
+        0: {
+            "sapling": (125, 195, 115),
+            "young": (88, 168, 92),
+            "mature": (58, 138, 78),
+            "adult": (36, 108, 62),
+        },
+        1: {
+            "sapling": (170, 196, 116),
+            "young": (140, 172, 92),
+            "mature": (108, 148, 78),
+            "adult": (84, 124, 62),
+        },
+        2: {
+            "sapling": (126, 184, 170),
+            "young": (94, 160, 142),
+            "mature": (72, 136, 120),
+            "adult": (56, 112, 100),
+        },
     }
+    palette = species_palettes.get(species, species_palettes[0])
     canopy = palette.get(stage, (58, 138, 78))
     trunk_x = w // 2 - 3
     pygame.draw.rect(surf, (86, 52, 28), (trunk_x, h - 24, 6, 24))
@@ -69,16 +89,20 @@ def _procedural_tree_sprite(stage: str) -> pygame.Surface:
     return surf
 
 
-@functools.lru_cache(maxsize=32)
-def tree_sprite(stage: str) -> pygame.Surface:
-    """Load stage tree sprite from disk, fallback to procedural."""
+@functools.lru_cache(maxsize=128)
+def tree_sprite(stage: str, species: int = 0) -> pygame.Surface:
+    """Load species+stage tree sprite from disk, fallback to defaults/procedural."""
     stage_key = str(stage).lower().strip()
     if "." in stage_key:
         stage_key = stage_key.split(".")[-1]
+    species_key = int(species)
+    loaded = _load_png(str(_TREES_ROOT / f"species_{species_key}" / stage_key / "default.png"))
+    if loaded is not None:
+        return loaded
     loaded = _load_png(str(_TREES_ROOT / stage_key / "default.png"))
     if loaded is not None:
         return loaded
-    return _procedural_tree_sprite(stage_key)
+    return _procedural_tree_sprite(stage_key, species_key)
 
 
 def _procedural_stone_sprite() -> pygame.Surface:
@@ -111,6 +135,9 @@ def _building_palette(b_type: str) -> tuple[tuple[int, int, int], tuple[int, int
         "stone_mine": ((140, 140, 150), (70, 70, 80)),
         "iron_mine": ((150, 110, 100), (80, 55, 50)),
         "farm": ((170, 150, 90), (90, 120, 60)),
+        "forester_hut": ((126, 112, 78), (68, 86, 54)),
+        "school": ((120, 124, 168), (62, 66, 108)),
+        "house": ((172, 142, 126), (110, 86, 76)),
     }
     return palettes.get(t, ((120, 120, 130), (60, 60, 70)))
 
@@ -281,6 +308,7 @@ def _worker_color(w_type: str) -> tuple[int, int, int]:
         "STONECUTTER": (160, 160, 170),
         "MINER": (200, 90, 70),
         "FARMER": (230, 200, 60),
+        "FORESTER": (88, 170, 96),
     }
     return colors.get(t, (200, 200, 220))
 
@@ -414,6 +442,26 @@ def resource_icon(name: str) -> pygame.Surface:
     return surf
 
 
+def _procedural_population_icon(size: int = 24) -> pygame.Surface:
+    surf = pygame.Surface((size, size), pygame.SRCALPHA)
+    cx = size // 2
+    pygame.draw.circle(surf, (218, 206, 120), (cx, cx - 4), max(3, size // 6))
+    pygame.draw.circle(surf, (160, 148, 76), (cx, cx + 7), max(5, size // 4))
+    pygame.draw.circle(surf, (34, 34, 40), (cx, cx - 4), max(3, size // 6), 1)
+    pygame.draw.circle(surf, (34, 34, 40), (cx, cx + 7), max(5, size // 4), 1)
+    return surf
+
+
+@functools.lru_cache(maxsize=8)
+def population_icon(size: int = 24) -> pygame.Surface:
+    loaded = _load_png(str(_UI_ROOT / "population" / "default.png"))
+    base = loaded if loaded is not None else _procedural_population_icon(max(1, int(size)))
+    sz = max(1, int(size))
+    if base.get_width() == sz and base.get_height() == sz:
+        return base
+    return pygame.transform.smoothscale(base, (sz, sz))
+
+
 def clear_asset_caches() -> None:
     """Clear all in-memory asset caches (used by dev reload button)."""
     grass_tile.cache_clear()
@@ -424,3 +472,4 @@ def clear_asset_caches() -> None:
     tree_sprite.cache_clear()
     stone_sprite.cache_clear()
     resource_icon.cache_clear()
+    population_icon.cache_clear()

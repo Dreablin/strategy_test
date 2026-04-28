@@ -6,9 +6,11 @@ import pygame
 
 from game import dev_asset_reload
 from game.buildings.base import Building
+from game.buildings.forester_hut import ForesterHut
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.stone_mine import StoneMine
 from game.buildings.registry import BuildingRegistry
+from game.buildings.school import School
 from game.buildings.town_hall import TownHall
 from game.camera import Camera
 from game.iso import screen_to_world
@@ -16,8 +18,10 @@ from game.render import Renderer
 from game.resources import ResourceManager
 from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT, BottomBar
 from game.ui.building_panel import BuildingPanel
+from game.ui.forester_hut_panel import ForesterHutPanel
 from game.ui.lumber_camp_panel import LumberCampPanel
 from game.ui.stone_mine_panel import StoneMinePanel
+from game.ui.school_panel import SchoolPanel
 from game.ui.placement import PlacementController
 from game.ui.town_hall_panel import TownHallPanel
 from game.world import World
@@ -91,8 +95,6 @@ class GameInput:
     def _panel_production_status(self) -> str | None:
         if self._panel is None:
             return None
-        if not (hasattr(self._panel, "storage_capacity") and hasattr(self._panel, "stored")):
-            return None
         return self._worker_manager.production_status_for_building(self._panel)
 
     def _sync_assignments(self) -> None:
@@ -120,7 +122,10 @@ class GameInput:
         self._sync_panel_stale()
         if event.type == BUILD_MENU_SELECT:
             self._panel = None
-            self._placement.select(event.building_type)
+            if event.building_type in {"DEV_TREE", "DEV_STONE"}:
+                self._placement.select_dev(event.building_type)
+            else:
+                self._placement.select(event.building_type)
             return
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             if self._panel is not None:
@@ -210,6 +215,31 @@ class GameInput:
                 worker_working=worker_status == "assigned",
             )
             return
+        if ForesterHutPanel.supports_building(self._panel):
+            assert isinstance(self._panel, ForesterHut)
+            worker_status = self._panel_worker_status()
+            production_status = self._panel_production_status()
+            ForesterHutPanel.draw(
+                surface,
+                self._panel,
+                self._resources,
+                worker_assigned=worker_status != "empty",
+                worker_status=worker_status,
+                production_status=production_status,
+                worker_working=worker_status == "assigned",
+            )
+            return
+        if SchoolPanel.supports_building(self._panel):
+            assert isinstance(self._panel, School)
+            worker_status = self._panel_worker_status()
+            SchoolPanel.draw(
+                surface,
+                self._panel,
+                self._resources,
+                worker_assigned=worker_status != "empty",
+                worker_manager=self._worker_manager,
+            )
+            return
         worker_status = self._panel_worker_status()
         production_status = self._panel_production_status()
         BuildingPanel.draw(
@@ -223,7 +253,7 @@ class GameInput:
         )
 
     def _handle_map_left_click(self, surface: pygame.Surface, pos: tuple[int, int]) -> None:
-        if self._placement.pending_type is not None:
+        if self._placement.has_pending:
             if self._placement.try_place(surface, pos, self._camera):
                 self._sync_assignments()
             return
@@ -257,9 +287,6 @@ class GameInput:
                         self._sync_assignments()
                     return
                 if action is not None and action.startswith("hire:"):
-                    worker_type = action.split(":", 1)[1]
-                    if self._worker_manager.hire(worker_type) is not None:
-                        self._sync_assignments()
                     return
             if LumberCampPanel.supports_building(self._panel):
                 assert isinstance(self._panel, LumberCamp)
@@ -326,6 +353,72 @@ class GameInput:
                     elif action == "toggle_active" and self._panel is not None:
                         self._panel.set_active(not self._panel.active)
                         self._sync_assignments()
+                    return
+            if ForesterHutPanel.supports_building(self._panel):
+                assert isinstance(self._panel, ForesterHut)
+                production_status = self._panel_production_status()
+                layout = ForesterHutPanel.layout(
+                    surface,
+                    self._panel,
+                    self._resources,
+                    worker_assigned=wa,
+                    production_status=production_status,
+                )
+                if layout.frame.collidepoint(pos):
+                    action = ForesterHutPanel.click_action(
+                        surface,
+                        pos,
+                        self._panel,
+                        self._resources,
+                        worker_assigned=wa,
+                        production_status=production_status,
+                    )
+                    if action == "close":
+                        self._panel = None
+                    elif action == "demolish" and self._panel is not None:
+                        b = self._panel
+                        self._registry.demolish(b, self._worker_manager)
+                        self._panel = None
+                        self._sync_assignments()
+                    elif action == "toggle_active" and self._panel is not None:
+                        self._panel.set_active(not self._panel.active)
+                        self._sync_assignments()
+                    return
+            if SchoolPanel.supports_building(self._panel):
+                assert isinstance(self._panel, School)
+                layout = SchoolPanel.layout(
+                    surface,
+                    self._panel,
+                    self._resources,
+                    worker_assigned=wa,
+                    worker_manager=self._worker_manager,
+                )
+                if layout.frame.collidepoint(pos):
+                    action = SchoolPanel.click_action(
+                        surface,
+                        pos,
+                        self._panel,
+                        self._resources,
+                        worker_assigned=wa,
+                        worker_manager=self._worker_manager,
+                    )
+                    if action == "close":
+                        self._panel = None
+                    elif action == "demolish" and self._panel is not None:
+                        b = self._panel
+                        self._registry.demolish(b, self._worker_manager)
+                        self._panel = None
+                        self._sync_assignments()
+                    elif action is not None and action.startswith("hire:"):
+                        worker_type = action.split(":", 1)[1]
+                        now_fn = getattr(self._worker_manager, "_now_ms_fn", None)
+                        now_ms = int(now_fn()) if callable(now_fn) else pygame.time.get_ticks()
+                        self._panel.enqueue_training(worker_type, now_ms=now_ms)
+                    elif action is not None and action.startswith("cancel:"):
+                        slot_idx = int(action.split(":", 1)[1])
+                        now_fn = getattr(self._worker_manager, "_now_ms_fn", None)
+                        now_ms = int(now_fn()) if callable(now_fn) else pygame.time.get_ticks()
+                        self._panel.cancel_training_at(slot_idx, now_ms=now_ms)
                     return
             layout = BuildingPanel.layout(
                 surface,

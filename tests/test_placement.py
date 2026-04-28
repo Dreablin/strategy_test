@@ -19,7 +19,7 @@ def _cell_center_screen(surface: pygame.Surface, world: World, gx: int, gy: int)
 
 def test_place_lumber_camp_deducts_wood() -> None:
     surface = pygame.Surface((1280, 720))
-    world = World()
+    world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     placement = PlacementController(world, registry, resources)
@@ -32,7 +32,7 @@ def test_place_lumber_camp_deducts_wood() -> None:
 
 def test_cancel_prevents_place() -> None:
     surface = pygame.Surface((1280, 720))
-    world = World()
+    world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     placement = PlacementController(world, registry, resources)
@@ -46,7 +46,7 @@ def test_cancel_prevents_place() -> None:
 
 def test_insufficient_wood_does_not_place() -> None:
     surface = pygame.Surface((1280, 720))
-    world = World()
+    world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     assert resources.try_spend({"wood": 200 - BUILD_COST_WOOD + 1})
@@ -60,7 +60,7 @@ def test_insufficient_wood_does_not_place() -> None:
 def test_update_hover_uses_renderer_map_origin() -> None:
     """Hover cell must match `screen_to_world` with the same offset as `Renderer.draw_world`."""
     surface = pygame.Surface((1280, 720))
-    world = World()
+    world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     placement = PlacementController(world, registry, resources)

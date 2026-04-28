@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 14. Forestry expansion: forester hut, planting cycle, tree variants
-- **Next Task:** T157 — add failing render tests for tree species visuals.
-- **Last Completed:** T156 — implement forester worker planting cycle in workers.
-- **Total Progress:** 156 / 160
+- **Next Task:** T158 — implement species-aware tree asset loading/render path.
+- **Last Completed:** T157 — add failing render tests for tree species visuals.
+- **Total Progress:** 157 / 160
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -521,7 +521,7 @@
 
 #### 14.5 Rendering and assets for 3 tree species
 
-- [ ] **T157**: Add failing render tests in `tests/test_render_tree_species.py`:
+- [x] **T157**: Add failing render tests in `tests/test_render_tree_species.py`:
   - Renderer chooses sprite by `(species, stage)` combination.
   - Fallback path works when specific species asset is missing.
   - Existing depth/layering order for trees is preserved.

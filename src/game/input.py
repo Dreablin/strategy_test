@@ -411,8 +411,7 @@ class GameInput:
                         self._sync_assignments()
                     elif action is not None and action.startswith("hire:"):
                         worker_type = action.split(":", 1)[1]
-                        if self._worker_manager.hire(worker_type, source_building=self._panel) is not None:
-                            self._sync_assignments()
+                        self._panel.enqueue_training(worker_type)
                     return
             layout = BuildingPanel.layout(
                 surface,

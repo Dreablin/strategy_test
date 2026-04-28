@@ -7,6 +7,7 @@ import random
 from typing import Any
 
 from game.buildings.base import Building
+from game.buildings.school import School
 from game.characteristics import Characteristics
 from game.config import (
     GATHER_RESOURCE_SEARCH_RADIUS,
@@ -286,7 +287,13 @@ class WorkerManager:
             and w.state in {"working", "chopping", "mining", "depositing"}
         }
 
-    def hire(self, worker_type: str, *, source_building: Building | None = None) -> Worker | None:
+    def hire(
+        self,
+        worker_type: str,
+        *,
+        source_building: Building | None = None,
+        charge_cost: bool = True,
+    ) -> Worker | None:
         """Hire a worker if town hall level and resources allow it."""
         if self._resources is None or self._registry is None:
             return None
@@ -302,9 +309,10 @@ class WorkerManager:
                 break
         if th_level < min_level:
             return None
-        cost = dict(WORKER_HIRE_COSTS.get(worker_type, {"food": 0}))
-        if not self._resources.try_spend(cost):
-            return None
+        if charge_cost:
+            cost = dict(WORKER_HIRE_COSTS.get(worker_type, {"food": 0}))
+            if not self._resources.try_spend(cost):
+                return None
         spawn_anchor = source_building
         all_buildings = self._registry.all()
         if spawn_anchor not in all_buildings:
@@ -343,7 +351,7 @@ class WorkerManager:
         self._workers.append(worker)
         return worker
 
-    def can_hire(self, worker_type: str) -> bool:
+    def can_hire(self, worker_type: str, *, charge_cost: bool = True) -> bool:
         """Whether current state allows hiring this worker type."""
         if self._resources is None or self._registry is None:
             return False
@@ -357,6 +365,8 @@ class WorkerManager:
             if b.type_tag == "TOWN_HALL":
                 th_level = b.level
                 break
+        if not charge_cost:
+            return th_level >= min_level
         cost = dict(WORKER_HIRE_COSTS.get(worker_type, {"food": 0}))
         return th_level >= min_level and self._resources.has(cost)
 
@@ -584,6 +594,18 @@ class WorkerManager:
                 self._park_worker_inside_camp(worker, camp)
                 worker.camp_wait_until_ms = int(now_ms) + gather_state["rest_ms"]
                 continue
+        spawned = False
+        if self._registry is not None:
+            for building in self._registry.all():
+                if not isinstance(building, School):
+                    continue
+                trained_type = building.update_training(int(now_ms))
+                if trained_type is None:
+                    continue
+                if self.hire(trained_type, source_building=building, charge_cost=False) is not None:
+                    spawned = True
+            if spawned:
+                self.reassign_all()
 
     def _update_forester(self, worker: Worker, now_ms: int, world: Any) -> None:
         if world is None:

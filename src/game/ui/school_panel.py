@@ -73,7 +73,10 @@ class SchoolPanel:
             rect = pygame.Rect(base.frame.left + _PANEL_PAD, y, base.frame.width - _PANEL_PAD * 2, _BTN_H)
             buttons.append((worker_type, rect))
             if worker_manager is not None:
-                hire_enabled[worker_type] = worker_manager.can_hire(worker_type)
+                hire_enabled[worker_type] = worker_manager.can_hire(
+                    worker_type,
+                    charge_cost=False,
+                ) and school.can_enqueue_training()
             else:
                 cost = dict(WORKER_HIRE_COSTS.get(worker_type, {"food": 0}))
                 hire_enabled[worker_type] = resources.has(cost)

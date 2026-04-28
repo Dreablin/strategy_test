@@ -187,6 +187,7 @@ def test_school_hire_button_calls_worker_manager_hire_and_spawns_at_school() -> 
         surface,
         pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=hire_button.center),
     )
+    workers.update(30_000)
     assert len(workers.workers()) == 1
     hired = workers.workers()[0]
     sx, sy = school.grid_pos
@@ -216,6 +217,7 @@ def test_hire_from_second_school_spawns_near_second_school() -> None:
         surface,
         pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=hire_button.center),
     )
+    workers.update(30_000)
 
     assert len(workers.workers()) == 1
     hired = workers.workers()[0]

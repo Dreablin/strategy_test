@@ -2,10 +2,10 @@
 
 ## Current Status
 
-- **Phase:** 13. Performance optimisation & orthogonal pathfinding
-- **Next Task:** None — all Phase 13 tasks complete.
-- **Last Completed:** T148 — add end-of-phase smoke test.
-- **Total Progress:** 148 / 148
+- **Phase:** 14. Forestry expansion: forester hut, planting cycle, tree variants
+- **Next Task:** T150 — implement tree species + growth timing in domain model.
+- **Last Completed:** T149 — add failing domain tests for tree species + growth ticks.
+- **Total Progress:** 149 / 160
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -423,6 +423,130 @@
      and the surface contains at least one non-background pixel.
   6. After all `[x]` are checked: print `<promise>ALL_TASKS_COMPLETE</promise>`
      and create empty file `.cursor/ralph/done`.
+
+### Phase 14 — Forestry Expansion (Forester + Forester Hut + Tree Species)
+
+> **Goal of the phase.** Add an active reforestation loop: a new building
+> (`FORESTER_HUT`) and worker role (`FORESTER`) that periodically plant trees
+> around the hut. Newly planted trees start at the smallest stage, then grow
+> automatically over time. Also introduce 3 visual tree variants (asset-level
+> difference only) while preserving existing gameplay rules (only fully-grown
+> trees can be chopped).
+>
+> **Functional requirements for this phase (user contract):**
+>
+> 1. New building: **Forester Hut**. Max level = 1 (no upgrades), supports
+>    Active/Inactive toggle exactly like gather buildings.
+> 2. New worker: **Forester**. When assigned and active:
+>    - leaves hut,
+>    - walks to a **random free** tile within radius 15 from hut,
+>    - spends 5_000 ms planting on that tile,
+>    - planted tree appears at the smallest stage.
+> 3. Tree growth:
+>    - 4 stages total (existing ladder),
+>    - automatic growth tick every 30_000 ms,
+>    - only fully-grown stage remains chop-eligible.
+> 4. Tree variants:
+>    - 3 species/types with different assets only,
+>    - no gameplay/stat difference between species.
+>
+> **Ralph-loop execution notes (same discipline as Phase 13):**
+>
+> - TDD-first for each task with "failing tests first".
+> - After each task: targeted tests + full `pytest -q` + `ruff check src tests`.
+> - Keep deterministic tests by pinning `World(world_seed=...)` where pathing /
+>   placement assumptions depend on map layout.
+> - No PRD edits outside tasks that explicitly require PRD/docs sync.
+
+#### 14.1 Tree domain: species + timed growth
+
+- [x] **T149**: Add failing tests in new `tests/test_trees_species_growth.py`:
+  - `Tree` supports exactly 3 species ids (e.g. `0..2` or enum).
+  - New planted tree starts at smallest stage (`SAPLING`/equivalent).
+  - Growth API advances one stage every 30_000 ms and caps at mature stage.
+  - `can_chop` (or equivalent contract) is `False` until mature, `True` at mature.
+  - Stage progression is deterministic and independent from species.
+
+- [ ] **T150**: Implement species + growth timing in `src/game/trees.py`:
+  - Add species field to `Tree` (asset-facing only).
+  - Add growth timestamp/timer support (`next_growth_at_ms` or accumulated timer).
+  - Add methods/helpers to progress growth in fixed 30_000 ms steps.
+  - Preserve existing behaviour for mature legacy trees generated at world init.
+  - Run `pytest -q tests/test_trees_species_growth.py` -> green.
+
+#### 14.2 World integration for planted trees and global growth ticks
+
+- [ ] **T151**: Add failing tests in `tests/test_world_tree_growth_runtime.py`:
+  - `World.plant_tree(x, y, now_ms, species=...)` (or chosen API) creates
+    smallest-stage tree on valid free tile.
+  - Planting is rejected on occupied / stone / existing-tree / TH footprint tile.
+  - `World.update_tree_growth(now_ms)` advances planted trees each 30_000 ms.
+  - Matured trees become discoverable by lumberjack search/chop flow.
+
+- [ ] **T152**: Implement world-level planting/growth hooks in `src/game/world.py`:
+  - Add plant-tree API used by forester cycle.
+  - Add periodic growth update method called from main worker/game update path.
+  - Ensure cached tile sets remain correct and no full-grid scans are introduced.
+  - Keep generated trees compatible with new species field (assign deterministic species).
+
+#### 14.3 New building: Forester Hut
+
+- [ ] **T153**: Add failing tests in `tests/test_forester_hut_building.py`:
+  - `FORESTER_HUT` exists in building registry/build menu.
+  - Building has level fixed at 1 (upgrade attempt fails cleanly).
+  - Building supports active toggle state and UI status text parity with other camps.
+  - Placement footprint and spacing rules follow normal 2x2 producer buildings.
+
+- [ ] **T154**: Implement `ForesterHut` building + registration:
+  - Add `src/game/buildings/forester_hut.py`.
+  - Register type tag, costs, unlock gate, panel wiring, and active toggle handling.
+  - Ensure no per-cycle passive income is added for this building.
+  - Add/adjust minimal asset metadata placeholders if needed.
+
+#### 14.4 New worker role: Forester planting cycle
+
+- [ ] **T155**: Add failing tests in `tests/test_forester_cycle.py`:
+  - `Worker("FORESTER")` can be hired and assigned only to `FORESTER_HUT`.
+  - Chooses a random **reachable free tile** within Chebyshev radius 15 from hut.
+  - Enters planting state for exactly 5_000 ms on target tile.
+  - On completion, world gains one smallest-stage tree at target tile.
+  - Inactive hut blocks starting new cycle but allows in-progress cycle to finish.
+
+- [ ] **T156**: Implement forester cycle in `src/game/workers.py`:
+  - Add worker states for go_to_plant_tile / planting / return (or existing pattern).
+  - Reuse BFS/path contracts (4-dir) and blocked-tiles logic.
+  - Target selection uses RNG with deterministic injection for tests
+    (`now_ms_fn`-style and/or RNG dependency).
+  - Wire cycle into `reassign_all()` and regular `update()`.
+
+#### 14.5 Rendering and assets for 3 tree species
+
+- [ ] **T157**: Add failing render tests in `tests/test_render_tree_species.py`:
+  - Renderer chooses sprite by `(species, stage)` combination.
+  - Fallback path works when specific species asset is missing.
+  - Existing depth/layering order for trees is preserved.
+
+- [ ] **T158**: Implement species-aware tree asset loading/render:
+  - Extend tree asset keying and metadata lookup for 3 variants.
+  - Keep gameplay untouched (only visuals differ).
+  - Provide procedural fallback for each species/stage pair.
+
+#### 14.6 End-to-end + docs
+
+- [ ] **T159**: Add end-to-end smoke test `tests/test_smoke_phase14.py`:
+  1. Boot world + TH + Forester Hut.
+  2. Hire one forester, run simulated time until at least one planted tree appears.
+  3. Advance time to mature that tree via growth ticks.
+  4. Verify a lumberjack can target/chop the matured planted tree.
+  5. Assert no exceptions during one rendered frame with mixed species trees.
+
+- [ ] **T160**: Docs/progress sync and phase completion:
+  - Update PRD sections for new building/worker, growth timing, and species visuals.
+  - Update `progress.md` Current Status + Decisions Log with key choices
+    (random target selection policy, growth scheduler source of truth).
+  - Final full-suite run (`pytest -q`, `ruff check src tests`).
+  - Mark all Phase 14 tasks `[x]`, then emit
+    `<promise>ALL_TASKS_COMPLETE</promise>` and create `.cursor/ralph/done`.
 
 ---
 

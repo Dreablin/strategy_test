@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 14. Forestry expansion: forester hut, planting cycle, tree variants
-- **Next Task:** T152 — implement world planting API and global tree growth updates.
-- **Last Completed:** T151 — add failing world runtime tests for planting + growth.
-- **Total Progress:** 151 / 160
+- **Next Task:** T153 — add failing tests for Forester Hut building behavior.
+- **Last Completed:** T152 — implement world planting API and tree growth updates.
+- **Total Progress:** 152 / 160
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -483,7 +483,7 @@
   - `World.update_tree_growth(now_ms)` advances planted trees each 30_000 ms.
   - Matured trees become discoverable by lumberjack search/chop flow.
 
-- [ ] **T152**: Implement world-level planting/growth hooks in `src/game/world.py`:
+- [x] **T152**: Implement world-level planting/growth hooks in `src/game/world.py`:
   - Add plant-tree API used by forester cycle.
   - Add periodic growth update method called from main worker/game update path.
   - Ensure cached tile sets remain correct and no full-grid scans are introduced.

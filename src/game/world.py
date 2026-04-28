@@ -9,7 +9,7 @@ from typing import Any, cast
 
 from game.config import GRID_SIZE, town_hall_footprint_tiles
 from game.stones import Stone
-from game.trees import Tree, stage_from_tile_seed
+from game.trees import Tree, TreeStage, stage_from_tile_seed
 
 _STONE_CENTER_COUNT = 6
 _STONE_GUARANTEED_TH_RING_CHEB = 20  # one cluster center: min Chebyshev to TH footprint == this
@@ -234,6 +234,29 @@ class World:
         self._trees.pop(tile, None)
         self._tree_reservations.pop(tile, None)
 
+    def plant_tree(self, gx: int, gy: int, *, now_ms: int, species: int) -> Tree | None:
+        """Plant a new sapling on a valid free tile, else return ``None``."""
+        tile = (gx, gy)
+        if not self.is_in_grass(gx, gy):
+            return None
+        if tile in town_hall_footprint_tiles():
+            return None
+        if self.is_occupied(gx, gy):
+            return None
+        if self.is_stone_blocking(gx, gy):
+            return None
+        if self.tree_at(gx, gy) is not None:
+            return None
+        planted = Tree(stage=TreeStage.SAPLING, species=species, next_growth_at_ms=int(now_ms) + 30_000)
+        self._trees[tile] = planted
+        return planted
+
+    def update_tree_growth(self, *, now_ms: int) -> None:
+        """Advance all alive trees with growth timers based on ``now_ms``."""
+        for tree in self._trees.values():
+            if tree.alive:
+                tree.update_growth(int(now_ms))
+
     def reserve_tree(self, gx: int, gy: int, worker: object) -> bool:
         tile = (gx, gy)
         if self.tree_at(gx, gy) is None:
@@ -343,7 +366,7 @@ class World:
                 if rng.random() >= _TREE_GROVE_FILL_PROBABILITY:
                     continue
                 seed = x * 92821 + y * 68917 + GRID_SIZE * 37
-                self._trees[(x, y)] = Tree(stage=stage_from_tile_seed(seed))
+                self._trees[(x, y)] = Tree(stage=stage_from_tile_seed(seed), species=seed % 3)
 
     def _init_trees(self, rng: random.Random) -> None:
         mid = GRID_SIZE // 2
@@ -396,7 +419,7 @@ class World:
             if placed >= target:
                 break
             seed = gx * 92821 + gy * 68917 + GRID_SIZE * 37
-            self._trees[(gx, gy)] = Tree(stage=stage_from_tile_seed(seed))
+            self._trees[(gx, gy)] = Tree(stage=stage_from_tile_seed(seed), species=seed % 3)
             placed += 1
         self._scatter_trees_placed = placed
 
@@ -599,6 +622,7 @@ def find_nearest_free_tree(
     start_tree = world.tree_at(sx, sy)
     if (
         start_tree is not None
+        and start_tree.can_chop
         and from_tile not in skip
         and (not skip_reserved or not world.is_tree_reserved(sx, sy))
     ):
@@ -630,7 +654,8 @@ def find_nearest_free_tree(
                 continue
             if anchor is not None and radius is not None and not _within_gather_search_radius(nxt, anchor, radius):
                 continue
-            if world.tree_at(nx, ny) is not None:
+            tile_tree = world.tree_at(nx, ny)
+            if tile_tree is not None and tile_tree.can_chop:
                 if nxt in skip:
                     continue
                 if skip_reserved and world.is_tree_reserved(nx, ny):

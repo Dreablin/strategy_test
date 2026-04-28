@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 15 — Housing, House, School training queue, population HUD
-- **Next Task:** T163 (first `- [ ]` below)
-- **Last Completed:** T162 — enforce housing gate on school hiring/UI
-- **Total Progress:** 162 / 173 (Phase 15: 2 / 13 tasks done)
+- **Next Task:** T164 (first `- [ ]` below)
+- **Last Completed:** T163 — failing School queue core tests (RED)
+- **Total Progress:** 163 / 173 (Phase 15: 3 / 13 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -35,7 +35,7 @@
 
 ### 15.2 School — training queue core
 
-- [ ] **T163**: Failing tests for per-`SCHOOL` queue: **7** slots, fill **leftmost empty**, **only slot 0** trains, **30_000 ms** per unit, **shift left** on complete; multiple schools **independent**.
+- [x] **T163**: Failing tests for per-`SCHOOL` queue: **7** slots, fill **leftmost empty**, **only slot 0** trains, **30_000 ms** per unit, **shift left** on complete; multiple schools **independent**.
 - [ ] **T164**: Wire queue to game time (`now_ms`): completion spawns worker using **existing school spawn** rules; then `reassign_all`; **remove food / hire costs** from school training (config + `WorkerManager` / panel).
 
 ### 15.3 UI — School row + Top bar
@@ -74,6 +74,7 @@
 | 2026-04-28 | HF17 | Worker hire spawn is anchored to the hiring `School` building; Town Hall hire UI removed. | All hiring centralized at School. |
 | 2026-04-28 | Prep | Phase 15 queued: school **7×30s** queue, **housing** from TH+House, **HUD** population only (see PRD). | User request; Ralph tasks T161–T173. |
 | 2026-04-28 | T162 | Housing cap gate enforced in School hire flow: UI disabled via `can_hire`, backend `hire` returns no-op when over cap. | Prevents over-cap worker creation at both interaction and domain layers. |
+| 2026-04-28 | T163 | Queue API contract tests define 7-slot FIFO, 30s front-only training, left-shift on completion, independent per-school timers. | Locks expected behavior before implementation (T164). |
 
 ## Issues & Blockers
 

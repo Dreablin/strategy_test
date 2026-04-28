@@ -237,6 +237,7 @@ class GameInput:
                 self._panel,
                 self._resources,
                 worker_assigned=worker_status != "empty",
+                worker_manager=self._worker_manager,
             )
             return
         worker_status = self._panel_worker_status()
@@ -390,6 +391,7 @@ class GameInput:
                     self._panel,
                     self._resources,
                     worker_assigned=wa,
+                    worker_manager=self._worker_manager,
                 )
                 if layout.frame.collidepoint(pos):
                     action = SchoolPanel.click_action(
@@ -398,6 +400,7 @@ class GameInput:
                         self._panel,
                         self._resources,
                         worker_assigned=wa,
+                        worker_manager=self._worker_manager,
                     )
                     if action == "close":
                         self._panel = None

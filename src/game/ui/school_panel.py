@@ -11,6 +11,7 @@ from game.buildings.school import School
 from game.config import WORKER_HIRE_COSTS
 from game.resources import ResourceManager
 from game.ui.building_panel import BuildingPanel
+from game.workers import WorkerManager
 
 _PANEL_PAD = 16
 _BTN_H = 32
@@ -43,7 +44,12 @@ class SchoolPanel:
 
     @staticmethod
     def layout(
-        surface: pygame.Surface, school: School, resources: ResourceManager, *, worker_assigned: bool
+        surface: pygame.Surface,
+        school: School,
+        resources: ResourceManager,
+        *,
+        worker_assigned: bool,
+        worker_manager: WorkerManager | None = None,
     ) -> SchoolPanelLayout:
         base = BuildingPanel.layout(
             surface,
@@ -66,8 +72,11 @@ class SchoolPanel:
         for worker_type in _HIRE_ROWS:
             rect = pygame.Rect(base.frame.left + _PANEL_PAD, y, base.frame.width - _PANEL_PAD * 2, _BTN_H)
             buttons.append((worker_type, rect))
-            cost = dict(WORKER_HIRE_COSTS.get(worker_type, {"food": 0}))
-            hire_enabled[worker_type] = resources.has(cost)
+            if worker_manager is not None:
+                hire_enabled[worker_type] = worker_manager.can_hire(worker_type)
+            else:
+                cost = dict(WORKER_HIRE_COSTS.get(worker_type, {"food": 0}))
+                hire_enabled[worker_type] = resources.has(cost)
             y += _BTN_H + _GAP
         return SchoolPanelLayout(
             frame=base.frame,
@@ -79,7 +88,12 @@ class SchoolPanel:
 
     @staticmethod
     def draw(
-        surface: pygame.Surface, school: School, resources: ResourceManager, *, worker_assigned: bool
+        surface: pygame.Surface,
+        school: School,
+        resources: ResourceManager,
+        *,
+        worker_assigned: bool,
+        worker_manager: WorkerManager | None = None,
     ) -> None:
         BuildingPanel.draw(
             surface,
@@ -90,7 +104,13 @@ class SchoolPanel:
             show_demolish=False,
             extra_bottom_px=_EXTRA_BOTTOM,
         )
-        layout = SchoolPanel.layout(surface, school, resources, worker_assigned=worker_assigned)
+        layout = SchoolPanel.layout(
+            surface,
+            school,
+            resources,
+            worker_assigned=worker_assigned,
+            worker_manager=worker_manager,
+        )
         font = pygame.font.Font(None, 22)
         pygame.draw.rect(surface, (140, 48, 52), layout.demolish, border_radius=6)
         d = font.render("Demolish", True, (255, 240, 240))
@@ -132,6 +152,7 @@ class SchoolPanel:
         resources: ResourceManager,
         *,
         worker_assigned: bool,
+        worker_manager: WorkerManager | None = None,
     ) -> str | None:
         base_action = BuildingPanel.click_action(
             surface,
@@ -145,7 +166,13 @@ class SchoolPanel:
         )
         if base_action is not None:
             return base_action
-        layout = SchoolPanel.layout(surface, school, resources, worker_assigned=worker_assigned)
+        layout = SchoolPanel.layout(
+            surface,
+            school,
+            resources,
+            worker_assigned=worker_assigned,
+            worker_manager=worker_manager,
+        )
         if layout.demolish.collidepoint(pos):
             return "demolish"
         for worker_type, rect in layout.hire_buttons:

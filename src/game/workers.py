@@ -14,6 +14,7 @@ from game.config import (
     WORKER_HIRE_COSTS,
     WORKER_TILE_TRAVEL_MS,
 )
+from game.housing import max_population
 from game.pathfinding import find_path_bfs
 from game.resources import ResourceManager
 from game.world import find_nearest_free_stone, find_nearest_free_tree
@@ -291,6 +292,8 @@ class WorkerManager:
             return None
         if worker_type not in self._WORKER_TO_BUILDING:
             return None
+        if not self._has_housing_capacity_for(incoming=1):
+            return None
         min_level = int(TOWN_HALL_MIN_LEVEL_FOR_HIRE.get(worker_type, 1))
         th_level = 0
         for b in self._registry.all():
@@ -346,6 +349,8 @@ class WorkerManager:
             return False
         if worker_type not in self._WORKER_TO_BUILDING:
             return False
+        if not self._has_housing_capacity_for(incoming=1):
+            return False
         min_level = int(TOWN_HALL_MIN_LEVEL_FOR_HIRE.get(worker_type, 1))
         th_level = 0
         for b in self._registry.all():
@@ -354,6 +359,12 @@ class WorkerManager:
                 break
         cost = dict(WORKER_HIRE_COSTS.get(worker_type, {"food": 0}))
         return th_level >= min_level and self._resources.has(cost)
+
+    def _has_housing_capacity_for(self, *, incoming: int) -> bool:
+        if self._registry is None:
+            return True
+        cap = max_population(self._registry, self)
+        return len(self._workers) + int(incoming) <= cap
 
     def notify_demolished(self, building: Building) -> None:
         """Workers targeting this building become idle at their current tile."""

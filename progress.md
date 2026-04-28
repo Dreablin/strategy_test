@@ -39,6 +39,16 @@
   now uses `World(world_seed=0)` (registry fixture, `test_pathfinding.py`,
   `test_workers.py`).
 
+### HF14 — Ring-20 stone cluster invisible; `test_input` flake (FIXED)
+
+- **Cause:** stone fill skipped any tile with Chebyshev distance from **map
+  centre** ≤ `center_clear_radius` (~27 on 110×110). The mandatory centre on
+  the **TH distance-20 ring** almost always lies in that zone, so its whole
+  disk was skipped → only five visible clusters, none near “20 from TH”.
+- **Fix:** for the ring-only centre, skip the map-centre clearing rule but
+  still forbid `town_hall_footprint_tiles()`. `test_place_calls…` now uses
+  `World(world_seed=0)` (extra stones near TH made unseeded paths flaky).
+
 ---
 
 ## Recent context (do not re-run, kept only as input for ralph-loop)

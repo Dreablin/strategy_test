@@ -369,17 +369,21 @@ class World:
         self._scatter_trees_placed = placed
 
     def _init_stones(self, rng: random.Random) -> None:
-        self._stone_centers = _pick_stone_cluster_centers(self, rng)
+        self._stone_centers, ring_center = _pick_stone_cluster_centers(self, rng)
         mid = GRID_SIZE // 2
         center_clear_radius = max(8, GRID_SIZE // 4)
+        protected_th = town_hall_footprint_tiles()
 
         for cx, cy in self._stone_centers:
             radius = rng.randint(1, 4)
+            relax_center_clear = ring_center is not None and (cx, cy) == ring_center
             for y in range(cy - radius, cy + radius + 1):
                 for x in range(cx - radius, cx + radius + 1):
                     if not self.is_in_grass(x, y):
                         continue
-                    if max(abs(x - mid), abs(y - mid)) <= center_clear_radius:
+                    if (x, y) in protected_th:
+                        continue
+                    if not relax_center_clear and max(abs(x - mid), abs(y - mid)) <= center_clear_radius:
                         continue
                     if max(abs(x - cx), abs(y - cy)) > radius:
                         continue
@@ -395,8 +399,14 @@ def _min_chebyshev_to_tiles(px: int, py: int, tiles: set[tuple[int, int]]) -> in
     return min(max(abs(px - tx), abs(py - ty)) for tx, ty in tiles)
 
 
-def _pick_stone_cluster_centers(world: World, rng: random.Random) -> list[tuple[int, int]]:
-    """Pick ``_STONE_CENTER_COUNT`` centers; one is always on the TH Chebyshev ring at 20."""
+def _pick_stone_cluster_centers(
+    world: World, rng: random.Random
+) -> tuple[list[tuple[int, int]], tuple[int, int] | None]:
+    """Pick ``_STONE_CENTER_COUNT`` centers; one on TH Chebyshev ring 20 if any candidate exists.
+
+    Returns ``(centers, ring_center)`` where ``ring_center`` is the mandatory ring tile (for
+    relaxed map-center clearing when filling stones) or ``None``.
+    """
     protected = town_hall_footprint_tiles()
     ring_candidates: list[tuple[int, int]] = []
     for cy in range(GRID_SIZE):
@@ -409,10 +419,11 @@ def _pick_stone_cluster_centers(world: World, rng: random.Random) -> list[tuple[
     rng.shuffle(ring_candidates)
     centers: list[tuple[int, int]] = []
     exclude: set[tuple[int, int]] = set()
+    ring_center: tuple[int, int] | None = None
     if ring_candidates:
-        first = ring_candidates[0]
-        centers.append(first)
-        exclude.add(first)
+        ring_center = ring_candidates[0]
+        centers.append(ring_center)
+        exclude.add(ring_center)
     need = _STONE_CENTER_COUNT - len(centers)
     centers.extend(
         _pick_far_cluster_centers(world, need, rng, forbid_stone_center=False, exclude=exclude)
@@ -430,7 +441,7 @@ def _pick_stone_cluster_centers(world: World, rng: random.Random) -> list[tuple[
             break
         centers.extend(more)
         exclude.update(more)
-    return centers
+    return centers, ring_center
 
 
 def _pick_far_cluster_centers(

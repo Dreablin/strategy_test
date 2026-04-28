@@ -95,6 +95,18 @@ def test_generated_stones_have_units_and_never_overlap_trees() -> None:
         assert not world.is_tree_blocking(gx, gy)
 
 
+def test_near_town_hall_ring_cluster_places_stones_inside_map_clearing() -> None:
+    """Ring-20 center lies in build-clearing Chebyshev zone; stones must still spawn (F-STONE)."""
+    world = World(world_seed=0)
+    th = town_hall_footprint_tiles()
+
+    def min_th(x: int, y: int) -> int:
+        return min(max(abs(x - tx), abs(y - ty)) for tx, ty in th)
+
+    near_ring = [(x, y) for (x, y), _ in world.iter_stones() if 16 <= min_th(x, y) <= 24]
+    assert near_ring, "expected at least one stone on/near the TH distance-20 ring cluster"
+
+
 def test_stone_generation_is_reproducible_with_explicit_world_seed() -> None:
     seed = 9_001_283
     a = World(world_seed=seed)

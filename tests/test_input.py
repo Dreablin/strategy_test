@@ -147,7 +147,7 @@ def test_build_menu_select_closes_panel() -> None:
 
 def test_place_calls_reassign_all_and_assigns_idle_worker() -> None:
     surface = pygame.Surface((1280, 720))
-    world = World()
+    world = World(world_seed=0)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     camera = Camera()

@@ -15,6 +15,7 @@ _TREES_ROOT = _ASSETS_ROOT / "trees"
 _WORLD_ROOT = _ASSETS_ROOT / "world"
 _NPC_ROOT = _ASSETS_ROOT / "npc"
 _ICONS_ROOT = _ASSETS_ROOT / "icons"
+_UI_ROOT = _ASSETS_ROOT / "ui"
 
 _BUILDING_FOLDER: dict[str, str] = {
     "TOWN_HALL": "town_hall",
@@ -441,6 +442,26 @@ def resource_icon(name: str) -> pygame.Surface:
     return surf
 
 
+def _procedural_population_icon(size: int = 24) -> pygame.Surface:
+    surf = pygame.Surface((size, size), pygame.SRCALPHA)
+    cx = size // 2
+    pygame.draw.circle(surf, (218, 206, 120), (cx, cx - 4), max(3, size // 6))
+    pygame.draw.circle(surf, (160, 148, 76), (cx, cx + 7), max(5, size // 4))
+    pygame.draw.circle(surf, (34, 34, 40), (cx, cx - 4), max(3, size // 6), 1)
+    pygame.draw.circle(surf, (34, 34, 40), (cx, cx + 7), max(5, size // 4), 1)
+    return surf
+
+
+@functools.lru_cache(maxsize=8)
+def population_icon(size: int = 24) -> pygame.Surface:
+    loaded = _load_png(str(_UI_ROOT / "population" / "default.png"))
+    base = loaded if loaded is not None else _procedural_population_icon(max(1, int(size)))
+    sz = max(1, int(size))
+    if base.get_width() == sz and base.get_height() == sz:
+        return base
+    return pygame.transform.smoothscale(base, (sz, sz))
+
+
 def clear_asset_caches() -> None:
     """Clear all in-memory asset caches (used by dev reload button)."""
     grass_tile.cache_clear()
@@ -451,3 +472,4 @@ def clear_asset_caches() -> None:
     tree_sprite.cache_clear()
     stone_sprite.cache_clear()
     resource_icon.cache_clear()
+    population_icon.cache_clear()

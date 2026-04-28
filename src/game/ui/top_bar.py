@@ -7,18 +7,9 @@ from dataclasses import dataclass
 import pygame
 
 from game import dev_asset_reload
+from game.assets import population_icon
 
 _BAR_HEIGHT = 48
-
-
-def _population_icon(size: int = 24) -> pygame.Surface:
-    surf = pygame.Surface((size, size), pygame.SRCALPHA)
-    cx = size // 2
-    pygame.draw.circle(surf, (218, 206, 120), (cx, cx - 4), max(3, size // 6))
-    pygame.draw.circle(surf, (160, 148, 76), (cx, cx + 7), max(5, size // 4))
-    pygame.draw.circle(surf, (34, 34, 40), (cx, cx - 4), max(3, size // 6), 1)
-    pygame.draw.circle(surf, (34, 34, 40), (cx, cx + 7), max(5, size // 4), 1)
-    return surf
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,7 +27,7 @@ class TopBar:
     def layout(surface: pygame.Surface, *, current_population: int, max_population: int) -> TopBarLayout:
         width = surface.get_width()
         bar_rect = pygame.Rect(0, 0, width, _BAR_HEIGHT)
-        icon = _population_icon()
+        icon = population_icon()
         icon_x = 10
         icon_y = (_BAR_HEIGHT - icon.get_height()) // 2
         icon_rect = pygame.Rect(icon_x, icon_y, icon.get_width(), icon.get_height())
@@ -64,7 +55,7 @@ class TopBar:
             (layout.bar_rect.width, _BAR_HEIGHT - 1),
         )
         font = pygame.font.Font(None, 22)
-        icon = _population_icon()
+        icon = population_icon()
         surface.blit(icon, layout.icon_rect.topleft)
         text_surf = font.render(layout.label, True, (228, 230, 238))
         surface.blit(text_surf, layout.label_pos)

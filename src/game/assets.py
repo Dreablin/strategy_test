@@ -52,16 +52,31 @@ def grass_tile() -> pygame.Surface:
     return surf
 
 
-def _procedural_tree_sprite(stage: str) -> pygame.Surface:
+def _procedural_tree_sprite(stage: str, species: int = 0) -> pygame.Surface:
     """Fallback tall tree sprite used when no staged asset exists."""
     w, h = 48, 72
     surf = pygame.Surface((w, h), pygame.SRCALPHA)
-    palette: dict[str, tuple[int, int, int]] = {
-        "sapling": (125, 195, 115),
-        "young": (88, 168, 92),
-        "mature": (58, 138, 78),
-        "adult": (36, 108, 62),
+    species_palettes: dict[int, dict[str, tuple[int, int, int]]] = {
+        0: {
+            "sapling": (125, 195, 115),
+            "young": (88, 168, 92),
+            "mature": (58, 138, 78),
+            "adult": (36, 108, 62),
+        },
+        1: {
+            "sapling": (170, 196, 116),
+            "young": (140, 172, 92),
+            "mature": (108, 148, 78),
+            "adult": (84, 124, 62),
+        },
+        2: {
+            "sapling": (126, 184, 170),
+            "young": (94, 160, 142),
+            "mature": (72, 136, 120),
+            "adult": (56, 112, 100),
+        },
     }
+    palette = species_palettes.get(species, species_palettes[0])
     canopy = palette.get(stage, (58, 138, 78))
     trunk_x = w // 2 - 3
     pygame.draw.rect(surf, (86, 52, 28), (trunk_x, h - 24, 6, 24))
@@ -70,16 +85,20 @@ def _procedural_tree_sprite(stage: str) -> pygame.Surface:
     return surf
 
 
-@functools.lru_cache(maxsize=32)
-def tree_sprite(stage: str) -> pygame.Surface:
-    """Load stage tree sprite from disk, fallback to procedural."""
+@functools.lru_cache(maxsize=128)
+def tree_sprite(stage: str, species: int = 0) -> pygame.Surface:
+    """Load species+stage tree sprite from disk, fallback to defaults/procedural."""
     stage_key = str(stage).lower().strip()
     if "." in stage_key:
         stage_key = stage_key.split(".")[-1]
+    species_key = int(species)
+    loaded = _load_png(str(_TREES_ROOT / f"species_{species_key}" / stage_key / "default.png"))
+    if loaded is not None:
+        return loaded
     loaded = _load_png(str(_TREES_ROOT / stage_key / "default.png"))
     if loaded is not None:
         return loaded
-    return _procedural_tree_sprite(stage_key)
+    return _procedural_tree_sprite(stage_key, species_key)
 
 
 def _procedural_stone_sprite() -> pygame.Surface:

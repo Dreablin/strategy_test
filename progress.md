@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 14. Forestry expansion: forester hut, planting cycle, tree variants
-- **Next Task:** T158 — implement species-aware tree asset loading/render path.
-- **Last Completed:** T157 — add failing render tests for tree species visuals.
-- **Total Progress:** 157 / 160
+- **Next Task:** T159 — add end-to-end smoke test for forestry phase.
+- **Last Completed:** T158 — implement species-aware tree asset loading/render path.
+- **Total Progress:** 158 / 160
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -526,7 +526,7 @@
   - Fallback path works when specific species asset is missing.
   - Existing depth/layering order for trees is preserved.
 
-- [ ] **T158**: Implement species-aware tree asset loading/render:
+- [x] **T158**: Implement species-aware tree asset loading/render:
   - Extend tree asset keying and metadata lookup for 3 variants.
   - Keep gameplay untouched (only visuals differ).
   - Provide procedural fallback for each species/stage pair.

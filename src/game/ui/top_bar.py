@@ -1,40 +1,73 @@
-"""Fixed-height top HUD strip for resource totals."""
+"""Fixed-height top HUD strip for population totals."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
 
 import pygame
 
 from game import dev_asset_reload
-from game.assets import resource_icon
-from game.resources import ResourceManager
 
 _BAR_HEIGHT = 48
-_RESOURCE_ORDER: tuple[str, ...] = ("food", "wood", "stone", "iron")
+
+
+def _population_icon(size: int = 24) -> pygame.Surface:
+    surf = pygame.Surface((size, size), pygame.SRCALPHA)
+    cx = size // 2
+    pygame.draw.circle(surf, (218, 206, 120), (cx, cx - 4), max(3, size // 6))
+    pygame.draw.circle(surf, (160, 148, 76), (cx, cx + 7), max(5, size // 4))
+    pygame.draw.circle(surf, (34, 34, 40), (cx, cx - 4), max(3, size // 6), 1)
+    pygame.draw.circle(surf, (34, 34, 40), (cx, cx + 7), max(5, size // 4), 1)
+    return surf
+
+
+@dataclass(frozen=True, slots=True)
+class TopBarLayout:
+    bar_rect: pygame.Rect
+    icon_rect: pygame.Rect
+    label: str
+    label_pos: tuple[int, int]
 
 
 class TopBar:
-    """48 px strip: `[icon] amount` for each resource, left to right."""
+    """48 px strip: `[population icon] current (max N)`."""
 
     @staticmethod
-    def draw(surface: pygame.Surface, resources: ResourceManager) -> None:
+    def layout(surface: pygame.Surface, *, current_population: int, max_population: int) -> TopBarLayout:
         width = surface.get_width()
-        strip = pygame.Rect(0, 0, width, _BAR_HEIGHT)
-        pygame.draw.rect(surface, (32, 36, 44), strip)
-        pygame.draw.line(surface, (56, 60, 68), (0, _BAR_HEIGHT - 1), (width, _BAR_HEIGHT - 1))
+        bar_rect = pygame.Rect(0, 0, width, _BAR_HEIGHT)
+        icon = _population_icon()
+        icon_x = 10
+        icon_y = (_BAR_HEIGHT - icon.get_height()) // 2
+        icon_rect = pygame.Rect(icon_x, icon_y, icon.get_width(), icon.get_height())
+        label = f"{current_population} (max {max_population})"
+        label_pos = (icon_rect.right + 8, (_BAR_HEIGHT - 22) // 2)
+        return TopBarLayout(
+            bar_rect=bar_rect,
+            icon_rect=icon_rect,
+            label=label,
+            label_pos=label_pos,
+        )
 
-        col_w = max(1, width // len(_RESOURCE_ORDER))
+    @staticmethod
+    def draw(surface: pygame.Surface, *, current_population: int, max_population: int) -> None:
+        layout = TopBar.layout(
+            surface,
+            current_population=current_population,
+            max_population=max_population,
+        )
+        pygame.draw.rect(surface, (32, 36, 44), layout.bar_rect)
+        pygame.draw.line(
+            surface,
+            (56, 60, 68),
+            (0, _BAR_HEIGHT - 1),
+            (layout.bar_rect.width, _BAR_HEIGHT - 1),
+        )
         font = pygame.font.Font(None, 22)
-
-        for i, name in enumerate(_RESOURCE_ORDER):
-            x0 = i * col_w + 6
-            icon = resource_icon(name)
-            icon_y = (_BAR_HEIGHT - icon.get_height()) // 2
-            surface.blit(icon, (x0, icon_y))
-
-            text_x = x0 + icon.get_width() + 6
-            amount = resources.get(name)
-            label = f"{amount}"
-            text_surf = font.render(label, True, (228, 230, 238))
-            text_y = (_BAR_HEIGHT - text_surf.get_height()) // 2
-            surface.blit(text_surf, (text_x, text_y))
+        icon = _population_icon()
+        surface.blit(icon, layout.icon_rect.topleft)
+        text_surf = font.render(layout.label, True, (228, 230, 238))
+        surface.blit(text_surf, layout.label_pos)
 
         # Temporary dev-only control: force asset cache reload.
         dev_asset_reload.draw_button(surface)

@@ -35,7 +35,7 @@ def _render_frame(
     Renderer.draw_world(screen, world, camera)
     Renderer.draw_buildings(screen, world, registry, camera)
     Renderer.draw_workers(screen, world, registry, worker_manager, camera)
-    TopBar.draw(screen, resources)
+    TopBar.draw(screen, current_population=0, max_population=0)
     BottomBar.draw(screen, resources)
     placement.draw(screen, camera)
     game_input.draw_panel(screen)

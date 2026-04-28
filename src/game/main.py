@@ -10,6 +10,7 @@ from game.config import WINDOW_SIZE, town_hall_origin_tile
 from game.input import TOP_BAR_HEIGHT, GameInput
 from game.render import Renderer
 from game.resources import ResourceManager
+from game.housing import max_population
 from game.ui.bottom_bar import BAR_HEIGHT, BottomBar
 from game.ui.placement import PlacementController
 from game.ui.top_bar import TopBar
@@ -73,7 +74,11 @@ def main() -> int:
             Renderer.draw_stones(screen, world, camera)
             Renderer.draw_workers(screen, world, registry, worker_manager, camera)
             Renderer.draw_trees(screen, world, camera)
-            TopBar.draw(screen, resources)
+            TopBar.draw(
+                screen,
+                current_population=len(worker_manager.workers()),
+                max_population=max_population(registry, worker_manager),
+            )
             BottomBar.draw(screen, resources)
             placement.draw(screen, camera)
             game_input.draw_panel(screen)

@@ -7,7 +7,6 @@ from dataclasses import dataclass
 import pygame
 
 from game.buildings.base import Building
-from game.buildings.costs import upgrade_cost
 from game.config import TICK_MS
 from game.resources import ResourceManager
 
@@ -35,22 +34,6 @@ _DESCRIPTION: dict[str, str] = {
     "FORESTER_HUT": "Forester plants new trees around the hut.",
 }
 
-_RESOURCE_LABEL: dict[str, str] = {
-    "food": "food",
-    "wood": "wood",
-    "stone": "stone",
-    "iron": "iron",
-}
-
-
-def _format_cost(cost: dict[str, int]) -> str:
-    parts: list[str] = []
-    for key in ("wood", "stone", "iron", "food"):
-        if key in cost and cost[key]:
-            parts.append(f"{cost[key]} {_RESOURCE_LABEL.get(key, key)}")
-    return ", ".join(parts) if parts else ""
-
-
 def _income_line(building: Building, *, worker_working: bool) -> str:
     inc = type(building).income(building.level)
     if not inc:
@@ -64,9 +47,8 @@ def _income_line(building: Building, *, worker_working: bool) -> str:
 
 def _upgrade_label(building: Building) -> str:
     nxt = building.level + 1
-    cost = upgrade_cost(building.type_tag, building.level)
-    cost_s = _format_cost(cost)
-    return f"Upgrade to Lv {nxt} — {cost_s}"
+    _ = building
+    return f"Upgrade to Lv {nxt} — Free"
 
 
 @dataclass(frozen=True, slots=True)
@@ -101,15 +83,7 @@ class BuildingPanel:
         if show_upgrade is None:
             show_upgrade = building.level < max_lv
         can_upgrade = bool(show_upgrade and building.level < max_lv)
-        upgrade_enabled = False
-        if can_upgrade and building.level < max_lv:
-            try:
-                cost = upgrade_cost(building.type_tag, building.level)
-            except ValueError:
-                can_upgrade = False
-                cost = {}
-            else:
-                upgrade_enabled = resources.has(cost)
+        upgrade_enabled = can_upgrade
 
         has_storage_row = hasattr(building, "storage_capacity") and hasattr(building, "stored")
         has_status_row = production_status is not None

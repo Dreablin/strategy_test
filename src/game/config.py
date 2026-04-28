@@ -16,35 +16,7 @@ _DEFAULT_SETTINGS: dict = {
     },
     "window": {"size": [1280, 720]},
     "economy": {
-        "initial_resources": {"food": 200, "wood": 200, "stone": 0, "iron": 0},
-        "build_costs": {
-            "LUMBER_CAMP": {"wood": 5},
-            "STONE_MINE": {"wood": 5},
-            "IRON_MINE": {"wood": 5},
-            "FARM": {"wood": 5},
-            "FORESTER_HUT": {"wood": 5},
-            "SCHOOL": {"wood": 5},
-            "HOUSE": {"wood": 5},
-        },
-        "upgrade_costs": {
-            "DEFAULT": {
-                "2": {"wood": 5},
-                "3": {"wood": 5},
-                "4": {"wood": 5},
-                "5": {"wood": 5, "stone": 5},
-                "6": {"wood": 5, "stone": 5},
-                "7": {"wood": 5, "stone": 5, "iron": 5},
-                "8": {"wood": 5, "stone": 5, "iron": 5},
-                "9": {"wood": 5, "stone": 5, "iron": 5},
-                "10": {"wood": 5, "stone": 5, "iron": 5},
-            }
-        },
-        "worker_hire_costs": {
-            "LUMBERJACK": {"food": 5},
-            "STONECUTTER": {"food": 5},
-            "MINER": {"food": 5},
-            "FARMER": {"food": 5},
-        },
+        "initial_resources": {"food": 200, "wood": 200, "stone": 0, "iron": 0, "boards": 0},
     },
     "gates": {
         "building_min_town_hall_level": {
@@ -54,7 +26,14 @@ _DEFAULT_SETTINGS: dict = {
             "SCHOOL": 1,
             "HOUSE": 1,
         },
-        "hire_min_town_hall_level": {"LUMBERJACK": 1, "STONECUTTER": 3, "MINER": 5, "FARMER": 1},
+        "hire_min_town_hall_level": {
+            "LUMBERJACK": 1,
+            "STONECUTTER": 3,
+            "MINER": 5,
+            "FARMER": 1,
+            "CARRIER": 1,
+            "BUILDER": 1,
+        },
     },
     "levels": {"max_level": 10},
 }
@@ -113,12 +92,6 @@ WINDOW_SIZE = tuple(SETTINGS["window"]["size"])
 MAX_LEVEL = int(SETTINGS["levels"]["max_level"])
 
 INITIAL_RESOURCES = dict(SETTINGS["economy"]["initial_resources"])
-BUILD_COSTS = {k: dict(v) for k, v in SETTINGS["economy"]["build_costs"].items()}
-UPGRADE_COSTS = {
-    b_type: {str(level): dict(cost) for level, cost in levels.items()}
-    for b_type, levels in SETTINGS["economy"]["upgrade_costs"].items()
-}
-WORKER_HIRE_COSTS = {k: dict(v) for k, v in SETTINGS["economy"]["worker_hire_costs"].items()}
 
 TOWN_HALL_MIN_LEVEL_FOR_BUILDING = {
     k: int(v) for k, v in SETTINGS["gates"]["building_min_town_hall_level"].items()
@@ -126,7 +99,3 @@ TOWN_HALL_MIN_LEVEL_FOR_BUILDING = {
 TOWN_HALL_MIN_LEVEL_FOR_HIRE = {
     k: int(v) for k, v in SETTINGS["gates"]["hire_min_town_hall_level"].items()
 }
-
-# Backward-compat aliases used by existing tests and UI code.
-WORKER_HIRE_COST = dict(WORKER_HIRE_COSTS["LUMBERJACK"])
-BUILD_COST_WOOD = int(BUILD_COSTS["LUMBER_CAMP"]["wood"])

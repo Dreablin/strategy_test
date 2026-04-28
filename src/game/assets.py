@@ -34,6 +34,8 @@ _WORKER_FOLDER: dict[str, str] = {
     "MINER": "miner",
     "FARMER": "farmer",
     "FORESTER": "forester",
+    "CARRIER": "carrier",
+    "BUILDER": "builder",
 }
 
 
@@ -309,6 +311,8 @@ def _worker_color(w_type: str) -> tuple[int, int, int]:
         "MINER": (200, 90, 70),
         "FARMER": (230, 200, 60),
         "FORESTER": (88, 170, 96),
+        "CARRIER": (170, 140, 92),
+        "BUILDER": (186, 132, 96),
     }
     return colors.get(t, (200, 200, 220))
 
@@ -423,13 +427,17 @@ def hire_ui_icon(worker_type: str, size: int = 20) -> pygame.Surface:
 
 
 def _resource_colors(name: str) -> tuple[int, int, int]:
+    key = name.lower()
+    if key == "wheat":
+        key = "food"
     colors: dict[str, tuple[int, int, int]] = {
         "food": (230, 170, 80),
         "wood": (150, 100, 60),
         "stone": (170, 170, 180),
         "iron": (190, 120, 110),
+        "boards": (210, 156, 102),
     }
-    return colors.get(name.lower(), (160, 160, 200))
+    return colors.get(key, (160, 160, 200))
 
 
 @functools.lru_cache(maxsize=16)

@@ -5,7 +5,6 @@ from __future__ import annotations
 import pygame
 
 from game.assets import building_sprite, resource_icon
-from game.buildings.costs import build_cost
 from game.resources import ResourceManager
 
 BAR_HEIGHT = 96
@@ -125,23 +124,13 @@ class BottomBar:
             sx = inner.left + 8
             sy = inner.centery - spr.get_height() // 2
             surface.blit(spr, (sx, sy))
-            cost = build_cost(tag)
-            cost_wood = int(cost.get("wood", 0))
-            can_afford = resources.get("wood") >= cost_wood
-            fg = (220, 222, 230) if can_afford else (110, 112, 120)
+            fg = (220, 222, 230)
             name_s = font.render(label, True, fg)
             tx = sx + spr.get_width() + 8
             ty_name = inner.top + 8
             surface.blit(name_s, (tx, ty_name))
-            cost_y = ty_name + name_s.get_height() + 4
-            cost_s = small_font.render(str(cost_wood), True, fg)
-            wood_ic = pygame.transform.smoothscale(resource_icon("wood"), (20, 20))
-            surface.blit(cost_s, (tx, cost_y))
-            surface.blit(wood_ic, (tx + cost_s.get_width() + 4, cost_y - 1))
-            if not can_afford:
-                shade = pygame.Surface(rect.size, pygame.SRCALPHA)
-                shade.fill((20, 22, 28, 140))
-                surface.blit(shade, rect.topleft)
+            free_s = small_font.render("Free", True, (150, 210, 150))
+            surface.blit(free_s, (tx, ty_name + name_s.get_height() + 4))
 
     @staticmethod
     def handle_click(
@@ -197,9 +186,6 @@ class BottomBar:
                 continue
             if tag == "":
                 BottomBar._menu = "main"
-                return
-            cost_wood = int(build_cost(tag).get("wood", 0))
-            if resources.get("wood") < cost_wood:
                 return
             pygame.event.post(pygame.event.Event(BUILD_MENU_SELECT, building_type=tag))
             return

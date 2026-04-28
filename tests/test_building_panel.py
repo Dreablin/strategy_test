@@ -27,16 +27,16 @@ def test_building_panel_demolish_click() -> None:
     assert BuildingPanel.click_action(surface, (cx, cy), building, resources, worker_assigned=False) == "demolish"
 
 
-def test_building_panel_upgrade_disabled_when_poor() -> None:
+def test_building_panel_upgrade_enabled_even_when_poor() -> None:
     surface = pygame.Surface((640, 480))
     building = LumberCamp(level=1, grid_pos=(4, 4))
     resources = ResourceManager()
-    assert resources.try_spend({"wood": resources.get("wood")})
+    resources.add("wood", -resources.get("wood"))
     layout = BuildingPanel.layout(surface, building, resources, worker_assigned=False)
     assert layout.upgrade is not None
-    assert layout.upgrade_enabled is False
+    assert layout.upgrade_enabled is True
     cx, cy = layout.upgrade.center
-    assert BuildingPanel.click_action(surface, (cx, cy), building, resources, worker_assigned=False) is None
+    assert BuildingPanel.click_action(surface, (cx, cy), building, resources, worker_assigned=False) == "upgrade"
 
 
 def test_building_panel_upgrade_click_when_affordable() -> None:

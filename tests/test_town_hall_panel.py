@@ -52,6 +52,29 @@ def test_hire_buttons_removed_from_town_hall_panel() -> None:
     assert layout.hire_buttons == ()
 
 
-def test_town_hall_upgrade_cost_formatting() -> None:
-    assert TownHallPanel._format_cost({"wood": 5}) == "5 wood"
-    assert TownHallPanel._format_cost({"wood": 5, "stone": 5}) == "5 wood, 5 stone"
+def test_town_hall_panel_has_secondary_storage_frame_and_click_is_non_closing() -> None:
+    surface = pygame.Surface((1280, 720))
+    resources = ResourceManager()
+    town_hall = TownHall(level=1, grid_pos=(10, 10))
+    layout = TownHallPanel.layout(surface, town_hall, resources, worker_assigned=False)
+    assert layout.storage_frame.left > layout.frame.right
+    assert (
+        TownHallPanel.click_action(
+            surface,
+            layout.storage_frame.center,
+            town_hall,
+            resources,
+            worker_assigned=False,
+        )
+        is None
+    )
+
+
+def test_town_hall_upgrade_button_is_enabled_without_cost_checks() -> None:
+    surface = pygame.Surface((800, 600))
+    resources = ResourceManager()
+    resources.add("wood", -resources.get("wood"))
+    town_hall = TownHall(level=1, grid_pos=(10, 10))
+    layout = TownHallPanel.layout(surface, town_hall, resources, worker_assigned=False)
+    assert layout.upgrade is not None
+    assert layout.upgrade_enabled is True

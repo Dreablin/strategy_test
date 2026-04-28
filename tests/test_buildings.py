@@ -65,7 +65,7 @@ def test_town_hall_max_level_10() -> None:
         TownHall(level=11)
 
 
-def test_upgrade_lumber_camp_spends_cost_and_increments_level() -> None:
+def test_upgrade_lumber_camp_is_free_and_increments_level() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
@@ -74,18 +74,18 @@ def test_upgrade_lumber_camp_spends_cost_and_increments_level() -> None:
     wood_before = resources.get("wood")
     assert registry.upgrade_building(b, resources)
     assert b.level == 2
-    assert resources.get("wood") == wood_before - 5
+    assert resources.get("wood") == wood_before
 
 
-def test_upgrade_rejected_when_insufficient_resources() -> None:
+def test_upgrade_no_longer_depends_on_wallet_resources() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     b = registry.place(LumberCamp, (12, 12))
-    assert resources.try_spend({"wood": resources.get("wood")})
+    resources.add("wood", -resources.get("wood"))
     assert resources.get("wood") == 0
-    assert not registry.upgrade_building(b, resources)
-    assert b.level == 1
+    assert registry.upgrade_building(b, resources)
+    assert b.level == 2
 
 
 def test_upgrade_allowed_for_town_hall_below_cap() -> None:
@@ -165,10 +165,16 @@ def test_take_from_storage_rejects_overdraw(cls: type) -> None:
         b.take_from_storage(2)
 
 
-def test_town_hall_does_not_expose_storage_api() -> None:
+def test_town_hall_exposes_warehouse_api() -> None:
     th = TownHall(level=1, grid_pos=town_hall_origin_tile())
-    assert not hasattr(th, "stored")
-    assert not hasattr(th, "storage_capacity")
-    assert not hasattr(th, "add_to_storage")
-    assert not hasattr(th, "take_from_storage")
-    assert not hasattr(th, "is_storage_full")
+    assert th.warehouse_amount("wood") == 0
+    assert th.warehouse_amount("wheat") == 0
+    assert th.warehouse_amount("boards") == 0
+    th.add_to_warehouse("wood", 2)
+    th.add_to_warehouse("food", 1)
+    th.add_to_warehouse("boards", 3)
+    assert th.warehouse_amount("wood") == 2
+    assert th.warehouse_amount("wheat") == 1
+    assert th.warehouse_amount("boards") == 3
+    th.take_from_warehouse("wood", 1)
+    assert th.warehouse_amount("wood") == 1

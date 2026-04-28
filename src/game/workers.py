@@ -3,16 +3,17 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 import random
 from typing import Any
 
 from game.buildings.base import Building
 from game.buildings.school import School
+from game.buildings.town_hall import TownHall
 from game.characteristics import Characteristics
 from game.config import (
     GATHER_RESOURCE_SEARCH_RADIUS,
     TOWN_HALL_MIN_LEVEL_FOR_HIRE,
-    WORKER_HIRE_COSTS,
     WORKER_TILE_TRAVEL_MS,
 )
 from game.housing import current_population, max_population
@@ -29,8 +30,16 @@ FORESTER_REST_MS = 5_000
 FORESTER_TARGET_RANDOM_TRIES = 3
 FORESTER_TARGET_RETRY_MS = 1_000
 FORESTER_RETURN_RETRY_MS = 3_000
+CARRIER_INTERACT_MS = 2_000
 MOVE_SPEED_PER_LEVEL = 0.05
 GATHER_SPEED_PER_LEVEL = 0.05
+
+
+@dataclass(slots=True)
+class TransportTask:
+    resource: str
+    source: Building
+    target: Building
 
 
 def building_center_tile(building: Building) -> tuple[int, int]:
@@ -74,6 +83,7 @@ class Worker:
         "chop_started_ms",
         "chop_duration_ms",
         "characteristics",
+        "transport_task",
     )
 
     def __init__(self, type_tag: str, *, stand_tile: tuple[int, int] = (17, 19)) -> None:
@@ -94,6 +104,7 @@ class Worker:
         self.chop_started_ms = 0
         self.chop_duration_ms = CHOP_DURATION_MS
         self.characteristics = Characteristics()
+        self.transport_task: TransportTask | None = None
 
     def start_move(self, path: list[tuple[int, int]], started_ms: int, *, move_state: str = "moving") -> None:
         if len(path) < 2:
@@ -164,7 +175,7 @@ class Worker:
 class WorkerManager:
     """Tracks workers; notifies assignments when a staffed building is demolished (PRD F-WORK)."""
 
-    __slots__ = ("_now_ms_fn", "_registry", "_resources", "_workers")
+    __slots__ = ("_now_ms_fn", "_registry", "_resources", "_workers", "_transport_queue")
     _WORKER_TO_BUILDING: dict[str, str] = {
         "LUMBERJACK": "LUMBER_CAMP",
         "STONECUTTER": "STONE_MINE",
@@ -172,6 +183,7 @@ class WorkerManager:
         "FARMER": "FARM",
         "FORESTER": "FORESTER_HUT",
     }
+    _HIRABLE_WORKERS: set[str] = set(_WORKER_TO_BUILDING) | {"CARRIER", "BUILDER"}
 
     def __init__(
         self,
@@ -182,6 +194,7 @@ class WorkerManager:
         self._resources = resources
         self._registry = registry
         self._workers: list[Worker] = []
+        self._transport_queue: list[TransportTask] = []
         self._now_ms_fn = now_ms_fn or (lambda: 0)
         if registry is not None and hasattr(registry, "bind_worker_manager"):
             registry.bind_worker_manager(self)
@@ -191,6 +204,11 @@ class WorkerManager:
 
     def workers(self) -> tuple[Worker, ...]:
         return tuple(self._workers)
+
+    def enqueue_transport_task(self, *, resource: str, source: Building, target: Building, amount: int = 1) -> None:
+        n = max(0, int(amount))
+        for _ in range(n):
+            self._transport_queue.append(TransportTask(resource=str(resource), source=source, target=target))
 
     def idle(self) -> list[Worker]:
         """Idle workers (PRD ``WorkerManager.idle``)."""
@@ -297,7 +315,7 @@ class WorkerManager:
         """Hire a worker if town hall level and resources allow it."""
         if self._resources is None or self._registry is None:
             return None
-        if worker_type not in self._WORKER_TO_BUILDING:
+        if worker_type not in self._HIRABLE_WORKERS:
             return None
         if not self._has_housing_capacity_for(incoming=1):
             return None
@@ -309,10 +327,7 @@ class WorkerManager:
                 break
         if th_level < min_level:
             return None
-        if charge_cost:
-            cost = dict(WORKER_HIRE_COSTS.get(worker_type, {"food": 0}))
-            if not self._resources.try_spend(cost):
-                return None
+        _ = charge_cost
         spawn_anchor = source_building
         all_buildings = self._registry.all()
         if spawn_anchor not in all_buildings:
@@ -355,7 +370,7 @@ class WorkerManager:
         """Whether current state allows hiring this worker type."""
         if self._resources is None or self._registry is None:
             return False
-        if worker_type not in self._WORKER_TO_BUILDING:
+        if worker_type not in self._HIRABLE_WORKERS:
             return False
         if not self._has_housing_capacity_for(incoming=1):
             return False
@@ -365,10 +380,8 @@ class WorkerManager:
             if b.type_tag == "TOWN_HALL":
                 th_level = b.level
                 break
-        if not charge_cost:
-            return th_level >= min_level
-        cost = dict(WORKER_HIRE_COSTS.get(worker_type, {"food": 0}))
-        return th_level >= min_level and self._resources.has(cost)
+        _ = charge_cost
+        return th_level >= min_level
 
     def _has_housing_capacity_for(self, *, incoming: int) -> bool:
         if self._registry is None:
@@ -514,6 +527,9 @@ class WorkerManager:
             if worker.type_tag == "FORESTER":
                 self._update_forester(worker, int(now_ms), world)
                 continue
+            if worker.type_tag == "CARRIER":
+                self._update_carrier(worker, int(now_ms), world)
+                continue
             if worker.type_tag not in {"LUMBERJACK", "STONECUTTER"}:
                 continue
             if world is None:
@@ -581,10 +597,21 @@ class WorkerManager:
                 continue
 
             if worker.state == "depositing":
-                if worker.carrying == gather_state["carry_resource"] and self._resources is not None:
-                    self._resources.add(gather_state["carry_resource"], 1)
+                if worker.carrying == gather_state["carry_resource"]:
                     if hasattr(camp, "add_to_storage"):
                         camp.add_to_storage(1)
+                    town_hall = self._primary_town_hall()
+                    has_carrier = any(w.type_tag == "CARRIER" for w in self._workers)
+                    if town_hall is not None and has_carrier:
+                        self.enqueue_transport_task(
+                            resource=gather_state["carry_resource"],
+                            source=camp,
+                            target=town_hall,
+                            amount=1,
+                        )
+                    elif self._resources is not None:
+                        # Backward-compatible fallback when no carrier exists yet.
+                        self._resources.add(gather_state["carry_resource"], 1)
                     if hasattr(camp, gather_state["record_method"]):
                         record_method = getattr(camp, gather_state["record_method"])
                         record_method(1)
@@ -607,6 +634,124 @@ class WorkerManager:
                     spawned = True
             if spawned:
                 self.reassign_all()
+
+    def _primary_town_hall(self) -> TownHall | None:
+        if self._registry is None:
+            return None
+        for building in self._registry.all():
+            if isinstance(building, TownHall):
+                return building
+        return None
+
+    def _next_transport_task(self) -> TransportTask | None:
+        if self._registry is None:
+            return None
+        known = set(self._registry.all())
+        for idx, task in enumerate(self._transport_queue):
+            if task.source not in known or task.target not in known:
+                continue
+            if not hasattr(task.source, "stored"):
+                continue
+            if int(getattr(task.source, "stored", 0)) <= 0:
+                continue
+            return self._transport_queue.pop(idx)
+        return None
+
+    def _start_move_to_building(self, worker: Worker, building: Building, now_ms: int) -> bool:
+        if self._registry is None:
+            return False
+        world = getattr(self._registry, "_world", None)
+        if world is None:
+            return False
+        blocked = world.blocked_tiles()
+        blocked.discard(worker.current_tile)
+        best_path: list[tuple[int, int]] | None = None
+        for tile in self._approach_tiles(building):
+            path = find_path_bfs(world, worker.current_tile, tile, blocked)
+            if path is None:
+                continue
+            if best_path is None or len(path) < len(best_path):
+                best_path = path
+        if best_path is None:
+            return False
+        worker.start_move(best_path, started_ms=now_ms)
+        return True
+
+    def _update_carrier(self, worker: Worker, now_ms: int, world: Any) -> None:
+        if self._registry is None or world is None:
+            return
+        task = worker.transport_task
+        if task is None:
+            if worker.state != "idle":
+                worker.state = "idle"
+                worker.idle = True
+            task = self._next_transport_task()
+            if task is None:
+                return
+            worker.transport_task = task
+            worker.carrying = None
+            if not self._start_move_to_building(worker, task.source, now_ms):
+                self._transport_queue.insert(0, task)
+                worker.transport_task = None
+                worker.state = "idle"
+                worker.idle = True
+            return
+
+        if worker.state in {"moving", "returning"}:
+            return
+
+        if worker.carrying is None:
+            if worker.state != "carrier_loading":
+                self._park_worker_inside_building(worker, task.source)
+                worker.state = "carrier_loading"
+                worker.camp_wait_until_ms = now_ms + CARRIER_INTERACT_MS
+                return
+            if now_ms < worker.camp_wait_until_ms:
+                return
+            if task.source not in self._registry.all() or task.target not in self._registry.all():
+                worker.transport_task = None
+                worker.state = "idle"
+                worker.idle = True
+                return
+            if not hasattr(task.source, "take_from_storage"):
+                worker.transport_task = None
+                worker.state = "idle"
+                worker.idle = True
+                return
+            try:
+                task.source.take_from_storage(1)  # type: ignore[attr-defined]
+            except ValueError:
+                worker.transport_task = None
+                worker.state = "idle"
+                worker.idle = True
+                return
+            worker.carrying = task.resource
+            if not self._start_move_to_building(worker, task.target, now_ms):
+                if hasattr(task.source, "add_to_storage"):
+                    task.source.add_to_storage(1)  # type: ignore[attr-defined]
+                worker.carrying = None
+                self._transport_queue.insert(0, task)
+                worker.transport_task = None
+                worker.state = "idle"
+                worker.idle = True
+            return
+
+        if worker.state != "carrier_unloading":
+            self._park_worker_inside_building(worker, task.target)
+            worker.state = "carrier_unloading"
+            worker.camp_wait_until_ms = now_ms + CARRIER_INTERACT_MS
+            return
+        if now_ms < worker.camp_wait_until_ms:
+            return
+        if hasattr(task.target, "add_to_warehouse"):
+            task.target.add_to_warehouse(task.resource, 1)  # type: ignore[attr-defined]
+        if self._resources is not None:
+            self._resources.add(task.resource, 1)
+        self._move_worker_to_building_approach(worker, task.target)
+        worker.carrying = None
+        worker.transport_task = None
+        worker.state = "idle"
+        worker.idle = True
 
     def _update_forester(self, worker: Worker, now_ms: int, world: Any) -> None:
         if world is None:
@@ -930,6 +1075,33 @@ class WorkerManager:
         worker.segment_progress = 0.0
         worker.idle = False
         worker.state = "working"
+
+    @staticmethod
+    def _park_worker_inside_building(worker: Worker, building: Building) -> None:
+        center = building_center_tile(building)
+        worker.current_tile = center
+        worker.stand_tile = center
+        worker.target_tile = None
+        worker.path = []
+        worker.segment_progress = 0.0
+        worker.idle = False
+
+    def _move_worker_to_building_approach(self, worker: Worker, building: Building) -> None:
+        approach_tiles = self._approach_tiles(building)
+        preferred_tile: tuple[int, int] | None = None
+        if isinstance(building, TownHall) and building.grid_pos is not None:
+            gx, gy = building.grid_pos
+            w, h = type(building).footprint
+            preferred_tile = (gx + w // 2, gy + h)  # always below Town Hall
+        if approach_tiles:
+            target = approach_tiles[0]
+            if preferred_tile is not None and preferred_tile in approach_tiles:
+                target = preferred_tile
+            worker.current_tile = target
+            worker.stand_tile = target
+        worker.target_tile = worker.current_tile
+        worker.path = []
+        worker.segment_progress = 0.0
 
     @staticmethod
     def _building_bonus_source(building: Building) -> tuple[str, int]:

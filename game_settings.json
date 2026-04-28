@@ -17,36 +17,8 @@
       "food": 200,
       "wood": 200,
       "stone": 0,
-      "iron": 0
-    },
-    "build_costs": {
-      "LUMBER_CAMP": { "wood": 5 },
-      "STONE_MINE": { "wood": 5 },
-      "IRON_MINE": { "wood": 5 },
-      "FARM": { "wood": 5 },
-      "FORESTER_HUT": { "wood": 5 },
-      "SCHOOL": { "wood": 5 },
-      "HOUSE": { "wood": 5 }
-    },
-    "upgrade_costs": {
-      "DEFAULT": {
-        "2": { "wood": 5 },
-        "3": { "wood": 5 },
-        "4": { "wood": 5 },
-        "5": { "wood": 5, "stone": 5 },
-        "6": { "wood": 5, "stone": 5 },
-        "7": { "wood": 5, "stone": 5, "iron": 5 },
-        "8": { "wood": 5, "stone": 5, "iron": 5 },
-        "9": { "wood": 5, "stone": 5, "iron": 5 },
-        "10": { "wood": 5, "stone": 5, "iron": 5 }
-      }
-    },
-    "worker_hire_costs": {
-      "LUMBERJACK": { "food": 5 },
-      "STONECUTTER": { "food": 5 },
-      "MINER": { "food": 5 },
-      "FARMER": { "food": 5 },
-      "FORESTER": { "food": 5 }
+      "iron": 0,
+      "boards": 0
     }
   },
   "gates": {
@@ -62,7 +34,9 @@
       "STONECUTTER": 3,
       "MINER": 5,
       "FARMER": 1,
-      "FORESTER": 1
+      "FORESTER": 1,
+      "CARRIER": 1,
+      "BUILDER": 1
     }
   },
   "levels": {

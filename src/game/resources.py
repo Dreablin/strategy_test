@@ -1,15 +1,22 @@
-"""Player resource balances (food, wood, stone, iron)."""
+"""Player resource balances (wheat/food, wood, stone, iron, boards)."""
 
 from collections.abc import Mapping
 from typing import Final
 
 from game.config import INITIAL_RESOURCES
 
-_RESOURCE_NAMES: Final[tuple[str, ...]] = ("food", "wood", "stone", "iron")
+_RESOURCE_NAMES: Final[tuple[str, ...]] = ("food", "wood", "stone", "iron", "boards")
+
+
+def _normalize_name(name: str) -> str:
+    key = str(name).lower()
+    if key == "wheat":
+        return "food"
+    return key
 
 
 class ResourceManager:
-    """Tracks four resources with spend helpers and UI-facing per-cycle income."""
+    """Tracks four resources and UI-facing per-cycle income."""
 
     __slots__ = ("_amounts", "_per_cycle")
 
@@ -18,20 +25,11 @@ class ResourceManager:
         self._per_cycle: dict[str, int] = {k: 0 for k in _RESOURCE_NAMES}
 
     def get(self, name: str) -> int:
-        return self._amounts.get(name, 0)
+        return self._amounts.get(_normalize_name(name), 0)
 
     def add(self, name: str, amount: int) -> None:
-        self._amounts[name] = max(0, self._amounts.get(name, 0) + amount)
-
-    def has(self, cost: Mapping[str, int]) -> bool:
-        return all(self.get(k) >= v for k, v in cost.items())
-
-    def try_spend(self, cost: Mapping[str, int]) -> bool:
-        if not self.has(cost):
-            return False
-        for k, v in cost.items():
-            self._amounts[k] = self._amounts.get(k, 0) - v
-        return True
+        key = _normalize_name(name)
+        self._amounts[key] = max(0, self._amounts.get(key, 0) + amount)
 
     def set_per_cycle_totals(self, totals: Mapping[str, int]) -> None:
         """Replace per-cycle UI totals (from staffed production; PRD F-RES-04 / F-PROD)."""

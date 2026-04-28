@@ -182,7 +182,7 @@ def test_school_hire_button_calls_worker_manager_hire_and_spawns_at_school() -> 
     inp = GameInput(world, registry, resources, placement, workers, camera)
     inp._panel = school
     layout = SchoolPanel.layout(surface, school, resources, worker_assigned=False)
-    _, hire_button = layout.hire_buttons[0]
+    hire_button = next(rect for worker_type, rect in layout.hire_buttons if worker_type == "LUMBERJACK")
     inp.handle(
         surface,
         pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=hire_button.center),

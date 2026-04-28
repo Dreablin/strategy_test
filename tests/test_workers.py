@@ -7,7 +7,7 @@ from game.buildings.registry import BuildingRegistry
 from game.buildings.school import School
 from game.buildings.town_hall import TownHall
 from game.characteristics import Characteristics
-from game.config import WORKER_HIRE_COST, near_town_hall_tile, town_hall_origin_tile
+from game.config import near_town_hall_tile, town_hall_origin_tile
 from game.resources import ResourceManager
 from game.trees import Tree, TreeStage
 from game.world import World
@@ -63,7 +63,7 @@ def test_hire_deducts_50_food_and_returns_worker() -> None:
     assert w is not None
     assert w.type_tag == "LUMBERJACK"
     assert w.current_tile == town_hall_spawn_tile(town_hall)
-    assert resources.get("food") == food_before - WORKER_HIRE_COST["food"]
+    assert resources.get("food") == food_before
 
 
 def test_hire_without_explicit_source_uses_latest_school_when_present() -> None:
@@ -149,16 +149,15 @@ def test_reassign_to_different_building_swaps_bonus_source() -> None:
     assert worker.characteristics.gather_speed_mult == 1.20
 
 
-def test_hire_returns_none_when_insufficient_food_and_does_not_deduct() -> None:
+def test_hire_no_longer_depends_on_food_wallet() -> None:
     world = World(world_seed=0)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     registry.place(TownHall, town_hall_origin_tile())
-    while resources.get("food") >= WORKER_HIRE_COST["food"]:
-        assert resources.try_spend({"food": 1})
+    resources.add("food", -resources.get("food"))
     food_before = resources.get("food")
     wm = WorkerManager(resources, registry)
-    assert wm.hire("LUMBERJACK") is None
+    assert wm.hire("LUMBERJACK") is not None
     assert resources.get("food") == food_before
 
 
@@ -470,6 +469,101 @@ def test_hire_unknown_worker_type_returns_none_and_keeps_resources() -> None:
     assert resources.get("food") == food_before
 
 
+def test_hire_carrier_succeeds_and_worker_stays_unassigned() -> None:
+    world = World(world_seed=0)
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, town_hall_origin_tile())
+    wm = WorkerManager(resources, registry)
+
+    carrier = wm.hire("CARRIER")
+    assert carrier is not None
+    assert carrier.type_tag == "CARRIER"
+    wm.reassign_all()
+    assert carrier.assigned_building is None
+
+
+def test_hire_builder_succeeds_and_worker_stays_unassigned() -> None:
+    world = World(world_seed=0)
+    registry = BuildingRegistry(world)
+    resources = ResourceManager()
+    registry.place(TownHall, town_hall_origin_tile())
+    wm = WorkerManager(resources, registry)
+
+    builder = wm.hire("BUILDER")
+    assert builder is not None
+    assert builder.type_tag == "BUILDER"
+    wm.reassign_all()
+    assert builder.assigned_building is None
+
+
+def test_carrier_transports_from_lumber_camp_to_town_hall_warehouse() -> None:
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    camp = registry.place(LumberCamp, near_town_hall_tile(8, 8))
+    resources = ResourceManager()
+    wm = WorkerManager(resources, registry, now_ms_fn=lambda: 0)
+
+    carrier = wm.hire("CARRIER")
+    assert carrier is not None
+    camp.add_to_storage(1)
+    wm.enqueue_transport_task(resource="wood", source=camp, target=town_hall, amount=1)
+
+    for now_ms in range(0, 120_000, 500):
+        wm.update(now_ms)
+        if camp.stored == 0 and town_hall.warehouse_amount("wood") == 1 and resources.get("wood") >= 201:
+            break
+
+    assert camp.stored == 0
+    assert town_hall.warehouse_amount("wood") == 1
+    assert resources.get("wood") >= 201
+
+
+def test_carrier_waits_2s_inside_buildings_on_pickup_and_dropoff() -> None:
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    camp = registry.place(LumberCamp, near_town_hall_tile(8, 8))
+    resources = ResourceManager()
+    wm = WorkerManager(resources, registry, now_ms_fn=lambda: 0)
+    carrier = wm.hire("CARRIER")
+    assert carrier is not None
+    camp.add_to_storage(1)
+    wm.enqueue_transport_task(resource="wood", source=camp, target=town_hall, amount=1)
+
+    pickup_started_ms: int | None = None
+    for now_ms in range(0, 120_000, 250):
+        wm.update(now_ms)
+        if carrier.state == "carrier_loading":
+            pickup_started_ms = now_ms
+            break
+    assert pickup_started_ms is not None
+    assert camp.stored == 1
+
+    wm.update(pickup_started_ms + 1_500)
+    assert camp.stored == 1
+    wm.update(pickup_started_ms + 2_100)
+    assert camp.stored == 0
+
+    unload_started_ms: int | None = None
+    for now_ms in range(pickup_started_ms + 2_100, pickup_started_ms + 120_000, 250):
+        wm.update(now_ms)
+        if carrier.state == "carrier_unloading":
+            unload_started_ms = now_ms
+            break
+    assert unload_started_ms is not None
+    assert town_hall.warehouse_amount("wood") == 0
+
+    wm.update(unload_started_ms + 1_500)
+    assert town_hall.warehouse_amount("wood") == 0
+    wm.update(unload_started_ms + 2_100)
+    assert town_hall.warehouse_amount("wood") == 1
+    tx, ty = town_hall.grid_pos  # type: ignore[misc]
+    tw, th = type(town_hall).footprint
+    assert carrier.current_tile == (tx + tw // 2, ty + th)
+
+
 def test_hire_stonecutter_requires_town_hall_level_3() -> None:
     world = World(world_seed=0)
     registry = BuildingRegistry(world)
@@ -481,7 +575,7 @@ def test_hire_stonecutter_requires_town_hall_level_3() -> None:
     assert resources.get("food") == food_before
     town_hall.level = 3
     assert wm.hire("STONECUTTER") is not None
-    assert resources.get("food") == food_before - WORKER_HIRE_COST["food"]
+    assert resources.get("food") == food_before
 
 
 def test_hire_miner_requires_town_hall_level_5() -> None:

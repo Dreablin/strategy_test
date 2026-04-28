@@ -19,6 +19,7 @@ from game.world import find_nearest_free_stone, find_nearest_free_tree
 
 CHOP_DURATION_MS = 10_000
 MINE_DURATION_MS = 10_000
+PLANT_DURATION_MS = 5_000
 LUMBERJACK_REST_MS = 5_000
 STONECUTTER_REST_MS = 5_000
 MOVE_SPEED_PER_LEVEL = 0.05
@@ -98,6 +99,8 @@ class Worker:
                 self.state = "going_to_tree"
             elif move_state == "going_to_stone":
                 self.state = "going_to_stone"
+            elif move_state == "going_to_plant_tile":
+                self.state = "going_to_plant_tile"
             elif move_state == "returning":
                 self.state = "returning"
             else:
@@ -113,7 +116,7 @@ class Worker:
         self.idle = False
 
     def update(self, now_ms: int) -> None:
-        if self.state not in {"moving", "going_to_tree", "going_to_stone", "returning"} or self.target_tile is None:
+        if self.state not in {"moving", "going_to_tree", "going_to_stone", "going_to_plant_tile", "returning"} or self.target_tile is None:
             return
         travel_ms = self._effective_travel_ms()
         elapsed = max(0, int(now_ms) - self.segment_started_ms)
@@ -133,6 +136,8 @@ class Worker:
                 self.state = "arrived_tree"
             elif self.state == "going_to_stone":
                 self.state = "arrived_stone"
+            elif self.state == "going_to_plant_tile":
+                self.state = "arrived_plant_tile"
             elif self.state == "returning":
                 self.state = "arrived_camp"
             else:
@@ -158,6 +163,7 @@ class WorkerManager:
         "STONECUTTER": "STONE_MINE",
         "MINER": "IRON_MINE",
         "FARMER": "FARM",
+        "FORESTER": "FORESTER_HUT",
     }
 
     def __init__(
@@ -204,7 +210,7 @@ class WorkerManager:
         for worker in self._workers:
             if worker.assigned_building is not building:
                 continue
-            if worker.state in {"moving", "going_to_tree", "going_to_stone", "returning"}:
+            if worker.state in {"moving", "going_to_tree", "going_to_stone", "going_to_plant_tile", "returning"}:
                 return "on the way"
             return "assigned"
         return "empty"
@@ -227,14 +233,14 @@ class WorkerManager:
         if hasattr(building, "is_storage_full") and building.is_storage_full():
             return "Storage full"
 
-        moving_states = {"moving", "going_to_tree", "going_to_stone", "returning"}
+        moving_states = {"moving", "going_to_tree", "going_to_stone", "going_to_plant_tile", "returning"}
         if worker.state in moving_states:
             return "On the way"
-        if worker.state in {"chopping", "mining"}:
+        if worker.state in {"chopping", "mining", "planting"}:
             return "Gathering"
         if worker.state == "depositing":
             return "Depositing"
-        if worker.state in {"arrived_tree", "arrived_stone"}:
+        if worker.state in {"arrived_tree", "arrived_stone", "arrived_plant_tile"}:
             return "At resource"
         if worker.state == "arrived_camp":
             return "At camp"
@@ -439,6 +445,9 @@ class WorkerManager:
         world = getattr(self._registry, "_world", None) if self._registry is not None else None
         for worker in self._workers:
             worker.update(now_ms)
+            if worker.type_tag == "FORESTER":
+                self._update_forester(worker, int(now_ms), world)
+                continue
             if worker.type_tag not in {"LUMBERJACK", "STONECUTTER"}:
                 continue
             if world is None:
@@ -520,6 +529,54 @@ class WorkerManager:
                 self._park_worker_inside_camp(worker, camp)
                 worker.camp_wait_until_ms = int(now_ms) + gather_state["rest_ms"]
                 continue
+
+    def _update_forester(self, worker: Worker, now_ms: int, world: Any) -> None:
+        if world is None:
+            return
+        hut = worker.assigned_building
+        if hut is None:
+            world.release_reservations_for(worker)
+            return
+
+        if worker.state == "working":
+            self._park_worker_inside_camp(worker, hut)
+            if not getattr(hut, "active", False):
+                return
+            depart_ms = worker.arrival_ms if worker.arrival_ms > 0 else now_ms
+            if not self._start_forester_cycle(worker, hut, depart_ms, world):
+                worker.camp_wait_until_ms = now_ms + 1_000
+                return
+            worker.camp_wait_until_ms = 0
+            worker.update(now_ms)
+            if worker.state == "arrived_plant_tile":
+                worker.state = "planting"
+                worker.chop_started_ms = now_ms
+                worker.chop_duration_ms = PLANT_DURATION_MS
+            return
+
+        if worker.state == "arrived_plant_tile":
+            worker.state = "planting"
+            worker.chop_started_ms = now_ms
+            worker.chop_duration_ms = PLANT_DURATION_MS
+            return
+
+        if worker.state == "planting":
+            if now_ms - worker.chop_started_ms < worker.chop_duration_ms:
+                return
+            target_tile = worker.target_tile
+            if target_tile is not None:
+                species = (target_tile[0] + target_tile[1]) % 3
+                world.plant_tree(*target_tile, now_ms=now_ms, species=species)
+            if not self._start_return_to_camp(worker, now_ms):
+                self._park_worker_inside_camp(worker, hut)
+            return
+
+        if worker.state == "arrived_camp":
+            self._park_worker_inside_camp(worker, hut)
+            worker.target_tile = None
+            worker.chop_started_ms = 0
+            worker.chop_duration_ms = CHOP_DURATION_MS
+            return
     def _gather_state_for(self, worker_type: str) -> dict[str, Any] | None:
         if worker_type == "LUMBERJACK":
             return {
@@ -545,6 +602,51 @@ class WorkerManager:
 
     def _start_lumberjack_cycle(self, worker: Worker, camp: Building, now_ms: int) -> bool:
         return self._start_gather_cycle(worker, camp, now_ms, world_query="tree")
+
+    def _start_forester_cycle(self, worker: Worker, hut: Building, now_ms: int, world: Any) -> bool:
+        target_tile = self._select_forester_target(world, hut, worker.current_tile)
+        if target_tile is None:
+            return False
+        blocked = world.blocked_tiles()
+        blocked.discard(worker.current_tile)
+        path = find_path_bfs(world, worker.current_tile, target_tile, blocked)
+        if path is None:
+            return False
+        worker.target_tile = target_tile
+        worker.start_move(path, started_ms=now_ms, move_state="going_to_plant_tile")
+        return True
+
+    @staticmethod
+    def _select_forester_target(
+        world: Any, hut: Building, from_tile: tuple[int, int]
+    ) -> tuple[int, int] | None:
+        hx, hy = building_center_tile(hut)
+        blocked = world.blocked_tiles()
+        candidates: list[tuple[int, int]] = []
+        for y in range(hy - 15, hy + 16):
+            for x in range(hx - 15, hx + 16):
+                if not world.is_in_grass(x, y):
+                    continue
+                if max(abs(x - hx), abs(y - hy)) > 15:
+                    continue
+                if (x, y) in blocked:
+                    continue
+                if world.is_occupied(x, y) or world.is_tree_blocking(x, y) or world.is_stone_blocking(x, y):
+                    continue
+                path = find_path_bfs(world, from_tile, (x, y), blocked)
+                if path is None:
+                    continue
+                candidates.append((x, y))
+        if not candidates:
+            return None
+        candidates.sort(
+            key=lambda tile: (
+                abs(tile[0] - from_tile[0]) + abs(tile[1] - from_tile[1]),
+                tile[1],
+                tile[0],
+            )
+        )
+        return candidates[0]
 
     def _start_gather_cycle(
         self, worker: Worker, camp: Building, now_ms: int, *, world_query: str

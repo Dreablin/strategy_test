@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 14. Forestry expansion: forester hut, planting cycle, tree variants
-- **Next Task:** T156 — implement forester worker planting cycle in workers.
-- **Last Completed:** T155 — add failing tests for forester hiring and planting cycle.
-- **Total Progress:** 155 / 160
+- **Next Task:** T157 — add failing render tests for tree species visuals.
+- **Last Completed:** T156 — implement forester worker planting cycle in workers.
+- **Total Progress:** 156 / 160
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -512,7 +512,7 @@
   - On completion, world gains one smallest-stage tree at target tile.
   - Inactive hut blocks starting new cycle but allows in-progress cycle to finish.
 
-- [ ] **T156**: Implement forester cycle in `src/game/workers.py`:
+- [x] **T156**: Implement forester cycle in `src/game/workers.py`:
   - Add worker states for go_to_plant_tile / planting / return (or existing pattern).
   - Reuse BFS/path contracts (4-dir) and blocked-tiles logic.
   - Target selection uses RNG with deterministic injection for tests

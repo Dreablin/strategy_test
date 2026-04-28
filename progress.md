@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 15 — Housing, House, School training queue, population HUD
-- **Next Task:** T165 (first `- [ ]` below)
-- **Last Completed:** T164 — wire School queue runtime spawn + reassign
-- **Total Progress:** 164 / 173 (Phase 15: 4 / 13 tasks done)
+- **Next Task:** T166 (first `- [ ]` below)
+- **Last Completed:** T165 — school queue row UI and progress bar
+- **Total Progress:** 165 / 173 (Phase 15: 5 / 13 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -40,7 +40,7 @@
 
 ### 15.3 UI — School row + Top bar
 
-- [ ] **T165**: `SchoolPanel`: **7** squares in a row — worker icon + **yellow** progress bar at bottom of active training cell; enqueue buttons respect cap + full queue.
+- [x] **T165**: `SchoolPanel`: **7** squares in a row — worker icon + **yellow** progress bar at bottom of active training cell; enqueue buttons respect cap + full queue.
 - [ ] **T166**: Replace top-bar **resource** strip with **population** display: icon + `current (max N)` (see PRD **F-UI-TOP**); headless layout / surface test.
 
 ### 15.4 House building
@@ -76,6 +76,7 @@
 | 2026-04-28 | T162 | Housing cap gate enforced in School hire flow: UI disabled via `can_hire`, backend `hire` returns no-op when over cap. | Prevents over-cap worker creation at both interaction and domain layers. |
 | 2026-04-28 | T163 | Queue API contract tests define 7-slot FIFO, 30s front-only training, left-shift on completion, independent per-school timers. | Locks expected behavior before implementation (T164). |
 | 2026-04-28 | T164 | School clicks enqueue free training; `WorkerManager.update` advances per-school queues and spawns completed trainees before `reassign_all`. | Aligns runtime with Phase 15 queue semantics and removes food-cost dependency from School training flow. |
+| 2026-04-28 | T165 | School panel now renders a 7-slot queue row with worker icons and active yellow progress bar; enqueue controls disable when queue is full/cap blocked. | Matches F-SCHOOL-Q visual contract and keeps button affordances in sync with queue/housing gates. |
 
 ## Issues & Blockers
 

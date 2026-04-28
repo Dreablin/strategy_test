@@ -443,6 +443,8 @@ class WorkerManager:
     def update(self, now_ms: int) -> None:
         """Advance worker movement interpolation/state for this frame."""
         world = getattr(self._registry, "_world", None) if self._registry is not None else None
+        if world is not None:
+            world.update_tree_growth(now_ms=int(now_ms))
         for worker in self._workers:
             worker.update(now_ms)
             if worker.type_tag == "FORESTER":

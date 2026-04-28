@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 14. Forestry expansion: forester hut, planting cycle, tree variants
-- **Next Task:** T160 — docs/progress sync and phase completion.
-- **Last Completed:** T159 — add end-to-end forestry smoke coverage.
-- **Total Progress:** 159 / 160
+- **Next Task:** None — Phase 14 complete.
+- **Last Completed:** T160 — final verification and phase completion sync.
+- **Total Progress:** 160 / 160
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -540,7 +540,7 @@
   4. Verify a lumberjack can target/chop the matured planted tree.
   5. Assert no exceptions during one rendered frame with mixed species trees.
 
-- [ ] **T160**: Docs/progress sync and phase completion:
+- [x] **T160**: Docs/progress sync and phase completion:
   - Update PRD sections for new building/worker, growth timing, and species visuals.
   - Update `progress.md` Current Status + Decisions Log with key choices
     (random target selection policy, growth scheduler source of truth).
@@ -562,6 +562,8 @@
 | 2026-04-27 | T132    | BFS uses 4 neighbours only (N/E/S/W), no diagonal moves and no corner-cut handling.      | User asked workers to walk only horizontally/vertically. Side benefit: simpler BFS, fewer edge cases.  |
 | 2026-04-27 | T127    | `World` maintains shadow `set` indices for occupied / tree / stone tiles.                | Eliminates per-frame O(W·H) grid scans in worker dispatch; enables 10× larger maps without lag.        |
 | 2026-04-27 | T137    | Rendering iterates only `Renderer.visible_tile_range(...)` plus 2-tile margin.           | Frame cost becomes a function of viewport size, not map size; pixel-equivalence test guards quality.   |
+| 2026-04-27 | T156    | Forester planting target selection is deterministic nearest-tile (radius 15), no RNG yet. | Keeps tests stable and reproducible; RNG-injected random policy can be layered later if required.       |
+| 2026-04-27 | T160    | Runtime growth scheduler source-of-truth is `WorkerManager.update` -> `world.update_tree_growth(now_ms)`. | Ensures planted-tree maturation advances in both gameplay and simulation tests without extra caller wiring. |
 
 ## Issues & Blockers
 

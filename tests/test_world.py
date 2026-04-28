@@ -116,15 +116,23 @@ def test_stone_generation_is_reproducible_with_explicit_world_seed() -> None:
     assert a_tiles == b_tiles
 
 
-def test_tree_generation_picks_eight_grove_centers_far_from_town_hall() -> None:
-    world = World()
-    assert len(world._tree_centers) == 8  # noqa: SLF001
+def test_tree_generation_ten_grove_centers_including_priority_th_rings() -> None:
+    world = World(world_seed=2)
+    centers = world._tree_centers  # noqa: SLF001
+    assert len(centers) == 10
     town_hall_tiles = town_hall_footprint_tiles()
-    for cx, cy in world._tree_centers:  # noqa: SLF001
+
+    def min_th(cx: int, cy: int) -> int:
+        return min(max(abs(cx - tx), abs(cy - ty)) for tx, ty in town_hall_tiles)
+
+    assert min_th(*centers[0]) == 12
+    assert min_th(*centers[1]) == 20
+    assert max(abs(centers[0][0] - centers[1][0]), abs(centers[0][1] - centers[1][1])) >= 17
+
+    for cx, cy in centers:
         assert world.is_in_grass(cx, cy)
         assert not world.is_stone_blocking(cx, cy)
-        min_dist = min(max(abs(cx - tx), abs(cy - ty)) for tx, ty in town_hall_tiles)
-        assert min_dist >= 12
+        assert min_th(cx, cy) >= 12
 
 
 def test_tree_generation_is_reproducible_with_explicit_world_seed() -> None:

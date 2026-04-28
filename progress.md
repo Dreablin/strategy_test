@@ -54,6 +54,13 @@
 - Constants in `world.py`: `_TREE_GROVE_COUNT = 8`, radius +2 vs prior
   (`[5, 8]` Chebyshev), `_TREE_GROVE_FILL_PROBABILITY = 0.7`.
 
+### HF16 — Two priority tree groves on TH rings 12 & 20 (DONE)
+
+- Before the eight “far” grove centers: pair (ring 12, ring 20) with empty
+  max-radius stone disks, Chebyshev centre separation ≥ 17; fill with relaxed
+  map-centre clearing + TH footprint skip. Several tests re-pinned to
+  `world_seed=2` for stable paths near the hub.
+
 ---
 
 ## Recent context (do not re-run, kept only as input for ralph-loop)

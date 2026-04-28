@@ -66,7 +66,7 @@ def test_town_hall_max_level_10() -> None:
 
 
 def test_upgrade_lumber_camp_spends_cost_and_increments_level() -> None:
-    world = World()
+    world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     b = registry.place(LumberCamp, (11, 11))
@@ -78,7 +78,7 @@ def test_upgrade_lumber_camp_spends_cost_and_increments_level() -> None:
 
 
 def test_upgrade_rejected_when_insufficient_resources() -> None:
-    world = World()
+    world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     b = registry.place(LumberCamp, (12, 12))
@@ -89,7 +89,7 @@ def test_upgrade_rejected_when_insufficient_resources() -> None:
 
 
 def test_upgrade_allowed_for_town_hall_below_cap() -> None:
-    world = World()
+    world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     resources.add("wood", 50)
@@ -100,7 +100,7 @@ def test_upgrade_allowed_for_town_hall_below_cap() -> None:
 
 def test_upgrade_updates_per_cycle_when_building_is_staffed() -> None:
     """No passive per-cycle production should be exposed for active gatherers."""
-    world = World()
+    world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     th = registry.place(TownHall, town_hall_origin_tile())
@@ -116,7 +116,7 @@ def test_upgrade_updates_per_cycle_when_building_is_staffed() -> None:
 
 
 def test_upgrade_rejected_at_max_level() -> None:
-    world = World()
+    world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     resources.add("wood", 60_000)

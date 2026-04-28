@@ -147,7 +147,7 @@ def test_build_menu_select_closes_panel() -> None:
 
 def test_place_calls_reassign_all_and_assigns_idle_worker() -> None:
     surface = pygame.Surface((1280, 720))
-    world = World(world_seed=0)
+    world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     camera = Camera()
@@ -168,7 +168,7 @@ def test_place_calls_reassign_all_and_assigns_idle_worker() -> None:
 
 def test_town_hall_hire_button_calls_worker_manager_hire() -> None:
     surface = pygame.Surface((1280, 720))
-    world = World()
+    world = World(world_seed=2)
     registry = BuildingRegistry(world)
     town_hall = registry.place(TownHall, town_hall_origin_tile())
     camp = registry.place(LumberCamp, near_town_hall_tile(12, 12))

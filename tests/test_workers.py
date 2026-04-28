@@ -174,7 +174,7 @@ def test_reassign_all_does_not_assign_stonecutter_to_lumber_camp() -> None:
 
 
 def test_demolish_then_reassign_moves_worker_to_new_matching_building() -> None:
-    world = World(world_seed=0)
+    world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     registry.place(TownHall, town_hall_origin_tile())

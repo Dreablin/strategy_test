@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 14. Forestry expansion: forester hut, planting cycle, tree variants
-- **Next Task:** T150 — implement tree species + growth timing in domain model.
-- **Last Completed:** T149 — add failing domain tests for tree species + growth ticks.
-- **Total Progress:** 149 / 160
+- **Next Task:** T151 — add failing world runtime tests for planting + growth updates.
+- **Last Completed:** T150 — implement tree species + growth timing in domain model.
+- **Total Progress:** 150 / 160
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -467,7 +467,7 @@
   - `can_chop` (or equivalent contract) is `False` until mature, `True` at mature.
   - Stage progression is deterministic and independent from species.
 
-- [ ] **T150**: Implement species + growth timing in `src/game/trees.py`:
+- [x] **T150**: Implement species + growth timing in `src/game/trees.py`:
   - Add species field to `Tree` (asset-facing only).
   - Add growth timestamp/timer support (`next_growth_at_ms` or accumulated timer).
   - Add methods/helpers to progress growth in fixed 30_000 ms steps.

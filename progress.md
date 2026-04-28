@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 14. Forestry expansion: forester hut, planting cycle, tree variants
-- **Next Task:** T151 — add failing world runtime tests for planting + growth updates.
-- **Last Completed:** T150 — implement tree species + growth timing in domain model.
-- **Total Progress:** 150 / 160
+- **Next Task:** T152 — implement world planting API and global tree growth updates.
+- **Last Completed:** T151 — add failing world runtime tests for planting + growth.
+- **Total Progress:** 151 / 160
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -476,7 +476,7 @@
 
 #### 14.2 World integration for planted trees and global growth ticks
 
-- [ ] **T151**: Add failing tests in `tests/test_world_tree_growth_runtime.py`:
+- [x] **T151**: Add failing tests in `tests/test_world_tree_growth_runtime.py`:
   - `World.plant_tree(x, y, now_ms, species=...)` (or chosen API) creates
     smallest-stage tree on valid free tile.
   - Planting is rejected on occupied / stone / existing-tree / TH footprint tile.

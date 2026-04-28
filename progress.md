@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 14. Forestry expansion: forester hut, planting cycle, tree variants
-- **Next Task:** T155 — add failing tests for forester worker planting cycle.
-- **Last Completed:** T154 — implement Forester Hut building and registration wiring.
-- **Total Progress:** 154 / 160
+- **Next Task:** T156 — implement forester worker planting cycle in workers.
+- **Last Completed:** T155 — add failing tests for forester hiring and planting cycle.
+- **Total Progress:** 155 / 160
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -505,7 +505,7 @@
 
 #### 14.4 New worker role: Forester planting cycle
 
-- [ ] **T155**: Add failing tests in `tests/test_forester_cycle.py`:
+- [x] **T155**: Add failing tests in `tests/test_forester_cycle.py`:
   - `Worker("FORESTER")` can be hired and assigned only to `FORESTER_HUT`.
   - Chooses a random **reachable free tile** within Chebyshev radius 15 from hut.
   - Enters planting state for exactly 5_000 ms on target tile.

@@ -253,7 +253,7 @@ class GameInput:
         )
 
     def _handle_map_left_click(self, surface: pygame.Surface, pos: tuple[int, int]) -> None:
-        if self._placement.pending_type is not None:
+        if self._placement.has_pending:
             if self._placement.try_place(surface, pos, self._camera):
                 self._sync_assignments()
             return

@@ -257,6 +257,43 @@ def test_school_enqueue_does_not_consume_food_or_spawn_instantly() -> None:
     assert resources.get("food") == food_before
 
 
+def test_dev_tree_and_stone_tools_place_entities_via_input_click() -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    resources = ResourceManager()
+    camera = Camera()
+    placement = PlacementController(world, registry, resources, camera)
+    inp = GameInput(world, registry, resources, placement, WorkerManager(resources, registry), camera)
+
+    def _find_free_tile(start_x: int, start_y: int) -> tuple[int, int]:
+        for dy in range(0, 12):
+            for dx in range(0, 12):
+                tx, ty = start_x + dx, start_y + dy
+                if not world.is_in_grass(tx, ty):
+                    continue
+                if world.is_occupied(tx, ty) or world.is_tree_blocking(tx, ty) or world.is_stone_blocking(tx, ty):
+                    continue
+                return tx, ty
+        raise AssertionError("No free tile found for dev tool placement")
+
+    gx, gy = _find_free_tile(*near_town_hall_tile(2, 2))
+    pos = _tile_center(surface, world, gx, gy)
+    trees_before = len(world.iter_alive_trees())
+
+    inp.handle(surface, pygame.event.Event(BUILD_MENU_SELECT, building_type="DEV_TREE"))
+    inp.handle(surface, pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=pos))
+    assert len(world.iter_alive_trees()) == trees_before + 1
+
+    gx2, gy2 = _find_free_tile(*near_town_hall_tile(5, 2))
+    pos2 = _tile_center(surface, world, gx2, gy2)
+    stones_before = len(world.iter_stones())
+    inp.handle(surface, pygame.event.Event(BUILD_MENU_SELECT, building_type="DEV_STONE"))
+    inp.handle(surface, pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=pos2))
+    assert len(world.iter_stones()) == stones_before + 1
+
+
 def test_top_bar_boundary_click_is_treated_as_map() -> None:
     """y == TOP_BAR_HEIGHT is considered map area for hover updates."""
     surface = pygame.Surface((1280, 720))

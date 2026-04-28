@@ -74,6 +74,11 @@ class PlacementController:
         return self._pending
 
     @property
+    def has_pending(self) -> bool:
+        """Whether any placement tool (building or dev) is currently selected."""
+        return self._pending is not None or self._pending_dev is not None
+
+    @property
     def hover_grid(self) -> tuple[int, int] | None:
         """Current snapped grid cell under the cursor while a type is selected (tests / debug)."""
         return self._hover

@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 15 — Housing, House, School training queue, population HUD
-- **Next Task:** T169 (first `- [ ]` below)
-- **Last Completed:** T168 — implement House + Social wiring
-- **Total Progress:** 168 / 173 (Phase 15: 8 / 13 tasks done)
+- **Next Task:** T170 (first `- [ ]` below)
+- **Last Completed:** T169 — block house demolish on over-cap
+- **Total Progress:** 169 / 173 (Phase 15: 9 / 13 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -47,7 +47,7 @@
 
 - [x] **T167**: Failing tests: `HOUSE` type, **2×2**, levels **1..10**, housing contribution per level, registry placement rules.
 - [x] **T168**: Implement `House`, costs/unlocks in `config.py` + `game_settings.json`, **Social** menu entry, assets folder + procedural sprite path.
-- [ ] **T169**: **Demolish vs over-cap** policy with tests (choose one consistent behaviour per **F-HOUSE-03** — e.g. block demolish if it would drop max below current pop).
+- [x] **T169**: **Demolish vs over-cap** policy with tests (choose one consistent behaviour per **F-HOUSE-03** — e.g. block demolish if it would drop max below current pop).
 
 ### 15.5 Assets
 
@@ -80,6 +80,7 @@
 | 2026-04-28 | T166 | Top bar now renders population icon + `current (max N)` using worker count and housing cap instead of resource strip. | Aligns HUD with Phase 15 population-first UX and adds headless layout/draw coverage. |
 | 2026-04-28 | T167 | Added RED coverage for `House` class contract, housing contribution, and registry placement/overlap semantics. | Defines expected behavior before implementing `House` and Social wiring in T168. |
 | 2026-04-28 | T168 | Added `House` building class, wired placement/bottom-bar Social entry/config gates, and created `assets/buildings/house/` disk path with procedural fallback. | Completes House core integration so placement, costs, and rendering paths are available for Phase 15 follow-ups. |
+| 2026-04-28 | T169 | Chosen policy: block `HOUSE` demolition if removal would make `current_population > max_population`; allow otherwise. | Prevents creating invalid over-cap state while keeping demolition deterministic and testable. |
 
 ## Issues & Blockers
 

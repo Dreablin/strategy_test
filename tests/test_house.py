@@ -10,6 +10,7 @@ from game.buildings.town_hall import TownHall
 from game.config import near_town_hall_tile, town_hall_origin_tile
 from game.housing import max_population
 from game.world import World
+from game.workers import Worker, WorkerManager
 
 
 def test_house_type_footprint_and_levels() -> None:
@@ -38,3 +39,33 @@ def test_registry_places_house_and_blocks_overlap() -> None:
     assert not registry.can_place(House, pos)
     with pytest.raises(ValueError):
         registry.place(House, pos)
+
+
+def test_house_demolish_is_blocked_when_it_would_cause_over_cap() -> None:
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    house = registry.place(House, near_town_hall_tile(8, 8))
+    workers = WorkerManager(registry=registry)
+    for _ in range(10):  # TH(8) + House(2)
+        workers.add_worker(Worker("LUMBERJACK"))
+
+    registry.demolish(house, workers)
+
+    assert house in registry.all()
+    assert max_population(registry, workers) == 10
+
+
+def test_house_demolish_is_allowed_when_population_fits_remaining_cap() -> None:
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    house = registry.place(House, near_town_hall_tile(8, 8))
+    workers = WorkerManager(registry=registry)
+    for _ in range(8):
+        workers.add_worker(Worker("LUMBERJACK"))
+
+    registry.demolish(house, workers)
+
+    assert house not in registry.all()
+    assert max_population(registry, workers) == 8

@@ -8,6 +8,7 @@ from typing import Type
 from game.buildings.base import Building
 from game.buildings.costs import upgrade_cost
 from game.config import TOWN_HALL_MIN_LEVEL_FOR_BUILDING
+from game.housing import housing_house, max_population
 from game.resources import ResourceManager
 from game.world import World
 from game.workers import WorkerManager
@@ -108,6 +109,13 @@ class BuildingRegistry:
     def demolish(self, building: Building, worker_manager: WorkerManager | None = None) -> None:
         if building not in self._buildings:
             raise ValueError("unknown building")
+        if building.type_tag == "HOUSE":
+            wm = worker_manager or self._worker_manager
+            current_population = len(wm.workers()) if wm is not None else 0
+            current_cap = max_population(self, wm or current_population)
+            next_cap = current_cap - housing_house(building.level)
+            if current_population > next_cap:
+                return
         if worker_manager is not None:
             worker_manager.notify_demolished(building)
         pos = building.grid_pos

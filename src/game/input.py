@@ -93,8 +93,6 @@ class GameInput:
     def _panel_production_status(self) -> str | None:
         if self._panel is None:
             return None
-        if not (hasattr(self._panel, "storage_capacity") and hasattr(self._panel, "stored")):
-            return None
         return self._worker_manager.production_status_for_building(self._panel)
 
     def _sync_assignments(self) -> None:

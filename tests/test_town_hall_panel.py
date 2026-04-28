@@ -7,12 +7,13 @@ from game.resources import ResourceManager
 from game.ui.town_hall_panel import TownHallPanel
 
 
-def test_town_hall_panel_layout_has_four_hire_buttons() -> None:
+def test_town_hall_panel_layout_has_five_hire_buttons_including_forester() -> None:
     surface = pygame.Surface((800, 600))
     resources = ResourceManager()
     town_hall = TownHall(level=1, grid_pos=(10, 10))
     layout = TownHallPanel.layout(surface, town_hall, resources, worker_assigned=False)
-    assert len(layout.hire_buttons) == 4
+    assert len(layout.hire_buttons) == 5
+    assert any(worker_type == "FORESTER" for worker_type, _rect in layout.hire_buttons)
     assert layout.upgrade is not None
 
 

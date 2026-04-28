@@ -13,7 +13,7 @@ from game.workers import WorkerManager
 
 
 def test_per_cycle_counts_only_staffed_buildings() -> None:
-    world = World()
+    world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     th = registry.place(TownHall, town_hall_origin_tile())
@@ -28,7 +28,7 @@ def test_per_cycle_counts_only_staffed_buildings() -> None:
 
 
 def test_per_cycle_updates_after_upgrade_for_staffed_building() -> None:
-    world = World()
+    world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     th = registry.place(TownHall, town_hall_origin_tile())
@@ -48,7 +48,7 @@ def test_per_cycle_updates_after_upgrade_for_staffed_building() -> None:
 
 
 def test_staffed_level1_stone_mine_has_no_passive_tick_production() -> None:
-    world = World()
+    world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     workers = WorkerManager(resources, registry)
@@ -65,7 +65,7 @@ def test_staffed_level1_stone_mine_has_no_passive_tick_production() -> None:
 
 
 def test_upgraded_stone_mine_still_has_no_passive_tick_production() -> None:
-    world = World()
+    world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     workers = WorkerManager(resources, registry)
@@ -89,7 +89,7 @@ def test_upgraded_stone_mine_still_has_no_passive_tick_production() -> None:
 
 
 def test_moving_worker_does_not_produce_until_working() -> None:
-    world = World()
+    world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     workers = WorkerManager(resources, registry)
@@ -116,7 +116,7 @@ def test_moving_worker_does_not_produce_until_working() -> None:
 
 
 def test_farm_has_no_passive_income_even_when_staffed() -> None:
-    world = World()
+    world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     _farm = registry.place(Farm, (10, 10))
@@ -135,7 +135,7 @@ def test_farm_has_no_passive_income_even_when_staffed() -> None:
 
 
 def test_iron_mine_has_no_passive_income_even_when_staffed() -> None:
-    world = World()
+    world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     th = registry.place(TownHall, town_hall_origin_tile())

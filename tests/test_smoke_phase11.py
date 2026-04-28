@@ -61,7 +61,7 @@ def test_smoke_phase11_lumberjack_cycle_toggle_and_reservation() -> None:
     assert worker.carrying is None
 
     # 5) Two camps + two lumberjacks with one tree: only one reservation owner.
-    world2 = World()
+    world2 = World(world_seed=2)
     world2._trees.clear()  # noqa: SLF001
     resources2 = ResourceManager()
     registry2 = BuildingRegistry(world2)

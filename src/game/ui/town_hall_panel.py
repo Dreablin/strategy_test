@@ -23,18 +23,20 @@ _EXTRA_BOTTOM = _SECTION_TITLE_GAP + (_BTN_H + _GAP) * len(
         "STONECUTTER",
         "MINER",
         "FARMER",
+        "FORESTER",
     )
 )
 _WORKER_ICON_SIZE = 22
 _HIRE_ICON_SIZE = 18
 _FOOD_ICON_SIZE = 16
 
-_HIRE_ROWS: tuple[str, ...] = ("LUMBERJACK", "STONECUTTER", "MINER", "FARMER")
+_HIRE_ROWS: tuple[str, ...] = ("LUMBERJACK", "STONECUTTER", "MINER", "FARMER", "FORESTER")
 _WORKER_LABEL: dict[str, str] = {
     "LUMBERJACK": "Lumberjack",
     "STONECUTTER": "Stonecutter",
     "MINER": "Miner",
     "FARMER": "Farmer",
+    "FORESTER": "Forester",
 }
 
 

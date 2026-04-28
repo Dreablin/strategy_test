@@ -195,7 +195,7 @@ def test_tree_presence_does_not_bypass_overlap_or_spacing_rules(
 def test_cannot_place_when_footprint_covers_stone_tile() -> None:
     from game.stones import Stone
 
-    world = World()
+    world = World(world_seed=2)
     registry = BuildingRegistry(world)
     world._stones[(10, 10)] = Stone()  # noqa: SLF001
     assert not registry.can_place(LumberCamp, (10, 10))
@@ -204,7 +204,7 @@ def test_cannot_place_when_footprint_covers_stone_tile() -> None:
 def test_rejected_place_does_not_remove_stones_in_footprint() -> None:
     from game.stones import Stone
 
-    world = World()
+    world = World(world_seed=2)
     world._stones.clear()  # noqa: SLF001
     registry = BuildingRegistry(world)
     world._stones[(10, 10)] = Stone()  # noqa: SLF001
@@ -214,7 +214,7 @@ def test_rejected_place_does_not_remove_stones_in_footprint() -> None:
 
 
 def test_upgrade_keeps_building_in_registry_list() -> None:
-    world = World()
+    world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     camp = registry.place(LumberCamp, (12, 12))
@@ -224,7 +224,7 @@ def test_upgrade_keeps_building_in_registry_list() -> None:
 
 
 def test_upgrade_refreshes_assigned_worker_gather_speed_bonus() -> None:
-    world = World()
+    world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     camp = registry.place(LumberCamp, (14, 14))
@@ -239,7 +239,7 @@ def test_upgrade_refreshes_assigned_worker_gather_speed_bonus() -> None:
 
 
 def test_consecutive_upgrades_stack_additively_for_assigned_worker() -> None:
-    world = World()
+    world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     camp = registry.place(LumberCamp, (18, 18))
@@ -255,7 +255,7 @@ def test_consecutive_upgrades_stack_additively_for_assigned_worker() -> None:
 
 
 def test_demolish_after_upgrades_clears_move_and_gather_bonus_sources() -> None:
-    world = World()
+    world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     camp = registry.place(LumberCamp, near_town_hall_tile())

@@ -12,7 +12,8 @@ from game.ui.building_panel import BuildingPanel
 
 _PANEL_PAD = 16
 _BTN_H = 32
-_EXTRA_BOTTOM = 72
+_GAP = 8
+_EXTRA_BOTTOM = 2 * _BTN_H + _GAP + _PANEL_PAD
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,7 +50,15 @@ class ForesterHutPanel:
             resources,
             worker_assigned=worker_assigned,
             production_status=production_status,
+            show_upgrade=False,
+            show_demolish=False,
             extra_bottom_px=_EXTRA_BOTTOM,
+        )
+        demolish = pygame.Rect(
+            base.frame.left + _PANEL_PAD,
+            base.frame.bottom - _PANEL_PAD - (2 * _BTN_H + _GAP),
+            base.frame.width - _PANEL_PAD * 2,
+            _BTN_H,
         )
         toggle = pygame.Rect(
             base.frame.left + _PANEL_PAD,
@@ -62,7 +71,7 @@ class ForesterHutPanel:
             close=base.close,
             upgrade=base.upgrade,
             upgrade_enabled=base.upgrade_enabled,
-            demolish=base.demolish,
+            demolish=demolish,
             toggle=toggle,
         )
 
@@ -85,6 +94,8 @@ class ForesterHutPanel:
             worker_status=worker_status,
             production_status=production_status,
             worker_working=worker_working,
+            show_upgrade=False,
+            show_demolish=False,
             extra_bottom_px=_EXTRA_BOTTOM,
         )
         layout = ForesterHutPanel.layout(
@@ -95,6 +106,16 @@ class ForesterHutPanel:
             production_status=production_status,
         )
         font = pygame.font.Font(None, 22)
+        if layout.demolish is not None:
+            pygame.draw.rect(surface, (140, 48, 52), layout.demolish, border_radius=6)
+            label = font.render("Demolish", True, (255, 240, 240))
+            surface.blit(
+                label,
+                (
+                    layout.demolish.centerx - label.get_width() // 2,
+                    layout.demolish.centery - label.get_height() // 2,
+                ),
+            )
         active_bg = (84, 112, 84) if hut.active else (92, 64, 64)
         pygame.draw.rect(surface, active_bg, layout.toggle, border_radius=6)
         label = font.render(ForesterHutPanel.toggle_label(hut), True, (240, 242, 250))
@@ -120,6 +141,8 @@ class ForesterHutPanel:
             resources,
             worker_assigned=worker_assigned,
             production_status=production_status,
+            show_upgrade=False,
+            show_demolish=False,
             extra_bottom_px=_EXTRA_BOTTOM,
         )
         if base_action is not None:
@@ -131,6 +154,8 @@ class ForesterHutPanel:
             worker_assigned=worker_assigned,
             production_status=production_status,
         )
+        if layout.demolish is not None and layout.demolish.collidepoint(pos):
+            return "demolish"
         if layout.toggle.collidepoint(pos):
             return "toggle_active"
         return None

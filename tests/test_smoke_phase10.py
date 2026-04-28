@@ -27,7 +27,7 @@ def _tree_pixel(surface: pygame.Surface, world: World, gx: int, gy: int) -> tupl
 
 def test_smoke_phase10_tree_features(monkeypatch) -> None:
     # 1) Movement blocking by tree.
-    world = World()
+    world = World(world_seed=2)
     world._trees[(12, 10)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
     path = find_path_bfs(world, (10, 10), (14, 10), blocked=set())
     assert path is not None

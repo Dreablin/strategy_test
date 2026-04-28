@@ -12,7 +12,7 @@ from game.workers import CHOP_DURATION_MS, WorkerManager
 
 def _setup_two_tree_cycle():
     now_ms = [0]
-    world = World()
+    world = World(world_seed=2)
     world._trees.clear()  # noqa: SLF001
     resources = ResourceManager()
     registry = BuildingRegistry(world)

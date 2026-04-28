@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+import random
 from typing import Any
 
 from game.buildings.base import Building
@@ -22,6 +23,10 @@ MINE_DURATION_MS = 10_000
 PLANT_DURATION_MS = 5_000
 LUMBERJACK_REST_MS = 5_000
 STONECUTTER_REST_MS = 5_000
+FORESTER_REST_MS = 5_000
+FORESTER_TARGET_RANDOM_TRIES = 3
+FORESTER_TARGET_RETRY_MS = 1_000
+FORESTER_RETURN_RETRY_MS = 3_000
 MOVE_SPEED_PER_LEVEL = 0.05
 GATHER_SPEED_PER_LEVEL = 0.05
 
@@ -210,6 +215,25 @@ class WorkerManager:
         for worker in self._workers:
             if worker.assigned_building is not building:
                 continue
+            if worker.type_tag == "FORESTER":
+                if worker.state == "moving":
+                    return "on the way"
+                if worker.state == "going_to_plant_tile":
+                    return "going to plant"
+                if worker.state in {"arrived_plant_tile", "planting"}:
+                    return "planting"
+                if worker.state in {"returning", "arrived_camp"}:
+                    return "returning"
+                if worker.state == "return_path_blocked":
+                    return "path blocked"
+                if worker.state == "working":
+                    now_ms = int(self._now_ms_fn())
+                    if worker.camp_wait_until_ms > now_ms:
+                        return "resting"
+                    return "ready"
+                if worker.state == "idle":
+                    return "idle"
+                return "assigned"
             if worker.state in {"moving", "going_to_tree", "going_to_stone", "going_to_plant_tile", "returning"}:
                 return "on the way"
             return "assigned"
@@ -217,9 +241,6 @@ class WorkerManager:
 
     def production_status_for_building(self, building: Building) -> str:
         """Human-readable production status for building panels."""
-        if not (hasattr(building, "storage_capacity") and hasattr(building, "stored")):
-            return "N/A"
-
         worker: Worker | None = None
         for candidate in self._workers:
             if candidate.assigned_building is building:
@@ -541,19 +562,19 @@ class WorkerManager:
             return
 
         if worker.state == "working":
-            self._park_worker_inside_camp(worker, hut)
+            self._park_forester_inside_hut(worker, hut)
             if not getattr(hut, "active", False):
                 return
-            depart_ms = worker.arrival_ms if worker.arrival_ms > 0 else now_ms
+            if worker.camp_wait_until_ms <= 0:
+                worker.camp_wait_until_ms = now_ms + FORESTER_REST_MS
+            if now_ms < worker.camp_wait_until_ms:
+                return
+            # Start walking from "now" to preserve smooth interpolation.
+            depart_ms = now_ms
             if not self._start_forester_cycle(worker, hut, depart_ms, world):
-                worker.camp_wait_until_ms = now_ms + 1_000
+                worker.camp_wait_until_ms = now_ms + FORESTER_TARGET_RETRY_MS
                 return
             worker.camp_wait_until_ms = 0
-            worker.update(now_ms)
-            if worker.state == "arrived_plant_tile":
-                worker.state = "planting"
-                worker.chop_started_ms = now_ms
-                worker.chop_duration_ms = PLANT_DURATION_MS
             return
 
         if worker.state == "arrived_plant_tile":
@@ -570,14 +591,27 @@ class WorkerManager:
                 species = (target_tile[0] + target_tile[1]) % 3
                 world.plant_tree(*target_tile, now_ms=now_ms, species=species)
             if not self._start_return_to_camp(worker, now_ms):
-                self._park_worker_inside_camp(worker, hut)
+                # Never teleport forester home: if path is temporarily unavailable,
+                # stay on the current tile and retry pathing on next ticks.
+                worker.state = "return_path_blocked"
+                worker.camp_wait_until_ms = now_ms + FORESTER_RETURN_RETRY_MS
+            return
+
+        if worker.state == "return_path_blocked":
+            if now_ms < worker.camp_wait_until_ms:
+                return
+            if self._start_return_to_camp(worker, now_ms):
+                worker.camp_wait_until_ms = 0
+                return
+            worker.camp_wait_until_ms = now_ms + FORESTER_RETURN_RETRY_MS
             return
 
         if worker.state == "arrived_camp":
-            self._park_worker_inside_camp(worker, hut)
+            self._park_forester_inside_hut(worker, hut)
             worker.target_tile = None
             worker.chop_started_ms = 0
             worker.chop_duration_ms = CHOP_DURATION_MS
+            worker.camp_wait_until_ms = now_ms + FORESTER_REST_MS
             return
     def _gather_state_for(self, worker_type: str) -> dict[str, Any] | None:
         if worker_type == "LUMBERJACK":
@@ -624,31 +658,54 @@ class WorkerManager:
     ) -> tuple[int, int] | None:
         hx, hy = building_center_tile(hut)
         blocked = world.blocked_tiles()
-        candidates: list[tuple[int, int]] = []
-        for y in range(hy - 15, hy + 16):
-            for x in range(hx - 15, hx + 16):
-                if not world.is_in_grass(x, y):
-                    continue
-                if max(abs(x - hx), abs(y - hy)) > 15:
-                    continue
-                if (x, y) in blocked:
-                    continue
-                if world.is_occupied(x, y) or world.is_tree_blocking(x, y) or world.is_stone_blocking(x, y):
-                    continue
-                path = find_path_bfs(world, from_tile, (x, y), blocked)
-                if path is None:
-                    continue
-                candidates.append((x, y))
-        if not candidates:
+        blocked.discard(from_tile)
+        pos = hut.grid_pos
+        if pos is None:
             return None
-        candidates.sort(
-            key=lambda tile: (
-                abs(tile[0] - from_tile[0]) + abs(tile[1] - from_tile[1]),
-                tile[1],
-                tile[0],
-            )
-        )
-        return candidates[0]
+        gx, gy = pos
+        w, h = type(hut).footprint
+        hut_approaches: list[tuple[int, int]] = []
+        for ay in range(gy - 1, gy + h + 1):
+            for ax in range(gx - 1, gx + w + 1):
+                inside = gx <= ax < gx + w and gy <= ay < gy + h
+                if inside:
+                    continue
+                if not world.is_in_grass(ax, ay):
+                    continue
+                if (ax, ay) in blocked:
+                    continue
+                hut_approaches.append((ax, ay))
+        if not hut_approaches:
+            return None
+        approach_set = set(hut_approaches)
+        for _ in range(FORESTER_TARGET_RANDOM_TRIES):
+            x = random.randint(hx - 15, hx + 15)
+            y = random.randint(hy - 15, hy + 15)
+            if not world.is_in_grass(x, y):
+                continue
+            if (x, y) == from_tile:
+                continue
+            if (x, y) in approach_set:
+                continue
+            if (x, y) in blocked:
+                continue
+            if world.is_occupied(x, y) or world.is_tree_blocking(x, y) or world.is_stone_blocking(x, y):
+                continue
+            near_building = False
+            for ny in range(y - 1, y + 2):
+                for nx in range(x - 1, x + 2):
+                    if world.is_occupied(nx, ny):
+                        near_building = True
+                        break
+                if near_building:
+                    break
+            if near_building:
+                continue
+            path = find_path_bfs(world, from_tile, (x, y), blocked)
+            if path is None:
+                continue
+            return (x, y)
+        return None
 
     def _start_gather_cycle(
         self, worker: Worker, camp: Building, now_ms: int, *, world_query: str
@@ -771,13 +828,24 @@ class WorkerManager:
             return False
         blocked = world.blocked_tiles()
         blocked.discard(worker.current_tile)
+        # Forester plants a tree on its current tile; pathfinder forbids blocked start tiles.
+        # Temporarily unmark that single tile while computing a route out, then restore it.
+        restored_tree = None
+        if worker.type_tag == "FORESTER":
+            restored_tree = world.tree_at(*worker.current_tile)
+            if restored_tree is not None:
+                world._trees.pop(worker.current_tile, None)  # noqa: SLF001
         best_path: list[tuple[int, int]] | None = None
-        for tile in self._approach_tiles(worker.assigned_building):
-            path = find_path_bfs(world, worker.current_tile, tile, blocked)
-            if path is None:
-                continue
-            if best_path is None or len(path) < len(best_path):
-                best_path = path
+        try:
+            for tile in self._approach_tiles(worker.assigned_building):
+                path = find_path_bfs(world, worker.current_tile, tile, blocked)
+                if path is None:
+                    continue
+                if best_path is None or len(path) < len(best_path):
+                    best_path = path
+        finally:
+            if restored_tree is not None and world.tree_at(*worker.current_tile) is None:
+                world._trees[worker.current_tile] = restored_tree  # noqa: SLF001
         if best_path is None:
             return False
         worker.start_move(best_path, started_ms=now_ms, move_state="returning")
@@ -791,6 +859,18 @@ class WorkerManager:
                 worker.current_tile = approach_tiles[0]
         worker.stand_tile = worker.current_tile
         worker.target_tile = worker.current_tile
+        worker.path = []
+        worker.segment_progress = 0.0
+        worker.idle = False
+        worker.state = "working"
+
+    @staticmethod
+    def _park_forester_inside_hut(worker: Worker, hut: Building) -> None:
+        """Forester is considered inside hut between cycles (not on approach tile)."""
+        center = building_center_tile(hut)
+        worker.current_tile = center
+        worker.stand_tile = center
+        worker.target_tile = None
         worker.path = []
         worker.segment_progress = 0.0
         worker.idle = False

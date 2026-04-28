@@ -158,7 +158,7 @@ class Renderer:
         gx_min, gy_min, gx_max, gy_max = Renderer.visible_tile_range(surface, world, camera)
         if gx_max < gx_min or gy_max < gy_min:
             return
-        moving_states = {"moving", "going_to_tree", "going_to_stone", "returning"}
+        moving_states = {"moving", "going_to_tree", "going_to_stone", "going_to_plant_tile", "returning"}
         entries: list[tuple[str, bool, float, float]] = []
         for worker in worker_manager.workers():
             carrying = (

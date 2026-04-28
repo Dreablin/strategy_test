@@ -9,6 +9,7 @@ import pygame
 from game.buildings.base import Building
 from game.buildings.costs import build_cost
 from game.buildings.farm import Farm
+from game.buildings.forester_hut import ForesterHut
 from game.buildings.iron_mine import IronMine
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.registry import BuildingRegistry
@@ -25,6 +26,7 @@ _TAG_TO_CLASS: dict[str, Type[Building]] = {
     "STONE_MINE": StoneMine,
     "IRON_MINE": IronMine,
     "FARM": Farm,
+    "FORESTER_HUT": ForesterHut,
 }
 
 

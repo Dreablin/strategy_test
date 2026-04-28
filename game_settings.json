@@ -23,7 +23,8 @@
       "LUMBER_CAMP": { "wood": 5 },
       "STONE_MINE": { "wood": 5 },
       "IRON_MINE": { "wood": 5 },
-      "FARM": { "wood": 5 }
+      "FARM": { "wood": 5 },
+      "FORESTER_HUT": { "wood": 5 }
     },
     "upgrade_costs": {
       "DEFAULT": {
@@ -48,7 +49,8 @@
   "gates": {
     "building_min_town_hall_level": {
       "STONE_MINE": 3,
-      "IRON_MINE": 5
+      "IRON_MINE": 5,
+      "FORESTER_HUT": 1
     },
     "hire_min_town_hall_level": {
       "LUMBERJACK": 1,

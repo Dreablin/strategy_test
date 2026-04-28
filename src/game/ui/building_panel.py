@@ -23,6 +23,7 @@ _DISPLAY_NAME: dict[str, str] = {
     "STONE_MINE": "Stone Mine",
     "IRON_MINE": "Iron Mine",
     "FARM": "Farm",
+    "FORESTER_HUT": "Forester Hut",
 }
 
 _DESCRIPTION: dict[str, str] = {
@@ -31,6 +32,7 @@ _DESCRIPTION: dict[str, str] = {
     "STONE_MINE": "Stonecutter quarries stone.",
     "IRON_MINE": "Miner digs for iron.",
     "FARM": "Farmer grows food.",
+    "FORESTER_HUT": "Forester plants new trees around the hut.",
 }
 
 _RESOURCE_LABEL: dict[str, str] = {

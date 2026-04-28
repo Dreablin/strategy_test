@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 14. Forestry expansion: forester hut, planting cycle, tree variants
-- **Next Task:** T154 — implement Forester Hut building and registration wiring.
-- **Last Completed:** T153 — add failing tests for Forester Hut building behavior.
-- **Total Progress:** 153 / 160
+- **Next Task:** T155 — add failing tests for forester worker planting cycle.
+- **Last Completed:** T154 — implement Forester Hut building and registration wiring.
+- **Total Progress:** 154 / 160
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -497,7 +497,7 @@
   - Building supports active toggle state and UI status text parity with other camps.
   - Placement footprint and spacing rules follow normal 2x2 producer buildings.
 
-- [ ] **T154**: Implement `ForesterHut` building + registration:
+- [x] **T154**: Implement `ForesterHut` building + registration:
   - Add `src/game/buildings/forester_hut.py`.
   - Register type tag, costs, unlock gate, panel wiring, and active toggle handling.
   - Ensure no per-cycle passive income is added for this building.

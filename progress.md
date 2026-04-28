@@ -49,6 +49,11 @@
   still forbid `town_hall_footprint_tiles()`. `test_place_calls…` now uses
   `World(world_seed=0)` (extra stones near TH made unseeded paths flaky).
 
+### HF15 — Tree groves: 8 centers, r ∈ [5, 8], 70% fill (DONE)
+
+- Constants in `world.py`: `_TREE_GROVE_COUNT = 8`, radius +2 vs prior
+  (`[5, 8]` Chebyshev), `_TREE_GROVE_FILL_PROBABILITY = 0.7`.
+
 ---
 
 ## Recent context (do not re-run, kept only as input for ralph-loop)

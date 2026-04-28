@@ -13,11 +13,11 @@ from game.trees import Tree, stage_from_tile_seed
 
 _STONE_CENTER_COUNT = 6
 _STONE_GUARANTEED_TH_RING_CHEB = 20  # one cluster center: min Chebyshev to TH footprint == this
-_TREE_GROVE_COUNT = 5
+_TREE_GROVE_COUNT = 8
 _STONE_MIN_DISTANCE_FROM_TOWN_HALL = 12
-_TREE_GROVE_RADIUS_MIN = 3
-_TREE_GROVE_RADIUS_MAX = 6
-_TREE_GROVE_FILL_PROBABILITY = 0.8
+_TREE_GROVE_RADIUS_MIN = 5
+_TREE_GROVE_RADIUS_MAX = 8
+_TREE_GROVE_FILL_PROBABILITY = 0.7
 _SCATTER_TREE_FRACTION = 0.02
 _NEIGHBORS_4: tuple[tuple[int, int], ...] = (
     (0, -1),

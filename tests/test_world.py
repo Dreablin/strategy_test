@@ -116,9 +116,9 @@ def test_stone_generation_is_reproducible_with_explicit_world_seed() -> None:
     assert a_tiles == b_tiles
 
 
-def test_tree_generation_picks_five_grove_centers_far_from_town_hall() -> None:
+def test_tree_generation_picks_eight_grove_centers_far_from_town_hall() -> None:
     world = World()
-    assert len(world._tree_centers) == 5  # noqa: SLF001
+    assert len(world._tree_centers) == 8  # noqa: SLF001
     town_hall_tiles = town_hall_footprint_tiles()
     for cx, cy in world._tree_centers:  # noqa: SLF001
         assert world.is_in_grass(cx, cy)

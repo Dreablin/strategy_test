@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 15 — Housing, House, School training queue, population HUD
-- **Next Task:** T172 (first `- [ ]` below)
-- **Last Completed:** T171 — regression sweep for queue/cost/top-bar
-- **Total Progress:** 171 / 173 (Phase 15: 11 / 13 tasks done)
+- **Next Task:** T173 (first `- [ ]` below)
+- **Last Completed:** T172 — phase15 queue/housing multi-school smoke
+- **Total Progress:** 172 / 173 (Phase 15: 12 / 13 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -56,7 +56,7 @@
 ### 15.6 Regression & phase close
 
 - [x] **T171**: Sweep tests and smoke paths: remove expectations for **instant** school hire, **food** cost on hire, **top-bar resources**; keep `world_seed` pins where procedural terrain matters.
-- [ ] **T172**: New headless smoke: queue two trainees, housing blocks third, second `SCHOOL` has separate queue (minimal scenario).
+- [x] **T172**: New headless smoke: queue two trainees, housing blocks third, second `SCHOOL` has separate queue (minimal scenario).
 - [ ] **T173**: Full `pytest -q` + `ruff check src tests`; update **Decisions Log**; mark all Phase 15 `[x]`; emit `<promise>ALL_TASKS_COMPLETE</promise>`; create **empty** `.cursor/ralph/done`.
 
 ---
@@ -83,6 +83,7 @@
 | 2026-04-28 | T169 | Chosen policy: block `HOUSE` demolition if removal would make `current_population > max_population`; allow otherwise. | Prevents creating invalid over-cap state while keeping demolition deterministic and testable. |
 | 2026-04-28 | T170 | Added disk asset `assets/ui/population/default.png` and `assets.population_icon()` disk-first loader with procedural fallback; TopBar now uses asset helper. | Establishes swap-friendly icon pipeline while keeping UI resilient when asset files are missing. |
 | 2026-04-28 | T171 | Added explicit regression coverage that School enqueue is non-instant and free (no food spend), while top-bar tests remain population-focused. | Guards Phase-15 behavior changes against accidental rollback to legacy instant/food-based hiring and resource-strip HUD assumptions. |
+| 2026-04-28 | T172 | Added Phase-15 headless smoke with two-school queue progression and housing-cap blocked enqueue at cap. | Provides minimal end-to-end guard that queue timing, school independence, and cap gating work together. |
 
 ## Issues & Blockers
 

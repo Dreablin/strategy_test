@@ -70,10 +70,16 @@ def test_partial_footprint_still_occupied_after_partial_free() -> None:
     assert world.is_occupied(6, 6)
 
 
-def test_stone_generation_picks_three_centers_far_from_town_hall() -> None:
+def test_stone_generation_six_centers_one_on_th_chebyshev_ring_twenty() -> None:
     world = World()
-    assert len(world._stone_centers) == 3  # noqa: SLF001
+    assert len(world._stone_centers) == 6  # noqa: SLF001
     town_hall_tiles = town_hall_footprint_tiles()
+    ring_twenty = [
+        (cx, cy)
+        for cx, cy in world._stone_centers  # noqa: SLF001
+        if min(max(abs(cx - tx), abs(cy - ty)) for tx, ty in town_hall_tiles) == 20
+    ]
+    assert len(ring_twenty) >= 1
     for cx, cy in world._stone_centers:  # noqa: SLF001
         assert world.is_in_grass(cx, cy)
         min_dist = min(max(abs(cx - tx), abs(cy - ty)) for tx, ty in town_hall_tiles)

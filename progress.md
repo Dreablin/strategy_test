@@ -45,8 +45,9 @@
 
 - **Phase 12** delivered worker `Characteristics`, +5 % movement / gather per
   building level (additive, source-keyed), per-building internal storage
-  (`capacity(L) = 3 + 2·(L−1)`), stone deposits (`Stone(units=15)`, 3 clusters
-  Chebyshev ≥ 12 from the Town Hall, `r ∈ [1, 4]`), and an active stonecutter
+  (`capacity(L) = 3 + 2·(L−1)`), stone deposits (`Stone(units=15)`, 6 clusters
+  including one center on the TH Chebyshev ring at 20, others ≥ 12 from TH,
+  `r ∈ [1, 4]`), and an active stonecutter
   gather cycle that mirrors the lumberjack one. Passive income is fully gone
   for `LUMBER_CAMP` and `STONE_MINE`; `FARM` and `IRON_MINE` keep passive
   income but obey the storage cap.

@@ -14,12 +14,18 @@ from game.world import World
 from game.workers import CHOP_DURATION_MS, MINE_DURATION_MS, WorkerManager
 
 
-def test_world_boots_with_three_stone_clusters_far_from_town_hall_zone() -> None:
+def test_world_boots_with_six_stone_clusters_one_on_th_ring_twenty() -> None:
     world = World()
     centers = world._stone_centers  # noqa: SLF001
-    assert len(centers) == 3
+    assert len(centers) == 6
 
     protected = town_hall_footprint_tiles()
+    on_ring_20 = [
+        (cx, cy)
+        for cx, cy in centers
+        if min(max(abs(cx - tx), abs(cy - ty)) for tx, ty in protected) == 20
+    ]
+    assert len(on_ring_20) >= 1
     for cx, cy in centers:
         assert min(max(abs(cx - tx), abs(cy - ty)) for tx, ty in protected) >= 12
 

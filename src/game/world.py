@@ -11,7 +11,8 @@ from game.config import GRID_SIZE, town_hall_footprint_tiles
 from game.stones import Stone
 from game.trees import Tree, stage_from_tile_seed
 
-_STONE_CENTER_COUNT = 3
+_STONE_CENTER_COUNT = 6
+_STONE_GUARANTEED_TH_RING_CHEB = 20  # one cluster center: min Chebyshev to TH footprint == this
 _TREE_GROVE_COUNT = 5
 _STONE_MIN_DISTANCE_FROM_TOWN_HALL = 12
 _TREE_GROVE_RADIUS_MIN = 3
@@ -368,9 +369,7 @@ class World:
         self._scatter_trees_placed = placed
 
     def _init_stones(self, rng: random.Random) -> None:
-        self._stone_centers = _pick_far_cluster_centers(
-            self, _STONE_CENTER_COUNT, rng, forbid_stone_center=False
-        )
+        self._stone_centers = _pick_stone_cluster_centers(self, rng)
         mid = GRID_SIZE // 2
         center_clear_radius = max(8, GRID_SIZE // 4)
 
@@ -392,23 +391,69 @@ class World:
                     self._stones[tile] = Stone()
 
 
+def _min_chebyshev_to_tiles(px: int, py: int, tiles: set[tuple[int, int]]) -> int:
+    return min(max(abs(px - tx), abs(py - ty)) for tx, ty in tiles)
+
+
+def _pick_stone_cluster_centers(world: World, rng: random.Random) -> list[tuple[int, int]]:
+    """Pick ``_STONE_CENTER_COUNT`` centers; one is always on the TH Chebyshev ring at 20."""
+    protected = town_hall_footprint_tiles()
+    ring_candidates: list[tuple[int, int]] = []
+    for cy in range(GRID_SIZE):
+        for cx in range(GRID_SIZE):
+            if not world.is_in_grass(cx, cy):
+                continue
+            if _min_chebyshev_to_tiles(cx, cy, protected) != _STONE_GUARANTEED_TH_RING_CHEB:
+                continue
+            ring_candidates.append((cx, cy))
+    rng.shuffle(ring_candidates)
+    centers: list[tuple[int, int]] = []
+    exclude: set[tuple[int, int]] = set()
+    if ring_candidates:
+        first = ring_candidates[0]
+        centers.append(first)
+        exclude.add(first)
+    need = _STONE_CENTER_COUNT - len(centers)
+    centers.extend(
+        _pick_far_cluster_centers(world, need, rng, forbid_stone_center=False, exclude=exclude)
+    )
+    exclude = set(centers)
+    while len(centers) < _STONE_CENTER_COUNT:
+        more = _pick_far_cluster_centers(
+            world,
+            _STONE_CENTER_COUNT - len(centers),
+            rng,
+            forbid_stone_center=False,
+            exclude=exclude,
+        )
+        if not more:
+            break
+        centers.extend(more)
+        exclude.update(more)
+    return centers
+
+
 def _pick_far_cluster_centers(
     world: World,
     count: int,
     rng: random.Random,
     *,
     forbid_stone_center: bool,
+    exclude: set[tuple[int, int]] | None = None,
 ) -> list[tuple[int, int]]:
     """Pick up to `count` grass tiles outside the build clearing, Chebyshev ≥ TH distance."""
     mid = GRID_SIZE // 2
     center_clear_radius = max(8, GRID_SIZE // 4)
     protected = town_hall_footprint_tiles()
+    banned = exclude or set()
     candidates = [(x, y) for y in range(GRID_SIZE) for x in range(GRID_SIZE)]
     rng.shuffle(candidates)
     centers: list[tuple[int, int]] = []
     for cx, cy in candidates:
         if len(centers) >= count:
             break
+        if (cx, cy) in banned:
+            continue
         if max(abs(cx - mid), abs(cy - mid)) <= center_clear_radius:
             continue
         if any(

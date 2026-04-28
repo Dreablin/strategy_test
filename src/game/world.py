@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import deque
 import random
+import secrets
 from typing import Any, cast
 
 from game.config import GRID_SIZE, town_hall_footprint_tiles
@@ -25,6 +26,21 @@ _NEIGHBORS_4: tuple[tuple[int, int], ...] = (
 )
 
 _POP_MISSING = object()
+
+
+def _world_generation_rng_pair(world_seed: int | None) -> tuple[random.Random, random.Random]:
+    """RNG for stones vs trees. ``world_seed`` set ⇒ reproducible (tests); else OS entropy."""
+    if world_seed is not None:
+        s = (world_seed % (2**31 - 2)) + 1
+        return (
+            random.Random(s * 1_047_269 + 17),
+            random.Random(s * 912_367 + 43),
+        )
+    buf = secrets.token_bytes(16)
+    return (
+        random.Random(int.from_bytes(buf[:8], "big")),
+        random.Random(int.from_bytes(buf[8:], "big")),
+    )
 
 
 def _within_gather_search_radius(
@@ -128,7 +144,7 @@ class World:
         "_scatter_trees_placed",
     )
 
-    def __init__(self) -> None:
+    def __init__(self, *, world_seed: int | None = None) -> None:
         self._occupied: list[list[bool]] = [
             [False] * GRID_SIZE for _ in range(GRID_SIZE)
         ]
@@ -143,8 +159,9 @@ class World:
         self._stone_centers: list[tuple[int, int]] = []
         self._tree_centers: list[tuple[int, int]] = []
         self._scatter_trees_placed = 0
-        self._init_stones()
-        self._init_trees()
+        stone_rng, tree_rng = _world_generation_rng_pair(world_seed)
+        self._init_stones(stone_rng)
+        self._init_trees(tree_rng)
 
     @property
     def width(self) -> int:
@@ -292,8 +309,7 @@ class World:
                     self._occupied_tiles.discard(tile)
                     self._blocked_tiles.discard(tile)
 
-    def _init_trees(self) -> None:
-        rng = random.Random(GRID_SIZE * 91_237 + 43)
+    def _init_trees(self, rng: random.Random) -> None:
         self._tree_centers = _pick_far_cluster_centers(
             self, _TREE_GROVE_COUNT, rng, forbid_stone_center=True
         )
@@ -351,8 +367,7 @@ class World:
             placed += 1
         self._scatter_trees_placed = placed
 
-    def _init_stones(self) -> None:
-        rng = random.Random(GRID_SIZE * 104_729 + 17)
+    def _init_stones(self, rng: random.Random) -> None:
         self._stone_centers = _pick_far_cluster_centers(
             self, _STONE_CENTER_COUNT, rng, forbid_stone_center=False
         )

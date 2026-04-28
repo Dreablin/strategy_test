@@ -89,9 +89,10 @@ def test_generated_stones_have_units_and_never_overlap_trees() -> None:
         assert not world.is_tree_blocking(gx, gy)
 
 
-def test_stone_generation_is_deterministic_for_fresh_world() -> None:
-    a = World()
-    b = World()
+def test_stone_generation_is_reproducible_with_explicit_world_seed() -> None:
+    seed = 9_001_283
+    a = World(world_seed=seed)
+    b = World(world_seed=seed)
     a_tiles = sorted((pos, stone.units) for pos, stone in a.iter_stones())
     b_tiles = sorted((pos, stone.units) for pos, stone in b.iter_stones())
     assert a_tiles == b_tiles
@@ -108,9 +109,10 @@ def test_tree_generation_picks_five_grove_centers_far_from_town_hall() -> None:
         assert min_dist >= 12
 
 
-def test_tree_generation_is_deterministic_for_fresh_world() -> None:
-    a = World()
-    b = World()
+def test_tree_generation_is_reproducible_with_explicit_world_seed() -> None:
+    seed = 9_001_283
+    a = World(world_seed=seed)
+    b = World(world_seed=seed)
     a_trees = sorted((pos, tree.stage) for pos, tree in a.iter_alive_trees())
     b_trees = sorted((pos, tree.stage) for pos, tree in b.iter_alive_trees())
     assert a_trees == b_trees

@@ -17,7 +17,8 @@ from game.workers import Worker, WorkerManager
 
 @pytest.fixture
 def world() -> World:
-    return World()
+    # Fixed seed: placements in these tests assume specific grass tiles stay free of proc stones/trees.
+    return World(world_seed=0)
 
 
 @pytest.fixture

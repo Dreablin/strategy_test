@@ -158,7 +158,7 @@ class ResourceManager:
 ### F-WORLD — World
 
 - **F-WORLD-01 (MUST):** A `GRID_SIZE × GRID_SIZE` tile playable grass field (currently 110×110 in `game_settings.json`), centered on screen. Camera pan is required to see the whole map.
-- **F-WORLD-02 (MUST, **revised**):** Trees are world-owned entities (Phase 10) that block movement and can be chopped (Phase 11). **Generation:** pick **5** grove centers the same way as stone-cluster centers (in-grass, outside the central build clearing, **Chebyshev distance ≥ 12** from every Town Hall footprint tile, centers not on stone). Around each center choose random `r ∈ [3, 6]` (Chebyshev). For each tile in that disk: skip if not in-grass, inside the build clearing, on stone, or already a tree; otherwise place a tree with **80%** independent probability (deterministic RNG seed). **Scatter pass:** then place up to **`floor(GRID_SIZE² × 0.02)`** additional trees on a shuffled list of all remaining eligible grass tiles (same clearing / stone / no-overlap rules; deterministic RNG). Stages use `stage_from_tile_seed` per placed tile.
+- **F-WORLD-02 (MUST, **revised**):** Trees are world-owned entities (Phase 10) that block movement and can be chopped (Phase 11). **Generation:** pick **5** grove centers the same way as stone-cluster centers (in-grass, outside the central build clearing, **Chebyshev distance ≥ 12** from every Town Hall footprint tile, centers not on stone). Around each center choose random `r ∈ [3, 6]` (Chebyshev). For each tile in that disk: skip if not in-grass, inside the build clearing, on stone, or already a tree; otherwise place a tree with **80%** independent probability (PRNG). **Scatter pass:** then place up to **`floor(GRID_SIZE² × 0.02)`** additional trees on a shuffled list of all remaining eligible grass tiles (same clearing / stone / no-overlap rules; PRNG). Default `World()` seeds stone and tree RNG from OS entropy so layouts differ between games; optional `World(world_seed=int)` reproduces a layout for tests. Stages use `stage_from_tile_seed` per placed tile.
 - **F-WORLD-03 (MUST):** Town Hall is placed on game start as a 3×3 footprint centred on the map: top-left tile `(GRID_SIZE // 2 - 1, GRID_SIZE // 2 - 1)` (see `town_hall_origin_tile()` in `config.py` / `main.py`).
 - **F-WORLD-04 (MUST):** Stone deposits (see `F-STONE`) generate during world initialization in addition to trees.
 
@@ -170,7 +170,7 @@ class ResourceManager:
 - **F-STONE-04 (MUST):** Trees never spawn on stone tiles (and vice-versa: stone generation skips tiles that already contain alive trees).
 - **F-STONE-05 (MUST):** Generation algorithm at world init:
   1. Compute the set of valid stone-center tiles: in-grass, **Chebyshev distance ≥ 12** from any Town Hall footprint tile, not occupied, not on a tree.
-  2. Pick **3** centers at random (deterministically from a fixed seed for tests). If fewer valid candidates exist, pick as many as possible.
+  2. Pick **3** centers at random (PRNG; default entropy-based, or fixed when `World(world_seed=…)`). If fewer valid candidates exist, pick as many as possible.
   3. Around each center, pick a random radius `r ∈ [1, 4]` (Chebyshev). Fill **every** tile in the radius with a stone (units=15) provided the tile is in-grass, not a tree, not a building, not the Town Hall footprint, and not already a stone tile (idempotent merge).
 - **F-STONE-06 (MUST):** A stonecutter harvests by:
   1. Walking from the camp to a tile **adjacent** (Chebyshev-1) to the chosen stone tile (the stonecutter cannot stand on the stone itself, since stones block movement).
@@ -456,6 +456,7 @@ find_path_bfs(
 
 ### `game.world` (cached blocking sets, Phase 13)
 ```python
+World(*, world_seed: int | None = None)  # None: OS-entropy RNG for stones/trees; int: reproducible tests
 World.occupied_tiles() -> set[tuple[int, int]]   # building footprints
 World.tree_tiles()     -> set[tuple[int, int]]   # alive tree tiles
 World.stone_tiles()    -> set[tuple[int, int]]   # alive stone tiles

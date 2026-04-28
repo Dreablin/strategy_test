@@ -19,7 +19,7 @@ def test_building_center_tile_for_2x2() -> None:
 
 
 def test_demolition_parks_assigned_worker_on_center_tile() -> None:
-    world = World()
+    world = World(world_seed=0)
     registry = BuildingRegistry(world)
     camp = registry.place(LumberCamp, near_town_hall_tile(8, 8))
     center = building_center_tile(camp)
@@ -35,7 +35,7 @@ def test_demolition_parks_assigned_worker_on_center_tile() -> None:
 
 
 def test_demolition_does_not_affect_other_workers() -> None:
-    world = World()
+    world = World(world_seed=0)
     registry = BuildingRegistry(world)
     a = registry.place(LumberCamp, near_town_hall_tile(4, 4))
     b = registry.place(LumberCamp, near_town_hall_tile(14, 8))
@@ -52,7 +52,7 @@ def test_demolition_does_not_affect_other_workers() -> None:
 
 
 def test_hire_deducts_50_food_and_returns_worker() -> None:
-    world = World()
+    world = World(world_seed=0)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     town_hall = registry.place(TownHall, town_hall_origin_tile())
@@ -66,7 +66,7 @@ def test_hire_deducts_50_food_and_returns_worker() -> None:
 
 
 def test_hired_worker_has_characteristics_defaults() -> None:
-    world = World()
+    world = World(world_seed=0)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     registry.place(TownHall, town_hall_origin_tile())
@@ -81,7 +81,7 @@ def test_hired_worker_has_characteristics_defaults() -> None:
 
 
 def test_assign_to_building_applies_level_bonus_source() -> None:
-    world = World()
+    world = World(world_seed=0)
     registry = BuildingRegistry(world)
     camp = registry.place(LumberCamp, (10, 10))
     camp.level = 3
@@ -96,7 +96,7 @@ def test_assign_to_building_applies_level_bonus_source() -> None:
 
 
 def test_notify_demolished_clears_building_level_bonus_source() -> None:
-    world = World()
+    world = World(world_seed=0)
     registry = BuildingRegistry(world)
     camp = registry.place(LumberCamp, (12, 12))
     camp.level = 4
@@ -113,7 +113,7 @@ def test_notify_demolished_clears_building_level_bonus_source() -> None:
 
 
 def test_reassign_to_different_building_swaps_bonus_source() -> None:
-    world = World()
+    world = World(world_seed=0)
     registry = BuildingRegistry(world)
     camp_a = registry.place(LumberCamp, near_town_hall_tile(4, 4))
     camp_b = registry.place(LumberCamp, near_town_hall_tile(14, 8))
@@ -132,7 +132,7 @@ def test_reassign_to_different_building_swaps_bonus_source() -> None:
 
 
 def test_hire_returns_none_when_insufficient_food_and_does_not_deduct() -> None:
-    world = World()
+    world = World(world_seed=0)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     registry.place(TownHall, town_hall_origin_tile())
@@ -145,7 +145,7 @@ def test_hire_returns_none_when_insufficient_food_and_does_not_deduct() -> None:
 
 
 def test_reassign_all_assigns_one_idle_lumberjack_to_empty_lumber_camp() -> None:
-    world = World()
+    world = World(world_seed=0)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     registry.place(TownHall, town_hall_origin_tile())
@@ -160,7 +160,7 @@ def test_reassign_all_assigns_one_idle_lumberjack_to_empty_lumber_camp() -> None
 
 
 def test_reassign_all_does_not_assign_stonecutter_to_lumber_camp() -> None:
-    world = World()
+    world = World(world_seed=0)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     registry.place(TownHall, town_hall_origin_tile())
@@ -174,7 +174,7 @@ def test_reassign_all_does_not_assign_stonecutter_to_lumber_camp() -> None:
 
 
 def test_demolish_then_reassign_moves_worker_to_new_matching_building() -> None:
-    world = World()
+    world = World(world_seed=0)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     registry.place(TownHall, town_hall_origin_tile())
@@ -193,7 +193,7 @@ def test_demolish_then_reassign_moves_worker_to_new_matching_building() -> None:
 
 
 def test_reassign_all_assigns_farmer_to_empty_farm() -> None:
-    world = World()
+    world = World(world_seed=0)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     town_hall = registry.place(TownHall, town_hall_origin_tile())
@@ -209,7 +209,7 @@ def test_reassign_all_assigns_farmer_to_empty_farm() -> None:
 
 
 def test_reassign_all_assigns_miner_to_empty_iron_mine() -> None:
-    world = World()
+    world = World(world_seed=0)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     town_hall = registry.place(TownHall, town_hall_origin_tile())
@@ -223,7 +223,7 @@ def test_reassign_all_assigns_miner_to_empty_iron_mine() -> None:
 
 
 def test_reassign_all_sets_moving_path_to_reachable_approach_tile() -> None:
-    world = World()
+    world = World(world_seed=0)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     registry.place(TownHall, town_hall_origin_tile())
@@ -247,7 +247,7 @@ def test_reassign_all_sets_moving_path_to_reachable_approach_tile() -> None:
 
 
 def test_reassign_all_uses_current_time_for_move_start_no_first_frame_teleport() -> None:
-    world = World()
+    world = World(world_seed=0)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     town_hall = registry.place(TownHall, town_hall_origin_tile())
@@ -269,7 +269,7 @@ def test_reassign_all_uses_current_time_for_move_start_no_first_frame_teleport()
 
 
 def test_reassign_all_keeps_worker_idle_when_no_approach_tile_reachable() -> None:
-    world = World()
+    world = World(world_seed=0)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     registry.place(TownHall, town_hall_origin_tile())
@@ -292,7 +292,7 @@ def test_reassign_all_keeps_worker_idle_when_no_approach_tile_reachable() -> Non
 
 
 def test_working_buildings_excludes_moving_worker_until_arrival() -> None:
-    world = World()
+    world = World(world_seed=0)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     registry.place(TownHall, town_hall_origin_tile())
@@ -309,7 +309,7 @@ def test_working_buildings_excludes_moving_worker_until_arrival() -> None:
 
 
 def test_worker_status_for_building_reports_on_the_way_then_assigned() -> None:
-    world = World()
+    world = World(world_seed=0)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     registry.place(TownHall, town_hall_origin_tile())
@@ -328,7 +328,7 @@ def test_worker_status_for_building_reports_on_the_way_then_assigned() -> None:
 def test_worker_status_for_building_reports_on_the_way_for_stonecutter_resource_walk() -> None:
     from game.buildings.stone_mine import StoneMine
 
-    world = World()
+    world = World(world_seed=0)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     th = registry.place(TownHall, town_hall_origin_tile())
@@ -377,7 +377,7 @@ def test_production_status_for_building_resting_and_gathering_states() -> None:
 
 
 def test_demolish_moving_worker_becomes_idle_at_current_tile() -> None:
-    world = World()
+    world = World(world_seed=0)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     registry.place(TownHall, town_hall_origin_tile())
@@ -401,7 +401,7 @@ def test_demolish_moving_worker_becomes_idle_at_current_tile() -> None:
 
 
 def test_reassign_all_does_not_retarget_worker_already_moving() -> None:
-    world = World()
+    world = World(world_seed=0)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     registry.place(TownHall, town_hall_origin_tile())
@@ -422,7 +422,7 @@ def test_reassign_all_does_not_retarget_worker_already_moving() -> None:
 
 
 def test_reassign_all_one_slot_two_workers_only_one_assigned() -> None:
-    world = World()
+    world = World(world_seed=0)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     registry.place(TownHall, town_hall_origin_tile())
@@ -442,7 +442,7 @@ def test_reassign_all_one_slot_two_workers_only_one_assigned() -> None:
 
 
 def test_hire_unknown_worker_type_returns_none_and_keeps_resources() -> None:
-    world = World()
+    world = World(world_seed=0)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     registry.place(TownHall, town_hall_origin_tile())
@@ -453,7 +453,7 @@ def test_hire_unknown_worker_type_returns_none_and_keeps_resources() -> None:
 
 
 def test_hire_stonecutter_requires_town_hall_level_3() -> None:
-    world = World()
+    world = World(world_seed=0)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     town_hall = registry.place(TownHall, town_hall_origin_tile())
@@ -467,7 +467,7 @@ def test_hire_stonecutter_requires_town_hall_level_3() -> None:
 
 
 def test_hire_miner_requires_town_hall_level_5() -> None:
-    world = World()
+    world = World(world_seed=0)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     town_hall = registry.place(TownHall, town_hall_origin_tile())
@@ -478,7 +478,7 @@ def test_hire_miner_requires_town_hall_level_5() -> None:
 
 
 def test_reassign_all_detours_around_alive_tree_tile() -> None:
-    world = World()
+    world = World(world_seed=0)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     registry.place(TownHall, town_hall_origin_tile())
@@ -498,7 +498,7 @@ def test_reassign_all_detours_around_alive_tree_tile() -> None:
 
 
 def test_reassign_all_can_use_tile_after_tree_removed() -> None:
-    world = World()
+    world = World(world_seed=0)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     world._trees.clear()  # noqa: SLF001
@@ -530,7 +530,7 @@ def test_reassign_all_can_use_tile_after_tree_removed() -> None:
 def test_reassign_all_detours_around_alive_stone_tile() -> None:
     from game.stones import Stone
 
-    world = World()
+    world = World(world_seed=0)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
     registry.place(TownHall, town_hall_origin_tile())

@@ -31,6 +31,14 @@
   `tests/test_lumber_camp_panel.py::test_lumber_camp_click_upgrade_returns_upgrade_not_demolish`,
   `…::test_lumber_camp_click_demolish_still_returns_demolish`.
 
+### HF13 — Procedural trees/stones: tests pin `World(world_seed=0)` (FIXED)
+
+- **Context:** `World()` now seeds stone/tree layout from OS entropy unless
+  `world_seed` is set (see `world._world_generation_rng_pair`).
+- **Tests:** any case that assumes free grass at fixed tiles or stable paths
+  now uses `World(world_seed=0)` (registry fixture, `test_pathfinding.py`,
+  `test_workers.py`).
+
 ---
 
 ## Recent context (do not re-run, kept only as input for ralph-loop)

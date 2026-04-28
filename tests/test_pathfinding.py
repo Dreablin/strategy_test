@@ -15,7 +15,7 @@ def _blocked_from_world(world: World) -> set[tuple[int, int]]:
 
 
 def test_bfs_finds_4dir_path_around_obstacles() -> None:
-    world = World()
+    world = World(world_seed=0)
     start = (20, 20)
     goal = (24, 20)
     blocked = {(22, y) for y in range(19, 24)}
@@ -33,7 +33,7 @@ def test_bfs_finds_4dir_path_around_obstacles() -> None:
 
 
 def test_path_never_steps_on_occupied_footprint_tiles() -> None:
-    world = World()
+    world = World(world_seed=0)
     world.mark_occupied(10, 10, 2, 2)
     blocked = _blocked_from_world(world)
     start = (8, 11)
@@ -48,7 +48,7 @@ def test_path_never_steps_on_occupied_footprint_tiles() -> None:
 
 
 def test_returns_none_when_goal_unreachable() -> None:
-    world = World()
+    world = World(world_seed=0)
     goal = (5, 5)
     blocked = {
         (4, 4),
@@ -67,7 +67,7 @@ def test_returns_none_when_goal_unreachable() -> None:
 
 
 def test_bfs_avoids_alive_tree_tiles() -> None:
-    world = World()
+    world = World(world_seed=0)
     # Force a tree on the straight-line shortest route.
     world._trees[(12, 10)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
     path = find_path_bfs(world, (10, 10), (14, 10), blocked=set())
@@ -76,7 +76,7 @@ def test_bfs_avoids_alive_tree_tiles() -> None:
 
 
 def test_tree_removed_tile_becomes_walkable_for_path() -> None:
-    world = World()
+    world = World(world_seed=0)
     world._trees[(12, 10)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
     blocked = {(x, 9) for x in range(world.width)} | {(x, 11) for x in range(world.width)}
     path_with_tree = find_path_bfs(world, (10, 10), (14, 10), blocked=blocked)
@@ -91,7 +91,7 @@ def test_tree_removed_tile_becomes_walkable_for_path() -> None:
 def test_bfs_avoids_alive_stone_tiles() -> None:
     from game.stones import Stone
 
-    world = World()
+    world = World(world_seed=0)
     world._stones[(12, 10)] = Stone()  # noqa: SLF001
     path = find_path_bfs(world, (10, 10), (14, 10), blocked=set())
     assert path is not None

@@ -65,7 +65,6 @@ game/
 │       │   ├── stone_mine.py
 │       │   ├── iron_mine.py
 │       │   ├── farm.py
-│       │   ├── costs.py         # upgrade-cost formulas
 │       │   └── registry.py      # BuildingRegistry, placement validation
 │       ├── workers.py           # Worker, WorkerManager, assignment
 │       ├── ui/
@@ -84,7 +83,6 @@ game/
     ├── test_iso.py
     ├── test_resources.py
     ├── test_world.py
-    ├── test_costs.py
     ├── test_buildings.py
     ├── test_registry.py
     ├── test_workers.py
@@ -106,15 +104,13 @@ game/
 
 - **F-RES-01 (MUST):** Track 4 resources: `food`, `wood`, `stone`, `iron`. All non-negative integers.
 - **F-RES-02 (MUST):** Initial values: `food=200`, `wood=200`, `stone=0`, `iron=0`.
-- **F-RES-03 (MUST):** ResourceManager exposes `get(name)`, `add(name, n)`, `try_spend(cost: dict) -> bool`, `has(cost: dict) -> bool`.
+- **F-RES-03 (MUST):** ResourceManager exposes `get(name)`, `add(name, n)`.
 - **F-RES-04 (MUST):** Per-cycle income (computed from active buildings + workers) is exposed for UI as a dict.
 
 ```python
 class ResourceManager:
     def get(self, name: str) -> int: ...
     def add(self, name: str, amount: int) -> None: ...
-    def has(self, cost: Mapping[str, int]) -> bool: ...
-    def try_spend(self, cost: Mapping[str, int]) -> bool: ...
     @property
     def per_cycle(self) -> dict[str, int]: ...
 ```
@@ -187,13 +183,8 @@ class ResourceManager:
 - **F-BLD-01 (MUST):** Implemented building types include at least: `TOWN_HALL`, `LUMBER_CAMP`, `STONE_MINE`, `IRON_MINE`, `FARM`, `FORESTER_HUT`, `SCHOOL`, **`HOUSE`** (social). The bottom bar uses multi-level menus (Resource / Social / Processing / Dev); exact membership may grow—each type is registered in config + placement map.
 - **F-BLD-02 (MUST):** Standard production/social buildings (incl. `HOUSE`, `SCHOOL`) use a **2×2** footprint unless noted. Town Hall is **3×3**.
 - **F-BLD-03 (MUST):** Maximum level is **10** for upgradable producer/social buildings. **Town Hall** is unique (exactly one), cannot be demolished, cannot be built from the menu, **can upgrade** levels 1..10 for tech gates. **`FORESTER_HUT`** is capped at level 1 where implemented.
-- **F-BLD-04 (MUST):** Build cost (= cost to construct level 1):
-  - LUMBER_CAMP, STONE_MINE, IRON_MINE, FARM: `wood=100`.
-- **F-BLD-05 (MUST):** Upgrade cost from level *L* → *L+1* (L ≥ 1):
-  - `wood = 100 × (L + 1)`
-  - `stone = 200 × (L + 1 - 4)` if `L + 1 ≥ 5`, else 0  (so level 5 costs +200 stone, level 6 +400, …, level 10 +1200)
-  - `iron  = 300 × (L + 1 - 6)` if `L + 1 ≥ 7`, else 0  (so level 7 costs +300 iron, level 8 +600, …, level 10 +1200)
-  - **Decision/Interpretation note (recorded in progress.md):** the user wrote "первый уровень здания (постройка) стоит 100 дерева, каждый следующий требует на 100 дерева больше". We interpret this strictly as: *to reach level L you spend `100 × L` wood*; level 5 additionally adds stone; level 7 additionally adds iron. The `+200 per level` for stone and `+300 per level` for iron mirror the wood pattern.
+- **F-BLD-04 (MUST):** Building placement is **free** (no wallet spend gate).
+- **F-BLD-05 (MUST):** Upgrades are **free** (no wallet spend gate).
 - **F-BLD-06 (MUST, revised):** Production model is defined by **F-PROD**: mixed tick-based and active-cycle production depending on building type.
 - **F-BLD-07 (MUST):** Each new building starts with **no worker**.
 
@@ -225,7 +216,7 @@ class Building:
   - Footprint overlaps an existing building's footprint.
   - The closest distance (in tiles, Chebyshev) from any tile of the new footprint to any tile of an existing building's footprint is `< 1`.  
     Interpretation: buildings may not touch edge-to-edge or corner-to-corner; there must be at least one free tile gap.
-- **F-PLACE-04 (MUST):** Left-click on a valid spot deducts the configured build cost for the selected building type and places the building. If resources are insufficient, placement is rejected and the contour stays red.
+- **F-PLACE-04 (MUST):** Left-click on a valid spot places the building (no cost deduction gate).
 - **F-PLACE-05 (MUST):** Right-click or `Esc` cancels placement mode.
 - **F-PLACE-06 (MUST):** A second Town Hall can never be placed (the Town Hall option is not in the bottom bar).
 
@@ -245,8 +236,8 @@ class Building:
 ### F-UI-BOT — Bottom Bar (build menu)
 
 - **F-UI-BOT-01 (MUST):** Fixed bottom strip (**96 px**). Uses a **multi-level** menu: categories (**Main → Resource / Social / Processing / Dev**) with a **Back** control to Main. Production buildings live under Resource; **School** and **House** under Social; Processing may be empty; Dev holds debug place-tree / place-stone tools where implemented.
-- **F-UI-BOT-02 (MUST):** Selecting a leaf building posts a placement intent with that type's build cost from config.
-- **F-UI-BOT-03 (MUST):** Buttons unavailable when the player cannot afford the configured cost or tech gate (Town Hall level) blocks the building.
+- **F-UI-BOT-02 (MUST):** Selecting a leaf building posts a placement intent with that building type.
+- **F-UI-BOT-03 (MUST):** Buttons are gated by tech/state rules (Town Hall level, mode), not by wallet affordability.
 
 ### F-UI-PANEL — Building Info Panel (modal)
 
@@ -257,7 +248,7 @@ class Building:
   - For producing buildings: an internal storage line `"Storage: stored / capacity"` (capacity = `3 + 2 × (L − 1)`) — see `F-STORE`.
   - For Phase-11 active-cycle buildings (LUMBER_CAMP, STONE_MINE): the per-trip income line is informational only (`"+1 per delivery"`); legacy passive buildings (FARM, IRON_MINE) keep the `+5×level / 10 s` line.
   - Worker status (`"Worker: assigned"` / `"Worker: empty"` / `"Worker: on the way"`).
-  - **Upgrade** button with cost text (`"Upgrade to Lv 4 — 400 wood"`); disabled when level=10 or insufficient resources.
+  - **Upgrade** button with free-action text (`"Upgrade to Lv 4 — Free"`); disabled when level=10 or blocked by explicit state/tech gate.
   - **Demolish** button (red).
   - Close [×] in top-right corner.
 - **F-UI-PANEL-03 (MUST):** Town Hall panel: **no Demolish**, **Upgrade** when TH leveling is unlocked; **no hiring** — all hiring/training happens at **School** (see **F-SCHOOL-Q**).
@@ -275,7 +266,7 @@ Panel example is illustrative only; exact lines depend on building type
 
 ### F-UPG — Upgrade
 
-- **F-UPG-01 (MUST):** Upgrade deducts the resources (per F-BLD-05) and increments `level` by 1.
+- **F-UPG-01 (MUST):** Upgrade increments `level` by 1 (free action).
 - **F-UPG-02 (MUST):** Income is recalculated immediately; next cycle reflects new level.
 - **F-UPG-03 (MUST, **revised**):** For resource-producing buildings, leveling no longer increases passive `5 × level` income. Instead, each level beyond 1 grants the building's *staffed worker* the following permanent additive bonuses:
   - **+5 % movement speed** per level above 1 (effective speed multiplier `1 + 0.05 × (level − 1)`, additive across other bonuses).
@@ -320,21 +311,21 @@ Panel example is illustrative only; exact lines depend on building type
 ### F-SCHOOL-Q — School Training Queue
 
 - **F-SCHOOL-Q-01 (Phase 15, MUST):** Each **`SCHOOL`** exposes a **FIFO training queue** of up to **7** pending trainees.
-- **F-SCHOOL-Q-02 (Phase 15, MUST):** Ordering a worker type **enqueues** into the **leftmost empty** slot (visual **left → right** row of **7** squares). **No food or other resource cost** for training in Phase 15 — training is **free**; housing cap is the gating mechanic.
+- **F-SCHOOL-Q-02 (Phase 15, MUST):** Ordering a worker type **enqueues** into the **leftmost empty** slot (visual **left → right** row of **7** squares). Training is **free**; housing cap is the gating mechanic.
 - **F-SCHOOL-Q-03 (Phase 15, MUST):** Only the **front** item (leftmost occupied slot) progresses. Training one unit takes **30_000 ms** wall-clock game time (`now_ms` delta), shown as a **yellow** progress bar along the **bottom** inside that square, with the **worker-type icon** filling the cell above.
 - **F-SCHOOL-Q-04 (Phase 15, MUST):** When training completes, the worker **spawns** at that school using the same spawn rules as the current **School hire** implementation (bottom-edge approach / fallbacks). The completed icon is removed; entries **shift left** compacting the queue; if other entries remain, the new front entry **starts** training from **0** progress.
 - **F-SCHOOL-Q-05 (Phase 15, MUST):** Multiple schools each maintain an **independent** queue and independent timers.
 
 ### F-HOUSE — House (social)
 
-- **F-HOUSE-01 (Phase 15, MUST):** Building type **`HOUSE`**, **2×2** footprint, levels **1..10**, placed from the **Social** submenu with normal cost / upgrade rules from `game_settings.json` / `config.py`.
-- **F-HOUSE-02 (Phase 15, MUST):** Upgrade costs follow the global **F-BLD-05** curve unless a task specifies an override in config for `HOUSE` only.
+- **F-HOUSE-01 (Phase 15, MUST):** Building type **`HOUSE`**, **2×2** footprint, levels **1..10**, placed from the **Social** submenu.
+- **F-HOUSE-02 (Phase 15, MUST):** House upgrades follow global free-upgrade rules from **F-BLD-05**.
 - **F-HOUSE-03 (Phase 15, MUST):** Demolishing a house reduces `max_population`; if `current_population > max_population` after demolition, behaviour for **Phase 15** is implementation-defined but **must** be asserted in tests (recommended: block demolition while over-cap, or forbid demolish when it would violate cap—pick one in TDD).
 
 ### F-WORK — Workers
 
 - **F-WORK-01 (MUST):** Worker types include at least `LUMBERJACK`, `STONECUTTER`, `MINER`, `FARMER`, `FORESTER`. Each production type works only in its matching building (`FORESTER` ↔ `FORESTER_HUT`, etc.).
-- **F-WORK-02 (Phase 15, MUST):** **Acquiring** workers is done only through **School** training queue (**F-SCHOOL-Q**), not the Town Hall panel. **Food is not charged** for queue orders in Phase 15. Spawning still respects **F-HOUSING**.
+- **F-WORK-02 (Phase 15, MUST):** **Acquiring** workers is done only through **School** training queue (**F-SCHOOL-Q**), not the Town Hall panel. Worker acquisition is free. Spawning still respects **F-HOUSING**.
 - **F-WORK-03 (MUST):** Assignment rule: at every state change (worker finished training, building built, demolished, upgrade, etc.), WorkerManager runs `reassign_all` (see implementation) to match idle workers to unstaffed compatible buildings.
 - **F-WORK-04 (MUST):** Workers move smoothly on grid paths (**F-PATH**). Base travel time **WORKER_TILE_TRAVEL_MS** is modulated by characteristics.
 - **F-WORK-05 (MUST):** Workers cannot step onto building footprint tiles; pathfinding uses **`World.blocked_tiles()`** and **4-direction BFS** (**F-PATH** obsolete / superseded: ~~8-direction worker movement~~ removed).
@@ -396,9 +387,8 @@ Panel example is illustrative only; exact lines depend on building type
 |------------------------|-----------------------------------------------------------------------|
 | `test_config.py`       | constants present, sane ranges                                        |
 | `test_iso.py`          | `world_to_screen`/`screen_to_world` round-trip                        |
-| `test_resources.py`    | add/spend/has/initial values                                          |
+| `test_resources.py`    | add/get/normalize-name/initial values                                 |
 | `test_world.py`        | grid bounds, grass/tree zones, occupancy                              |
-| `test_costs.py`        | upgrade cost formula at L1..L10 (incl. stone@5+, iron@7+)             |
 | `test_buildings.py`    | each subclass: type, footprint, income, level cap                     |
 | `test_registry.py`     | placement valid/invalid, distance rule, second-town-hall rejected     |
 | `test_workers.py`      | assignment/state transitions, staffing rules, queue/spawn interactions |
@@ -416,15 +406,7 @@ This is a single-process desktop app — no HTTP API. Internal module APIs:
 ResourceManager()
   .get(name) -> int
   .add(name, n) -> None
-  .has(cost: Mapping[str,int]) -> bool
-  .try_spend(cost: Mapping[str,int]) -> bool
   .per_cycle: dict[str,int]            # property, recomputed by registry/workers
-```
-
-### `game.buildings.costs`
-```python
-build_cost(building_type) -> dict[str,int]            # always {"wood":100}
-upgrade_cost(current_level: int) -> dict[str,int]     # for level current+1
 ```
 
 ### `game.buildings.registry`

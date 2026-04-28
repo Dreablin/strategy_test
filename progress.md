@@ -2,10 +2,10 @@
 
 ## Current Status
 
-- **Phase:** 15 — Housing, House, School training queue, population HUD
-- **Next Task:** None (all tasks complete)
-- **Last Completed:** T173 — final verification + phase close
-- **Total Progress:** 173 / 173 (Phase 15: 13 / 13 tasks done)
+- **Phase:** 17 — Remove abstract spend-cost economy
+- **Next Task:** None
+- **Last Completed:** T176 — removed legacy costs/spend API and test dependencies
+- **Total Progress:** 176 / 176 (Phase 17: 2 / 2 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -61,6 +61,27 @@
 
 ---
 
+## Phase 16 — Carrier transport queue foundation
+
+**Goal.** Introduce baseline transport execution for `CARRIER`: producers drop resources into local storage, carriers pull transport jobs from a queue, pick up from source building, and deliver to target building (currently Town Hall warehouse).
+
+**PRD:** F-WORK (carrier), F-BLD (warehouse behavior baseline).
+
+- [x] **T174**: Implement worker-level transport queue and carrier runtime loop: `source -> target` tasks, pickup from `StorageMixin`, delivery to Town Hall warehouse, and compatibility fallback to legacy direct deposit when no carriers exist.
+
+---
+
+## Phase 17 — Remove abstract spend-cost economy
+
+**Goal.** Remove legacy “wallet” economy for building placement, upgrades, and hiring. These actions become free; UI no longer shows build/upgrade/hire prices tied to non-physical resource counters.
+
+**PRD:** cleanup task for current carrier/warehouse direction.
+
+- [x] **T175**: Remove build/upgrade/hire spend checks and cost labels; keep physical storage/warehouse counters only; update regression tests and run full suite.
+- [x] **T176**: Remove leftover compatibility layer (`game.buildings.costs`, `ResourceManager.has/try_spend`) and rewrite tests to stop using wallet-spend helpers.
+
+---
+
 ## Decisions Log
 
 | Date | Task | Decision | Rationale |
@@ -85,6 +106,9 @@
 | 2026-04-28 | T171 | Added explicit regression coverage that School enqueue is non-instant and free (no food spend), while top-bar tests remain population-focused. | Guards Phase-15 behavior changes against accidental rollback to legacy instant/food-based hiring and resource-strip HUD assumptions. |
 | 2026-04-28 | T172 | Added Phase-15 headless smoke with two-school queue progression and housing-cap blocked enqueue at cap. | Provides minimal end-to-end guard that queue timing, school independence, and cap gating work together. |
 | 2026-04-28 | T173 | Final verification gate passed: full `pytest -q` and `ruff check src tests` are green; completion marker file created. | Closes Phase 15 with reproducible validation and deterministic Ralph loop termination flag. |
+| 2026-04-28 | T174 | Added generic `TransportTask` queue in `WorkerManager`; `CARRIER` now walks to source, takes 1 unit, walks to target, and delivers to Town Hall warehouse + spendable resource pool. | Establishes extensible building-to-building transport pipeline while preserving old no-carrier economy path. |
+| 2026-04-28 | T175 | Removed wallet cost gates for placement/upgrade/hiring and switched UI labels to “Free”; deleted cost tables from settings/config and updated tests. | Aligns economy with physical-storage direction and removes legacy abstract spend model. |
+| 2026-04-28 | T176 | Deleted legacy `game.buildings.costs`, removed `ResourceManager.has/try_spend`, and migrated tests to explicit add/get semantics. | Completes cost-economy removal so no dead compatibility APIs remain in runtime code. |
 
 ## Issues & Blockers
 

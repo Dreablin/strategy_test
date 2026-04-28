@@ -17,13 +17,14 @@ _BTN_H = 32
 _GAP = 8
 _QUEUE_SLOT = 30
 _SECTION_TITLE_GAP = 24
-_HIRE_ROWS: tuple[str, ...] = ("LUMBERJACK", "STONECUTTER", "MINER", "FARMER", "FORESTER")
+_HIRE_ROWS: tuple[str, ...] = ("LUMBERJACK", "STONECUTTER", "MINER", "FARMER", "FORESTER", "CARRIER")
 _WORKER_LABEL: dict[str, str] = {
     "LUMBERJACK": "Lumberjack",
     "STONECUTTER": "Stonecutter",
     "MINER": "Miner",
     "FARMER": "Farmer",
     "FORESTER": "Forester",
+    "CARRIER": "Carrier",
 }
 _QUEUE_ROW_H = _QUEUE_SLOT + _SECTION_TITLE_GAP
 _EXTRA_BOTTOM = _QUEUE_ROW_H + (_BTN_H + _GAP) * len(_HIRE_ROWS) + (_BTN_H + _GAP)

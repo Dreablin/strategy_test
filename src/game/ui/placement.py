@@ -7,7 +7,6 @@ from typing import Type
 import pygame
 
 from game.buildings.base import Building
-from game.buildings.costs import build_cost
 from game.buildings.farm import Farm
 from game.buildings.forester_hut import ForesterHut
 from game.buildings.house import House
@@ -136,9 +135,6 @@ class PlacementController:
         if cls is not None:
             if not self._registry.can_place(cls, (gx, gy)):
                 return False
-            cost = build_cost(cls.type_tag)
-            if not self._resources.try_spend(cost):
-                return False
             self._registry.place(cls, (gx, gy))
             return True
         if self._pending_dev == "DEV_TREE":
@@ -164,9 +160,7 @@ class PlacementController:
         cls = self._pending
         if cls is not None:
             w, h = cls.footprint
-            valid = self._registry.can_place(cls, (gx, gy)) and self._resources.has(
-                build_cost(cls.type_tag)
-            )
+            valid = self._registry.can_place(cls, (gx, gy))
         else:
             w, h = 1, 1
             valid = (

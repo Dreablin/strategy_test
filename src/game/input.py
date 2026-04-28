@@ -271,7 +271,8 @@ class GameInput:
                     worker_assigned=wa,
                 )
                 action = None
-                if layout.frame.collidepoint(pos):
+                panel_hit = layout.frame.collidepoint(pos) or layout.storage_frame.collidepoint(pos)
+                if panel_hit:
                     action = TownHallPanel.click_action(
                         surface,
                         pos,
@@ -285,6 +286,9 @@ class GameInput:
                 if action == "upgrade":
                     if self._registry.upgrade_building(self._panel, self._resources):
                         self._sync_assignments()
+                    return
+                if panel_hit:
+                    # Click inside Town Hall primary/secondary panels but on no actionable control.
                     return
                 if action is not None and action.startswith("hire:"):
                     return

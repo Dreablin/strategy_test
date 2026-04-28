@@ -1,6 +1,4 @@
 """Production regression + end-to-end tick tests."""
-
-from game.buildings.costs import upgrade_cost
 from game.config import near_town_hall_tile, town_hall_origin_tile
 from game.buildings.farm import Farm
 from game.buildings.iron_mine import IronMine
@@ -77,10 +75,6 @@ def test_upgraded_stone_mine_still_has_no_passive_tick_production() -> None:
     workers.update(120_000)
 
     # Upgrade level 1 -> 3.
-    resources.add("wood", 10_000)
-    assert resources.try_spend(upgrade_cost(1))
-    camp.level = 2
-    assert resources.try_spend(upgrade_cost(2))
     camp.level = 3
 
     stone_before = resources.get("stone")

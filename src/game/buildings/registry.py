@@ -6,7 +6,6 @@ from collections.abc import Collection
 from typing import Type
 
 from game.buildings.base import Building
-from game.buildings.costs import upgrade_cost
 from game.config import TOWN_HALL_MIN_LEVEL_FOR_BUILDING
 from game.housing import current_population, housing_house, max_population
 from game.resources import ResourceManager
@@ -141,18 +140,13 @@ class BuildingRegistry:
         resources.set_per_cycle_totals({"food": 0, "wood": 0, "stone": 0, "iron": 0})
 
     def upgrade_building(self, building: Building, resources: ResourceManager) -> bool:
-        """Spend ``upgrade_cost(level)``, increment ``level``, refresh per-cycle totals. Returns success."""
+        """Upgrade is free: increment ``level`` and refresh cached previews."""
         if building not in self._buildings:
             return False
         cls = type(building)
         if building.level >= cls.max_level():
             return False
-        try:
-            cost = upgrade_cost(building.type_tag, building.level)
-        except ValueError:
-            return False
-        if not resources.try_spend(cost):
-            return False
+        _ = resources
         building.level += 1
         if self._worker_manager is not None:
             self._worker_manager.refresh_building_bonuses(building)

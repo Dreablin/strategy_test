@@ -3,7 +3,7 @@
 import pygame
 
 from game.buildings.registry import BuildingRegistry
-from game.config import BUILD_COST_WOOD, TILE_H, TILE_W
+from game.config import TILE_H, TILE_W
 from game.iso import screen_to_world, world_to_screen
 from game.render import Renderer
 from game.resources import ResourceManager
@@ -17,7 +17,7 @@ def _cell_center_screen(surface: pygame.Surface, world: World, gx: int, gy: int)
     return ox + sx + TILE_W // 2, oy + sy + TILE_H // 2
 
 
-def test_place_lumber_camp_deducts_wood() -> None:
+def test_place_lumber_camp_is_free() -> None:
     surface = pygame.Surface((1280, 720))
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
@@ -27,7 +27,7 @@ def test_place_lumber_camp_deducts_wood() -> None:
     cx, cy = _cell_center_screen(surface, world, 10, 10)
     placement.try_place(surface, (cx, cy))
     assert len(registry.all()) == 1
-    assert resources.get("wood") == 200 - BUILD_COST_WOOD
+    assert resources.get("wood") == 200
 
 
 def test_cancel_prevents_place() -> None:
@@ -44,17 +44,17 @@ def test_cancel_prevents_place() -> None:
     assert resources.get("wood") == 200
 
 
-def test_insufficient_wood_does_not_place() -> None:
+def test_placement_does_not_require_wallet_resources() -> None:
     surface = pygame.Surface((1280, 720))
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
-    assert resources.try_spend({"wood": 200 - BUILD_COST_WOOD + 1})
+    resources.add("wood", -200)
     placement = PlacementController(world, registry, resources)
     placement.select("FARM")
     cx, cy = _cell_center_screen(surface, world, 12, 12)
     placement.try_place(surface, (cx, cy))
-    assert len(registry.all()) == 0
+    assert len(registry.all()) == 1
 
 
 def test_update_hover_uses_renderer_map_origin() -> None:

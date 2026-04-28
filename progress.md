@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 14. Forestry expansion: forester hut, planting cycle, tree variants
-- **Next Task:** T153 — add failing tests for Forester Hut building behavior.
-- **Last Completed:** T152 — implement world planting API and tree growth updates.
-- **Total Progress:** 152 / 160
+- **Next Task:** T154 — implement Forester Hut building and registration wiring.
+- **Last Completed:** T153 — add failing tests for Forester Hut building behavior.
+- **Total Progress:** 153 / 160
 
 > Phases 1–12 are summarised in `progress_archive.md`. Only the active phase
 > plus a short context block live here. Do **not** re-run archived tasks.
@@ -491,7 +491,7 @@
 
 #### 14.3 New building: Forester Hut
 
-- [ ] **T153**: Add failing tests in `tests/test_forester_hut_building.py`:
+- [x] **T153**: Add failing tests in `tests/test_forester_hut_building.py`:
   - `FORESTER_HUT` exists in building registry/build menu.
   - Building has level fixed at 1 (upgrade attempt fails cleanly).
   - Building supports active toggle state and UI status text parity with other camps.

@@ -54,3 +54,16 @@ def test_school_panel_draws_yellow_progress_for_active_training_slot() -> None:
             found_yellow = True
             break
     assert found_yellow
+
+
+def test_school_panel_clicking_queue_slot_returns_cancel_action() -> None:
+    surface = pygame.Surface((900, 700))
+    resources = ResourceManager()
+    school = School(level=1, grid_pos=(10, 10))
+    assert school.enqueue_training("LUMBERJACK")
+    assert school.enqueue_training("FARMER")
+    layout = SchoolPanel.layout(surface, school, resources, worker_assigned=False)
+
+    assert SchoolPanel.click_action(surface, layout.queue_slots[0].center, school, resources, worker_assigned=False) == "cancel:0"
+    assert SchoolPanel.click_action(surface, layout.queue_slots[1].center, school, resources, worker_assigned=False) == "cancel:1"
+    assert SchoolPanel.click_action(surface, layout.queue_slots[2].center, school, resources, worker_assigned=False) is None

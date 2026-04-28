@@ -28,13 +28,13 @@ session (5–30 minutes) with no installation friction.
 | Tests                    | pytest 8.x              | Standard, fast, supports headless via `SDL_VIDEODRIVER`   |
 | Packaging                | PyInstaller 6.x         | Produces single Windows `.exe`, no install required       |
 | Lint / Format (optional) | ruff                    | Single tool, fast                                         |
-| Assets                   | Procedural (Pygame draw)| No binary files; reproducible; ralph-loop friendly        |
+| Assets                   | Disk-first PNG + procedural fallback | Small placeholders in-repo; swap without code changes |
 
 ### Project directory tree
 
 ```
 game/
-├── PRD.md                       # this file (read-only for agent)
+├── PRD.md                       # product contract (update only via explicit progress tasks)
 ├── prompt.md                    # ralph turn prompt
 ├── progress.md                  # task tracker (agent's persistent memory)
 ├── README.md                    # how to run / build
@@ -70,11 +70,11 @@ game/
 │       ├── workers.py           # Worker, WorkerManager, assignment
 │       ├── ui/
 │       │   ├── __init__.py
-│       │   ├── top_bar.py       # resources + per-cycle income
+│       │   ├── top_bar.py       # population / housing HUD
 │       │   ├── bottom_bar.py    # building selection menu
 │       │   ├── placement.py     # mouse-follow contour, click to place
 │       │   ├── building_panel.py# modal: info / demolish / upgrade
-│       │   └── town_hall_panel.py # extends building_panel: hire workers
+│       │   └── town_hall_panel.py # Town Hall-specific panel actions
 │       ├── render.py            # main scene renderer
 │       └── input.py             # mouse/keyboard event router
 └── tests/
@@ -122,7 +122,7 @@ class ResourceManager:
 ### F-TICK — Cycle System
 
 - **F-TICK-01 (MUST):** A cycle lasts exactly **10 seconds** of wall-clock game time (using `pygame.time.get_ticks()`).
-- **F-TICK-02 (MUST):** On each cycle tick, every working building (with assigned worker) produces `5 × level` units of its resource, added atomically.
+- **F-TICK-02 (MUST, revised):** Cycle ticks drive tick-based systems only (e.g., legacy passive producers). Active gather buildings produce via worker state machines (see **F-PROD-01**).
 
 ### F-ISO — Isometric Projection
 
@@ -170,7 +170,7 @@ class ResourceManager:
 - **F-STONE-04 (MUST):** Trees never spawn on stone tiles (and vice-versa: stone generation skips tiles that already contain alive trees).
 - **F-STONE-05 (MUST):** Generation algorithm at world init:
   1. Compute the set of valid stone-center tiles: in-grass, **Chebyshev distance ≥ 12** from any Town Hall footprint tile, not occupied, not on a tree.
-  2. Pick **3** centers at random (PRNG; default entropy-based, or fixed when `World(world_seed=…)`). If fewer valid candidates exist, pick as many as possible.
+  2. Pick **6** centers at random (PRNG). **One** mandatory center lies on the Chebyshev ring at distance **20** from Town Hall (with generation rules that do not silently drop that cluster); others follow spacing rules documented in code (`world.py`). If fewer valid candidates exist, pick as many as possible.
   3. Around each center, pick a random radius `r ∈ [1, 4]` (Chebyshev). Fill **every** tile in the radius with a stone (units=15) provided the tile is in-grass, not a tree, not a building, not the Town Hall footprint, and not already a stone tile (idempotent merge).
 - **F-STONE-06 (MUST):** A stonecutter harvests by:
   1. Walking from the camp to a tile **adjacent** (Chebyshev-1) to the chosen stone tile (the stonecutter cannot stand on the stone itself, since stones block movement).
@@ -184,9 +184,9 @@ class ResourceManager:
 
 ### F-BLD — Buildings (general)
 
-- **F-BLD-01 (MUST):** Five building types: `TOWN_HALL`, `LUMBER_CAMP`, `STONE_MINE`, `IRON_MINE`, `FARM`.
-- **F-BLD-02 (MUST):** Each non–town-hall building occupies a 2×2 tile footprint. Town Hall is 3×3.
-- **F-BLD-03 (MUST):** Maximum building level is **10** for non–town-hall, **fixed at 1** for Town Hall (cannot upgrade, cannot demolish, cannot build a second one).
+- **F-BLD-01 (MUST):** Implemented building types include at least: `TOWN_HALL`, `LUMBER_CAMP`, `STONE_MINE`, `IRON_MINE`, `FARM`, `FORESTER_HUT`, `SCHOOL`, **`HOUSE`** (social). The bottom bar uses multi-level menus (Resource / Social / Processing / Dev); exact membership may grow—each type is registered in config + placement map.
+- **F-BLD-02 (MUST):** Standard production/social buildings (incl. `HOUSE`, `SCHOOL`) use a **2×2** footprint unless noted. Town Hall is **3×3**.
+- **F-BLD-03 (MUST):** Maximum level is **10** for upgradable producer/social buildings. **Town Hall** is unique (exactly one), cannot be demolished, cannot be built from the menu, **can upgrade** levels 1..10 for tech gates. **`FORESTER_HUT`** is capped at level 1 where implemented.
 - **F-BLD-04 (MUST):** Build cost (= cost to construct level 1):
   - LUMBER_CAMP, STONE_MINE, IRON_MINE, FARM: `wood=100`.
 - **F-BLD-05 (MUST):** Upgrade cost from level *L* → *L+1* (L ≥ 1):
@@ -194,7 +194,7 @@ class ResourceManager:
   - `stone = 200 × (L + 1 - 4)` if `L + 1 ≥ 5`, else 0  (so level 5 costs +200 stone, level 6 +400, …, level 10 +1200)
   - `iron  = 300 × (L + 1 - 6)` if `L + 1 ≥ 7`, else 0  (so level 7 costs +300 iron, level 8 +600, …, level 10 +1200)
   - **Decision/Interpretation note (recorded in progress.md):** the user wrote "первый уровень здания (постройка) стоит 100 дерева, каждый следующий требует на 100 дерева больше". We interpret this strictly as: *to reach level L you spend `100 × L` wood*; level 5 additionally adds stone; level 7 additionally adds iron. The `+200 per level` for stone and `+300 per level` for iron mirror the wood pattern.
-- **F-BLD-06 (MUST):** Production per cycle for resource-buildings with a worker assigned: `5 × level` of the building's resource.
+- **F-BLD-06 (MUST, revised):** Production model is defined by **F-PROD**: mixed tick-based and active-cycle production depending on building type.
 - **F-BLD-07 (MUST):** Each new building starts with **no worker**.
 
 ### F-RENDER — Building Rendering
@@ -225,33 +225,28 @@ class Building:
   - Footprint overlaps an existing building's footprint.
   - The closest distance (in tiles, Chebyshev) from any tile of the new footprint to any tile of an existing building's footprint is `< 1`.  
     Interpretation: buildings may not touch edge-to-edge or corner-to-corner; there must be at least one free tile gap.
-- **F-PLACE-04 (MUST):** Left-click on a valid spot deducts the build cost (only `wood=100`) and places the building. If the player has insufficient resources, no placement happens and the contour stays red.
+- **F-PLACE-04 (MUST):** Left-click on a valid spot deducts the configured build cost for the selected building type and places the building. If resources are insufficient, placement is rejected and the contour stays red.
 - **F-PLACE-05 (MUST):** Right-click or `Esc` cancels placement mode.
 - **F-PLACE-06 (MUST):** A second Town Hall can never be placed (the Town Hall option is not in the bottom bar).
 
 ### F-UI-TOP — Top Bar
 
-- **F-UI-TOP-01 (MUST):** Fixed top strip (height 48 px). Shows 4 resource entries left-to-right:
-  `[icon] amount  (+income/cycle)`
-- **F-UI-TOP-02 (MUST):** `amount` updates every frame; `+income` updates whenever buildings/workers change.
+- **F-UI-TOP-01 (Phase 15, MUST):** Fixed top strip (height 48 px). **Does not** display the four resource rows or per-cycle income (those lines are removed from the HUD in this phase).
+- **F-UI-TOP-02 (Phase 15, MUST):** Shows **population / housing**: a **population icon** (disk asset under `assets/` with procedural fallback — see **F-POP-UI**) followed by text:
+  `current (max max_cap)` — e.g. **`3 (max 8)`** where `current` is the living population count and `max_cap` is total housing capacity (see **F-HOUSING**).
+- **F-UI-TOP-03 (SHOULD):** Icon and numbers align vertically centered in the strip; readable at 1280×720.
 
 ```
 +--------------------------------------------------------------+
-| 🍞 200 (+0)   🪵 200 (+5)   🪨 0 (+0)   ⛓ 0 (+0)            |
+| [pop icon]  3 (max 8)                                         |
 +--------------------------------------------------------------+
 ```
 
 ### F-UI-BOT — Bottom Bar (build menu)
 
-- **F-UI-BOT-01 (MUST):** Fixed bottom strip (height 96 px). Shows 4 build buttons (Lumber, Stone, Iron, Farm) with icon + name + cost (`100 wood`).
-- **F-UI-BOT-02 (MUST):** Clicking a button enters placement mode for that building.
-- **F-UI-BOT-03 (MUST):** A button is greyed out (not clickable) if the player cannot afford 100 wood.
-
-```
-+--------------------------------------------------------------+
-| [Lumber 100🪵] [Stone 100🪵] [Iron 100🪵] [Farm 100🪵]      |
-+--------------------------------------------------------------+
-```
+- **F-UI-BOT-01 (MUST):** Fixed bottom strip (**96 px**). Uses a **multi-level** menu: categories (**Main → Resource / Social / Processing / Dev**) with a **Back** control to Main. Production buildings live under Resource; **School** and **House** under Social; Processing may be empty; Dev holds debug place-tree / place-stone tools where implemented.
+- **F-UI-BOT-02 (MUST):** Selecting a leaf building posts a placement intent with that type's build cost from config.
+- **F-UI-BOT-03 (MUST):** Buttons unavailable when the player cannot afford the configured cost or tech gate (Town Hall level) blocks the building.
 
 ### F-UI-PANEL — Building Info Panel (modal)
 
@@ -265,18 +260,12 @@ class Building:
   - **Upgrade** button with cost text (`"Upgrade to Lv 4 — 400 wood"`); disabled when level=10 or insufficient resources.
   - **Demolish** button (red).
   - Close [×] in top-right corner.
-- **F-UI-PANEL-03 (MUST):** Town Hall panel: same layout but **no Demolish**, **no Upgrade**, plus a "Hire Workers" section with one button per worker type (cost `50 food` each). Hire button is disabled if `food < 50`.
+- **F-UI-PANEL-03 (MUST):** Town Hall panel: **no Demolish**, **Upgrade** when TH leveling is unlocked; **no hiring** — all hiring/training happens at **School** (see **F-SCHOOL-Q**).
 - **F-UI-PANEL-04 (MUST):** Closing the panel (× or Esc) returns to normal view.
 
-```
-+----------------------------+
-| Lumber Camp — Lv 3   [×]   |
-| Lumberjack chops trees.    |
-| Income: +15 wood / 10 s    |
-| Worker: assigned           |
-| [ Upgrade — 400 wood ]     |
-| [ Demolish ]               |
-+----------------------------+
+```text
+Panel example is illustrative only; exact lines depend on building type
+(active-cycle buildings show status/storage rather than legacy passive income).
 ```
 
 ### F-DEMO — Demolish
@@ -292,7 +281,7 @@ class Building:
   - **+5 % movement speed** per level above 1 (effective speed multiplier `1 + 0.05 × (level − 1)`, additive across other bonuses).
   - **+5 % gathering speed** per level above 1 (chop, mine, harvest — applied to the duration of one cycle of work; e.g. level 3 ⇒ 10 % faster ⇒ chop time `CHOP_DURATION_MS / 1.10`).
   - The bonus applies only while the worker is currently assigned to that building. On reassignment / demolition the bonus disappears.
-- **F-UPG-04 (MUST):** Town Hall remains non-upgradeable in the original sense (capped at level 1) **only** for the no-demolish/single-building rule; the actual Town Hall progression already implemented (levels 1..10 unlocking tech) stays as is.
+- **F-UPG-04 (MUST):** Town Hall is **unique** (single instance, no demolish) **and** may **upgrade** levels 1..10 for tech and housing unlocks; only the no-second-TH rule is absolute.
 
 ### F-CHAR — Worker Characteristics
 
@@ -315,30 +304,48 @@ class Building:
 - **F-STORE-05 (MUST):** The building's panel shows a `Storage: stored / capacity` line. For `LumberCamp` the existing `Wood delivered: N` counter remains as a separate lifetime counter.
 - **F-STORE-06 (SHOULD):** The storage lines for FARM / STONE_MINE / IRON_MINE appear in their respective panels (`BuildingPanel`, generic) using `building.stored` and `building.storage_capacity()`.
 
+### F-HOUSING — Housing Capacity
+
+- **F-HOUSING-01 (Phase 15, MUST):** Each **hired / living** worker occupies **one** housing slot. `current_population =` number of workers currently in the world.
+- **F-HOUSING-02 (Phase 15, MUST):** **Town Hall** at level `L` (1..10) contributes **`housing_th(L) = 8 + 2 × (L − 1)`** slots.
+- **F-HOUSING-03 (Phase 15, MUST):** **`HOUSE`** (see **F-HOUSE**) at level `L` contributes **`housing_house(L) = 2 + 2 × (L − 1)`** slots.
+- **F-HOUSING-04 (Phase 15, MUST):** **`max_population` =** sum of housing from the one Town Hall plus every **placed** `HOUSE` (by building level). Other building types contribute **0** unless specified in a future amendment.
+- **F-HOUSING-05 (Phase 15, MUST):** A new training request or instant hire that would make `current_population > max_population` **must be rejected** (UI disabled or no-op with clear affordance in Phase 15 minimum: disabled control).
+
+### F-POP-UI — Population HUD Asset
+
+- **F-POP-UI-01 (Phase 15, MUST):** A small **population** icon is loaded **disk-first** from `assets/ui/population/` (exact filename convention matches existing asset loader patterns, e.g. `default.png` + optional `asset_meta.json`).
+- **F-POP-UI-02 (Phase 15, MUST):** If the file is missing, `assets.py` provides a **procedural** silhouette so the HUD never crashes in headless tests.
+
+### F-SCHOOL-Q — School Training Queue
+
+- **F-SCHOOL-Q-01 (Phase 15, MUST):** Each **`SCHOOL`** exposes a **FIFO training queue** of up to **7** pending trainees.
+- **F-SCHOOL-Q-02 (Phase 15, MUST):** Ordering a worker type **enqueues** into the **leftmost empty** slot (visual **left → right** row of **7** squares). **No food or other resource cost** for training in Phase 15 — training is **free**; housing cap is the gating mechanic.
+- **F-SCHOOL-Q-03 (Phase 15, MUST):** Only the **front** item (leftmost occupied slot) progresses. Training one unit takes **30_000 ms** wall-clock game time (`now_ms` delta), shown as a **yellow** progress bar along the **bottom** inside that square, with the **worker-type icon** filling the cell above.
+- **F-SCHOOL-Q-04 (Phase 15, MUST):** When training completes, the worker **spawns** at that school using the same spawn rules as the current **School hire** implementation (bottom-edge approach / fallbacks). The completed icon is removed; entries **shift left** compacting the queue; if other entries remain, the new front entry **starts** training from **0** progress.
+- **F-SCHOOL-Q-05 (Phase 15, MUST):** Multiple schools each maintain an **independent** queue and independent timers.
+
+### F-HOUSE — House (social)
+
+- **F-HOUSE-01 (Phase 15, MUST):** Building type **`HOUSE`**, **2×2** footprint, levels **1..10**, placed from the **Social** submenu with normal cost / upgrade rules from `game_settings.json` / `config.py`.
+- **F-HOUSE-02 (Phase 15, MUST):** Upgrade costs follow the global **F-BLD-05** curve unless a task specifies an override in config for `HOUSE` only.
+- **F-HOUSE-03 (Phase 15, MUST):** Demolishing a house reduces `max_population`; if `current_population > max_population` after demolition, behaviour for **Phase 15** is implementation-defined but **must** be asserted in tests (recommended: block demolition while over-cap, or forbid demolish when it would violate cap—pick one in TDD).
+
 ### F-WORK — Workers
 
-- **F-WORK-01 (MUST):** Four worker types: `LUMBERJACK`, `STONECUTTER`, `MINER`, `FARMER`. Each works only in the matching building type (Lumberjack ↔ Lumber Camp, Farmer ↔ Farm, etc.).
-- **F-WORK-02 (MUST):** Hiring is initiated from the Town Hall panel; cost is **50 food**. On success, food is deducted and a new idle worker is spawned at the Town Hall.
-- **F-WORK-03 (MUST):** Assignment rule: at every state change (worker hired, building built, building demolished, building reassigned), the WorkerManager runs:
-  ```
-  for each idle worker W of type T:
-      find any building B of matching type with no worker
-      if found:  reserve B for W, set W target tile to a valid approach tile near B, W starts moving
-      else:      W remains idle, standing near Town Hall
-  ```
-- **F-WORK-04 (MUST):** Workers move smoothly over time on grid paths (no teleport). Movement speed is exactly **1 tile per 3 seconds** (`WORKER_TILE_TRAVEL_MS = 3000`).
-- **F-WORK-05 (MUST):** Workers cannot step onto tiles occupied by any building footprint. Pathfinding treats occupied tiles as blocked.
-- **F-WORK-06 (MUST):** For a target production building, a worker may approach from any side. The destination tile is any free grass tile Chebyshev-distance `1` from the building footprint.
-- **F-WORK-07 (MUST):** Pathfinding algorithm is **BFS** (not A*), 8-directional (N, S, E, W, and diagonals), uniform step cost 1 per tile.
-- **F-WORK-07a (MUST):** Deterministic neighbor order for BFS expansion: `N, NE, E, SE, S, SW, W, NW` (dx/dy: `(0,-1),(1,-1),(1,0),(1,1),(0,1),(-1,1),(-1,0),(-1,-1)`).
-- **F-WORK-07b (MUST):** No corner-cutting through blocked diagonals: for diagonal step `(x,y)->(x+dx,y+dy)`, at least one of orthogonal side tiles `(x+dx,y)` or `(x,y+dy)` must be walkable.
-- **F-WORK-07c (MUST):** If no path exists, worker remains waiting and retries on each assignment recalculation.
-- **F-WORK-08 (MUST):** A worker contributes production only when in `working` state (destination reached and building still valid).
-- **F-WORK-09 (MUST):** If a building is demolished while a worker is moving to it or working in it, that worker transitions to idle at its current tile and may be reassigned.
-- **F-WORK-10 (MUST):** Workers are visualized as small dots moving smoothly between tile centers (interpolated position each frame).
-- **F-WORK-11 (MUST):** The Town Hall does not consume a worker slot itself.
-- **F-WORK-12 (MUST):** STONECUTTER follows the same active-cycle state machine as LUMBERJACK (Phase 11) but on stone tiles instead of trees. States: `idle → moving (to camp) → working (rest) → going_to_stone → mining → returning → arrived_camp → depositing → working`. The `worker.carrying` flag carries `"stone"` instead of `"wood"` on the way back. Mining duration is `MINE_DURATION_MS` (gather-speed-bonus-aware).
-- **F-WORK-13 (SHOULD):** MINER and FARMER currently keep passive `5 × level` production (legacy income), **but** their internal storage gates production: a tick that would deposit when `stored >= capacity` is skipped. They will gain active gather cycles in a future phase (out of scope for Phase 12).
+- **F-WORK-01 (MUST):** Worker types include at least `LUMBERJACK`, `STONECUTTER`, `MINER`, `FARMER`, `FORESTER`. Each production type works only in its matching building (`FORESTER` ↔ `FORESTER_HUT`, etc.).
+- **F-WORK-02 (Phase 15, MUST):** **Acquiring** workers is done only through **School** training queue (**F-SCHOOL-Q**), not the Town Hall panel. **Food is not charged** for queue orders in Phase 15. Spawning still respects **F-HOUSING**.
+- **F-WORK-03 (MUST):** Assignment rule: at every state change (worker finished training, building built, demolished, upgrade, etc.), WorkerManager runs `reassign_all` (see implementation) to match idle workers to unstaffed compatible buildings.
+- **F-WORK-04 (MUST):** Workers move smoothly on grid paths (**F-PATH**). Base travel time **WORKER_TILE_TRAVEL_MS** is modulated by characteristics.
+- **F-WORK-05 (MUST):** Workers cannot step onto building footprint tiles; pathfinding uses **`World.blocked_tiles()`** and **4-direction BFS** (**F-PATH** obsolete / superseded: ~~8-direction worker movement~~ removed).
+- **F-WORK-06 (MUST):** For a target production building, approach tiles are orthogonally adjacent (Chebyshev-1) walkable grass tiles outside the footprint (see implementation).
+- **F-WORK-07 (MUST):** Pathfinding for workers is **exactly** `find_path_bfs` with **four** neighbours **N, E, S, W** — see **F-PATH-01**. (Earlier PRD drafts describing 8-neighbour BFS are void.)
+- **F-WORK-08 (MUST):** A worker contributes production only when its state machine allows (active gather buildings).
+- **F-WORK-09 (MUST):** If a building is demolished while a worker is assigned, that worker becomes idle at current tile (`notify_demolished` semantics).
+- **F-WORK-10 (MUST):** Workers are rendered via sprites / interpolation (**F-RENDER** extensions).
+- **F-WORK-11 (MUST):** Town Hall does not occupy a worker slot.
+- **F-WORK-12 (MUST):** STONECUTTER mirrors LUMBERJACK cycle on stones (Phase 12); FORESTER follows planting cycle (Phase 14).
+- **F-WORK-13 (SHOULD):** MINER/FARM passive tick behaviour remains storage-gated until a future activation phase.
 
 ### F-PROD — Production
 
@@ -368,7 +375,7 @@ class Building:
 | NFR-PERF-04 | Performance  | Worker dispatch (assignment, gather scheduling, return paths) runs in O(buildings + entities), not O(W·H), per frame. |
 | NFR-REL-01  | Reliability  | No unhandled exceptions during a 10-minute play session reach the user; all logged to stderr. |
 | NFR-REL-02  | Cleanup      | On window close, `pygame.quit()` called, no zombie processes, no leaked file handles.         |
-| NFR-EXT-01  | Extensibility| Adding a new resource-building type = one subclass + one entry in the bottom-bar config.      |
+| NFR-EXT-01  | Extensibility| Adding a new building type requires subclass + config registration + menu wiring in the multi-level bottom bar. |
 | NFR-START-01| Startup      | From double-click on `.exe` to interactive game ≤ 3 seconds on warm SSD.                      |
 | NFR-FILE-01 | Filesystem   | Game writes no files unless absolutely necessary; if writing, only inside its own folder.     |
 | NFR-OS-01   | Portability  | Game `.exe` runs on Windows 11 with no preinstalled software (other than what ships with OS).|
@@ -394,7 +401,7 @@ class Building:
 | `test_costs.py`        | upgrade cost formula at L1..L10 (incl. stone@5+, iron@7+)             |
 | `test_buildings.py`    | each subclass: type, footprint, income, level cap                     |
 | `test_registry.py`     | placement valid/invalid, distance rule, second-town-hall rejected     |
-| `test_workers.py`      | hire deducts food, idle queue, type-matched assignment                |
+| `test_workers.py`      | assignment/state transitions, staffing rules, queue/spawn interactions |
 | `test_tick.py`         | 10-second tick boundary, callback called once per cycle               |
 | `test_production.py`   | end-to-end: building + worker → resource added per cycle              |
 
@@ -433,8 +440,9 @@ BuildingRegistry(world)
 ### `game.workers`
 ```python
 WorkerManager(resources, registry)
-  .hire(worker_type) -> Optional[Worker]   # None if not enough food
-  .reassign_all() -> None                  # called after any placement/demolish/hire/upgrade
+  .hire(worker_type, *, source_building=None) -> Optional[Worker]
+  # direct spawn helper; worker acquisition policy is School queue-driven in Phase 15.
+  .reassign_all() -> None                  # called after placement/demolish/training-complete/upgrade
   .update(now_ms: int) -> None             # advances movement along current path
   .working_buildings() -> list[Building]   # only buildings whose worker reached destination
   .idle() -> list[Worker]
@@ -498,24 +506,14 @@ Renderer.visible_tile_range(surface, world, camera) -> tuple[int, int, int, int]
 
 The full ordered task list is the source of truth in `progress.md`. Summary:
 
-| Phase                                  | Tasks    | Status     |
-|----------------------------------------|----------|------------|
-| 1. Project foundation                  | T01–T07  | done       |
-| 2. Resources & top bar                 | T08–T13  | done       |
-| 3. World & rendering                   | T14–T17  | done       |
-| 4. Buildings & placement               | T18–T25  | done       |
-| 5. Building panel & actions            | T26–T30  | done       |
-| 6. Workers                             | T31–T36  | done       |
-| 7. Production, polish, package         | T37–T42  | done       |
-| 8. Render fixes & camera pan           | T43–T51  | done       |
-| 9. Worker movement & spacing           | T52–T62  | done       |
-| 10. Tree entities & layering           | T63–T74  | done       |
-| 11. Lumberjack chop cycle              | T75–T91  | done       |
-| 12. Level bonuses, storage, stones     | T92–T125 | done       |
-| 13. Perf opt & orthogonal pathfinding  | T126–T148| in-progress |
+| Phase                                      | Tasks        | Status   |
+|--------------------------------------------|--------------|----------|
+| 1–12 (foundation through stone/bonuses)  | T01–T125     | done     |
+| 13. Performance & 4-dir pathfinding      | T126–T148    | done     |
+| 14. Forestry (Forester, species, trees)    | T149–T160    | done     |
+| **15. Housing, House, School queue, HUD**  | **T161–T173** | queued  |
 
-Phases 1–12 are summarised in `progress_archive.md`. The active phase lives in
-`progress.md`. See `progress.md` for the canonical task list.
+Historical per-phase numbering is archived in **`progress_archive.md`**. **`progress.md`** holds the runnable checklist for Ralph.
 
 ---
 
@@ -545,11 +543,11 @@ into the final `.exe`, so the end user needs nothing preinstalled.
 - Camera zoom / rotation (panning is supported via RMB drag).
 - Mac / Linux builds.
 
-### Out of scope for Phase 12 specifically
+### Out of scope (current)
 
-- Active gather cycles for FARMER and MINER (they remain passive within a storage-capped tick; activation cycles will be added in a later phase together with farm fields and iron veins).
-- Off-site resource transport from production buildings (storage just fills up; pickup carts come later).
-- Stone respawn / regrowth — when a stone tile is depleted, it stays plain grass.
+- Off-site resource transport from production buildings (storage fills locally for now).
+- Stone respawn / regrowth — depleted stone tiles remain plain grass.
+- Audio/combat/network/save systems remain out of scope (see section above).
 
 ---
 
@@ -559,7 +557,9 @@ into the final `.exe`, so the end user needs nothing preinstalled.
 |-----------------|------------------------------------------------------------------------|
 | Cycle / Tick    | A 10-second game-clock interval that triggers production.            |
 | Footprint       | The set of tiles a building occupies on the grid.                    |
-| Grass field     | The 32×32 playable interior; only place buildings can be placed.     |
-| Idle worker     | A hired worker without a building assigned; stands near Town Hall or on its former tile after demolition. |
+| Grass field     | The `GRID_SIZE × GRID_SIZE` playable interior (`game_settings.json`); only place buildings can be placed. |
+| Idle worker     | A worker without a building assignment; stands at current/stand tile until reassigned. |
 | Income          | Resources added to the player per single cycle.                       |
-| Town Hall       | The single mandatory starting building; can hire workers; cannot be upgraded, demolished, or duplicated. |
+| Town Hall       | The single mandatory starting building; upgrades for tech/housing; **cannot** be demolished or duplicated; hiring is delegated to **School** (Phase 15). |
+| House           | Social building (+housing capacity); see **F-HOUSE**. |
+| Population      | `current` worker count vs `max` housing (see **F-HOUSING**). |

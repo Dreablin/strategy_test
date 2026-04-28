@@ -411,7 +411,14 @@ class GameInput:
                         self._sync_assignments()
                     elif action is not None and action.startswith("hire:"):
                         worker_type = action.split(":", 1)[1]
-                        self._panel.enqueue_training(worker_type)
+                        now_fn = getattr(self._worker_manager, "_now_ms_fn", None)
+                        now_ms = int(now_fn()) if callable(now_fn) else pygame.time.get_ticks()
+                        self._panel.enqueue_training(worker_type, now_ms=now_ms)
+                    elif action is not None and action.startswith("cancel:"):
+                        slot_idx = int(action.split(":", 1)[1])
+                        now_fn = getattr(self._worker_manager, "_now_ms_fn", None)
+                        now_ms = int(now_fn()) if callable(now_fn) else pygame.time.get_ticks()
+                        self._panel.cancel_training_at(slot_idx, now_ms=now_ms)
                     return
             layout = BuildingPanel.layout(
                 surface,

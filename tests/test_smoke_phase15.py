@@ -24,7 +24,7 @@ def test_smoke_phase15_school_queue_housing_gate_and_independent_schools() -> No
     resources = ResourceManager()
     workers = WorkerManager(resources, registry)
 
-    # Fill close to Town Hall cap (8), then train into cap.
+    # Fill close to Town Hall cap (8), then queue trainees.
     for _ in range(6):
         workers.add_worker(Worker("LUMBERJACK"))
     assert len(workers.workers()) == 6
@@ -33,9 +33,9 @@ def test_smoke_phase15_school_queue_housing_gate_and_independent_schools() -> No
     assert school_a.enqueue_training("FARMER")
     assert school_b.enqueue_training("LUMBERJACK")
 
-    # Independent front slots complete in parallel; School A keeps second queued item.
+    # Queued trainees reserve population slots; only one completion can spawn at cap.
     workers.update(30_000)
-    assert len(workers.workers()) == 8
+    assert len(workers.workers()) == 7
     assert len(school_a.training_queue()) == 1
     assert len(school_b.training_queue()) == 0
     assert school_a.training_progress_ms() == 0

@@ -15,7 +15,7 @@ from game.config import (
     WORKER_HIRE_COSTS,
     WORKER_TILE_TRAVEL_MS,
 )
-from game.housing import max_population
+from game.housing import current_population, max_population
 from game.pathfinding import find_path_bfs
 from game.resources import ResourceManager
 from game.world import find_nearest_free_stone, find_nearest_free_tree
@@ -374,7 +374,8 @@ class WorkerManager:
         if self._registry is None:
             return True
         cap = max_population(self._registry, self)
-        return len(self._workers) + int(incoming) <= cap
+        pop_now = current_population(self._registry, self)
+        return pop_now + int(incoming) <= cap
 
     def notify_demolished(self, building: Building) -> None:
         """Workers targeting this building become idle at their current tile."""

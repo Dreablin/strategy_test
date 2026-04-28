@@ -196,6 +196,10 @@ class SchoolPanel:
         )
         if layout.demolish.collidepoint(pos):
             return "demolish"
+        queue = school.training_queue()
+        for idx, rect in enumerate(layout.queue_slots):
+            if idx < len(queue) and rect.collidepoint(pos):
+                return f"cancel:{idx}"
         for worker_type, rect in layout.hire_buttons:
             if rect.collidepoint(pos) and layout.hire_enabled.get(worker_type, False):
                 return f"hire:{worker_type}"

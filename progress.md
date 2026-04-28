@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 15 — Housing, House, School training queue, population HUD
-- **Next Task:** T167 (first `- [ ]` below)
-- **Last Completed:** T166 — top bar switched to population HUD
-- **Total Progress:** 166 / 173 (Phase 15: 6 / 13 tasks done)
+- **Next Task:** T168 (first `- [ ]` below)
+- **Last Completed:** T167 — failing House tests (RED)
+- **Total Progress:** 167 / 173 (Phase 15: 7 / 13 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -45,7 +45,7 @@
 
 ### 15.4 House building
 
-- [ ] **T167**: Failing tests: `HOUSE` type, **2×2**, levels **1..10**, housing contribution per level, registry placement rules.
+- [x] **T167**: Failing tests: `HOUSE` type, **2×2**, levels **1..10**, housing contribution per level, registry placement rules.
 - [ ] **T168**: Implement `House`, costs/unlocks in `config.py` + `game_settings.json`, **Social** menu entry, assets folder + procedural sprite path.
 - [ ] **T169**: **Demolish vs over-cap** policy with tests (choose one consistent behaviour per **F-HOUSE-03** — e.g. block demolish if it would drop max below current pop).
 
@@ -78,6 +78,7 @@
 | 2026-04-28 | T164 | School clicks enqueue free training; `WorkerManager.update` advances per-school queues and spawns completed trainees before `reassign_all`. | Aligns runtime with Phase 15 queue semantics and removes food-cost dependency from School training flow. |
 | 2026-04-28 | T165 | School panel now renders a 7-slot queue row with worker icons and active yellow progress bar; enqueue controls disable when queue is full/cap blocked. | Matches F-SCHOOL-Q visual contract and keeps button affordances in sync with queue/housing gates. |
 | 2026-04-28 | T166 | Top bar now renders population icon + `current (max N)` using worker count and housing cap instead of resource strip. | Aligns HUD with Phase 15 population-first UX and adds headless layout/draw coverage. |
+| 2026-04-28 | T167 | Added RED coverage for `House` class contract, housing contribution, and registry placement/overlap semantics. | Defines expected behavior before implementing `House` and Social wiring in T168. |
 
 ## Issues & Blockers
 

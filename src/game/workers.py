@@ -174,7 +174,7 @@ class Worker:
 class WorkerManager:
     """Tracks workers; notifies assignments when a staffed building is demolished (PRD F-WORK)."""
 
-    __slots__ = ("_now_ms_fn", "_registry", "_workers", "_transport_queue")
+    __slots__ = ("_now_ms_fn", "_registry", "_workers", "_transport_queue", "_updaters")
     _WORKER_TO_BUILDING: dict[str, str] = {
         "LUMBERJACK": "LUMBER_CAMP",
         "STONECUTTER": "STONE_MINE",
@@ -194,6 +194,12 @@ class WorkerManager:
         self._workers: list[Worker] = []
         self._transport_queue: list[TransportTask] = []
         self._now_ms_fn = now_ms_fn or (lambda: 0)
+        self._updaters: dict[str, Callable[[Worker, int, Any], None]] = {
+            "FORESTER": self._update_forester,
+            "CARRIER": self._update_carrier,
+            "LUMBERJACK": self._update_gatherer,
+            "STONECUTTER": self._update_gatherer,
+        }
         if registry is not None and hasattr(registry, "bind_worker_manager"):
             registry.bind_worker_manager(self)
 
@@ -546,104 +552,11 @@ class WorkerManager:
     def update(self, now_ms: int) -> None:
         """Advance worker movement interpolation/state for this frame."""
         world = getattr(self._registry, "_world", None) if self._registry is not None else None
-        if world is not None:
-            world.update_tree_growth(now_ms=int(now_ms))
         for worker in self._workers:
             worker.update(now_ms)
-            if worker.type_tag == "FORESTER":
-                self._update_forester(worker, int(now_ms), world)
-                continue
-            if worker.type_tag == "CARRIER":
-                self._update_carrier(worker, int(now_ms), world)
-                continue
-            if worker.type_tag not in {"LUMBERJACK", "STONECUTTER"}:
-                continue
-            if world is None:
-                continue
-            camp = worker.assigned_building
-            if camp is None:
-                world.release_reservations_for(worker)
-                continue
-
-            gather_state = self._gather_state_for(worker.type_tag)
-            if gather_state is None:
-                continue
-
-            # Gather worker just walked into the camp: kick off the cycle from the
-            # actual arrival timestamp so leftover time in this tick still moves the
-            # worker further along the new (resource-targeting) path.
-            if worker.state == "working":
-                self._park_worker_inside_camp(worker, camp)
-                if worker.camp_wait_until_ms <= 0:
-                    worker.camp_wait_until_ms = worker.arrival_ms + gather_state["rest_ms"]
-                if int(now_ms) < worker.camp_wait_until_ms:
-                    continue
-                if not getattr(camp, "active", False):
-                    continue
-                if hasattr(camp, "is_storage_full") and camp.is_storage_full():
-                    # Keep waiting inside the camp while storage is full.
-                    worker.camp_wait_until_ms = int(now_ms) + 1_000
-                    continue
-                depart_ms = worker.camp_wait_until_ms
-                if not self._start_gather_cycle(worker, camp, depart_ms, world_query=gather_state["world_query"]):
-                    # No target/path right now: stay inside camp and retry later.
-                    self._park_worker_inside_camp(worker, camp)
-                    worker.camp_wait_until_ms = int(now_ms) + 1_000
-                    continue
-                worker.camp_wait_until_ms = 0
-                worker.update(now_ms)
-
-            if worker.state == gather_state["arrived_state"]:
-                worker.state = gather_state["work_state"]
-                worker.chop_started_ms = int(now_ms)
-                speed = worker.characteristics.gather_speed_mult
-                if speed <= 0.0:
-                    worker.chop_duration_ms = gather_state["duration_ms"]
-                else:
-                    worker.chop_duration_ms = max(1, int(round(gather_state["duration_ms"] / speed)))
-                continue
-
-            if worker.state == gather_state["work_state"]:
-                if int(now_ms) - worker.chop_started_ms < worker.chop_duration_ms:
-                    continue
-                target_tile = worker.target_tree
-                if target_tile is not None:
-                    if gather_state["world_query"] == "tree":
-                        world.remove_tree(*target_tile)
-                    else:
-                        world.harvest_stone(*target_tile)
-                worker.carrying = gather_state["carry_resource"]
-                if not self._start_return_to_camp(worker, int(now_ms)):
-                    worker.state = "depositing"
-                continue
-
-            if worker.state == "arrived_camp":
-                self._park_worker_inside_camp(worker, camp)
-                worker.state = "depositing"
-                continue
-
-            if worker.state == "depositing":
-                if worker.carrying == gather_state["carry_resource"]:
-                    if hasattr(camp, "add_to_storage"):
-                        camp.add_to_storage(1)
-                    town_hall = self._primary_town_hall()
-                    if town_hall is not None:
-                        self.enqueue_transport_task(
-                            resource=gather_state["carry_resource"],
-                            source=camp,
-                            target=town_hall,
-                            amount=1,
-                        )
-                    if hasattr(camp, gather_state["record_method"]):
-                        record_method = getattr(camp, gather_state["record_method"])
-                        record_method(1)
-                worker.carrying = None
-                worker.target_tree = None
-                worker.chop_started_ms = 0
-                worker.chop_duration_ms = CHOP_DURATION_MS
-                self._park_worker_inside_camp(worker, camp)
-                worker.camp_wait_until_ms = int(now_ms) + gather_state["rest_ms"]
-                continue
+            updater = self._updaters.get(worker.type_tag)
+            if updater is not None:
+                updater(worker, int(now_ms), world)
         spawned = False
         if self._registry is not None:
             for building in self._registry.all():
@@ -656,6 +569,94 @@ class WorkerManager:
                     spawned = True
             if spawned:
                 self.reassign_all()
+
+    def _update_gatherer(self, worker: Worker, now_ms: int, world: Any) -> None:
+        if world is None:
+            return
+        camp = worker.assigned_building
+        if camp is None:
+            world.release_reservations_for(worker)
+            return
+
+        gather_state = self._gather_state_for(worker.type_tag)
+        if gather_state is None:
+            return
+
+        # Gather worker just walked into the camp: kick off the cycle from the
+        # actual arrival timestamp so leftover time in this tick still moves the
+        # worker further along the new (resource-targeting) path.
+        if worker.state == "working":
+            self._park_worker_inside_camp(worker, camp)
+            if worker.camp_wait_until_ms <= 0:
+                worker.camp_wait_until_ms = worker.arrival_ms + gather_state["rest_ms"]
+            if now_ms < worker.camp_wait_until_ms:
+                return
+            if not getattr(camp, "active", False):
+                return
+            if hasattr(camp, "is_storage_full") and camp.is_storage_full():
+                # Keep waiting inside the camp while storage is full.
+                worker.camp_wait_until_ms = now_ms + 1_000
+                return
+            depart_ms = worker.camp_wait_until_ms
+            if not self._start_gather_cycle(worker, camp, depart_ms, world_query=gather_state["world_query"]):
+                # No target/path right now: stay inside camp and retry later.
+                self._park_worker_inside_camp(worker, camp)
+                worker.camp_wait_until_ms = now_ms + 1_000
+                return
+            worker.camp_wait_until_ms = 0
+            worker.update(now_ms)
+
+        if worker.state == gather_state["arrived_state"]:
+            worker.state = gather_state["work_state"]
+            worker.chop_started_ms = now_ms
+            speed = worker.characteristics.gather_speed_mult
+            if speed <= 0.0:
+                worker.chop_duration_ms = gather_state["duration_ms"]
+            else:
+                worker.chop_duration_ms = max(1, int(round(gather_state["duration_ms"] / speed)))
+            return
+
+        if worker.state == gather_state["work_state"]:
+            if now_ms - worker.chop_started_ms < worker.chop_duration_ms:
+                return
+            target_tile = worker.target_tree
+            if target_tile is not None:
+                if gather_state["world_query"] == "tree":
+                    world.remove_tree(*target_tile)
+                else:
+                    world.harvest_stone(*target_tile)
+            worker.carrying = gather_state["carry_resource"]
+            if not self._start_return_to_camp(worker, now_ms):
+                worker.state = "depositing"
+            return
+
+        if worker.state == "arrived_camp":
+            self._park_worker_inside_camp(worker, camp)
+            worker.state = "depositing"
+            return
+
+        if worker.state == "depositing":
+            if worker.carrying == gather_state["carry_resource"]:
+                if hasattr(camp, "add_to_storage"):
+                    camp.add_to_storage(1)
+                town_hall = self._primary_town_hall()
+                if town_hall is not None:
+                    self.enqueue_transport_task(
+                        resource=gather_state["carry_resource"],
+                        source=camp,
+                        target=town_hall,
+                        amount=1,
+                    )
+                if hasattr(camp, gather_state["record_method"]):
+                    record_method = getattr(camp, gather_state["record_method"])
+                    record_method(1)
+            worker.carrying = None
+            worker.target_tree = None
+            worker.chop_started_ms = 0
+            worker.chop_duration_ms = CHOP_DURATION_MS
+            self._park_worker_inside_camp(worker, camp)
+            worker.camp_wait_until_ms = now_ms + gather_state["rest_ms"]
+            return
 
     def _primary_town_hall(self) -> TownHall | None:
         if self._registry is None:

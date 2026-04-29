@@ -66,6 +66,7 @@ def main() -> int:
                     (min_x + origin_x, min_y + origin_y, max_x + origin_x, max_y + origin_y),
                 )
 
+            world.update(now_ms)
             worker_manager.update(now_ms)
 
             screen.fill((20, 24, 22))

@@ -251,6 +251,10 @@ class World:
         self._trees[tile] = planted
         return planted
 
+    def update(self, now_ms: int) -> None:
+        """Advance world state for this frame (e.g. tree growth)."""
+        self.update_tree_growth(now_ms=now_ms)
+
     def update_tree_growth(self, *, now_ms: int) -> None:
         """Advance all alive trees with growth timers based on ``now_ms``."""
         for tree in self._trees.values():

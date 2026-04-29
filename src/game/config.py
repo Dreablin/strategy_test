@@ -4,7 +4,26 @@ from __future__ import annotations
 
 import json
 from copy import deepcopy
+from dataclasses import dataclass
 from pathlib import Path
+
+_RESOURCE_KEYS: tuple[str, ...] = ("wheat", "wood", "stone", "iron", "boards")
+
+
+@dataclass(frozen=True, slots=True)
+class ConstructionSpec:
+    cost: dict[str, int]
+    build_time_ms: int
+
+
+def _scaled_levels(base_cost: dict[str, int], base_time_ms: int) -> dict[str, dict]:
+    levels: dict[str, dict] = {}
+    for level in range(1, 11):
+        multiplier = 1.0 + (level - 1) * 0.2
+        cost = {k: int(round(v * multiplier)) for k, v in base_cost.items()}
+        levels[str(level)] = {"cost": cost, "build_time_ms": int(round(base_time_ms * multiplier))}
+    return levels
+
 
 _DEFAULT_SETTINGS: dict = {
     "timing": {"tick_ms": 10_000, "worker_tile_travel_ms": 3_000},
@@ -17,6 +36,15 @@ _DEFAULT_SETTINGS: dict = {
     "window": {"size": [1280, 720]},
     "warehouse_bootstrap": {
         "town_hall": {"wheat": 200, "wood": 200, "stone": 0, "iron": 0, "boards": 0},
+    },
+    "construction": {
+        "LUMBER_CAMP": {"levels": _scaled_levels({"wood": 12, "stone": 4}, 30_000)},
+        "STONE_MINE": {"levels": _scaled_levels({"wood": 10, "stone": 8}, 34_000)},
+        "IRON_MINE": {"levels": _scaled_levels({"wood": 10, "stone": 10, "iron": 2}, 38_000)},
+        "FARM": {"levels": _scaled_levels({"wood": 8, "stone": 3, "wheat": 2}, 26_000)},
+        "FORESTER_HUT": {"levels": _scaled_levels({"wood": 9, "stone": 3}, 28_000)},
+        "SCHOOL": {"levels": _scaled_levels({"wood": 14, "stone": 8, "boards": 4}, 40_000)},
+        "HOUSE": {"levels": _scaled_levels({"wood": 12, "stone": 6, "boards": 2}, 36_000)},
     },
     "gates": {
         "building_min_town_hall_level": {
@@ -99,3 +127,36 @@ TOWN_HALL_MIN_LEVEL_FOR_BUILDING = {
 TOWN_HALL_MIN_LEVEL_FOR_HIRE = {
     k: int(v) for k, v in SETTINGS["gates"]["hire_min_town_hall_level"].items()
 }
+
+
+def _load_construction_requirements() -> dict[str, dict[int, ConstructionSpec]]:
+    raw = SETTINGS.get("construction", {})
+    result: dict[str, dict[int, ConstructionSpec]] = {}
+    if not isinstance(raw, dict):
+        return result
+    for b_type, payload in raw.items():
+        if not isinstance(payload, dict):
+            continue
+        raw_levels = payload.get("levels", {})
+        if not isinstance(raw_levels, dict):
+            continue
+        by_level: dict[int, ConstructionSpec] = {}
+        for level_key, level_payload in raw_levels.items():
+            if not isinstance(level_payload, dict):
+                continue
+            cost_raw = level_payload.get("cost", {})
+            if not isinstance(cost_raw, dict):
+                continue
+            cost = {
+                str(name).lower(): max(0, int(amount))
+                for name, amount in cost_raw.items()
+                if str(name).lower() in _RESOURCE_KEYS
+            }
+            build_time_ms = max(1, int(level_payload.get("build_time_ms", 1)))
+            by_level[int(level_key)] = ConstructionSpec(cost=cost, build_time_ms=build_time_ms)
+        if by_level:
+            result[str(b_type)] = by_level
+    return result
+
+
+CONSTRUCTION_REQUIREMENTS: dict[str, dict[int, ConstructionSpec]] = _load_construction_requirements()

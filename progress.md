@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 19 — Construction System (queued)
-- **Next Task:** T201 — add ConstructionPanel UI for under-construction buildings
-- **Last Completed:** T200 — redirect oversupplied construction deliveries to Town Hall at unload time
-- **Total Progress:** 200 / 209 (Phase 19: 16 / 25 tasks done)
+- **Next Task:** T202 — wire ConstructionPanel into input panel routing
+- **Last Completed:** T201 — add dedicated under-construction panel (requirements, builder status, progress, close only)
+- **Total Progress:** 201 / 209 (Phase 19: 17 / 25 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -151,7 +151,7 @@
 
 ### 19.8 UI — Construction panel
 
-- [ ] **T201**: Create `src/game/ui/construction_panel.py` with `ConstructionPanel` class. When a building with `is_under_construction` is clicked, show a **construction-specific panel** instead of the normal building panel. Panel contents: building name + "Under Construction" (or "Upgrading to Lv N"), resource requirements list (icon + delivered/required for each resource), builder status ("Waiting for resources" / "Waiting for builder" / "Building..."), progress bar (yellow, 0–100%) during active building, Close [×] button, **no** Upgrade/Demolish buttons while under construction. Write headless layout/draw tests.
+- [x] **T201**: Create `src/game/ui/construction_panel.py` with `ConstructionPanel` class. When a building with `is_under_construction` is clicked, show a **construction-specific panel** instead of the normal building panel. Panel contents: building name + "Under Construction" (or "Upgrading to Lv N"), resource requirements list (icon + delivered/required for each resource), builder status ("Waiting for resources" / "Waiting for builder" / "Building..."), progress bar (yellow, 0–100%) during active building, Close [×] button, **no** Upgrade/Demolish buttons while under construction. Write headless layout/draw tests.
 
 - [ ] **T202**: Wire `ConstructionPanel` into `GameInput.draw_panel()` and `_handle_map_left_click()`. When `self._panel.is_under_construction`, delegate to `ConstructionPanel` instead of the normal panel dispatcher. The construction panel only supports `close` click action. Write tests: click on under-construction building → construction panel shown; click close → panel closes.
 

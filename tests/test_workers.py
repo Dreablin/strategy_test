@@ -5,13 +5,20 @@ from game.buildings.iron_mine import IronMine
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.registry import BuildingRegistry
 from game.buildings.school import School
+from game.buildings.stone_mine import StoneMine
 from game.buildings.town_hall import TownHall
 from game.characteristics import Characteristics
 from game.config import near_town_hall_tile, town_hall_origin_tile
 from game.construction import ConstructionSite
 from game.trees import Tree, TreeStage
 from game.world import World
-from game.workers import Worker, WorkerManager, building_center_tile, town_hall_spawn_tile
+from game.workers import (
+    Worker,
+    WorkerManager,
+    building_center_tile,
+    construction_transport_tasks,
+    town_hall_spawn_tile,
+)
 
 
 def test_building_center_tile_for_2x2() -> None:
@@ -713,6 +720,55 @@ def test_carrier_waits_2s_inside_buildings_on_pickup_and_dropoff() -> None:
     tx, ty = town_hall.grid_pos  # type: ignore[misc]
     tw, th = type(town_hall).footprint
     assert carrier.current_tile == (tx + tw // 2, ty + th)
+
+
+def test_construction_transport_tasks_generate_high_priority_from_town_hall_warehouse() -> None:
+    world = World(world_seed=0)
+    registry = BuildingRegistry(world)
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    camp = registry.place(LumberCamp, near_town_hall_tile(8, 8))
+    camp.construction_site = ConstructionSite(
+        required_resources={"wood": 3, "stone": 2},
+        delivered_resources={"wood": 1},
+        build_time_ms=10_000,
+        build_started_ms=None,
+        builder=None,
+        target_level=1,
+    )
+    town_hall.add_to_warehouse("wood", 2)
+    town_hall.add_to_warehouse("stone", 1)
+
+    tasks = construction_transport_tasks(registry)
+
+    assert len(tasks) == 3
+    assert all(t.source is town_hall for t in tasks)
+    assert all(t.target is camp for t in tasks)
+    assert all(t.priority == 10 for t in tasks)
+    assert sum(1 for t in tasks if t.resource == "wood") == 2
+    assert sum(1 for t in tasks if t.resource == "stone") == 1
+
+
+def test_construction_transport_tasks_ignore_non_construction_buildings() -> None:
+    world = World(world_seed=0)
+    registry = BuildingRegistry(world)
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    camp = registry.place(LumberCamp, near_town_hall_tile(8, 8))
+    mine = registry.place(StoneMine, near_town_hall_tile(12, 8))
+    camp.construction_site = None
+    mine.construction_site = ConstructionSite(
+        required_resources={"stone": 1},
+        delivered_resources={},
+        build_time_ms=10_000,
+        build_started_ms=None,
+        builder=None,
+        target_level=1,
+    )
+    town_hall.add_to_warehouse("stone", 1)
+
+    tasks = construction_transport_tasks(registry)
+
+    assert len(tasks) == 1
+    assert tasks[0].target is mine
 
 
 def test_hire_stonecutter_requires_town_hall_level_3() -> None:

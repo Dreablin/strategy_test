@@ -40,6 +40,37 @@ class TransportTask:
     resource: str
     source: Building
     target: Building
+    priority: int = 0
+
+
+def construction_transport_tasks(registry: Any) -> list[TransportTask]:
+    """Build high-priority transport tasks from Town Hall to construction sites."""
+    if registry is None:
+        return []
+    buildings = list(registry.all())
+    town_hall = next((b for b in buildings if b.type_tag == "TOWN_HALL"), None)
+    if town_hall is None or not hasattr(town_hall, "warehouse_amount"):
+        return []
+    tasks: list[TransportTask] = []
+    for building in buildings:
+        if not getattr(building, "is_under_construction", False):
+            continue
+        site = getattr(building, "construction_site", None)
+        if site is None:
+            continue
+        for resource, need in site.remaining_resources().items():
+            available = int(town_hall.warehouse_amount(resource))
+            count = min(int(need), max(0, available))
+            for _ in range(count):
+                tasks.append(
+                    TransportTask(
+                        resource=str(resource),
+                        source=town_hall,
+                        target=building,
+                        priority=10,
+                    )
+                )
+    return tasks
 
 
 def building_center_tile(building: Building) -> tuple[int, int]:
@@ -239,10 +270,25 @@ class WorkerManager:
     def workers(self) -> tuple[Worker, ...]:
         return tuple(self._workers)
 
-    def enqueue_transport_task(self, *, resource: str, source: Building, target: Building, amount: int = 1) -> None:
+    def enqueue_transport_task(
+        self,
+        *,
+        resource: str,
+        source: Building,
+        target: Building,
+        amount: int = 1,
+        priority: int = 0,
+    ) -> None:
         n = max(0, int(amount))
         for _ in range(n):
-            self._transport_queue.append(TransportTask(resource=str(resource), source=source, target=target))
+            self._transport_queue.append(
+                TransportTask(
+                    resource=str(resource),
+                    source=source,
+                    target=target,
+                    priority=int(priority),
+                )
+            )
 
     def idle(self) -> list[Worker]:
         """Idle workers (PRD ``WorkerManager.idle``)."""

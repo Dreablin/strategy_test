@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 19 — Construction System (queued)
-- **Next Task:** T195 — add high-priority construction transport task generation
-- **Last Completed:** T194 — demolition abort handling for builder en route/inside site with site refs cleared
-- **Total Progress:** 194 / 209 (Phase 19: 10 / 25 tasks done)
+- **Next Task:** T196 — prioritize transport queue by task priority
+- **Last Completed:** T195 — add construction transport task generation + `TransportTask.priority`
+- **Total Progress:** 195 / 209 (Phase 19: 11 / 25 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -135,7 +135,7 @@
 
 ### 19.6 Transport priority — construction site delivery
 
-- [ ] **T195**: Add `construction_transport_tasks(registry) -> list[TransportTask]` function in `construction.py` (or `workers.py`). Scan all buildings with `is_under_construction`, compute `remaining_resources()`, generate transport tasks from **Town Hall warehouse** to the construction site. These tasks should be distinguishable as **high priority**. Add `priority: int` field to `TransportTask` (default 0, construction = 10). Write tests.
+- [x] **T195**: Add `construction_transport_tasks(registry) -> list[TransportTask]` function in `construction.py` (or `workers.py`). Scan all buildings with `is_under_construction`, compute `remaining_resources()`, generate transport tasks from **Town Hall warehouse** to the construction site. These tasks should be distinguishable as **high priority**. Add `priority: int` field to `TransportTask` (default 0, construction = 10). Write tests.
 
 - [ ] **T196**: Modify `WorkerManager._next_transport_task()` to sort by priority descending before picking the next task. High-priority construction tasks are served before normal warehouse-delivery tasks. Write tests: when both normal and construction tasks exist, carriers pick construction tasks first.
 

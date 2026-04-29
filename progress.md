@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 19 — Construction System (queued)
-- **Next Task:** T208 — add Phase 19 integration smoke test
-- **Last Completed:** T207 — full regression sweep passed for construction-site compatibility
-- **Total Progress:** 207 / 209 (Phase 19: 23 / 25 tasks done)
+- **Next Task:** T209 — final verification, closeout, and completion signal
+- **Last Completed:** T208 — add Phase 19 end-to-end integration smoke test
+- **Total Progress:** 208 / 209 (Phase 19: 24 / 25 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -171,7 +171,7 @@
 
 - [x] **T207**: Regression sweep: ensure all existing tests still pass with the new `construction_site` slot on `Building`. Buildings that skip construction (TOWN_HALL) must continue to work instantly. Existing placement/demolish/upgrade tests must not break. Fix any failures. Run full `pytest -q` + `ruff check src tests`.
 
-- [ ] **T208**: Integration smoke test (`tests/test_smoke_phase19.py`): end-to-end scenario — place a LUMBER_CAMP (enters construction) → carrier delivers wood+stone from warehouse → builder walks to site → building completes → lumberjack auto-assigns → chops tree → deposits → upgrade lumber camp to level 2 → construction starts → carrier delivers → builder builds → upgrade completes → lumberjack resumes. Minimal time-advancing headless test.
+- [x] **T208**: Integration smoke test (`tests/test_smoke_phase19.py`): end-to-end scenario — place a LUMBER_CAMP (enters construction) → carrier delivers wood+stone from warehouse → builder walks to site → building completes → lumberjack auto-assigns → chops tree → deposits → upgrade lumber camp to level 2 → construction starts → carrier delivers → builder builds → upgrade completes → lumberjack resumes. Minimal time-advancing headless test.
 
 - [ ] **T209**: Full `pytest -q` + `ruff check src tests`; update Decisions Log; mark all Phase 19 tasks `[x]`; emit `<promise>ALL_TASKS_COMPLETE</promise>`; create `.cursor/ralph/done`.
 
@@ -222,6 +222,7 @@
 | 2026-04-29 | T205 | Upgrade construction now pauses production by forcing `active=False` for toggle-capable buildings and parks assigned workers at building center in `"resting"` state. `complete_construction` restores `active=True` after completion and resumes parked workers as `"working"`. Added regression tests in `tests/test_registry.py` and `tests/test_construction.py`. | Enforces non-productive upgrade state machine and proper worker/building reactivation on completion. |
 | 2026-04-29 | T206 | Updated status helpers so construction panels show deterministic state: `worker_status_for_building` returns `"resting"` when a worker is assigned to an under-construction building, else `"empty"`; `production_status_for_building` returns `"Under construction"` whenever `building.is_under_construction`. Added tests in `tests/test_workers.py` and adjusted non-construction status tests to clear default construction sites in setup. | Aligns panel status text with Phase-19 construction flow without regressing legacy non-construction worker-state assertions. |
 | 2026-04-29 | T207 | Ran full regression sweep (`pytest -q`, `ruff check src tests`) after construction-site integration updates; fixed legacy status tests by explicitly clearing default `construction_site` in non-construction scenarios (workers/forester fixtures). | Confirms backward compatibility of placement/demolish/upgrade/status behavior while preserving new construction defaults. |
+| 2026-04-29 | T208 | Added `tests/test_smoke_phase19.py` integration smoke covering full construction lifecycle: initial LumberCamp construction (carrier+builder), post-build lumberjack assignment and chop/deposit activity, upgrade-to-level-2 construction, and post-upgrade worker resume. Verified with full `pytest -q` + `ruff check src tests`. | Provides end-to-end guardrail for Phase-19 runtime interactions across registry, worker AI, transport, construction completion, and upgrade flow. |
 
 ## Issues & Blockers
 

@@ -88,7 +88,7 @@
 
 - [x] **T177**: Runtime migration — route producer deposits and carrier deliveries to `TownHall.warehouse` only; remove fallback paths and direct global `resources.add(...)` writes.
 - [x] **T178**: API migration — remove `ResourceManager` dependencies from `main/input/ui panels/placement/registry/workers` signatures and wiring.
-- [ ] **T179**: Test migration — replace `ResourceManager` fixtures/usages with warehouse-centric setup and assertions; delete `tests/test_resources.py`.
+- [~] **T179**: Test migration — replace `ResourceManager` fixtures/usages with warehouse-centric setup and assertions; delete `tests/test_resources.py`.
 - [ ] **T180**: Cleanup + verification — delete `src/game/resources.py`, scrub PRD references, run full `pytest -q` + `ruff check src tests`.
 - [ ] **T181**: Food/Wheat normalization cleanup — remove legacy alias flow (`food` ↔ `wheat`) from assets/panels/warehouse APIs; converge on one canonical key and update labels/tests.
 - [ ] **T182**: Remove per-cycle remnants — delete dead `per_cycle` / `sync_resources_per_cycle` logic and related tests/docs that describe legacy cycle totals.

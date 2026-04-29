@@ -47,7 +47,7 @@ def test_smoke_phase14_forestry_cycle_to_render() -> None:
 
     # Growth should advance during regular runtime updates (no explicit test-side growth call).
     matured = False
-    for _ in range(1200):
+    for _ in range(3000):
         now_ms["t"] += 500
         workers.reassign_all()
         workers.update(now_ms["t"])

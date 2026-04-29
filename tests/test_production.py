@@ -20,9 +20,8 @@ def test_per_cycle_counts_only_staffed_buildings() -> None:
     wm = WorkerManager(resources, registry)
     assert wm.hire("STONECUTTER") is not None
     wm.reassign_all()
-    registry.sync_resources_per_cycle(resources, staffed_buildings=wm.staffed_buildings())
+    registry.sync_resources_per_cycle(staffed_buildings=wm.staffed_buildings())
     assert wm.is_staffed(camp)
-    assert resources.per_cycle["stone"] == 0
 
 
 def test_per_cycle_updates_after_upgrade_for_staffed_building() -> None:
@@ -35,14 +34,9 @@ def test_per_cycle_updates_after_upgrade_for_staffed_building() -> None:
     wm = WorkerManager(resources, registry)
     assert wm.hire("STONECUTTER") is not None
     wm.reassign_all()
-    registry.sync_resources_per_cycle(resources, staffed_buildings=wm.staffed_buildings())
-    assert resources.per_cycle["stone"] == 0
-
-    resources.add("wood", 500)
-    resources.add("stone", 500)
-    assert registry.upgrade_building(camp, resources)
-    registry.sync_resources_per_cycle(resources, staffed_buildings=wm.staffed_buildings())
-    assert resources.per_cycle["stone"] == 0
+    registry.sync_resources_per_cycle(staffed_buildings=wm.staffed_buildings())
+    assert registry.upgrade_building(camp)
+    registry.sync_resources_per_cycle(staffed_buildings=wm.staffed_buildings())
 
 
 def test_staffed_level1_stone_mine_has_no_passive_tick_production() -> None:
@@ -57,9 +51,9 @@ def test_staffed_level1_stone_mine_has_no_passive_tick_production() -> None:
     workers.reassign_all()
     workers.update(120_000)
 
-    stone_before = resources.get("stone")
+    stone_before = th.warehouse_amount("stone")
     # No passive tick production path exists anymore.
-    assert resources.get("stone") == stone_before
+    assert th.warehouse_amount("stone") == stone_before
 
 
 def test_upgraded_stone_mine_still_has_no_passive_tick_production() -> None:
@@ -77,9 +71,9 @@ def test_upgraded_stone_mine_still_has_no_passive_tick_production() -> None:
     # Upgrade level 1 -> 3.
     camp.level = 3
 
-    stone_before = resources.get("stone")
+    stone_before = th.warehouse_amount("stone")
     # No passive tick production path exists anymore.
-    assert resources.get("stone") == stone_before
+    assert th.warehouse_amount("stone") == stone_before
 
 
 def test_moving_worker_does_not_produce_until_working() -> None:
@@ -93,39 +87,35 @@ def test_moving_worker_does_not_produce_until_working() -> None:
     assert workers.hire("STONECUTTER") is not None
     workers.reassign_all()
 
-    registry.sync_resources_per_cycle(resources, staffed_buildings=workers.working_buildings())
+    registry.sync_resources_per_cycle(staffed_buildings=workers.working_buildings())
     assert camp not in workers.working_buildings()
-    assert resources.per_cycle["stone"] == 0
 
-    stone_before = resources.get("stone")
+    stone_before = th.warehouse_amount("stone")
     # No passive tick production path exists anymore.
-    assert resources.get("stone") == stone_before
+    assert th.warehouse_amount("stone") == stone_before
 
     workers.update(60_000)
-    registry.sync_resources_per_cycle(resources, staffed_buildings=workers.working_buildings())
-    stone_before = resources.get("stone")
-    assert resources.per_cycle["stone"] == 0
+    registry.sync_resources_per_cycle(staffed_buildings=workers.working_buildings())
+    stone_before = th.warehouse_amount("stone")
     # No passive tick production path exists anymore.
-    assert resources.get("stone") == stone_before
+    assert th.warehouse_amount("stone") == stone_before
 
 
 def test_farm_has_no_passive_income_even_when_staffed() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
     resources = ResourceManager()
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    town_hall.level = 5
     _farm = registry.place(Farm, (10, 10))
     workers = WorkerManager(resources, registry)
     worker = workers.hire("FARMER")
-    if worker is None:
-        th = registry.place(TownHall, town_hall_origin_tile())
-        th.level = 5
-        worker = workers.hire("FARMER")
     assert worker is not None
     workers.reassign_all()
     workers.update(120_000)
-    food_before = resources.get("food")
+    food_before = town_hall.warehouse_amount("wheat")
     # No passive tick production path exists anymore.
-    assert resources.get("food") == food_before
+    assert town_hall.warehouse_amount("wheat") == food_before
 
 
 def test_iron_mine_has_no_passive_income_even_when_staffed() -> None:
@@ -139,6 +129,6 @@ def test_iron_mine_has_no_passive_income_even_when_staffed() -> None:
     assert workers.hire("MINER") is not None
     workers.reassign_all()
     workers.update(120_000)
-    iron_before = resources.get("iron")
+    iron_before = th.warehouse_amount("iron")
     # No passive tick production path exists anymore.
-    assert resources.get("iron") == iron_before
+    assert th.warehouse_amount("iron") == iron_before

@@ -606,6 +606,7 @@ class WorkerManager:
     def update(self, now_ms: int) -> None:
         """Advance worker movement interpolation/state for this frame."""
         world = getattr(self._registry, "_world", None) if self._registry is not None else None
+        self._enqueue_construction_transport_tasks()
         completed_buildings: list[Building] = []
         completed_site_builders: dict[int, Worker] = {}
         for worker in self._workers:
@@ -747,9 +748,13 @@ class WorkerManager:
         for idx, task in enumerate(self._transport_queue):
             if task.source not in known or task.target not in known:
                 continue
-            if not hasattr(task.source, "stored"):
-                continue
-            if int(getattr(task.source, "stored", 0)) <= 0:
+            has_storage_source = hasattr(task.source, "stored") and int(
+                getattr(task.source, "stored", 0)
+            ) > 0
+            has_warehouse_source = hasattr(task.source, "warehouse_amount") and int(
+                task.source.warehouse_amount(task.resource)  # type: ignore[attr-defined]
+            ) > 0
+            if not has_storage_source and not has_warehouse_source:
                 continue
             eligible.append((idx, task))
         if not eligible:
@@ -814,21 +819,35 @@ class WorkerManager:
                 worker.idle = True
                 return
             if not hasattr(task.source, "take_from_storage"):
-                worker.transport_task = None
-                worker.state = "idle"
-                worker.idle = True
-                return
-            try:
-                task.source.take_from_storage(1)  # type: ignore[attr-defined]
-            except ValueError:
-                worker.transport_task = None
-                worker.state = "idle"
-                worker.idle = True
-                return
+                if not hasattr(task.source, "take_from_warehouse"):
+                    worker.transport_task = None
+                    worker.state = "idle"
+                    worker.idle = True
+                    return
+                try:
+                    task.source.take_from_warehouse(task.resource, 1)  # type: ignore[attr-defined]
+                except ValueError:
+                    worker.transport_task = None
+                    worker.state = "idle"
+                    worker.idle = True
+                    return
+            else:
+                try:
+                    task.source.take_from_storage(1)  # type: ignore[attr-defined]
+                except ValueError:
+                    worker.transport_task = None
+                    worker.state = "idle"
+                    worker.idle = True
+                    return
             worker.carrying = task.resource
+            if isinstance(task.source, TownHall):
+                # Town Hall center can trap pathfinding because it is fully enclosed by occupied tiles.
+                self._move_worker_to_building_approach(worker, task.source)
             if not self._start_move_to_building(worker, task.target, now_ms):
                 if hasattr(task.source, "add_to_storage"):
                     task.source.add_to_storage(1)  # type: ignore[attr-defined]
+                elif hasattr(task.source, "add_to_warehouse"):
+                    task.source.add_to_warehouse(task.resource, 1)  # type: ignore[attr-defined]
                 worker.carrying = None
                 self._transport_queue.insert(0, task)
                 worker.transport_task = None
@@ -843,13 +862,48 @@ class WorkerManager:
             return
         if now_ms < worker.camp_wait_until_ms:
             return
-        if hasattr(task.target, "add_to_warehouse"):
+        if task.target.is_under_construction and task.target.construction_site is not None:
+            task.target.construction_site.deliver_resource(task.resource, 1)
+        elif hasattr(task.target, "add_to_warehouse"):
             task.target.add_to_warehouse(task.resource, 1)  # type: ignore[attr-defined]
         self._move_worker_to_building_approach(worker, task.target)
         worker.carrying = None
         worker.transport_task = None
         worker.state = "idle"
         worker.idle = True
+
+    def _enqueue_construction_transport_tasks(self) -> None:
+        if self._registry is None:
+            return
+        desired = construction_transport_tasks(self._registry)
+        desired_counts: dict[tuple[int, int, str, int], int] = {}
+        for task in desired:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            desired_counts[key] = desired_counts.get(key, 0) + 1
+
+        existing_counts: dict[tuple[int, int, str, int], int] = {}
+        for task in self._transport_queue:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+        for worker in self._workers:
+            task = worker.transport_task
+            if task is None:
+                continue
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+
+        for task in desired:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            if existing_counts.get(key, 0) >= desired_counts.get(key, 0):
+                continue
+            self.enqueue_transport_task(
+                resource=task.resource,
+                source=task.source,
+                target=task.target,
+                amount=1,
+                priority=task.priority,
+            )
+            existing_counts[key] = existing_counts.get(key, 0) + 1
 
     def _update_forester(self, worker: Worker, now_ms: int, world: Any) -> None:
         if world is None:

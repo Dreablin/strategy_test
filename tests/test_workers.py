@@ -790,6 +790,62 @@ def test_next_transport_task_picks_highest_priority_available_task_first() -> No
     assert picked.priority == 10
 
 
+def test_update_auto_enqueues_construction_tasks_from_town_hall() -> None:
+    world = World(world_seed=0)
+    registry = BuildingRegistry(world)
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    camp = registry.place(LumberCamp, near_town_hall_tile(8, 8))
+    camp.construction_site = ConstructionSite(
+        required_resources={"wood": 1},
+        delivered_resources={},
+        build_time_ms=10_000,
+        build_started_ms=None,
+        builder=None,
+        target_level=1,
+    )
+    town_hall.add_to_warehouse("wood", 1)
+    wm = WorkerManager(registry)
+
+    wm.update(0)
+    picked = wm._next_transport_task()
+
+    assert picked is not None
+    assert picked.source is town_hall
+    assert picked.target is camp
+    assert picked.resource == "wood"
+    assert picked.priority == 10
+
+
+def test_carrier_delivery_to_construction_site_increments_delivered_resources() -> None:
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    camp = registry.place(LumberCamp, near_town_hall_tile(8, 8))
+    camp.construction_site = ConstructionSite(
+        required_resources={"wood": 1},
+        delivered_resources={},
+        build_time_ms=10_000,
+        build_started_ms=None,
+        builder=None,
+        target_level=1,
+    )
+    town_hall.add_to_warehouse("wood", 1)
+    wm = WorkerManager(registry, now_ms_fn=lambda: 0)
+    carrier = wm.hire("CARRIER")
+    assert carrier is not None
+
+    for now_ms in range(0, 120_000, 500):
+        wm.update(now_ms)
+        site = camp.construction_site
+        if site is not None and int(site.delivered_resources.get("wood", 0)) >= 1:
+            break
+
+    site = camp.construction_site
+    assert site is not None
+    assert int(site.delivered_resources.get("wood", 0)) == 1
+    assert site.is_fully_supplied()
+
+
 def test_hire_stonecutter_requires_town_hall_level_3() -> None:
     world = World(world_seed=0)
     registry = BuildingRegistry(world)

@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 19 — Construction System (queued)
-- **Next Task:** T197 — auto-enqueue and deliver construction transport tasks
-- **Last Completed:** T196 — pick highest-priority eligible transport task first
-- **Total Progress:** 196 / 209 (Phase 19: 12 / 25 tasks done)
+- **Next Task:** T198 — keep construction tasks queued when source stock is unavailable
+- **Last Completed:** T197 — auto-enqueue construction tasks + carrier delivery into site resources
+- **Total Progress:** 197 / 209 (Phase 19: 13 / 25 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -139,7 +139,7 @@
 
 - [x] **T196**: Modify `WorkerManager._next_transport_task()` to sort by priority descending before picking the next task. High-priority construction tasks are served before normal warehouse-delivery tasks. Write tests: when both normal and construction tasks exist, carriers pick construction tasks first.
 
-- [ ] **T197**: Generate construction transport tasks automatically: when a building becomes `is_under_construction` (place or upgrade), enqueue the needed resources as high-priority transport tasks sourced from Town Hall warehouse. When a resource is delivered (carrier unloads at construction site), call `construction_site.deliver_resource(resource, 1)`. Write tests: place building → transport tasks created → carrier delivers → `delivered_resources` incremented → `is_fully_supplied()` eventually becomes True.
+- [x] **T197**: Generate construction transport tasks automatically: when a building becomes `is_under_construction` (place or upgrade), enqueue the needed resources as high-priority transport tasks sourced from Town Hall warehouse. When a resource is delivered (carrier unloads at construction site), call `construction_site.deliver_resource(resource, 1)`. Write tests: place building → transport tasks created → carrier delivers → `delivered_resources` incremented → `is_fully_supplied()` eventually becomes True.
 
 - [ ] **T198**: Handle "resource not available" scenario. Modify carrier logic: when a carrier picks up a construction transport task but the Town Hall warehouse has no stock of the required resource, skip it (don't discard — leave in queue) and try the next task. The task stays in the queue until the resource becomes available. Write tests: construction needs `stone: 5`, warehouse has 0 → carrier does not pick up stone task → stone is produced → carrier picks up.
 

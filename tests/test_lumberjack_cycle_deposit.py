@@ -18,6 +18,7 @@ def _setup_single_cycle():
     town_hall = registry.place(TownHall, town_hall_origin_tile())
     town_hall.level = 3
     camp = registry.place(LumberCamp, near_town_hall_tile())
+    camp.construction_site = None
     gx, gy = camp.grid_pos  # type: ignore[assignment]
     world._trees[(gx + 3, gy)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
     world._trees[(gx + 4, gy)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
@@ -88,10 +89,12 @@ def test_two_camps_track_deliveries_independently() -> None:
     town_hall = registry.place(TownHall, town_hall_origin_tile())
     town_hall.level = 3
     camp_a = registry.place(LumberCamp, near_town_hall_tile())
+    camp_a.construction_site = None
     ax, ay = camp_a.grid_pos  # type: ignore[assignment]
     world._trees[(ax + 3, ay)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
     world._trees[(ax + 4, ay)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
     camp_b = registry.place(LumberCamp, near_town_hall_tile(18, 2))
+    camp_b.construction_site = None
     bx, by = camp_b.grid_pos  # type: ignore[assignment]
     world._trees[(bx + 3, by)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
     world._trees[(bx + 4, by)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001

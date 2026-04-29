@@ -106,9 +106,9 @@ def test_farm_has_no_passive_income_even_when_staffed() -> None:
     assert worker is not None
     workers.reassign_all()
     workers.update(120_000)
-    food_before = town_hall.warehouse_amount("wheat")
+    wheat_before = town_hall.warehouse_amount("wheat")
     # No passive tick production path exists anymore.
-    assert town_hall.warehouse_amount("wheat") == food_before
+    assert town_hall.warehouse_amount("wheat") == wheat_before
 
 
 def test_iron_mine_has_no_passive_income_even_when_staffed() -> None:

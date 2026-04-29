@@ -135,7 +135,7 @@ def test_lumberjack_worker_dot_cache_invalidation_by_mtime(tmp_path, monkeypatch
 
 
 def test_resource_icon_smoke() -> None:
-    for name in ("food", "wood", "stone", "iron"):
+    for name in ("wheat", "wood", "stone", "iron"):
         _assert_nonempty_surface(resource_icon(name))
 
 

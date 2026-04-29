@@ -10,7 +10,7 @@ def test_config_constants_match_spec() -> None:
     assert config.GRID_SIZE == 110
     assert config.GATHER_RESOURCE_SEARCH_RADIUS == 20
     assert config.INITIAL_RESOURCES == {
-        "food": 200,
+        "wheat": 200,
         "wood": 200,
         "stone": 0,
         "iron": 0,

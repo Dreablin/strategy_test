@@ -20,10 +20,7 @@ class TownHall(Building):
 
     @staticmethod
     def _normalize_resource(resource: str) -> str:
-        key = str(resource).lower()
-        if key == "food":
-            return "wheat"
-        return key
+        return str(resource).lower()
 
     def warehouse_amount(self, resource: str) -> int:
         key = self._normalize_resource(resource)

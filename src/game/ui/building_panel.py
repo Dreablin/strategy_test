@@ -30,7 +30,7 @@ _DESCRIPTION: dict[str, str] = {
     "LUMBER_CAMP": "Lumberjack chops trees for wood.",
     "STONE_MINE": "Stonecutter quarries stone.",
     "IRON_MINE": "Miner digs for iron.",
-    "FARM": "Farmer grows food.",
+    "FARM": "Farmer grows wheat.",
     "FORESTER_HUT": "Forester plants new trees around the hut.",
 }
 

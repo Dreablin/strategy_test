@@ -14,7 +14,7 @@
   },
   "economy": {
     "initial_resources": {
-      "food": 200,
+      "wheat": 200,
       "wood": 200,
       "stone": 0,
       "iron": 0,

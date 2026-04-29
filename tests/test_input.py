@@ -223,7 +223,7 @@ def test_hire_from_second_school_spawns_near_second_school() -> None:
     assert hired.current_tile == (s2x + s2w // 2, s2y + s2h)
 
 
-def test_school_enqueue_does_not_consume_food_or_spawn_instantly() -> None:
+def test_school_enqueue_does_not_consume_wheat_or_spawn_instantly() -> None:
     surface = pygame.Surface((1280, 720))
     world = World(world_seed=2)
     registry = BuildingRegistry(world)

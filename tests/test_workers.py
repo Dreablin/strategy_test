@@ -51,7 +51,7 @@ def test_demolition_does_not_affect_other_workers() -> None:
     assert not w2.idle and w2.assigned_building is b
 
 
-def test_hire_deducts_50_food_and_returns_worker() -> None:
+def test_hire_is_free_and_returns_worker() -> None:
     world = World(world_seed=0)
     registry = BuildingRegistry(world)
     town_hall = registry.place(TownHall, town_hall_origin_tile())
@@ -144,7 +144,7 @@ def test_reassign_to_different_building_swaps_bonus_source() -> None:
     assert worker.characteristics.gather_speed_mult == 1.20
 
 
-def test_hire_no_longer_depends_on_food_wallet() -> None:
+def test_hire_does_not_consume_warehouse_wheat() -> None:
     world = World(world_seed=0)
     registry = BuildingRegistry(world)
     town_hall = registry.place(TownHall, town_hall_origin_tile())

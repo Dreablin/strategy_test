@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 18 — Remove ResourceManager globally
-- **Next Task:** T181 — Food/Wheat normalization cleanup (canonical warehouse key, labels, tests)
-- **Last Completed:** T180 — deleted `resources.py`; `WorkerManager`/main wiring; full pytest+ruff green
-- **Total Progress:** 180 / 184 (Phase 18: 4 / 8 tasks done)
+- **Next Task:** T182 — remove per-cycle / `sync_resources_per_cycle` remnants
+- **Last Completed:** T181 — canonical warehouse key `wheat`; removed `food` alias from TownHall, assets, settings
+- **Total Progress:** 181 / 184 (Phase 18: 5 / 8 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -90,7 +90,7 @@
 - [x] **T178**: API migration — remove `ResourceManager` dependencies from `main/input/ui panels/placement/registry/workers` signatures and wiring.
 - [x] **T179**: Test migration — replace `ResourceManager` fixtures/usages with warehouse-centric setup and assertions; delete `tests/test_resources.py`.
 - [x] **T180**: Cleanup + verification — delete `src/game/resources.py`, scrub PRD references, run full `pytest -q` + `ruff check src tests`.
-- [ ] **T181**: Food/Wheat normalization cleanup — remove legacy alias flow (`food` ↔ `wheat`) from assets/panels/warehouse APIs; converge on one canonical key and update labels/tests.
+- [x] **T181**: Food/Wheat normalization cleanup — remove legacy alias flow (`food` ↔ `wheat`) from assets/panels/warehouse APIs; converge on one canonical key and update labels/tests.
 - [ ] **T182**: Remove per-cycle remnants — delete dead `per_cycle` / `sync_resources_per_cycle` logic and related tests/docs that describe legacy cycle totals.
 - [ ] **T183**: Remove runtime fallback branches that still read from global resources (e.g., TownHallPanel `warehouse_amount` fallback path) once warehouse is the only source of truth.
 - [ ] **T184**: Config/domain final cleanup — remove `economy.initial_resources` from settings/config (or relocate to warehouse bootstrap config), and update all tests/docs expecting `INITIAL_RESOURCES`.
@@ -128,6 +128,7 @@
 | 2026-04-28 | T178 | Removed `ResourceManager` imports/type-coupling from runtime wiring (`main/input/ui panels/placement/registry/workers`) while keeping compatibility arguments where still used by tests. | Decouples runtime API surfaces from global resource manager before the dedicated test-side migration in T179. |
 | 2026-04-28 | T179 | Removed `tests/test_resources.py` and migrated multiple runtime-smoke/regression tests from wallet assertions (`resources.get`/`per_cycle`) to warehouse-centric checks (`TownHall.warehouse_amount`, delivered counters, storage paths). | Aligns test expectations with warehouse-as-source-of-truth before deleting `resources.py` in T180. |
 | 2026-04-28 | T180 | Removed `src/game/resources.py`; `WorkerManager` no longer takes `ResourceManager`; `main` wires `WorkerManager(registry, now_ms_fn=...)`; fixed `test_workers` `now_ms_fn` call to use `registry=None` keyword. **`PRD.md` not edited** (contract read-only). | Completes module deletion and verification; PRD text may still mention legacy resources until a future docs pass outside Ralph contract edits. |
+| 2026-04-28 | T181 | Canonical crop key is **`wheat`**: dropped TownHall `food`→`wheat` normalization; `assets._resource_colors` uses `wheat`; `economy.initial_resources` and defaults use `wheat` instead of `food`; UI copy and tests updated. **`PRD.md` not edited** (still lists legacy `food` in F-RES). | Single warehouse/settings vocabulary; PRD resource names are stale until allowed to be revised. |
 
 ## Issues & Blockers
 

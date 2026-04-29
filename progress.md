@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 19 — Construction System (queued)
-- **Next Task:** T206 — reflect construction/resting states in panel status helpers
-- **Last Completed:** T205 — pause production during upgrade construction and restore on completion
-- **Total Progress:** 205 / 209 (Phase 19: 21 / 25 tasks done)
+- **Next Task:** T207 — regression sweep for construction-site compatibility
+- **Last Completed:** T206 — report construction/resting statuses in worker + production helpers
+- **Total Progress:** 206 / 209 (Phase 19: 22 / 25 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -165,7 +165,7 @@
 
 - [x] **T205**: When a building enters upgrade-construction (`T189`), stop all production for that building: if building has `active` attribute, set `active = False` (will be restored on completion). The assigned worker (if any) should be parked inside the building with state `"resting"` — they stay assigned but do not gather/produce. On construction completion, restore `active = True` and set worker back to `"working"` state. Write tests: lumberjack is gathering → upgrade starts → lumberjack stops, state = "resting" → construction completes → lumberjack resumes.
 
-- [ ] **T206**: Ensure `worker_status_for_building` and `production_status_for_building` report construction states correctly. During construction: worker status = "resting" (if worker present) or "empty"; production status = "Under construction". Add the `"resting"` worker state handling in the status methods. Write tests.
+- [x] **T206**: Ensure `worker_status_for_building` and `production_status_for_building` report construction states correctly. During construction: worker status = "resting" (if worker present) or "empty"; production status = "Under construction". Add the `"resting"` worker state handling in the status methods. Write tests.
 
 ### 19.11 Regression, integration & phase close
 
@@ -220,6 +220,7 @@
 | 2026-04-29 | T203 | Added `building_sprite_construction(b_type, target_level)` to `assets.py` with disk-first lookup (`construction_<level>.png`, `construction.png`) and procedural scaffold fallback based on a semi-transparent normal building sprite. Added `tests/test_assets.py` coverage for level-specific disk preference and fallback behavior. | Provides deterministic construction-state art pipeline for upcoming renderer integration (T204). |
 | 2026-04-29 | T204 | Updated `Renderer.draw_buildings()` to choose `building_sprite_construction(type_tag, construction_site.target_level)` when `building.is_under_construction`, while completed buildings keep normal sprites; anchor selection uses the same effective level. Added renderer tests to assert construction-vs-normal sprite path selection. | Completes visual construction-state differentiation in world rendering and keeps existing render ordering/placement behavior intact. |
 | 2026-04-29 | T205 | Upgrade construction now pauses production by forcing `active=False` for toggle-capable buildings and parks assigned workers at building center in `"resting"` state. `complete_construction` restores `active=True` after completion and resumes parked workers as `"working"`. Added regression tests in `tests/test_registry.py` and `tests/test_construction.py`. | Enforces non-productive upgrade state machine and proper worker/building reactivation on completion. |
+| 2026-04-29 | T206 | Updated status helpers so construction panels show deterministic state: `worker_status_for_building` returns `"resting"` when a worker is assigned to an under-construction building, else `"empty"`; `production_status_for_building` returns `"Under construction"` whenever `building.is_under_construction`. Added tests in `tests/test_workers.py` and adjusted non-construction status tests to clear default construction sites in setup. | Aligns panel status text with Phase-19 construction flow without regressing legacy non-construction worker-state assertions. |
 
 ## Issues & Blockers
 

@@ -439,6 +439,7 @@ def test_worker_status_for_building_reports_on_the_way_then_assigned() -> None:
     registry = BuildingRegistry(world)
     registry.place(TownHall, town_hall_origin_tile())
     camp = registry.place(LumberCamp, near_town_hall_tile(8, 8))
+    camp.construction_site = None
     cx, cy = camp.grid_pos  # type: ignore[assignment]
     wm = WorkerManager(registry)
     w = Worker("LUMBERJACK", stand_tile=(cx - 4, cy))
@@ -458,6 +459,7 @@ def test_worker_status_for_building_reports_on_the_way_for_stonecutter_resource_
     th = registry.place(TownHall, town_hall_origin_tile())
     th.level = 3
     mine = registry.place(StoneMine, near_town_hall_tile(5, 5))
+    mine.construction_site = None
     mx, my = mine.grid_pos  # type: ignore[assignment]
     wm = WorkerManager(registry)
     w = Worker("STONECUTTER", stand_tile=(mx - 2, my))
@@ -498,6 +500,46 @@ def test_production_status_for_building_resting_and_gathering_states() -> None:
 
     w.state = "returning"
     assert wm.production_status_for_building(camp) == "On the way"
+
+
+def test_worker_status_for_under_construction_reports_resting_or_empty() -> None:
+    camp = LumberCamp(level=1, grid_pos=(10, 10))
+    camp.construction_site = ConstructionSite(
+        required_resources={"wood": 2},
+        delivered_resources={},
+        build_time_ms=10_000,
+        build_started_ms=None,
+        builder=None,
+        target_level=2,
+    )
+    wm = WorkerManager()
+    assert wm.worker_status_for_building(camp) == "empty"
+
+    worker = Worker("LUMBERJACK")
+    wm.add_worker(worker)
+    wm.assign_to_building(worker, camp)
+    worker.state = "resting"
+    assert wm.worker_status_for_building(camp) == "resting"
+
+
+def test_production_status_for_under_construction_is_explicit() -> None:
+    camp = LumberCamp(level=1, grid_pos=(10, 10))
+    camp.construction_site = ConstructionSite(
+        required_resources={"wood": 2},
+        delivered_resources={},
+        build_time_ms=10_000,
+        build_started_ms=None,
+        builder=None,
+        target_level=2,
+    )
+    wm = WorkerManager()
+    assert wm.production_status_for_building(camp) == "Under construction"
+
+    worker = Worker("LUMBERJACK")
+    wm.add_worker(worker)
+    wm.assign_to_building(worker, camp)
+    worker.state = "resting"
+    assert wm.production_status_for_building(camp) == "Under construction"
 
 
 def test_demolish_moving_worker_becomes_idle_at_current_tile() -> None:

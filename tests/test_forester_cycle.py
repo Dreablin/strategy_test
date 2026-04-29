@@ -21,6 +21,7 @@ def _setup_forester_runtime() -> tuple[list[int], World, BuildingRegistry, Any, 
     th = registry.place(TownHall, town_hall_origin_tile())
     th.level = 10
     hut = registry.place(ForesterHut, near_town_hall_tile(12, 4))
+    hut.construction_site = None
     workers = WorkerManager(registry, now_ms_fn=lambda: now_ms[0])
     return now_ms, world, registry, resources, hut, workers
 

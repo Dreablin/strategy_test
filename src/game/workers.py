@@ -312,6 +312,11 @@ class WorkerManager:
 
     def worker_status_for_building(self, building: Building) -> str:
         """Return panel-friendly worker status: empty | on the way | assigned."""
+        if building.is_under_construction:
+            for worker in self._workers:
+                if worker.assigned_building is building:
+                    return "resting"
+            return "empty"
         for worker in self._workers:
             if worker.assigned_building is not building:
                 continue
@@ -341,6 +346,8 @@ class WorkerManager:
 
     def production_status_for_building(self, building: Building) -> str:
         """Human-readable production status for building panels."""
+        if building.is_under_construction:
+            return "Under construction"
         worker: Worker | None = None
         for candidate in self._workers:
             if candidate.assigned_building is building:

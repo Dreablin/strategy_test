@@ -228,54 +228,56 @@ def test_upgrade_keeps_building_in_registry_list() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
     camp = registry.place(LumberCamp, (12, 12))
+    camp.construction_site = None
 
     assert registry.upgrade_building(camp)
     assert camp in registry.all()
+    assert camp.level == 1
+    assert camp.is_under_construction
+    assert camp.construction_site is not None
+    assert camp.construction_site.target_level == 2
 
 
-def test_upgrade_refreshes_assigned_worker_gather_speed_bonus() -> None:
+def test_upgrade_assigned_worker_transitions_to_resting_inside_building() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
     camp = registry.place(LumberCamp, (14, 14))
+    camp.construction_site = None
     workers = WorkerManager(registry)
     worker = Worker("LUMBERJACK")
     workers.add_worker(worker)
     workers.assign_to_building(worker, camp)
-    assert worker.characteristics.gather_speed_mult == pytest.approx(1.0)
 
     assert registry.upgrade_building(camp)
-    assert worker.characteristics.gather_speed_mult == pytest.approx(1.05)
+    assert worker.assigned_building is camp
+    assert worker.idle is False
+    assert worker.state == "resting"
+    assert worker.current_tile == (15, 15)
 
 
-def test_consecutive_upgrades_stack_additively_for_assigned_worker() -> None:
+def test_upgrade_rejected_while_building_already_under_construction() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
     camp = registry.place(LumberCamp, (18, 18))
-    workers = WorkerManager(registry)
-    worker = Worker("LUMBERJACK")
-    workers.add_worker(worker)
-    workers.assign_to_building(worker, camp)
-
+    camp.construction_site = None
     assert registry.upgrade_building(camp)
-    assert registry.upgrade_building(camp)
-    assert worker.characteristics.move_speed_mult == pytest.approx(1.10)
-    assert worker.characteristics.gather_speed_mult == pytest.approx(1.10)
+    assert camp.is_under_construction
+    assert not registry.upgrade_building(camp)
 
 
-def test_demolish_after_upgrades_clears_move_and_gather_bonus_sources() -> None:
+def test_demolish_after_upgrade_construction_still_clears_worker_assignment() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
     camp = registry.place(LumberCamp, near_town_hall_tile())
+    camp.construction_site = None
     workers = WorkerManager(registry)
     worker = Worker("LUMBERJACK")
     workers.add_worker(worker)
     workers.assign_to_building(worker, camp)
 
     assert registry.upgrade_building(camp)
-    assert registry.upgrade_building(camp)
-    assert worker.characteristics.move_speed_mult == pytest.approx(1.10)
-    assert worker.characteristics.gather_speed_mult == pytest.approx(1.10)
+    assert camp.is_under_construction
 
     registry.demolish(camp, workers)
-    assert worker.characteristics.move_speed_mult == pytest.approx(1.0)
-    assert worker.characteristics.gather_speed_mult == pytest.approx(1.0)
+    assert worker.assigned_building is None
+    assert worker.idle

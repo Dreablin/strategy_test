@@ -27,6 +27,7 @@ def test_staffed_stone_mine_can_upgrade() -> None:
     th = registry.place(TownHall, town_hall_origin_tile())
     th.level = 3
     camp = registry.place(StoneMine, (10, 10))
+    camp.construction_site = None
     wm = WorkerManager(registry)
     assert wm.hire("STONECUTTER") is not None
     wm.reassign_all()

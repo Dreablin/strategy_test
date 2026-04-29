@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 19 — Construction System (queued)
-- **Next Task:** T189 — upgrade starts construction-site flow
-- **Last Completed:** T188 — `BuildingRegistry.place()` attaches level-1 `ConstructionSite` from config
-- **Total Progress:** 188 / 209 (Phase 19: 4 / 25 tasks done)
+- **Next Task:** T190 — `complete_construction(building, now_ms)` function + tests
+- **Last Completed:** T189 — `upgrade_building()` starts next-level `ConstructionSite`; assigned worker enters `resting`
+- **Total Progress:** 189 / 209 (Phase 19: 5 / 25 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -117,7 +117,7 @@
 
 - [x] **T188**: Modify `BuildingRegistry.place()` to look up `CONSTRUCTION_REQUIREMENTS` for the building type at level 1. If an entry exists, set `building.construction_site = ConstructionSite(...)` on the newly placed instance. Existing behaviour (place → functional) must still work for types without construction config (currently TOWN_HALL has no construction cost). Write tests: place a LUMBER_CAMP → verify `is_under_construction`, verify `construction_site.required_resources` matches config. Place TOWN_HALL → verify NOT under construction.
 
-- [ ] **T189**: Modify `BuildingRegistry.upgrade_building()` to initiate a construction site for the **next level** instead of instantly incrementing level. Store `target_level = building.level + 1` in the `ConstructionSite`. The building keeps its current level until construction completes; `is_under_construction` becomes True. If the building has a worker assigned (e.g. LUMBERJACK), that worker transitions to state `"resting"` inside the building (idle but not unassigned). Return `True` to indicate upgrade process started. Write tests: upgrade a level-1 building → verify `is_under_construction`, `target_level == 2`, worker state if assigned.
+- [x] **T189**: Modify `BuildingRegistry.upgrade_building()` to initiate a construction site for the **next level** instead of instantly incrementing level. Store `target_level = building.level + 1` in the `ConstructionSite`. The building keeps its current level until construction completes; `is_under_construction` becomes True. If the building has a worker assigned (e.g. LUMBERJACK), that worker transitions to state `"resting"` inside the building (idle but not unassigned). Return `True` to indicate upgrade process started. Write tests: upgrade a level-1 building → verify `is_under_construction`, `target_level == 2`, worker state if assigned.
 
 ### 19.4 Construction completion logic
 

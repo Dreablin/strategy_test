@@ -65,20 +65,26 @@ def test_town_hall_max_level_10() -> None:
         TownHall(level=11)
 
 
-def test_upgrade_lumber_camp_is_free_and_increments_level() -> None:
+def test_upgrade_lumber_camp_starts_construction_to_level_2() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
     b = registry.place(LumberCamp, (11, 11))
+    b.construction_site = None
     assert registry.upgrade_building(b)
-    assert b.level == 2
+    assert b.level == 1
+    assert b.is_under_construction
+    assert b.construction_site is not None
+    assert b.construction_site.target_level == 2
 
 
-def test_upgrade_no_longer_depends_on_wallet_resources() -> None:
+def test_upgrade_no_longer_depends_on_wallet_resources_and_starts_construction() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
     b = registry.place(LumberCamp, (12, 12))
+    b.construction_site = None
     assert registry.upgrade_building(b)
-    assert b.level == 2
+    assert b.level == 1
+    assert b.is_under_construction
 
 
 def test_upgrade_allowed_for_town_hall_below_cap() -> None:
@@ -89,20 +95,24 @@ def test_upgrade_allowed_for_town_hall_below_cap() -> None:
     assert th.level == 2
 
 
-def test_upgrade_succeeds_for_stone_mine_with_town_hall_tech_gate() -> None:
+def test_upgrade_succeeds_for_stone_mine_with_town_hall_tech_gate_and_starts_construction() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
     th = registry.place(TownHall, town_hall_origin_tile())
     th.level = 3
     b = registry.place(StoneMine, (10, 10))
+    b.construction_site = None
     assert registry.upgrade_building(b)
-    assert b.level == 2
+    assert b.level == 1
+    assert b.is_under_construction
+    assert b.construction_site is not None
+    assert b.construction_site.target_level == 2
 
 
 def test_upgrade_rejected_at_max_level() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
-    b = registry.place(LumberCamp, (18, 18))
+    b = registry.place(TownHall, town_hall_origin_tile())
     for _ in range(9):
         assert registry.upgrade_building(b)
     assert b.level == 10

@@ -72,6 +72,7 @@ def test_stonecutter_cycle_toggle_upgrade_and_storage_smoke() -> None:
     town_hall = registry.place(TownHall, town_hall_origin_tile())
     town_hall.level = 3
     camp = registry.place(LumberCamp, near_town_hall_tile())
+    camp.construction_site = None
     gx, gy = camp.grid_pos  # type: ignore[assignment]
     for i in range(4):
         world._trees[(gx + 3 + i, gy)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
@@ -125,7 +126,8 @@ def test_stonecutter_cycle_toggle_upgrade_and_storage_smoke() -> None:
     # Lumberjack: upgrade camp and validate gather-speed bonus is applied.
     assert registry.upgrade_building(camp)
     assert camp in registry.all()
-    assert lumberjack.characteristics.gather_speed_mult == 1.05
+    assert camp.is_under_construction
+    assert lumberjack.state == "resting"
 
     # Storage-full gate: no new cycle starts until storage decreases.
     camp.stored = camp.storage_capacity()

@@ -137,15 +137,37 @@ class BuildingRegistry:
         self._buildings.remove(building)
 
     def upgrade_building(self, building: Building) -> bool:
-        """Upgrade is free: increment ``level`` and refresh cached previews."""
+        """Start construction for upgrade when config exists; otherwise upgrade instantly."""
         if building not in self._buildings:
             return False
         cls = type(building)
         if building.level >= cls.max_level():
             return False
-        building.level += 1
+
+        if building.construction_site is not None:
+            return False
+        next_level = building.level + 1
+        req_by_level = CONSTRUCTION_REQUIREMENTS.get(cls.type_tag)
+        if req_by_level is None or next_level not in req_by_level:
+            building.level += 1
+            if self._worker_manager is not None:
+                self._worker_manager.refresh_building_bonuses(building)
+            return True
+
+        spec = req_by_level[next_level]
+        building.construction_site = ConstructionSite(
+            required_resources=dict(spec.cost),
+            delivered_resources={},
+            build_time_ms=int(spec.build_time_ms),
+            build_started_ms=None,
+            builder=None,
+            target_level=next_level,
+        )
         if self._worker_manager is not None:
-            self._worker_manager.refresh_building_bonuses(building)
+            for worker in self._worker_manager.workers():
+                if worker.assigned_building is building:
+                    worker.state = "resting"
+                    break
         return True
 
     def _footprint_inside_grass(self, gx: int, gy: int, w: int, h: int) -> bool:

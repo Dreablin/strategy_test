@@ -26,6 +26,8 @@ def test_smoke_phase14_forestry_cycle_to_render() -> None:
     town_hall.level = 10
     forester_hut = registry.place(ForesterHut, near_town_hall_tile(12, 4))
     lumber_camp = registry.place(LumberCamp, near_town_hall_tile(4, 12))
+    forester_hut.construction_site = None
+    lumber_camp.construction_site = None
 
     workers = WorkerManager(registry, now_ms_fn=lambda: now_ms["t"])
     assert workers.hire("FORESTER") is not None
@@ -59,6 +61,13 @@ def test_smoke_phase14_forestry_cycle_to_render() -> None:
     forester_hut.set_active(False)
     wood_before = town_hall.warehouse_amount("wood")
     delivered_before = lumber_camp.delivered_wood
+    cx, cy = lumber_camp.grid_pos  # type: ignore[assignment]
+    # Make harvest step deterministic even if random planting drifts farther away.
+    for i in range(3):
+        world.plant_tree(cx + 3 + i, cy, now_ms=now_ms["t"], species=0)
+        tree = world.tree_at(cx + 3 + i, cy)
+        if tree is not None:
+            tree.stage = TreeStage.ADULT
 
     chopped = False
     for _ in range(3000):

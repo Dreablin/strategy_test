@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 19 — Construction System (queued)
-- **Next Task:** T198 — keep construction tasks queued when source stock is unavailable
-- **Last Completed:** T197 — auto-enqueue construction tasks + carrier delivery into site resources
-- **Total Progress:** 197 / 209 (Phase 19: 13 / 25 tasks done)
+- **Next Task:** T199 — route produced resources to construction needs before Town Hall
+- **Last Completed:** T198 — unavailable construction tasks stay queued and carrier retries next eligible task
+- **Total Progress:** 198 / 209 (Phase 19: 14 / 25 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -141,7 +141,7 @@
 
 - [x] **T197**: Generate construction transport tasks automatically: when a building becomes `is_under_construction` (place or upgrade), enqueue the needed resources as high-priority transport tasks sourced from Town Hall warehouse. When a resource is delivered (carrier unloads at construction site), call `construction_site.deliver_resource(resource, 1)`. Write tests: place building → transport tasks created → carrier delivers → `delivered_resources` incremented → `is_fully_supplied()` eventually becomes True.
 
-- [ ] **T198**: Handle "resource not available" scenario. Modify carrier logic: when a carrier picks up a construction transport task but the Town Hall warehouse has no stock of the required resource, skip it (don't discard — leave in queue) and try the next task. The task stays in the queue until the resource becomes available. Write tests: construction needs `stone: 5`, warehouse has 0 → carrier does not pick up stone task → stone is produced → carrier picks up.
+- [x] **T198**: Handle "resource not available" scenario. Modify carrier logic: when a carrier picks up a construction transport task but the Town Hall warehouse has no stock of the required resource, skip it (don't discard — leave in queue) and try the next task. The task stays in the queue until the resource becomes available. Write tests: construction needs `stone: 5`, warehouse has 0 → carrier does not pick up stone task → stone is produced → carrier picks up.
 
 ### 19.7 Smart resource routing — produce → need → warehouse
 

@@ -827,17 +827,37 @@ class WorkerManager:
                 try:
                     task.source.take_from_warehouse(task.resource, 1)  # type: ignore[attr-defined]
                 except ValueError:
+                    self._transport_queue.append(task)
                     worker.transport_task = None
                     worker.state = "idle"
                     worker.idle = True
+                    next_task = self._next_transport_task()
+                    if next_task is not None:
+                        worker.transport_task = next_task
+                        worker.carrying = None
+                        if not self._start_move_to_building(worker, next_task.source, now_ms):
+                            self._transport_queue.insert(0, next_task)
+                            worker.transport_task = None
+                            worker.state = "idle"
+                            worker.idle = True
                     return
             else:
                 try:
                     task.source.take_from_storage(1)  # type: ignore[attr-defined]
                 except ValueError:
+                    self._transport_queue.append(task)
                     worker.transport_task = None
                     worker.state = "idle"
                     worker.idle = True
+                    next_task = self._next_transport_task()
+                    if next_task is not None:
+                        worker.transport_task = next_task
+                        worker.carrying = None
+                        if not self._start_move_to_building(worker, next_task.source, now_ms):
+                            self._transport_queue.insert(0, next_task)
+                            worker.transport_task = None
+                            worker.state = "idle"
+                            worker.idle = True
                     return
             worker.carrying = task.resource
             if isinstance(task.source, TownHall):

@@ -846,6 +846,54 @@ def test_carrier_delivery_to_construction_site_increments_delivered_resources() 
     assert site.is_fully_supplied()
 
 
+def test_unavailable_construction_task_stays_queued_until_stock_appears() -> None:
+    world = World(world_seed=0)
+    registry = BuildingRegistry(world)
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    camp = registry.place(LumberCamp, near_town_hall_tile(8, 8))
+    camp.construction_site = ConstructionSite(
+        required_resources={"stone": 1},
+        delivered_resources={},
+        build_time_ms=10_000,
+        build_started_ms=None,
+        builder=None,
+        target_level=1,
+    )
+    wm = WorkerManager(registry, now_ms_fn=lambda: 0)
+    carrier = wm.hire("CARRIER")
+    assert carrier is not None
+    wm.enqueue_transport_task(
+        resource="stone",
+        source=town_hall,
+        target=camp,
+        amount=1,
+        priority=10,
+    )
+
+    # Simulate a picked task that becomes unavailable at load time.
+    task = wm._transport_queue.pop(0)
+    carrier.transport_task = task
+    carrier.state = "carrier_loading"
+    carrier.camp_wait_until_ms = 0
+
+    wm.update(0)
+
+    assert carrier.transport_task is None
+    assert carrier.state == "idle"
+    assert any(t.resource == "stone" and t.target is camp for t in wm._transport_queue)
+
+    town_hall.add_to_warehouse("stone", 1)
+    for now_ms in range(1_000, 120_000, 500):
+        wm.update(now_ms)
+        site = camp.construction_site
+        if site is not None and int(site.delivered_resources.get("stone", 0)) >= 1:
+            break
+
+    site = camp.construction_site
+    assert site is not None
+    assert int(site.delivered_resources.get("stone", 0)) == 1
+
+
 def test_hire_stonecutter_requires_town_hall_level_3() -> None:
     world = World(world_seed=0)
     registry = BuildingRegistry(world)

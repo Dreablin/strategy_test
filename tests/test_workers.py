@@ -215,6 +215,42 @@ def test_update_completes_construction_and_reassigns_with_idle_builder() -> None
     assert builder.idle is True
     assert builder.state == "idle"
     assert builder.assigned_building is None
+    assert not world.is_occupied(*builder.current_tile)
+
+
+def test_builder_completion_fallback_uses_building_center_when_no_approach() -> None:
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    camp = registry.place(LumberCamp, near_town_hall_tile(8, 8))
+    camp.construction_site = ConstructionSite(
+        required_resources={"wood": 2},
+        delivered_resources={"wood": 2},
+        build_time_ms=1_000,
+        build_started_ms=100,
+        builder=None,
+        target_level=1,
+    )
+    cx, cy = camp.grid_pos  # type: ignore[assignment]
+    for y in range(cy - 1, cy + 3):
+        for x in range(cx - 1, cx + 3):
+            if cx <= x <= cx + 1 and cy <= y <= cy + 1:
+                continue
+            world.mark_occupied(x, y, 1, 1)
+    builder = Worker("BUILDER")
+    builder.idle = False
+    builder.state = "building"
+    builder.assigned_building = camp
+    camp.construction_site.builder = builder
+    wm = WorkerManager(registry, now_ms_fn=lambda: 1_100)
+    wm.add_worker(builder)
+
+    wm.update(1_100)
+
+    assert builder.idle is True
+    assert builder.state == "idle"
+    assert builder.assigned_building is None
+    assert builder.current_tile == building_center_tile(camp)
 
 
 def test_idle_builder_targets_fully_supplied_site_and_starts_building() -> None:

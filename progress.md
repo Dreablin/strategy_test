@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 19 — Construction System (queued)
-- **Next Task:** T193 — builder exits completed construction site to approach tile
-- **Last Completed:** T192 — add BUILDER updater for site targeting, entering, and build-start state
-- **Total Progress:** 192 / 209 (Phase 19: 8 / 25 tasks done)
+- **Next Task:** T194 — handle builder abort when construction site is demolished
+- **Last Completed:** T193 — move builder to approach tile after completion (center fallback if blocked)
+- **Total Progress:** 193 / 209 (Phase 19: 9 / 25 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -129,7 +129,7 @@
 
 - [x] **T192**: Add BUILDER updater to `WorkerManager._updaters` dispatch (currently BUILDER has no updater). States: `"idle"` → look for a building with `is_under_construction and construction_site.is_fully_supplied() and construction_site.builder is None` → walk to approach tile → `"entering_site"` (park inside) → set `construction_site.builder = worker`, `construction_site.build_started_ms = now_ms` → state `"building"` → waits inside until `is_complete(now_ms)` (completion handled by T191). Write tests: idle builder + fully supplied site → builder walks to site and starts building.
 
-- [ ] **T193**: Handle builder leaving after construction complete: when `complete_construction` clears the builder reference, the builder should move to an approach tile of the completed building, then become `idle`. If no approach tile is available, stand at building center. Write tests: after completion, builder is idle and positioned at approach tile.
+- [x] **T193**: Handle builder leaving after construction complete: when `complete_construction` clears the builder reference, the builder should move to an approach tile of the completed building, then become `idle`. If no approach tile is available, stand at building center. Write tests: after completion, builder is idle and positioned at approach tile.
 
 - [ ] **T194**: Handle edge case: builder is walking to a construction site that gets demolished mid-way. Builder should abort, become idle at current tile. Add to `notify_demolished` logic. Similarly, if the builder is inside and the building is demolished, builder becomes idle. Write tests.
 

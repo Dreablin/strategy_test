@@ -555,6 +555,7 @@ class WorkerManager:
         """Advance worker movement interpolation/state for this frame."""
         world = getattr(self._registry, "_world", None) if self._registry is not None else None
         completed_buildings: list[Building] = []
+        completed_site_builders: dict[int, Worker] = {}
         for worker in self._workers:
             worker.update(now_ms)
             updater = self._updaters.get(worker.type_tag)
@@ -568,9 +569,14 @@ class WorkerManager:
                 site = building.construction_site
                 if site is None or not site.is_building():
                     continue
+                if site.builder is not None:
+                    completed_site_builders[id(building)] = site.builder
                 if complete_construction(building, int(now_ms)):
                     completed_buildings.append(building)
             for building in completed_buildings:
+                builder = completed_site_builders.get(id(building))
+                if builder is not None:
+                    self._move_worker_to_building_approach(builder, building)
                 self.refresh_building_bonuses(building)
             if completed_buildings:
                 self.reassign_all()
@@ -1196,6 +1202,10 @@ class WorkerManager:
                 target = preferred_tile
             worker.current_tile = target
             worker.stand_tile = target
+        else:
+            center = building_center_tile(building)
+            worker.current_tile = center
+            worker.stand_tile = center
         worker.target_tile = worker.current_tile
         worker.path = []
         worker.segment_progress = 0.0

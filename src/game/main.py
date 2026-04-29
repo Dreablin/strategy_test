@@ -32,6 +32,7 @@ def main() -> int:
     camera = Camera()
     placement = PlacementController(world, registry, camera)
     worker_manager = WorkerManager(registry, now_ms_fn=pygame.time.get_ticks)
+    worker_manager.bootstrap_starting_workers_near_town_hall(town_hall)
     game_input = GameInput(world, registry, placement, worker_manager, camera)
 
     running = True

@@ -14,11 +14,11 @@
   },
   "warehouse_bootstrap": {
     "town_hall": {
-      "wheat": 200,
-      "wood": 200,
-      "stone": 0,
-      "iron": 0,
-      "boards": 0
+      "wheat": 10,
+      "wood": 10,
+      "stone": 6,
+      "iron": 6,
+      "boards": 10
     }
   },
   "gates": {

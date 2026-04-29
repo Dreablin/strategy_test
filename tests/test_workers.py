@@ -64,6 +64,24 @@ def test_hire_is_free_and_returns_worker() -> None:
     assert town_hall.warehouse_amount("wheat") == wheat_before
 
 
+def test_bootstrap_starting_workers_near_town_hall_spawns_two_carriers_and_builder() -> None:
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    wm = WorkerManager(registry)
+    wm.bootstrap_starting_workers_near_town_hall(town_hall)
+    workers = wm.workers()
+    assert len(workers) == 3
+    assert [w.type_tag for w in workers] == ["CARRIER", "CARRIER", "BUILDER"]
+    assert town_hall.grid_pos is not None
+    _, gy = town_hall.grid_pos
+    south_y = gy + TownHall.footprint[1]
+    for w in workers:
+        assert world.is_in_grass(*w.current_tile)
+        assert not world.is_occupied(*w.current_tile)
+        assert w.current_tile[1] == south_y
+
+
 def test_hire_without_explicit_source_uses_latest_school_when_present() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)

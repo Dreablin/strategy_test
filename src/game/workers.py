@@ -200,6 +200,34 @@ class WorkerManager:
     def add_worker(self, worker: Worker) -> None:
         self._workers.append(worker)
 
+    def bootstrap_starting_workers_near_town_hall(self, town_hall: Building) -> None:
+        """Place two carriers and one builder on tiles directly below the Town Hall (visible, not under sprite)."""
+        if self._registry is None or town_hall.type_tag != "TOWN_HALL":
+            return
+        t0, t1, t2 = self._starter_stand_tiles_near_town_hall(town_hall)
+        self.add_worker(Worker("CARRIER", stand_tile=t0))
+        self.add_worker(Worker("CARRIER", stand_tile=t1))
+        self.add_worker(Worker("BUILDER", stand_tile=t2))
+
+    def _starter_stand_tiles_near_town_hall(self, town_hall: Building) -> tuple[tuple[int, int], tuple[int, int], tuple[int, int]]:
+        """Three stand tiles on the row immediately south of the footprint (center first, then sideways)."""
+        preferred = town_hall_spawn_tile(town_hall)
+        pos = town_hall.grid_pos
+        if pos is None:
+            return preferred, preferred, preferred
+        gx, gy = pos
+        _, h = type(town_hall).footprint
+        south_row_y = gy + h
+        below = [t for t in self._approach_tiles(town_hall) if t[1] == south_row_y]
+        cx = preferred[0]
+        below.sort(key=lambda t: (abs(t[0] - cx), t[0]))
+        ordered = list(below)
+        if not ordered:
+            ordered = [preferred]
+        while len(ordered) < 3:
+            ordered.append(ordered[-1])
+        return ordered[0], ordered[1], ordered[2]
+
     def workers(self) -> tuple[Worker, ...]:
         return tuple(self._workers)
 

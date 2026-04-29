@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 19 — Construction System (queued)
-- **Next Task:** T202 — wire ConstructionPanel into input panel routing
-- **Last Completed:** T201 — add dedicated under-construction panel (requirements, builder status, progress, close only)
-- **Total Progress:** 201 / 209 (Phase 19: 17 / 25 tasks done)
+- **Next Task:** T203 — add construction-specific building sprites (disk-first + fallback)
+- **Last Completed:** T202 — route under-construction selection through ConstructionPanel in input draw/click paths
+- **Total Progress:** 202 / 209 (Phase 19: 18 / 25 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -153,7 +153,7 @@
 
 - [x] **T201**: Create `src/game/ui/construction_panel.py` with `ConstructionPanel` class. When a building with `is_under_construction` is clicked, show a **construction-specific panel** instead of the normal building panel. Panel contents: building name + "Under Construction" (or "Upgrading to Lv N"), resource requirements list (icon + delivered/required for each resource), builder status ("Waiting for resources" / "Waiting for builder" / "Building..."), progress bar (yellow, 0–100%) during active building, Close [×] button, **no** Upgrade/Demolish buttons while under construction. Write headless layout/draw tests.
 
-- [ ] **T202**: Wire `ConstructionPanel` into `GameInput.draw_panel()` and `_handle_map_left_click()`. When `self._panel.is_under_construction`, delegate to `ConstructionPanel` instead of the normal panel dispatcher. The construction panel only supports `close` click action. Write tests: click on under-construction building → construction panel shown; click close → panel closes.
+- [x] **T202**: Wire `ConstructionPanel` into `GameInput.draw_panel()` and `_handle_map_left_click()`. When `self._panel.is_under_construction`, delegate to `ConstructionPanel` instead of the normal panel dispatcher. The construction panel only supports `close` click action. Write tests: click on under-construction building → construction panel shown; click close → panel closes.
 
 ### 19.9 Assets & rendering for construction sites
 
@@ -216,6 +216,7 @@
 | 2026-04-29 | T186 | Added `src/game/construction.py` with `ConstructionSite` dataclass and pure methods (`is_fully_supplied`, `is_building`, `build_progress`, `is_complete`, `remaining_resources`, `deliver_resource`); added `tests/test_construction.py`. | Establishes core construction state model before wiring into `Building`/registry/workers in T187+. |
 | 2026-04-29 | T187 | Added `construction_site` to `Building.__slots__` with default `None` and new `is_under_construction` property; extended `tests/test_buildings.py` to verify default compatibility and explicit construction-site state. | Prepares all building subclasses for construction flow without breaking existing behavior. |
 | 2026-04-29 | T188 | `BuildingRegistry.place()` now attaches level-1 `ConstructionSite` from `CONSTRUCTION_REQUIREMENTS` for configured building types; Town Hall remains instant (no construction config). Added registry tests for both paths. | Enables place-as-construction behavior needed before upgrade/runtime construction flow. |
+| 2026-04-29 | T202 | Routed `GameInput.draw_panel()` and click handling to `ConstructionPanel` whenever `panel.is_under_construction`; only close action is processed for construction panels. Added input tests for construction draw dispatch and close behavior; updated school input tests to clear default construction sites where hire-flow coverage expects normal school panel actions. | Enforces construction-only UI controls while preserving existing school hiring interaction tests via explicit setup. |
 
 ## Issues & Blockers
 

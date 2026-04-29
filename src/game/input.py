@@ -17,6 +17,7 @@ from game.iso import screen_to_world
 from game.render import Renderer
 from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT, BottomBar
 from game.ui.building_panel import BuildingPanel
+from game.ui.construction_panel import ConstructionPanel
 from game.ui.forester_hut_panel import ForesterHutPanel
 from game.ui.lumber_camp_panel import LumberCampPanel
 from game.ui.stone_mine_panel import StoneMinePanel
@@ -170,6 +171,9 @@ class GameInput:
         self._sync_panel_stale()
         if self._panel is None:
             return
+        if self._panel.is_under_construction:
+            ConstructionPanel.draw(surface, self._panel, now_ms=pygame.time.get_ticks())
+            return
         if self._panel.type_tag == "TOWN_HALL":
             assert isinstance(self._panel, TownHall)
             TownHallPanel.draw(
@@ -248,6 +252,13 @@ class GameInput:
 
         if self._panel is not None:
             wa = self._panel_worker_status() != "empty"
+            if self._panel.is_under_construction:
+                layout = ConstructionPanel.layout(surface, self._panel)
+                if layout.frame.collidepoint(pos):
+                    action = ConstructionPanel.click_action(surface, pos, self._panel)
+                    if action == "close":
+                        self._panel = None
+                    return
             if self._panel.type_tag == "TOWN_HALL":
                 assert isinstance(self._panel, TownHall)
                 layout = TownHallPanel.layout(

@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 19 — Construction System (queued)
-- **Next Task:** T186 — ConstructionSite dataclass + tests
-- **Last Completed:** T185 — construction settings schema in config/json + `CONSTRUCTION_REQUIREMENTS` loading
-- **Total Progress:** 185 / 209 (Phase 19: 1 / 25 tasks done)
+- **Next Task:** T187 — add `construction_site` slot to `Building`
+- **Last Completed:** T186 — `ConstructionSite` dataclass module + tests
+- **Total Progress:** 186 / 209 (Phase 19: 2 / 25 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -109,7 +109,7 @@
 
 ### 19.2 Domain — ConstructionSite state on Building
 
-- [ ] **T186**: Add `ConstructionSite` dataclass in a new module `src/game/construction.py`. Fields: `required_resources: dict[str, int]`, `delivered_resources: dict[str, int]`, `build_time_ms: int`, `build_started_ms: int | None`, `builder: Worker | None (reference)`, `target_level: int`. Pure methods: `is_fully_supplied() -> bool`, `is_building() -> bool`, `build_progress(now_ms) -> float` (0.0–1.0), `is_complete(now_ms) -> bool`, `remaining_resources() -> dict[str, int]`, `deliver_resource(resource, amount)`. Write failing tests in `tests/test_construction.py`. Then implement.
+- [x] **T186**: Add `ConstructionSite` dataclass in a new module `src/game/construction.py`. Fields: `required_resources: dict[str, int]`, `delivered_resources: dict[str, int]`, `build_time_ms: int`, `build_started_ms: int | None`, `builder: Worker | None (reference)`, `target_level: int`. Pure methods: `is_fully_supplied() -> bool`, `is_building() -> bool`, `build_progress(now_ms) -> float` (0.0–1.0), `is_complete(now_ms) -> bool`, `remaining_resources() -> dict[str, int]`, `deliver_resource(resource, amount)`. Write failing tests in `tests/test_construction.py`. Then implement.
 
 - [ ] **T187**: Add optional `construction_site: ConstructionSite | None` slot to `Building` base class. When `construction_site is not None`, the building is considered **under construction** and non-functional. Add property `is_under_construction -> bool`. Ensure all existing `Building.__init__` subclasses remain compatible (default `None`). Write tests that existing buildings still work unchanged; new building with a `construction_site` set returns `is_under_construction == True`.
 
@@ -213,6 +213,7 @@
 | 2026-04-28 | T183 | Removed legacy **`resources`** parameter/`GameInput` slot and `PlacementController` storage; all building panels + `BottomBar` + `upgrade_building` no longer accept a wallet; warehouse display was already `TownHall.warehouse_amount` only. | Eliminates dead global-resource API surface; `INITIAL_RESOURCES` in config remains for T184. |
 | 2026-04-28 | T184 | Replaced `economy.initial_resources` / `INITIAL_RESOURCES` with **`warehouse_bootstrap.town_hall`** in JSON + `TOWN_HALL_STARTING_WAREHOUSE`; **`bootstrap_starting_warehouse`** seeds the placed Town Hall in **`main` only** so tests keep empty warehouses by default. | Aligns config with warehouse source-of-truth; gameplay start matches prior 200/200 wheat/wood. **`PRD.md` not edited**. |
 | 2026-04-29 | T185 | Added `ConstructionSpec` + `CONSTRUCTION_REQUIREMENTS` parsing in `config.py`; introduced `construction.<TYPE>.levels.<N>.{cost,build_time_ms}` for all Phase-19 building types with levels 1..10 in `game_settings.json`; added `tests/test_construction_config.py`. | Locks construction settings contract before runtime integration tasks (T186+). |
+| 2026-04-29 | T186 | Added `src/game/construction.py` with `ConstructionSite` dataclass and pure methods (`is_fully_supplied`, `is_building`, `build_progress`, `is_complete`, `remaining_resources`, `deliver_resource`); added `tests/test_construction.py`. | Establishes core construction state model before wiring into `Building`/registry/workers in T187+. |
 
 ## Issues & Blockers
 

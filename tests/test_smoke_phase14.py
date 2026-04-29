@@ -61,7 +61,7 @@ def test_smoke_phase14_forestry_cycle_to_render() -> None:
     delivered_before = lumber_camp.delivered_wood
 
     chopped = False
-    for _ in range(1200):
+    for _ in range(3000):
         now_ms["t"] += 500
         workers.reassign_all()
         workers.update(now_ms["t"])

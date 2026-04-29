@@ -8,6 +8,7 @@ import pygame
 
 import game.assets as assets_mod
 from game.assets import (
+    building_sprite_construction,
     building_sprite,
     building_sprite_anchor,
     clear_asset_caches,
@@ -193,6 +194,30 @@ def test_building_sprite_applies_scale_and_anchor_norm(tmp_path, monkeypatch) ->
     ax, ay = building_sprite_anchor("FARM", 1)
     assert spr.get_size() == (50, 40)
     assert (ax, ay) == (12, 30)
+    clear_asset_caches()
+
+
+def test_building_sprite_construction_prefers_level_file_then_generic(tmp_path, monkeypatch) -> None:
+    root = tmp_path / "buildings"
+    farm_dir = root / "farm"
+    _write_png(farm_dir / "construction.png", (20, 20), (200, 10, 10))
+    _write_png(farm_dir / "construction_2.png", (34, 26), (10, 200, 10))
+    monkeypatch.setattr(assets_mod, "_BUILDINGS_ROOT", root)
+    clear_asset_caches()
+    spr = building_sprite_construction("FARM", 2)
+    assert spr.get_size() == (34, 26)
+    clear_asset_caches()
+
+
+def test_building_sprite_construction_falls_back_to_procedural_overlay(tmp_path, monkeypatch) -> None:
+    root = tmp_path / "buildings"
+    monkeypatch.setattr(assets_mod, "_BUILDINGS_ROOT", root)
+    clear_asset_caches()
+    spr = building_sprite_construction("FORESTER_HUT", 3)
+    _assert_nonempty_surface(spr)
+    # Fallback should still be visibly non-opaque after alpha blend.
+    sample = spr.get_at((spr.get_width() // 2, spr.get_height() // 2))
+    assert sample.a < 255
     clear_asset_caches()
 
 

@@ -225,6 +225,14 @@ def _building_level_candidates(folder: str, lvl: int) -> tuple[Path, ...]:
     )
 
 
+def _building_construction_candidates(folder: str, lvl: int) -> tuple[Path, ...]:
+    return (
+        _BUILDINGS_ROOT / folder / f"construction_{lvl}.png",
+        _BUILDINGS_ROOT / folder / f"construction_{lvl:02d}.png",
+        _BUILDINGS_ROOT / folder / "construction.png",
+    )
+
+
 def _meta_for_level(meta: dict, lvl: int) -> dict:
     out: dict = {}
     default = meta.get("default")
@@ -301,6 +309,32 @@ def building_sprite(b_type: str, level: int) -> pygame.Surface:
 def building_sprite_anchor(b_type: str, level: int) -> tuple[int, int]:
     """Return anchor pixel in building sprite (x,y)."""
     return _building_render_spec(b_type, level)[1]
+
+
+def _procedural_building_construction_sprite(b_type: str, target_level: int) -> pygame.Surface:
+    base = building_sprite(b_type, target_level).copy()
+    base.set_alpha(180)
+    w, h = base.get_size()
+    scaffold = pygame.Color(136, 96, 56, 220)
+    for x in range(4, w, 8):
+        pygame.draw.line(base, scaffold, (x, 3), (x, h - 3), 2)
+    for y in range(6, h, 10):
+        pygame.draw.line(base, scaffold, (2, y), (w - 2, y), 2)
+    pygame.draw.line(base, scaffold, (2, 3), (w - 2, h - 3), 2)
+    pygame.draw.line(base, scaffold, (w - 2, 3), (2, h - 3), 2)
+    return base
+
+
+@functools.lru_cache(maxsize=256)
+def building_sprite_construction(b_type: str, target_level: int) -> pygame.Surface:
+    """Load construction-state sprite from disk, fallback to scaffolded procedural variant."""
+    folder = _building_folder_name(b_type)
+    lvl = max(1, min(int(target_level), 10))
+    for candidate in _building_construction_candidates(folder, lvl):
+        loaded = _load_png(str(candidate))
+        if loaded is not None:
+            return loaded
+    return _procedural_building_construction_sprite(b_type, lvl)
 
 
 def _worker_color(w_type: str) -> tuple[int, int, int]:
@@ -477,5 +511,6 @@ def clear_asset_caches() -> None:
     _worker_dot_by_mtime.cache_clear()
     tree_sprite.cache_clear()
     stone_sprite.cache_clear()
+    building_sprite_construction.cache_clear()
     resource_icon.cache_clear()
     population_icon.cache_clear()

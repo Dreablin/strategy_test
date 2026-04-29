@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 19 — Construction System (queued)
-- **Next Task:** T203 — add construction-specific building sprites (disk-first + fallback)
-- **Last Completed:** T202 — route under-construction selection through ConstructionPanel in input draw/click paths
-- **Total Progress:** 202 / 209 (Phase 19: 18 / 25 tasks done)
+- **Next Task:** T204 — render under-construction buildings with construction sprites
+- **Last Completed:** T203 — add disk-first construction sprite loader with scaffold fallback
+- **Total Progress:** 203 / 209 (Phase 19: 19 / 25 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -157,7 +157,7 @@
 
 ### 19.9 Assets & rendering for construction sites
 
-- [ ] **T203**: Add `building_sprite_construction(b_type, target_level)` to `assets.py`. Disk-first load from `assets/buildings/<folder>/construction.png` (or `construction_<level>.png`); procedural fallback: semi-transparent version of the building sprite with a scaffold overlay (wooden beams). Write tests: function returns a surface; fallback is used when no disk asset.
+- [x] **T203**: Add `building_sprite_construction(b_type, target_level)` to `assets.py`. Disk-first load from `assets/buildings/<folder>/construction.png` (or `construction_<level>.png`); procedural fallback: semi-transparent version of the building sprite with a scaffold overlay (wooden beams). Write tests: function returns a surface; fallback is used when no disk asset.
 
 - [ ] **T204**: Modify `Renderer.draw_buildings()` to check `building.is_under_construction`. If true, use `building_sprite_construction(type_tag, construction_site.target_level)` instead of `building_sprite(type_tag, level)`. Write tests: under-construction building renders with construction sprite, completed building renders normally.
 
@@ -217,6 +217,7 @@
 | 2026-04-29 | T187 | Added `construction_site` to `Building.__slots__` with default `None` and new `is_under_construction` property; extended `tests/test_buildings.py` to verify default compatibility and explicit construction-site state. | Prepares all building subclasses for construction flow without breaking existing behavior. |
 | 2026-04-29 | T188 | `BuildingRegistry.place()` now attaches level-1 `ConstructionSite` from `CONSTRUCTION_REQUIREMENTS` for configured building types; Town Hall remains instant (no construction config). Added registry tests for both paths. | Enables place-as-construction behavior needed before upgrade/runtime construction flow. |
 | 2026-04-29 | T202 | Routed `GameInput.draw_panel()` and click handling to `ConstructionPanel` whenever `panel.is_under_construction`; only close action is processed for construction panels. Added input tests for construction draw dispatch and close behavior; updated school input tests to clear default construction sites where hire-flow coverage expects normal school panel actions. | Enforces construction-only UI controls while preserving existing school hiring interaction tests via explicit setup. |
+| 2026-04-29 | T203 | Added `building_sprite_construction(b_type, target_level)` to `assets.py` with disk-first lookup (`construction_<level>.png`, `construction.png`) and procedural scaffold fallback based on a semi-transparent normal building sprite. Added `tests/test_assets.py` coverage for level-specific disk preference and fallback behavior. | Provides deterministic construction-state art pipeline for upcoming renderer integration (T204). |
 
 ## Issues & Blockers
 

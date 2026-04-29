@@ -3,6 +3,7 @@
 import pygame
 
 from game.assets import (
+    building_sprite_construction,
     building_sprite,
     building_sprite_anchor,
     grass_tile,
@@ -123,8 +124,13 @@ class Renderer:
                     max_y = max(max_y, sy + TILE_H)
             foot_cx = (min_x + max_x) // 2
             foot_by = max_y
-            spr = building_sprite(b.type_tag, b.level)
-            anchor_x, anchor_y = building_sprite_anchor(b.type_tag, b.level)
+            sprite_level = int(b.level)
+            if b.is_under_construction and b.construction_site is not None:
+                sprite_level = int(b.construction_site.target_level)
+                spr = building_sprite_construction(b.type_tag, sprite_level)
+            else:
+                spr = building_sprite(b.type_tag, sprite_level)
+            anchor_x, anchor_y = building_sprite_anchor(b.type_tag, sprite_level)
             dx = ox + cam_x + foot_cx - anchor_x
             dy = oy + cam_y + foot_by - anchor_y
             surface.blit(spr, (dx, dy))

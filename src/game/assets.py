@@ -428,10 +428,8 @@ def hire_ui_icon(worker_type: str, size: int = 20) -> pygame.Surface:
 
 def _resource_colors(name: str) -> tuple[int, int, int]:
     key = name.lower()
-    if key == "wheat":
-        key = "food"
     colors: dict[str, tuple[int, int, int]] = {
-        "food": (230, 170, 80),
+        "wheat": (230, 170, 80),
         "wood": (150, 100, 60),
         "stone": (170, 170, 180),
         "iron": (190, 120, 110),

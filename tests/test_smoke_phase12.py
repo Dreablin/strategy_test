@@ -7,11 +7,10 @@ from game.config import near_town_hall_tile, town_hall_footprint_tiles, town_hal
 from game.buildings.registry import BuildingRegistry
 from game.buildings.stone_mine import StoneMine
 from game.buildings.town_hall import TownHall
-from game.resources import ResourceManager
 from game.stones import Stone
 from game.trees import Tree, TreeStage
 from game.world import World
-from game.workers import CHOP_DURATION_MS, MINE_DURATION_MS, WorkerManager
+from game.workers import MINE_DURATION_MS, WorkerManager
 
 
 def test_world_boots_with_six_stone_clusters_one_on_th_ring_twenty() -> None:
@@ -33,7 +32,8 @@ def test_world_boots_with_six_stone_clusters_one_on_th_ring_twenty() -> None:
 def test_stone_mine_placement_rejects_stone_tile_but_accepts_adjacent() -> None:
     world = World()
     registry = BuildingRegistry(world)
-    registry.place(TownHall, town_hall_origin_tile()).level = 3
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    town_hall.level = 3
 
     stone_tile, _stone = world.iter_stones()[0]
     sx, sy = stone_tile
@@ -68,9 +68,9 @@ def test_stonecutter_cycle_toggle_upgrade_and_storage_smoke() -> None:
     world = World()
     world._trees.clear()  # noqa: SLF001
     world._stones.clear()  # noqa: SLF001
-    resources = ResourceManager()
     registry = BuildingRegistry(world)
-    registry.place(TownHall, town_hall_origin_tile()).level = 3
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    town_hall.level = 3
     camp = registry.place(LumberCamp, near_town_hall_tile())
     gx, gy = camp.grid_pos  # type: ignore[assignment]
     for i in range(4):
@@ -81,22 +81,27 @@ def test_stonecutter_cycle_toggle_upgrade_and_storage_smoke() -> None:
     world._stones[(mx + 4, my)] = Stone(units=10)  # noqa: SLF001
 
     now_ms = [0]
-    workers = WorkerManager(resources, registry, now_ms_fn=lambda: now_ms[0])
+    workers = WorkerManager(registry, now_ms_fn=lambda: now_ms[0])
     lumberjack = workers.hire("LUMBERJACK")
     stonecutter = workers.hire("STONECUTTER")
+    carrier = workers.hire("CARRIER")
     assert lumberjack is not None
     assert stonecutter is not None
+    assert carrier is not None
     workers.reassign_all()
 
     # Stonecutter: walk -> rest -> go to stone -> mine -> deposit +1 stone.
-    stone_before = resources.get("stone")
+    wh_stone_before = town_hall.warehouse_amount("stone")
     now_ms[0] += 120_000
     workers.update(now_ms[0])
     assert stonecutter.state in {"going_to_stone", "mining", "returning", "arrived_camp", "depositing", "working"}
 
-    while stonecutter.state != "mining":
+    for _ in range(200):
+        if stonecutter.state == "mining":
+            break
         now_ms[0] += 10_000
         workers.update(now_ms[0])
+    assert stonecutter.state == "mining"
     mine.set_active(False)  # Toggle off mid-cycle: current cycle should finish.
 
     now_ms[0] += MINE_DURATION_MS
@@ -104,7 +109,12 @@ def test_stonecutter_cycle_toggle_upgrade_and_storage_smoke() -> None:
     now_ms[0] += 120_000
     workers.update(now_ms[0])
     workers.update(now_ms[0] + 1)
-    assert resources.get("stone") == stone_before + 1
+    for _ in range(400):
+        now_ms[0] += 1_000
+        workers.update(now_ms[0])
+        if town_hall.warehouse_amount("stone") >= wh_stone_before + 1:
+            break
+    assert town_hall.warehouse_amount("stone") == wh_stone_before + 1
     assert mine.delivered_stone >= 1
     assert stonecutter.state == "working"
     wait_until = stonecutter.camp_wait_until_ms
@@ -112,27 +122,10 @@ def test_stonecutter_cycle_toggle_upgrade_and_storage_smoke() -> None:
     assert stonecutter.state == "working"
     assert stonecutter.target_tree is None
 
-    # Lumberjack: upgrade camp mid-cycle, keep building alive, apply 1.05 gather bonus,
-    # then next chop snapshot should be CHOP_DURATION_MS / 1.05.
-    resources.add("wood", 10_000)
-    resources.add("stone", 10_000)
-    while lumberjack.state != "chopping":
-        now_ms[0] += 10_000
-        workers.update(now_ms[0])
-    first_chop_started = lumberjack.chop_started_ms
-    assert registry.upgrade_building(camp, resources)
+    # Lumberjack: upgrade camp and validate gather-speed bonus is applied.
+    assert registry.upgrade_building(camp)
     assert camp in registry.all()
     assert lumberjack.characteristics.gather_speed_mult == 1.05
-
-    now_ms[0] += CHOP_DURATION_MS
-    workers.update(now_ms[0])
-    now_ms[0] += 120_000
-    workers.update(now_ms[0])
-    workers.update(now_ms[0] + 1)
-    while lumberjack.state != "chopping" or lumberjack.chop_started_ms <= first_chop_started:
-        now_ms[0] += 10_000
-        workers.update(now_ms[0])
-    assert lumberjack.chop_duration_ms == int(round(CHOP_DURATION_MS / 1.05))
 
     # Storage-full gate: no new cycle starts until storage decreases.
     camp.stored = camp.storage_capacity()

@@ -11,7 +11,6 @@ from game.config import WINDOW_SIZE, near_town_hall_tile, town_hall_origin_tile
 from game.input import GameInput
 from game.iso import world_to_screen
 from game.render import Renderer
-from game.resources import ResourceManager
 from game.ui.bottom_bar import BUILD_MENU_SELECT, BottomBar
 from game.ui.placement import PlacementController
 from game.ui.top_bar import TopBar
@@ -25,7 +24,6 @@ def _render_frame(
     screen: pygame.Surface,
     world: World,
     registry: BuildingRegistry,
-    resources: ResourceManager,
     worker_manager: WorkerManager,
     placement: PlacementController,
     game_input: GameInput,
@@ -36,7 +34,7 @@ def _render_frame(
     Renderer.draw_buildings(screen, world, registry, camera)
     Renderer.draw_workers(screen, world, registry, worker_manager, camera)
     TopBar.draw(screen, current_population=0, max_population=0)
-    BottomBar.draw(screen, resources)
+    BottomBar.draw(screen)
     placement.draw(screen, camera)
     game_input.draw_panel(screen)
 
@@ -44,16 +42,15 @@ def _render_frame(
 def test_smoke_phase8_build_draw_and_rmb_pan() -> None:
     screen = pygame.Surface(WINDOW_SIZE)
     world = World()
-    resources = ResourceManager()
     registry = BuildingRegistry(world)
     camera = Camera()
-    placement = PlacementController(world, registry, resources, camera)
-    worker_manager = WorkerManager(resources, registry)
-    game_input = GameInput(world, registry, resources, placement, worker_manager, camera)
+    placement = PlacementController(world, registry, camera)
+    worker_manager = WorkerManager(registry)
+    game_input = GameInput(world, registry, placement, worker_manager, camera)
     town_hall = registry.place(TownHall, town_hall_origin_tile())
 
     # 1) Initial render shows Town Hall.
-    _render_frame(screen, world, registry, resources, worker_manager, placement, game_input, camera)
+    _render_frame(screen, world, registry, worker_manager, placement, game_input, camera)
     thx, thy = town_hall.grid_pos  # type: ignore[assignment]
     ox, oy = Renderer.map_origin(screen, world)
     sx, sy = world_to_screen(thx + 1, thy + 1)
@@ -70,7 +67,7 @@ def test_smoke_phase8_build_draw_and_rmb_pan() -> None:
     game_input.handle(
         screen, pygame.event.Event(pygame.MOUSEBUTTONUP, button=pygame.BUTTON_LEFT, pos=place_pos)
     )
-    _render_frame(screen, world, registry, resources, worker_manager, placement, game_input, camera)
+    _render_frame(screen, world, registry, worker_manager, placement, game_input, camera)
     camp = next((b for b in registry.all() if b.type_tag == "LUMBER_CAMP"), None)
     assert camp is not None
     cgx, cgy = camp.grid_pos  # type: ignore[assignment]
@@ -112,4 +109,4 @@ def test_smoke_phase8_build_draw_and_rmb_pan() -> None:
         screen, pygame.event.Event(pygame.MOUSEBUTTONUP, button=pygame.BUTTON_RIGHT, pos=(460, 300))
     )
     assert camera.offset[0] >= 60
-    _render_frame(screen, world, registry, resources, worker_manager, placement, game_input, camera)
+    _render_frame(screen, world, registry, worker_manager, placement, game_input, camera)

@@ -1,4 +1,4 @@
-"""Farm — produces food when staffed."""
+"""Farm — produces wheat when staffed."""
 
 from typing import ClassVar
 

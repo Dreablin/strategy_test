@@ -15,7 +15,6 @@ from game.buildings.town_hall import TownHall
 from game.camera import Camera
 from game.iso import screen_to_world
 from game.render import Renderer
-from game.resources import ResourceManager
 from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT, BottomBar
 from game.ui.building_panel import BuildingPanel
 from game.ui.forester_hut_panel import ForesterHutPanel
@@ -57,7 +56,6 @@ class GameInput:
         "_panel",
         "_placement",
         "_registry",
-        "_resources",
         "_rmb_down",
         "_rmb_dragging",
         "_rmb_moved",
@@ -70,14 +68,12 @@ class GameInput:
         self,
         world: World,
         registry: BuildingRegistry,
-        resources: ResourceManager,
         placement: PlacementController,
         worker_manager: WorkerManager,
         camera: Camera,
     ) -> None:
         self._world = world
         self._registry = registry
-        self._resources = resources
         self._placement = placement
         self._worker_manager = worker_manager
         self._camera = camera
@@ -99,10 +95,6 @@ class GameInput:
 
     def _sync_assignments(self) -> None:
         self._worker_manager.reassign_all()
-        self._registry.sync_resources_per_cycle(
-            self._resources,
-            staffed_buildings=self._worker_manager.working_buildings(),
-        )
 
     @property
     def panel_building(self) -> Building | None:
@@ -165,7 +157,7 @@ class GameInput:
                 if event.pos[1] < TOP_BAR_HEIGHT and dev_asset_reload.handle_click(surface, event.pos):
                     return
                 if event.pos[1] >= surface.get_height() - BAR_HEIGHT:
-                    BottomBar.handle_click(surface, event.pos, self._resources)
+                    BottomBar.handle_click(surface, event.pos)
                 return
             self._handle_map_left_click(surface, event.pos)
             return
@@ -183,7 +175,6 @@ class GameInput:
             TownHallPanel.draw(
                 surface,
                 self._panel,
-                self._resources,
                 worker_assigned=self._panel_worker_status() != "empty",
             )
             return
@@ -194,7 +185,6 @@ class GameInput:
             LumberCampPanel.draw(
                 surface,
                 self._panel,
-                self._resources,
                 worker_assigned=worker_status != "empty",
                 worker_status=worker_status,
                 production_status=production_status,
@@ -208,7 +198,6 @@ class GameInput:
             StoneMinePanel.draw(
                 surface,
                 self._panel,
-                self._resources,
                 worker_assigned=worker_status != "empty",
                 worker_status=worker_status,
                 production_status=production_status,
@@ -222,7 +211,6 @@ class GameInput:
             ForesterHutPanel.draw(
                 surface,
                 self._panel,
-                self._resources,
                 worker_assigned=worker_status != "empty",
                 worker_status=worker_status,
                 production_status=production_status,
@@ -235,7 +223,6 @@ class GameInput:
             SchoolPanel.draw(
                 surface,
                 self._panel,
-                self._resources,
                 worker_assigned=worker_status != "empty",
                 worker_manager=self._worker_manager,
             )
@@ -245,7 +232,6 @@ class GameInput:
         BuildingPanel.draw(
             surface,
             self._panel,
-            self._resources,
             worker_assigned=worker_status != "empty",
             worker_status=worker_status,
             production_status=production_status,
@@ -267,7 +253,6 @@ class GameInput:
                 layout = TownHallPanel.layout(
                     surface,
                     self._panel,
-                    self._resources,
                     worker_assigned=wa,
                 )
                 action = None
@@ -277,14 +262,13 @@ class GameInput:
                         surface,
                         pos,
                         self._panel,
-                        self._resources,
                         worker_assigned=wa,
                     )
                 if action == "close":
                     self._panel = None
                     return
                 if action == "upgrade":
-                    if self._registry.upgrade_building(self._panel, self._resources):
+                    if self._registry.upgrade_building(self._panel):
                         self._sync_assignments()
                     return
                 if panel_hit:
@@ -298,7 +282,6 @@ class GameInput:
                 layout = LumberCampPanel.layout(
                     surface,
                     self._panel,
-                    self._resources,
                     worker_assigned=wa,
                     production_status=production_status,
                 )
@@ -307,14 +290,13 @@ class GameInput:
                         surface,
                         pos,
                         self._panel,
-                        self._resources,
                         worker_assigned=wa,
                         production_status=production_status,
                     )
                     if action == "close":
                         self._panel = None
                     elif action == "upgrade" and self._panel is not None:
-                        if self._registry.upgrade_building(self._panel, self._resources):
+                        if self._registry.upgrade_building(self._panel):
                             self._sync_assignments()
                     elif action == "demolish" and self._panel is not None:
                         b = self._panel
@@ -331,7 +313,6 @@ class GameInput:
                 layout = StoneMinePanel.layout(
                     surface,
                     self._panel,
-                    self._resources,
                     worker_assigned=wa,
                     production_status=production_status,
                 )
@@ -340,14 +321,13 @@ class GameInput:
                         surface,
                         pos,
                         self._panel,
-                        self._resources,
                         worker_assigned=wa,
                         production_status=production_status,
                     )
                     if action == "close":
                         self._panel = None
                     elif action == "upgrade" and self._panel is not None:
-                        if self._registry.upgrade_building(self._panel, self._resources):
+                        if self._registry.upgrade_building(self._panel):
                             self._sync_assignments()
                     elif action == "demolish" and self._panel is not None:
                         b = self._panel
@@ -364,7 +344,6 @@ class GameInput:
                 layout = ForesterHutPanel.layout(
                     surface,
                     self._panel,
-                    self._resources,
                     worker_assigned=wa,
                     production_status=production_status,
                 )
@@ -373,7 +352,6 @@ class GameInput:
                         surface,
                         pos,
                         self._panel,
-                        self._resources,
                         worker_assigned=wa,
                         production_status=production_status,
                     )
@@ -393,7 +371,6 @@ class GameInput:
                 layout = SchoolPanel.layout(
                     surface,
                     self._panel,
-                    self._resources,
                     worker_assigned=wa,
                     worker_manager=self._worker_manager,
                 )
@@ -402,7 +379,6 @@ class GameInput:
                         surface,
                         pos,
                         self._panel,
-                        self._resources,
                         worker_assigned=wa,
                         worker_manager=self._worker_manager,
                     )
@@ -427,7 +403,6 @@ class GameInput:
             layout = BuildingPanel.layout(
                 surface,
                 self._panel,
-                self._resources,
                 worker_assigned=wa,
                 production_status=self._panel_production_status(),
             )
@@ -436,14 +411,13 @@ class GameInput:
                     surface,
                     pos,
                     self._panel,
-                    self._resources,
                     worker_assigned=wa,
                     production_status=self._panel_production_status(),
                 )
                 if action == "close":
                     self._panel = None
                 elif action == "upgrade" and self._panel is not None:
-                    if self._registry.upgrade_building(self._panel, self._resources):
+                    if self._registry.upgrade_building(self._panel):
                         self._sync_assignments()
                 elif action == "demolish" and self._panel is not None:
                     b = self._panel

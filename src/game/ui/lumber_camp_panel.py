@@ -7,7 +7,6 @@ from dataclasses import dataclass
 import pygame
 
 from game.buildings.lumber_camp import LumberCamp
-from game.resources import ResourceManager
 from game.ui.building_panel import BuildingPanel
 
 _PANEL_PAD = 16
@@ -38,7 +37,6 @@ class LumberCampPanel:
     def layout(
         surface: pygame.Surface,
         camp: LumberCamp,
-        resources: ResourceManager,
         *,
         worker_assigned: bool,
         production_status: str | None = None,
@@ -46,7 +44,6 @@ class LumberCampPanel:
         base = BuildingPanel.layout(
             surface,
             camp,
-            resources,
             worker_assigned=worker_assigned,
             production_status=production_status,
             extra_bottom_px=_EXTRA_BOTTOM,
@@ -70,7 +67,6 @@ class LumberCampPanel:
     def draw(
         surface: pygame.Surface,
         camp: LumberCamp,
-        resources: ResourceManager,
         *,
         worker_assigned: bool,
         worker_status: str = "empty",
@@ -80,7 +76,6 @@ class LumberCampPanel:
         BuildingPanel.draw(
             surface,
             camp,
-            resources,
             worker_assigned=worker_assigned,
             worker_status=worker_status,
             production_status=production_status,
@@ -90,7 +85,6 @@ class LumberCampPanel:
         layout = LumberCampPanel.layout(
             surface,
             camp,
-            resources,
             worker_assigned=worker_assigned,
             production_status=production_status,
         )
@@ -109,7 +103,6 @@ class LumberCampPanel:
         surface: pygame.Surface,
         pos: tuple[int, int],
         camp: LumberCamp,
-        resources: ResourceManager,
         *,
         worker_assigned: bool,
         production_status: str | None = None,
@@ -122,7 +115,6 @@ class LumberCampPanel:
             surface,
             pos,
             camp,
-            resources,
             worker_assigned=worker_assigned,
             production_status=production_status,
             extra_bottom_px=_EXTRA_BOTTOM,
@@ -132,7 +124,6 @@ class LumberCampPanel:
         layout = LumberCampPanel.layout(
             surface,
             camp,
-            resources,
             worker_assigned=worker_assigned,
             production_status=production_status,
         )

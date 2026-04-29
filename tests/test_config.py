@@ -9,14 +9,14 @@ def test_config_constants_match_spec() -> None:
     assert config.TILE_H == 32
     assert config.GRID_SIZE == 110
     assert config.GATHER_RESOURCE_SEARCH_RADIUS == 20
-    assert config.INITIAL_RESOURCES == {
-        "food": 200,
+    assert config.TOWN_HALL_STARTING_WAREHOUSE == {
+        "wheat": 200,
         "wood": 200,
         "stone": 0,
         "iron": 0,
         "boards": 0,
     }
-    assert config.TOWN_HALL_MIN_LEVEL_FOR_BUILDING["STONE_MINE"] == 3
+    assert config.TOWN_HALL_MIN_LEVEL_FOR_BUILDING["STONE_MINE"] == 1
     assert config.TOWN_HALL_MIN_LEVEL_FOR_HIRE["MINER"] == 5
     assert config.MAX_LEVEL == 10
     assert config.WINDOW_SIZE == (1280, 720)

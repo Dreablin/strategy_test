@@ -4,12 +4,11 @@ import pygame
 
 from game import dev_asset_reload
 from game.buildings.registry import BuildingRegistry
-from game.buildings.town_hall import TownHall
+from game.buildings.town_hall import TownHall, bootstrap_starting_warehouse
 from game.camera import Camera
-from game.config import WINDOW_SIZE, town_hall_origin_tile
+from game.config import TOWN_HALL_STARTING_WAREHOUSE, WINDOW_SIZE, town_hall_origin_tile
 from game.input import TOP_BAR_HEIGHT, GameInput
 from game.render import Renderer
-from game.resources import ResourceManager
 from game.housing import current_population, max_population
 from game.ui.bottom_bar import BAR_HEIGHT, BottomBar
 from game.ui.placement import PlacementController
@@ -26,14 +25,15 @@ def main() -> int:
     pygame.display.set_caption("Isometric Strategy")
 
     world = World()
-    resources = ResourceManager()
     registry = BuildingRegistry(world)
     # Player starts with a single Town Hall as required by core game rules.
-    registry.place(TownHall, town_hall_origin_tile())
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    bootstrap_starting_warehouse(town_hall, TOWN_HALL_STARTING_WAREHOUSE)
     camera = Camera()
-    placement = PlacementController(world, registry, resources, camera)
-    worker_manager = WorkerManager(resources, registry, now_ms_fn=pygame.time.get_ticks)
-    game_input = GameInput(world, registry, resources, placement, worker_manager, camera)
+    placement = PlacementController(world, registry, camera)
+    worker_manager = WorkerManager(registry, now_ms_fn=pygame.time.get_ticks)
+    worker_manager.bootstrap_starting_workers_near_town_hall(town_hall)
+    game_input = GameInput(world, registry, placement, worker_manager, camera)
 
     running = True
     try:
@@ -79,7 +79,7 @@ def main() -> int:
                 current_population=current_population(registry, worker_manager),
                 max_population=max_population(registry, worker_manager),
             )
-            BottomBar.draw(screen, resources)
+            BottomBar.draw(screen)
             placement.draw(screen, camera)
             game_input.draw_panel(screen)
             pygame.display.flip()

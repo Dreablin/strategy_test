@@ -18,7 +18,6 @@ from game.config import (
 )
 from game.housing import current_population, max_population
 from game.pathfinding import find_path_bfs
-from game.resources import ResourceManager
 from game.world import find_nearest_free_stone, find_nearest_free_tree
 
 CHOP_DURATION_MS = 10_000
@@ -175,7 +174,7 @@ class Worker:
 class WorkerManager:
     """Tracks workers; notifies assignments when a staffed building is demolished (PRD F-WORK)."""
 
-    __slots__ = ("_now_ms_fn", "_registry", "_resources", "_workers", "_transport_queue")
+    __slots__ = ("_now_ms_fn", "_registry", "_workers", "_transport_queue")
     _WORKER_TO_BUILDING: dict[str, str] = {
         "LUMBERJACK": "LUMBER_CAMP",
         "STONECUTTER": "STONE_MINE",
@@ -187,11 +186,10 @@ class WorkerManager:
 
     def __init__(
         self,
-        resources: ResourceManager | None = None,
         registry: Any | None = None,
+        *,
         now_ms_fn: Callable[[], int] | None = None,
     ) -> None:
-        self._resources = resources
         self._registry = registry
         self._workers: list[Worker] = []
         self._transport_queue: list[TransportTask] = []
@@ -201,6 +199,34 @@ class WorkerManager:
 
     def add_worker(self, worker: Worker) -> None:
         self._workers.append(worker)
+
+    def bootstrap_starting_workers_near_town_hall(self, town_hall: Building) -> None:
+        """Place two carriers and one builder on tiles directly below the Town Hall (visible, not under sprite)."""
+        if self._registry is None or town_hall.type_tag != "TOWN_HALL":
+            return
+        t0, t1, t2 = self._starter_stand_tiles_near_town_hall(town_hall)
+        self.add_worker(Worker("CARRIER", stand_tile=t0))
+        self.add_worker(Worker("CARRIER", stand_tile=t1))
+        self.add_worker(Worker("BUILDER", stand_tile=t2))
+
+    def _starter_stand_tiles_near_town_hall(self, town_hall: Building) -> tuple[tuple[int, int], tuple[int, int], tuple[int, int]]:
+        """Three stand tiles on the row immediately south of the footprint (center first, then sideways)."""
+        preferred = town_hall_spawn_tile(town_hall)
+        pos = town_hall.grid_pos
+        if pos is None:
+            return preferred, preferred, preferred
+        gx, gy = pos
+        _, h = type(town_hall).footprint
+        south_row_y = gy + h
+        below = [t for t in self._approach_tiles(town_hall) if t[1] == south_row_y]
+        cx = preferred[0]
+        below.sort(key=lambda t: (abs(t[0] - cx), t[0]))
+        ordered = list(below)
+        if not ordered:
+            ordered = [preferred]
+        while len(ordered) < 3:
+            ordered.append(ordered[-1])
+        return ordered[0], ordered[1], ordered[2]
 
     def workers(self) -> tuple[Worker, ...]:
         return tuple(self._workers)
@@ -312,8 +338,8 @@ class WorkerManager:
         source_building: Building | None = None,
         charge_cost: bool = True,
     ) -> Worker | None:
-        """Hire a worker if town hall level and resources allow it."""
-        if self._resources is None or self._registry is None:
+        """Hire a worker if town hall level and housing allow it."""
+        if self._registry is None:
             return None
         if worker_type not in self._HIRABLE_WORKERS:
             return None
@@ -368,7 +394,7 @@ class WorkerManager:
 
     def can_hire(self, worker_type: str, *, charge_cost: bool = True) -> bool:
         """Whether current state allows hiring this worker type."""
-        if self._resources is None or self._registry is None:
+        if self._registry is None:
             return False
         if worker_type not in self._HIRABLE_WORKERS:
             return False
@@ -601,17 +627,13 @@ class WorkerManager:
                     if hasattr(camp, "add_to_storage"):
                         camp.add_to_storage(1)
                     town_hall = self._primary_town_hall()
-                    has_carrier = any(w.type_tag == "CARRIER" for w in self._workers)
-                    if town_hall is not None and has_carrier:
+                    if town_hall is not None:
                         self.enqueue_transport_task(
                             resource=gather_state["carry_resource"],
                             source=camp,
                             target=town_hall,
                             amount=1,
                         )
-                    elif self._resources is not None:
-                        # Backward-compatible fallback when no carrier exists yet.
-                        self._resources.add(gather_state["carry_resource"], 1)
                     if hasattr(camp, gather_state["record_method"]):
                         record_method = getattr(camp, gather_state["record_method"])
                         record_method(1)
@@ -745,8 +767,6 @@ class WorkerManager:
             return
         if hasattr(task.target, "add_to_warehouse"):
             task.target.add_to_warehouse(task.resource, 1)  # type: ignore[attr-defined]
-        if self._resources is not None:
-            self._resources.add(task.resource, 1)
         self._move_worker_to_building_approach(worker, task.target)
         worker.carrying = None
         worker.transport_task = None

@@ -9,7 +9,6 @@ from game.buildings.town_hall import TownHall
 from game.camera import Camera
 from game.input import TOP_BAR_HEIGHT, GameInput, screen_to_grid
 from game.render import Renderer
-from game.resources import ResourceManager
 from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT
 from game.ui.building_panel import BuildingPanel
 from game.ui.lumber_camp_panel import LumberCampPanel
@@ -33,8 +32,7 @@ def test_screen_to_grid_matches_placement_hover() -> None:
     surface = pygame.Surface((1280, 720))
     world = World()
     registry = BuildingRegistry(world)
-    resources = ResourceManager()
-    placement = PlacementController(world, registry, resources)
+    placement = PlacementController(world, registry)
     camera = Camera()
     placement.select("LUMBER_CAMP")
     pos = (523, 381)
@@ -48,10 +46,9 @@ def test_map_click_opens_panel_for_building() -> None:
     world = World()
     registry = BuildingRegistry(world)
     registry.place(LumberCamp, near_town_hall_tile())
-    resources = ResourceManager()
     camera = Camera()
-    placement = PlacementController(world, registry, resources, camera)
-    inp = GameInput(world, registry, resources, placement, WorkerManager(), camera)
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(), camera)
     pos = _tile_center(surface, world, *near_town_hall_tile())
     inp.handle(surface, pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=pos))
     assert inp.panel_building is not None
@@ -63,17 +60,16 @@ def test_outside_panel_click_closes() -> None:
     world = World()
     registry = BuildingRegistry(world)
     registry.place(LumberCamp, near_town_hall_tile())
-    resources = ResourceManager()
     camera = Camera()
-    placement = PlacementController(world, registry, resources, camera)
-    inp = GameInput(world, registry, resources, placement, WorkerManager(), camera)
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(), camera)
     inp.handle(
         surface,
         pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=_tile_center(surface, world, *near_town_hall_tile())),
     )
     b = inp.panel_building
     assert b is not None
-    layout = BuildingPanel.layout(surface, b, resources, worker_assigned=False)
+    layout = BuildingPanel.layout(surface, b, worker_assigned=False)
     pos_out: tuple[int, int] | None = None
     for my in range(TOP_BAR_HEIGHT + 40, surface.get_height() - BAR_HEIGHT - 8, 15):
         for mx in range(40, layout.frame.left - 8, 4):
@@ -94,10 +90,9 @@ def test_close_button_closes_panel() -> None:
     world = World()
     registry = BuildingRegistry(world)
     registry.place(LumberCamp, near_town_hall_tile())
-    resources = ResourceManager()
     camera = Camera()
-    placement = PlacementController(world, registry, resources, camera)
-    inp = GameInput(world, registry, resources, placement, WorkerManager(), camera)
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(), camera)
     b = registry.all()[0]
     inp.handle(
         surface,
@@ -105,7 +100,7 @@ def test_close_button_closes_panel() -> None:
     )
     # The panel is a LumberCamp panel, which is drawn with extra_bottom_px to fit
     # the toggle row, so resolve the Close button against the matching layout.
-    layout = LumberCampPanel.layout(surface, b, resources, worker_assigned=False)
+    layout = LumberCampPanel.layout(surface, b, worker_assigned=False)
     cx, cy = layout.close.center
     inp.handle(surface, pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=(cx, cy)))
     assert inp.panel_building is None
@@ -116,10 +111,9 @@ def test_escape_closes_panel() -> None:
     world = World()
     registry = BuildingRegistry(world)
     registry.place(LumberCamp, near_town_hall_tile())
-    resources = ResourceManager()
     camera = Camera()
-    placement = PlacementController(world, registry, resources, camera)
-    inp = GameInput(world, registry, resources, placement, WorkerManager(), camera)
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(), camera)
     inp.handle(
         surface,
         pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=_tile_center(surface, world, *near_town_hall_tile())),
@@ -133,10 +127,9 @@ def test_build_menu_select_closes_panel() -> None:
     world = World()
     registry = BuildingRegistry(world)
     registry.place(LumberCamp, near_town_hall_tile())
-    resources = ResourceManager()
     camera = Camera()
-    placement = PlacementController(world, registry, resources, camera)
-    inp = GameInput(world, registry, resources, placement, WorkerManager(), camera)
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(), camera)
     inp.handle(
         surface,
         pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=_tile_center(surface, world, *near_town_hall_tile())),
@@ -150,12 +143,11 @@ def test_place_calls_reassign_all_and_assigns_idle_worker() -> None:
     surface = pygame.Surface((1280, 720))
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
-    resources = ResourceManager()
     camera = Camera()
-    placement = PlacementController(world, registry, resources, camera)
-    workers = WorkerManager(resources, registry)
+    placement = PlacementController(world, registry, camera)
+    workers = WorkerManager(registry)
     workers.add_worker(Worker("LUMBERJACK"))
-    inp = GameInput(world, registry, resources, placement, workers, camera)
+    inp = GameInput(world, registry, placement, workers, camera)
     inp.handle(surface, pygame.event.Event(BUILD_MENU_SELECT, building_type="LUMBER_CAMP"))
     inp.handle(
         surface,
@@ -174,14 +166,12 @@ def test_school_hire_button_calls_worker_manager_hire_and_spawns_at_school() -> 
     registry.place(TownHall, town_hall_origin_tile())
     school = registry.place(School, near_town_hall_tile(8, 8))
     camp = registry.place(LumberCamp, near_town_hall_tile(12, 12))
-    resources = ResourceManager()
-    resources.add("food", 500)
     camera = Camera()
-    placement = PlacementController(world, registry, resources, camera)
-    workers = WorkerManager(resources, registry)
-    inp = GameInput(world, registry, resources, placement, workers, camera)
+    placement = PlacementController(world, registry, camera)
+    workers = WorkerManager(registry)
+    inp = GameInput(world, registry, placement, workers, camera)
     inp._panel = school
-    layout = SchoolPanel.layout(surface, school, resources, worker_assigned=False)
+    layout = SchoolPanel.layout(surface, school, worker_assigned=False)
     hire_button = next(rect for worker_type, rect in layout.hire_buttons if worker_type == "LUMBERJACK")
     inp.handle(
         surface,
@@ -203,15 +193,13 @@ def test_hire_from_second_school_spawns_near_second_school() -> None:
     registry.place(TownHall, town_hall_origin_tile())
     registry.place(School, near_town_hall_tile(8, 8))
     school2 = registry.place(School, near_town_hall_tile(18, 8))
-    resources = ResourceManager()
-    resources.add("food", 500)
     camera = Camera()
-    placement = PlacementController(world, registry, resources, camera)
-    workers = WorkerManager(resources, registry)
-    inp = GameInput(world, registry, resources, placement, workers, camera)
+    placement = PlacementController(world, registry, camera)
+    workers = WorkerManager(registry)
+    inp = GameInput(world, registry, placement, workers, camera)
 
     inp._panel = school2
-    layout = SchoolPanel.layout(surface, school2, resources, worker_assigned=False)
+    layout = SchoolPanel.layout(surface, school2, worker_assigned=False)
     _, hire_button = layout.hire_buttons[0]
     inp.handle(
         surface,
@@ -226,35 +214,34 @@ def test_hire_from_second_school_spawns_near_second_school() -> None:
     assert hired.current_tile == (s2x + s2w // 2, s2y + s2h)
 
 
-def test_school_enqueue_does_not_consume_food_or_spawn_instantly() -> None:
+def test_school_enqueue_does_not_consume_wheat_or_spawn_instantly() -> None:
     surface = pygame.Surface((1280, 720))
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
-    registry.place(TownHall, town_hall_origin_tile())
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
     school = registry.place(School, near_town_hall_tile(8, 8))
-    resources = ResourceManager()
-    resources.add("food", 500)
-    food_before = resources.get("food")
+    town_hall.add_to_warehouse("wheat", 500)
+    wheat_before = town_hall.warehouse_amount("wheat")
     camera = Camera()
-    placement = PlacementController(world, registry, resources, camera)
-    workers = WorkerManager(resources, registry)
-    inp = GameInput(world, registry, resources, placement, workers, camera)
+    placement = PlacementController(world, registry, camera)
+    workers = WorkerManager(registry)
+    inp = GameInput(world, registry, placement, workers, camera)
 
     inp._panel = school
-    layout = SchoolPanel.layout(surface, school, resources, worker_assigned=False)
+    layout = SchoolPanel.layout(surface, school, worker_assigned=False)
     _, hire_button = layout.hire_buttons[0]
     inp.handle(
         surface,
         pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=hire_button.center),
     )
     assert len(workers.workers()) == 0
-    assert resources.get("food") == food_before
+    assert town_hall.warehouse_amount("wheat") == wheat_before
 
     workers.update(29_999)
     assert len(workers.workers()) == 0
     workers.update(30_000)
     assert len(workers.workers()) == 1
-    assert resources.get("food") == food_before
+    assert town_hall.warehouse_amount("wheat") == wheat_before
 
 
 def test_dev_tree_and_stone_tools_place_entities_via_input_click() -> None:
@@ -262,10 +249,9 @@ def test_dev_tree_and_stone_tools_place_entities_via_input_click() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
     registry.place(TownHall, town_hall_origin_tile())
-    resources = ResourceManager()
     camera = Camera()
-    placement = PlacementController(world, registry, resources, camera)
-    inp = GameInput(world, registry, resources, placement, WorkerManager(resources, registry), camera)
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(registry), camera)
 
     def _find_free_tile(start_x: int, start_y: int) -> tuple[int, int]:
         for dy in range(0, 12):
@@ -299,10 +285,9 @@ def test_top_bar_boundary_click_is_treated_as_map() -> None:
     surface = pygame.Surface((1280, 720))
     world = World()
     registry = BuildingRegistry(world)
-    resources = ResourceManager()
     camera = Camera()
-    placement = PlacementController(world, registry, resources, camera)
-    inp = GameInput(world, registry, resources, placement, WorkerManager(), camera)
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(), camera)
     placement.select("LUMBER_CAMP")
     inp.handle(surface, pygame.event.Event(pygame.MOUSEMOTION, pos=(100, TOP_BAR_HEIGHT), rel=(0, 0)))
     assert placement.hover_grid is not None
@@ -314,10 +299,9 @@ def test_bottom_bar_boundary_click_is_not_map() -> None:
     world = World()
     registry = BuildingRegistry(world)
     registry.place(LumberCamp, near_town_hall_tile())
-    resources = ResourceManager()
     camera = Camera()
-    placement = PlacementController(world, registry, resources, camera)
-    inp = GameInput(world, registry, resources, placement, WorkerManager(), camera)
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(), camera)
     x, _ = _tile_center(surface, world, *near_town_hall_tile())
     hud_y = surface.get_height() - BAR_HEIGHT
     inp.handle(

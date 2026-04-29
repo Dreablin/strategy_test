@@ -8,7 +8,6 @@ import pygame
 
 from game.assets import resource_icon
 from game.buildings.town_hall import TownHall
-from game.resources import ResourceManager
 from game.ui.building_panel import BuildingPanel
 
 _PANEL_PAD = 16
@@ -44,12 +43,11 @@ class TownHallPanel:
 
     @staticmethod
     def layout(
-        surface: pygame.Surface, town_hall: TownHall, resources: ResourceManager, *, worker_assigned: bool
+        surface: pygame.Surface, town_hall: TownHall, *, worker_assigned: bool
     ) -> TownHallPanelLayout:
         base = BuildingPanel.layout(
             surface,
             town_hall,
-            resources,
             worker_assigned=worker_assigned,
             show_upgrade=False,
             show_demolish=False,
@@ -83,18 +81,17 @@ class TownHallPanel:
 
     @staticmethod
     def draw(
-        surface: pygame.Surface, town_hall: TownHall, resources: ResourceManager, *, worker_assigned: bool
+        surface: pygame.Surface, town_hall: TownHall, *, worker_assigned: bool
     ) -> None:
         BuildingPanel.draw(
             surface,
             town_hall,
-            resources,
             worker_assigned=worker_assigned,
             show_upgrade=False,
             show_demolish=False,
             extra_bottom_px=_EXTRA_BOTTOM,
         )
-        layout = TownHallPanel.layout(surface, town_hall, resources, worker_assigned=worker_assigned)
+        layout = TownHallPanel.layout(surface, town_hall, worker_assigned=worker_assigned)
         font = pygame.font.Font(None, 22)
         title_font = pygame.font.Font(None, 24)
 
@@ -130,10 +127,7 @@ class TownHallPanel:
             pygame.draw.rect(surface, (92, 98, 112), cell, width=1, border_radius=6)
             icon = pygame.transform.smoothscale(resource_icon(res_key), (20, 20))
             surface.blit(icon, (cell.left + 8, cell.top + 8))
-            if hasattr(town_hall, "warehouse_amount"):
-                qty = int(town_hall.warehouse_amount(res_key))
-            else:
-                qty = int(resources.get(res_key))
+            qty = int(town_hall.warehouse_amount(res_key))
             qty_s = font.render(str(qty), True, (236, 240, 246))
             surface.blit(qty_s, (cell.left + 34, cell.top + 10))
             label_s = pygame.font.Font(None, 18).render(res_label, True, (170, 176, 188))
@@ -145,7 +139,6 @@ class TownHallPanel:
         surface: pygame.Surface,
         pos: tuple[int, int],
         town_hall: TownHall,
-        resources: ResourceManager,
         *,
         worker_assigned: bool,
     ) -> str | None:
@@ -154,7 +147,6 @@ class TownHallPanel:
             surface,
             pos,
             town_hall,
-            resources,
             worker_assigned=worker_assigned,
             show_upgrade=False,
             show_demolish=False,
@@ -162,7 +154,7 @@ class TownHallPanel:
         )
         if base_action == "close":
             return "close"
-        layout = TownHallPanel.layout(surface, town_hall, resources, worker_assigned=worker_assigned)
+        layout = TownHallPanel.layout(surface, town_hall, worker_assigned=worker_assigned)
         if layout.storage_frame.collidepoint(pos):
             return None
         if layout.upgrade is not None and layout.upgrade.collidepoint(pos):

@@ -8,7 +8,6 @@ import pygame
 
 from game.buildings.base import Building
 from game.config import TICK_MS
-from game.resources import ResourceManager
 
 _PANEL_W = 420
 _PANEL_PAD = 16
@@ -30,7 +29,7 @@ _DESCRIPTION: dict[str, str] = {
     "LUMBER_CAMP": "Lumberjack chops trees for wood.",
     "STONE_MINE": "Stonecutter quarries stone.",
     "IRON_MINE": "Miner digs for iron.",
-    "FARM": "Farmer grows food.",
+    "FARM": "Farmer grows wheat.",
     "FORESTER_HUT": "Forester plants new trees around the hut.",
 }
 
@@ -69,7 +68,6 @@ class BuildingPanel:
     def layout(
         surface: pygame.Surface,
         building: Building,
-        resources: ResourceManager,
         *,
         worker_assigned: bool,
         production_status: str | None = None,
@@ -137,7 +135,6 @@ class BuildingPanel:
     def draw(
         surface: pygame.Surface,
         building: Building,
-        resources: ResourceManager,
         *,
         worker_assigned: bool,
         worker_status: str = "empty",
@@ -150,7 +147,6 @@ class BuildingPanel:
         layout = BuildingPanel.layout(
             surface,
             building,
-            resources,
             worker_assigned=worker_assigned,
             production_status=production_status,
             show_upgrade=show_upgrade,
@@ -243,7 +239,6 @@ class BuildingPanel:
         surface: pygame.Surface,
         pos: tuple[int, int],
         building: Building,
-        resources: ResourceManager,
         *,
         worker_assigned: bool,
         production_status: str | None = None,
@@ -255,7 +250,6 @@ class BuildingPanel:
         layout = BuildingPanel.layout(
             surface,
             building,
-            resources,
             worker_assigned=worker_assigned,
             production_status=production_status,
             show_upgrade=show_upgrade,

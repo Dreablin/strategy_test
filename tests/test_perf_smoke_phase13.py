@@ -28,14 +28,12 @@ def test_phase13_perf_gate_regression(monkeypatch) -> None:
         from game.buildings.registry import BuildingRegistry
         from game.buildings.stone_mine import StoneMine
         from game.buildings.town_hall import TownHall
-        from game.resources import ResourceManager
-
+        
         world = world_mod.World()
         world._trees.clear()  # noqa: SLF001
         world._stones.clear()  # noqa: SLF001
 
         registry = BuildingRegistry(world)
-        resources = ResourceManager()
         town_hall = registry.place(TownHall, (48, 48))
         town_hall.level = 5
 
@@ -57,7 +55,7 @@ def test_phase13_perf_gate_regression(monkeypatch) -> None:
                         world.mark_occupied(x, y, 1, 1)
 
         now_ms = {"t": 0}
-        manager = workers_mod.WorkerManager(resources, registry, now_ms_fn=lambda: now_ms["t"])
+        manager = workers_mod.WorkerManager(registry, now_ms_fn=lambda: now_ms["t"])
 
         for _ in range(5):
             assert manager.hire("LUMBERJACK") is not None

@@ -2,10 +2,10 @@
 
 ## Current Status
 
-- **Phase:** 17 — Remove abstract spend-cost economy
-- **Next Task:** None
-- **Last Completed:** T176 — removed legacy costs/spend API and test dependencies
-- **Total Progress:** 176 / 176 (Phase 17: 2 / 2 tasks done)
+- **Phase:** 18 — Remove ResourceManager globally (complete)
+- **Next Task:** —
+- **Last Completed:** T184 — `warehouse_bootstrap.town_hall` in settings; `bootstrap_starting_warehouse` in `main` only; removed `INITIAL_RESOURCES`
+- **Total Progress:** 184 / 184 (Phase 18: 8 / 8 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -82,6 +82,21 @@
 
 ---
 
+## Phase 18 — Remove ResourceManager globally
+
+**Goal.** Fully remove `ResourceManager` and all global resource counters. Single source of truth for physical resources is warehouse/local storages.
+
+- [x] **T177**: Runtime migration — route producer deposits and carrier deliveries to `TownHall.warehouse` only; remove fallback paths and direct global `resources.add(...)` writes.
+- [x] **T178**: API migration — remove `ResourceManager` dependencies from `main/input/ui panels/placement/registry/workers` signatures and wiring.
+- [x] **T179**: Test migration — replace `ResourceManager` fixtures/usages with warehouse-centric setup and assertions; delete `tests/test_resources.py`.
+- [x] **T180**: Cleanup + verification — delete `src/game/resources.py`, scrub PRD references, run full `pytest -q` + `ruff check src tests`.
+- [x] **T181**: Food/Wheat normalization cleanup — remove legacy alias flow (`food` ↔ `wheat`) from assets/panels/warehouse APIs; converge on one canonical key and update labels/tests.
+- [x] **T182**: Remove per-cycle remnants — delete dead `per_cycle` / `sync_resources_per_cycle` logic and related tests/docs that describe legacy cycle totals.
+- [x] **T183**: Remove runtime fallback branches that still read from global resources (e.g., TownHallPanel `warehouse_amount` fallback path) once warehouse is the only source of truth.
+- [x] **T184**: Config/domain final cleanup — remove `economy.initial_resources` from settings/config (or relocate to warehouse bootstrap config), and update all tests/docs expecting `INITIAL_RESOURCES`.
+
+---
+
 ## Decisions Log
 
 | Date | Task | Decision | Rationale |
@@ -109,6 +124,14 @@
 | 2026-04-28 | T174 | Added generic `TransportTask` queue in `WorkerManager`; `CARRIER` now walks to source, takes 1 unit, walks to target, and delivers to Town Hall warehouse + spendable resource pool. | Establishes extensible building-to-building transport pipeline while preserving old no-carrier economy path. |
 | 2026-04-28 | T175 | Removed wallet cost gates for placement/upgrade/hiring and switched UI labels to “Free”; deleted cost tables from settings/config and updated tests. | Aligns economy with physical-storage direction and removes legacy abstract spend model. |
 | 2026-04-28 | T176 | Deleted legacy `game.buildings.costs`, removed `ResourceManager.has/try_spend`, and migrated tests to explicit add/get semantics. | Completes cost-economy removal so no dead compatibility APIs remain in runtime code. |
+| 2026-04-28 | T177 | Removed runtime `resources.add(...)` writes from gather and carrier delivery; producer output now enters local storage then warehouse via transport pipeline only. | Establishes Town Hall warehouse as the sole runtime accumulation sink before API-level ResourceManager removal in T178+. |
+| 2026-04-28 | T178 | Removed `ResourceManager` imports/type-coupling from runtime wiring (`main/input/ui panels/placement/registry/workers`) while keeping compatibility arguments where still used by tests. | Decouples runtime API surfaces from global resource manager before the dedicated test-side migration in T179. |
+| 2026-04-28 | T179 | Removed `tests/test_resources.py` and migrated multiple runtime-smoke/regression tests from wallet assertions (`resources.get`/`per_cycle`) to warehouse-centric checks (`TownHall.warehouse_amount`, delivered counters, storage paths). | Aligns test expectations with warehouse-as-source-of-truth before deleting `resources.py` in T180. |
+| 2026-04-28 | T180 | Removed `src/game/resources.py`; `WorkerManager` no longer takes `ResourceManager`; `main` wires `WorkerManager(registry, now_ms_fn=...)`; fixed `test_workers` `now_ms_fn` call to use `registry=None` keyword. **`PRD.md` not edited** (contract read-only). | Completes module deletion and verification; PRD text may still mention legacy resources until a future docs pass outside Ralph contract edits. |
+| 2026-04-28 | T181 | Canonical crop key is **`wheat`**: dropped TownHall `food`→`wheat` normalization; `assets._resource_colors` uses `wheat`; `economy.initial_resources` and defaults use `wheat` instead of `food`; UI copy and tests updated. **`PRD.md` not edited** (still lists legacy `food` in F-RES). | Single warehouse/settings vocabulary; PRD resource names are stale until allowed to be revised. |
+| 2026-04-28 | T182 | Deleted `BuildingRegistry.sync_resources_per_cycle` (no-op), its `upgrade_building` tail call, and `GameInput._sync_assignments` hook; production/building tests renamed to assert staffing, upgrades, and no passive ticks without the stub API. **`PRD.md` not edited** (still mentions `.per_cycle` in type sketch). | Removes dead cycle-sync surface; PRD type lines remain historical. |
+| 2026-04-28 | T183 | Removed legacy **`resources`** parameter/`GameInput` slot and `PlacementController` storage; all building panels + `BottomBar` + `upgrade_building` no longer accept a wallet; warehouse display was already `TownHall.warehouse_amount` only. | Eliminates dead global-resource API surface; `INITIAL_RESOURCES` in config remains for T184. |
+| 2026-04-28 | T184 | Replaced `economy.initial_resources` / `INITIAL_RESOURCES` with **`warehouse_bootstrap.town_hall`** in JSON + `TOWN_HALL_STARTING_WAREHOUSE`; **`bootstrap_starting_warehouse`** seeds the placed Town Hall in **`main` only** so tests keep empty warehouses by default. | Aligns config with warehouse source-of-truth; gameplay start matches prior 200/200 wheat/wood. **`PRD.md` not edited**. |
 
 ## Issues & Blockers
 

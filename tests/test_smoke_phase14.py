@@ -10,7 +10,6 @@ from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
 from game.config import near_town_hall_tile, town_hall_origin_tile
 from game.render import Renderer
-from game.resources import ResourceManager
 from game.trees import TreeStage
 from game.world import World
 from game.workers import WorkerManager
@@ -22,19 +21,19 @@ def test_smoke_phase14_forestry_cycle_to_render() -> None:
     world._trees.clear()  # noqa: SLF001
     world._stones.clear()  # noqa: SLF001
 
-    resources = ResourceManager()
     registry = BuildingRegistry(world)
     town_hall = registry.place(TownHall, town_hall_origin_tile())
     town_hall.level = 10
     forester_hut = registry.place(ForesterHut, near_town_hall_tile(12, 4))
     lumber_camp = registry.place(LumberCamp, near_town_hall_tile(4, 12))
 
-    workers = WorkerManager(resources, registry, now_ms_fn=lambda: now_ms["t"])
+    workers = WorkerManager(registry, now_ms_fn=lambda: now_ms["t"])
     assert workers.hire("FORESTER") is not None
     assert workers.hire("LUMBERJACK") is not None
+    assert workers.hire("CARRIER") is not None
 
     planted_tile: tuple[int, int] | None = None
-    for _ in range(1200):
+    for _ in range(2400):
         now_ms["t"] += 500
         workers.reassign_all()
         workers.update(now_ms["t"])
@@ -46,7 +45,7 @@ def test_smoke_phase14_forestry_cycle_to_render() -> None:
 
     # Growth should advance during regular runtime updates (no explicit test-side growth call).
     matured = False
-    for _ in range(1200):
+    for _ in range(3000):
         now_ms["t"] += 500
         workers.reassign_all()
         workers.update(now_ms["t"])
@@ -57,7 +56,8 @@ def test_smoke_phase14_forestry_cycle_to_render() -> None:
     assert matured, "expected planted tree to mature during runtime updates"
     # Freeze reforestation so lumberjack has one mature planted target to clear.
     forester_hut.set_active(False)
-    wood_before = resources.get("wood")
+    wood_before = town_hall.warehouse_amount("wood")
+    delivered_before = lumber_camp.delivered_wood
 
     chopped = False
     for _ in range(1200):
@@ -66,10 +66,11 @@ def test_smoke_phase14_forestry_cycle_to_render() -> None:
         workers.update(now_ms["t"])
         # Forester picks random valid tiles; validate that lumberjack eventually harvests wood,
         # not strictly that this exact planted tile is the one chopped first.
-        if resources.get("wood") > wood_before:
+        if lumber_camp.delivered_wood > delivered_before:
             chopped = True
             break
     assert chopped, "expected lumberjack to eventually harvest at least one matured planted tree"
+    assert town_hall.warehouse_amount("wood") == wood_before
 
     # Render one frame with mixed tree species present; no exceptions and non-bg pixels.
     planted_species: set[int] = set()

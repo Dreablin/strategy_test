@@ -19,7 +19,6 @@ from game.buildings.stone_mine import StoneMine
 from game.config import TILE_H, TILE_W
 from game.iso import screen_to_world, world_to_screen
 from game.render import Renderer
-from game.resources import ResourceManager
 from game.stones import Stone
 from game.world import World
 
@@ -51,18 +50,16 @@ def _diamond_screen_points(
 class PlacementController:
     """Tracks pending building type, hover cell, preview tint, and commits via registry."""
 
-    __slots__ = ("_camera", "_hover", "_pending", "_pending_dev", "_registry", "_resources", "_world")
+    __slots__ = ("_camera", "_hover", "_pending", "_pending_dev", "_registry", "_world")
 
     def __init__(
         self,
         world: World,
         registry: BuildingRegistry,
-        resources: ResourceManager,
         camera: Camera | None = None,
     ) -> None:
         self._world = world
         self._registry = registry
-        self._resources = resources
         self._camera = camera if camera is not None else Camera()
         self._pending: Type[Building] | None = None
         self._pending_dev: str | None = None  # DEV_TREE | DEV_STONE

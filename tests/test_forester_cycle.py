@@ -2,25 +2,26 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from game.buildings.forester_hut import ForesterHut
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
 from game.config import near_town_hall_tile, town_hall_origin_tile
-from game.resources import ResourceManager
 from game.trees import TreeStage
 from game.world import World
 from game.workers import Worker, WorkerManager, building_center_tile
 
 
-def _setup_forester_runtime() -> tuple[list[int], World, BuildingRegistry, ResourceManager, ForesterHut, WorkerManager]:
+def _setup_forester_runtime() -> tuple[list[int], World, BuildingRegistry, Any, ForesterHut, WorkerManager]:
     now_ms = [0]
     world = World(world_seed=0)
-    resources = ResourceManager()
+    resources = None
     registry = BuildingRegistry(world)
     th = registry.place(TownHall, town_hall_origin_tile())
     th.level = 10
     hut = registry.place(ForesterHut, near_town_hall_tile(12, 4))
-    workers = WorkerManager(resources, registry, now_ms_fn=lambda: now_ms[0])
+    workers = WorkerManager(registry, now_ms_fn=lambda: now_ms[0])
     return now_ms, world, registry, resources, hut, workers
 
 

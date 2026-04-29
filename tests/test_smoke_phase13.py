@@ -9,7 +9,6 @@ from game.buildings.registry import BuildingRegistry
 from game.buildings.stone_mine import StoneMine
 from game.buildings.town_hall import TownHall
 from game.render import Renderer
-from game.resources import ResourceManager
 from game.stones import Stone
 from game.trees import Tree, TreeStage
 from game.world import World
@@ -28,7 +27,6 @@ def test_smoke_phase13_paths_calls_and_render() -> None:
     world._stones[(30, 20)] = Stone(units=10)  # noqa: SLF001
     world._stones[(31, 20)] = Stone(units=10)  # noqa: SLF001
 
-    resources = ResourceManager()
     registry = BuildingRegistry(world)
     town_hall = registry.place(TownHall, town_hall_origin_tile())
     town_hall.level = 3
@@ -36,7 +34,7 @@ def test_smoke_phase13_paths_calls_and_render() -> None:
     mine = registry.place(StoneMine, (28, 22))
 
     now_ms = {"t": 0}
-    manager = WorkerManager(resources, registry, now_ms_fn=lambda: now_ms["t"])
+    manager = WorkerManager(registry, now_ms_fn=lambda: now_ms["t"])
     assert manager.hire("LUMBERJACK") is not None
     assert manager.hire("STONECUTTER") is not None
 

@@ -20,10 +20,7 @@ class TownHall(Building):
 
     @staticmethod
     def _normalize_resource(resource: str) -> str:
-        key = str(resource).lower()
-        if key == "food":
-            return "wheat"
-        return key
+        return str(resource).lower()
 
     def warehouse_amount(self, resource: str) -> int:
         key = self._normalize_resource(resource)
@@ -45,3 +42,11 @@ class TownHall(Building):
         if n > current:
             raise ValueError("insufficient warehouse amount")
         self.warehouse[key] = current - n
+
+
+def bootstrap_starting_warehouse(town_hall: TownHall, amounts: dict[str, int]) -> None:
+    """Apply configured starting stock to a Town Hall (e.g. new game in ``main`` only)."""
+    for key, n in amounts.items():
+        nn = int(n)
+        if nn > 0:
+            town_hall.add_to_warehouse(key, nn)

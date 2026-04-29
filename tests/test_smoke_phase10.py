@@ -13,7 +13,6 @@ from game.buildings.town_hall import TownHall
 from game.iso import world_to_screen
 from game.pathfinding import find_path_bfs
 from game.render import Renderer
-from game.resources import ResourceManager
 from game.trees import Tree, TreeStage
 from game.world import World
 from game.workers import Worker, WorkerManager
@@ -35,7 +34,6 @@ def test_smoke_phase10_tree_features(monkeypatch) -> None:
 
     # 2) Placement clears tree inside footprint.
     registry = BuildingRegistry(world)
-    resources = ResourceManager()
     th = registry.place(TownHall, town_hall_origin_tile())
     th.level = 5
     tx, ty = near_town_hall_tile()
@@ -46,7 +44,7 @@ def test_smoke_phase10_tree_features(monkeypatch) -> None:
     assert not world.is_tree_blocking(tx, ty)
 
     # 3) Tree occludes worker behind on same tile.
-    workers = WorkerManager(resources, registry)
+    workers = WorkerManager(registry)
     workers.add_worker(Worker("LUMBERJACK", stand_tile=(tx, ty)))
     world._trees[(tx, ty)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
 

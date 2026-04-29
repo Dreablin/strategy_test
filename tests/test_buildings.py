@@ -9,7 +9,6 @@ from game.buildings.lumber_camp import LumberCamp
 from game.buildings.registry import BuildingRegistry
 from game.buildings.stone_mine import StoneMine
 from game.buildings.town_hall import TownHall
-from game.resources import ResourceManager
 from game.world import World
 
 
@@ -68,65 +67,45 @@ def test_town_hall_max_level_10() -> None:
 def test_upgrade_lumber_camp_is_free_and_increments_level() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
-    resources = ResourceManager()
     b = registry.place(LumberCamp, (11, 11))
-    resources.add("wood", 500)
-    wood_before = resources.get("wood")
-    assert registry.upgrade_building(b, resources)
+    assert registry.upgrade_building(b)
     assert b.level == 2
-    assert resources.get("wood") == wood_before
 
 
 def test_upgrade_no_longer_depends_on_wallet_resources() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
-    resources = ResourceManager()
     b = registry.place(LumberCamp, (12, 12))
-    resources.add("wood", -resources.get("wood"))
-    assert resources.get("wood") == 0
-    assert registry.upgrade_building(b, resources)
+    assert registry.upgrade_building(b)
     assert b.level == 2
 
 
 def test_upgrade_allowed_for_town_hall_below_cap() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
-    resources = ResourceManager()
-    resources.add("wood", 50)
     th = registry.place(TownHall, town_hall_origin_tile())
-    assert registry.upgrade_building(th, resources)
+    assert registry.upgrade_building(th)
     assert th.level == 2
 
 
-def test_upgrade_updates_per_cycle_when_building_is_staffed() -> None:
-    """No passive per-cycle production should be exposed for active gatherers."""
+def test_upgrade_succeeds_for_stone_mine_with_town_hall_tech_gate() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
-    resources = ResourceManager()
     th = registry.place(TownHall, town_hall_origin_tile())
     th.level = 3
     b = registry.place(StoneMine, (10, 10))
-    registry.sync_resources_per_cycle(resources, staffed_buildings={b})
-    assert resources.per_cycle["stone"] == 0
-    resources.add("wood", 2000)
-    resources.add("stone", 2000)
-    assert registry.upgrade_building(b, resources)
-    registry.sync_resources_per_cycle(resources, staffed_buildings={b})
-    assert resources.per_cycle["stone"] == 0
+    assert registry.upgrade_building(b)
+    assert b.level == 2
 
 
 def test_upgrade_rejected_at_max_level() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
-    resources = ResourceManager()
-    resources.add("wood", 60_000)
-    resources.add("stone", 60_000)
-    resources.add("iron", 60_000)
     b = registry.place(LumberCamp, (18, 18))
     for _ in range(9):
-        assert registry.upgrade_building(b, resources)
+        assert registry.upgrade_building(b)
     assert b.level == 10
-    assert not registry.upgrade_building(b, resources)
+    assert not registry.upgrade_building(b)
 
 
 @pytest.mark.parametrize("cls", [LumberCamp, StoneMine, IronMine, Farm])
@@ -171,7 +150,7 @@ def test_town_hall_exposes_warehouse_api() -> None:
     assert th.warehouse_amount("wheat") == 0
     assert th.warehouse_amount("boards") == 0
     th.add_to_warehouse("wood", 2)
-    th.add_to_warehouse("food", 1)
+    th.add_to_warehouse("wheat", 1)
     th.add_to_warehouse("boards", 3)
     assert th.warehouse_amount("wood") == 2
     assert th.warehouse_amount("wheat") == 1

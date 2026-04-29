@@ -8,7 +8,6 @@ import pygame
 
 from game.assets import hire_ui_icon, worker_ui_icon
 from game.buildings.school import SCHOOL_TRAINING_MS, School
-from game.resources import ResourceManager
 from game.ui.building_panel import BuildingPanel
 from game.workers import WorkerManager
 
@@ -50,7 +49,6 @@ class SchoolPanel:
     def layout(
         surface: pygame.Surface,
         school: School,
-        resources: ResourceManager,
         *,
         worker_assigned: bool,
         worker_manager: WorkerManager | None = None,
@@ -58,7 +56,6 @@ class SchoolPanel:
         base = BuildingPanel.layout(
             surface,
             school,
-            resources,
             worker_assigned=worker_assigned,
             show_upgrade=False,
             show_demolish=False,
@@ -88,7 +85,6 @@ class SchoolPanel:
                     charge_cost=False,
                 ) and school.can_enqueue_training()
             else:
-                _ = resources
                 hire_enabled[worker_type] = school.can_enqueue_training()
             y += _BTN_H + _GAP
         return SchoolPanelLayout(
@@ -104,7 +100,6 @@ class SchoolPanel:
     def draw(
         surface: pygame.Surface,
         school: School,
-        resources: ResourceManager,
         *,
         worker_assigned: bool,
         worker_manager: WorkerManager | None = None,
@@ -112,7 +107,6 @@ class SchoolPanel:
         BuildingPanel.draw(
             surface,
             school,
-            resources,
             worker_assigned=worker_assigned,
             show_upgrade=False,
             show_demolish=False,
@@ -121,7 +115,6 @@ class SchoolPanel:
         layout = SchoolPanel.layout(
             surface,
             school,
-            resources,
             worker_assigned=worker_assigned,
             worker_manager=worker_manager,
         )
@@ -172,7 +165,6 @@ class SchoolPanel:
         surface: pygame.Surface,
         pos: tuple[int, int],
         school: School,
-        resources: ResourceManager,
         *,
         worker_assigned: bool,
         worker_manager: WorkerManager | None = None,
@@ -181,7 +173,6 @@ class SchoolPanel:
             surface,
             pos,
             school,
-            resources,
             worker_assigned=worker_assigned,
             show_upgrade=False,
             show_demolish=False,
@@ -192,7 +183,6 @@ class SchoolPanel:
         layout = SchoolPanel.layout(
             surface,
             school,
-            resources,
             worker_assigned=worker_assigned,
             worker_manager=worker_manager,
         )

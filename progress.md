@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 19 — Construction System (queued)
-- **Next Task:** T196 — prioritize transport queue by task priority
-- **Last Completed:** T195 — add construction transport task generation + `TransportTask.priority`
-- **Total Progress:** 195 / 209 (Phase 19: 11 / 25 tasks done)
+- **Next Task:** T197 — auto-enqueue and deliver construction transport tasks
+- **Last Completed:** T196 — pick highest-priority eligible transport task first
+- **Total Progress:** 196 / 209 (Phase 19: 12 / 25 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -137,7 +137,7 @@
 
 - [x] **T195**: Add `construction_transport_tasks(registry) -> list[TransportTask]` function in `construction.py` (or `workers.py`). Scan all buildings with `is_under_construction`, compute `remaining_resources()`, generate transport tasks from **Town Hall warehouse** to the construction site. These tasks should be distinguishable as **high priority**. Add `priority: int` field to `TransportTask` (default 0, construction = 10). Write tests.
 
-- [ ] **T196**: Modify `WorkerManager._next_transport_task()` to sort by priority descending before picking the next task. High-priority construction tasks are served before normal warehouse-delivery tasks. Write tests: when both normal and construction tasks exist, carriers pick construction tasks first.
+- [x] **T196**: Modify `WorkerManager._next_transport_task()` to sort by priority descending before picking the next task. High-priority construction tasks are served before normal warehouse-delivery tasks. Write tests: when both normal and construction tasks exist, carriers pick construction tasks first.
 
 - [ ] **T197**: Generate construction transport tasks automatically: when a building becomes `is_under_construction` (place or upgrade), enqueue the needed resources as high-priority transport tasks sourced from Town Hall warehouse. When a resource is delivered (carrier unloads at construction site), call `construction_site.deliver_resource(resource, 1)`. Write tests: place building → transport tasks created → carrier delivers → `delivered_resources` incremented → `is_fully_supplied()` eventually becomes True.
 

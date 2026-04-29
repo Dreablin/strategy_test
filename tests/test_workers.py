@@ -771,6 +771,25 @@ def test_construction_transport_tasks_ignore_non_construction_buildings() -> Non
     assert tasks[0].target is mine
 
 
+def test_next_transport_task_picks_highest_priority_available_task_first() -> None:
+    world = World(world_seed=0)
+    registry = BuildingRegistry(world)
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    camp_a = registry.place(LumberCamp, near_town_hall_tile(8, 8))
+    camp_b = registry.place(LumberCamp, near_town_hall_tile(12, 12))
+    wm = WorkerManager(registry)
+    camp_a.add_to_storage(1)
+    camp_b.add_to_storage(1)
+    wm.enqueue_transport_task(resource="wood", source=camp_a, target=town_hall, amount=1, priority=0)
+    wm.enqueue_transport_task(resource="wood", source=camp_b, target=town_hall, amount=1, priority=10)
+
+    picked = wm._next_transport_task()
+
+    assert picked is not None
+    assert picked.source is camp_b
+    assert picked.priority == 10
+
+
 def test_hire_stonecutter_requires_town_hall_level_3() -> None:
     world = World(world_seed=0)
     registry = BuildingRegistry(world)

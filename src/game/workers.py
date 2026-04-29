@@ -743,6 +743,7 @@ class WorkerManager:
         if self._registry is None:
             return None
         known = set(self._registry.all())
+        eligible: list[tuple[int, TransportTask]] = []
         for idx, task in enumerate(self._transport_queue):
             if task.source not in known or task.target not in known:
                 continue
@@ -750,8 +751,11 @@ class WorkerManager:
                 continue
             if int(getattr(task.source, "stored", 0)) <= 0:
                 continue
-            return self._transport_queue.pop(idx)
-        return None
+            eligible.append((idx, task))
+        if not eligible:
+            return None
+        best_idx, _ = max(eligible, key=lambda item: (int(item[1].priority), -item[0]))
+        return self._transport_queue.pop(best_idx)
 
     def _start_move_to_building(self, worker: Worker, building: Building, now_ms: int) -> bool:
         if self._registry is None:

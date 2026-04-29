@@ -92,6 +92,7 @@ def test_complete_construction_finishes_upgrade_releases_builder_and_restores_wo
     from game.construction import complete_construction
 
     building = LumberCamp(level=1, grid_pos=(10, 10))
+    building.active = False
     builder = Worker("BUILDER")
     builder.assigned_building = building
     builder.idle = False
@@ -115,6 +116,7 @@ def test_complete_construction_finishes_upgrade_releases_builder_and_restores_wo
     assert complete_construction(building, now_ms=4_000) is True
     assert building.level == 2
     assert building.construction_site is None
+    assert building.active is True
 
     assert builder.idle is True
     assert builder.state == "idle"

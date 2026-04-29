@@ -66,6 +66,10 @@ def complete_construction(building: Any, now_ms: int) -> bool:
 
     building.level = int(site.target_level)
     building.construction_site = None
+    if hasattr(building, "set_active"):
+        building.set_active(True)
+    elif hasattr(building, "active"):
+        setattr(building, "active", True)
 
     builder = site.builder
     if builder is not None:

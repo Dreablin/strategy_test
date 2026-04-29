@@ -255,6 +255,28 @@ def test_upgrade_assigned_worker_transitions_to_resting_inside_building() -> Non
     assert worker.current_tile == (15, 15)
 
 
+def test_upgrade_pauses_active_building_and_parks_gathering_worker_inside() -> None:
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    camp = registry.place(LumberCamp, (14, 14))
+    camp.construction_site = None
+    workers = WorkerManager(registry)
+    worker = Worker("LUMBERJACK")
+    workers.add_worker(worker)
+    workers.assign_to_building(worker, camp)
+    worker.state = "going_to_tree"
+    worker.current_tile = (20, 20)
+
+    assert camp.active is True
+    assert registry.upgrade_building(camp)
+
+    assert camp.active is False
+    assert worker.assigned_building is camp
+    assert worker.state == "resting"
+    assert worker.current_tile == (15, 15)
+    assert worker.stand_tile == (15, 15)
+
+
 def test_upgrade_rejected_while_building_already_under_construction() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)

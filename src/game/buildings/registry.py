@@ -156,10 +156,23 @@ class BuildingRegistry:
 
         spec = req_by_level[next_level]
         resting_worker = None
+        if hasattr(building, "set_active"):
+            building.set_active(False)
+        elif hasattr(building, "active"):
+            setattr(building, "active", False)
         if self._worker_manager is not None:
             for worker in self._worker_manager.workers():
                 if worker.assigned_building is building:
+                    bx, by = building.grid_pos if building.grid_pos is not None else (0, 0)
+                    bw, bh = type(building).footprint
+                    cx = bx + bw // 2
+                    cy = by + bh // 2
                     worker.state = "resting"
+                    worker.current_tile = (cx, cy)
+                    worker.stand_tile = (cx, cy)
+                    worker.target_tile = (cx, cy)
+                    worker.path = []
+                    worker.segment_progress = 0.0
                     resting_worker = worker
                     break
         building.construction_site = ConstructionSite(

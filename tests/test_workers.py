@@ -847,6 +847,39 @@ def test_carrier_delivery_to_construction_site_increments_delivered_resources() 
     assert site.is_fully_supplied()
 
 
+def test_carrier_redirects_to_town_hall_if_construction_need_already_satisfied() -> None:
+    world = World(world_seed=0)
+    registry = BuildingRegistry(world)
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    camp = registry.place(LumberCamp, near_town_hall_tile(8, 8))
+    camp.construction_site = ConstructionSite(
+        required_resources={"wood": 1},
+        delivered_resources={"wood": 1},
+        build_time_ms=10_000,
+        build_started_ms=None,
+        builder=None,
+        target_level=1,
+    )
+    source = registry.place(LumberCamp, near_town_hall_tile(14, 8))
+    source.construction_site = None
+    source.add_to_storage(1)
+    wm = WorkerManager(registry, now_ms_fn=lambda: 0)
+    carrier = wm.hire("CARRIER")
+    assert carrier is not None
+    wm.enqueue_transport_task(resource="wood", source=source, target=camp, amount=1, priority=10)
+    wh_before = town_hall.warehouse_amount("wood")
+
+    for now_ms in range(0, 120_000, 500):
+        wm.update(now_ms)
+        if town_hall.warehouse_amount("wood") >= wh_before + 1:
+            break
+
+    site = camp.construction_site
+    assert site is not None
+    assert int(site.delivered_resources.get("wood", 0)) == 1
+    assert town_hall.warehouse_amount("wood") == wh_before + 1
+
+
 def test_unavailable_construction_task_stays_queued_until_stock_appears() -> None:
     world = World(world_seed=0)
     registry = BuildingRegistry(world)

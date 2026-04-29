@@ -902,11 +902,22 @@ class WorkerManager:
             return
         if now_ms < worker.camp_wait_until_ms:
             return
-        if task.target.is_under_construction and task.target.construction_site is not None:
-            task.target.construction_site.deliver_resource(task.resource, 1)
+        delivered_target = task.target
+        site = task.target.construction_site if task.target.is_under_construction else None
+        if site is not None:
+            remaining = int(site.remaining_resources().get(str(task.resource).lower(), 0))
+            if remaining > 0:
+                site.deliver_resource(task.resource, 1)
+            else:
+                town_hall = self._primary_town_hall()
+                if town_hall is not None:
+                    town_hall.add_to_warehouse(task.resource, 1)
+                    delivered_target = town_hall
+                elif hasattr(task.target, "add_to_warehouse"):
+                    task.target.add_to_warehouse(task.resource, 1)  # type: ignore[attr-defined]
         elif hasattr(task.target, "add_to_warehouse"):
             task.target.add_to_warehouse(task.resource, 1)  # type: ignore[attr-defined]
-        self._move_worker_to_building_approach(worker, task.target)
+        self._move_worker_to_building_approach(worker, delivered_target)
         worker.carrying = None
         worker.transport_task = None
         worker.state = "idle"

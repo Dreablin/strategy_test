@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 19 — Construction System (queued)
-- **Next Task:** T200 — redirect oversupplied construction delivery to Town Hall
-- **Last Completed:** T199 — gatherer deposits now route to construction need first (high priority), else Town Hall
-- **Total Progress:** 199 / 209 (Phase 19: 15 / 25 tasks done)
+- **Next Task:** T201 — add ConstructionPanel UI for under-construction buildings
+- **Last Completed:** T200 — redirect oversupplied construction deliveries to Town Hall at unload time
+- **Total Progress:** 200 / 209 (Phase 19: 16 / 25 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -147,7 +147,7 @@
 
 - [x] **T199**: Refactor the resource deposit path in `_update_gatherer` (depositing state). Currently, after depositing into local building storage, a transport task is created targeting Town Hall. New logic: **first** check if any construction site needs this resource type (`remaining_resources()[resource] > 0`). If yes, create a high-priority transport task to that construction site instead of Town Hall. If no site needs the resource, fall back to Town Hall delivery as before. Write tests: construction site needs wood → lumberjack deposits wood → transport task targets the construction site, not Town Hall.
 
-- [ ] **T200**: Handle the case where a construction site is satisfied mid-delivery. If a carrier is en route to a construction site with a resource it no longer needs (another carrier already delivered the last unit), the carrier should deliver to Town Hall warehouse instead. Adjust carrier unloading logic to check `remaining_resources()` before calling `deliver_resource`. If site doesn't need it, redirect to warehouse. Write tests.
+- [x] **T200**: Handle the case where a construction site is satisfied mid-delivery. If a carrier is en route to a construction site with a resource it no longer needs (another carrier already delivered the last unit), the carrier should deliver to Town Hall warehouse instead. Adjust carrier unloading logic to check `remaining_resources()` before calling `deliver_resource`. If site doesn't need it, redirect to warehouse. Write tests.
 
 ### 19.8 UI — Construction panel
 

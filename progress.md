@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 19 — Construction System (queued)
-- **Next Task:** T194 — handle builder abort when construction site is demolished
-- **Last Completed:** T193 — move builder to approach tile after completion (center fallback if blocked)
-- **Total Progress:** 193 / 209 (Phase 19: 9 / 25 tasks done)
+- **Next Task:** T195 — add high-priority construction transport task generation
+- **Last Completed:** T194 — demolition abort handling for builder en route/inside site with site refs cleared
+- **Total Progress:** 194 / 209 (Phase 19: 10 / 25 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -131,7 +131,7 @@
 
 - [x] **T193**: Handle builder leaving after construction complete: when `complete_construction` clears the builder reference, the builder should move to an approach tile of the completed building, then become `idle`. If no approach tile is available, stand at building center. Write tests: after completion, builder is idle and positioned at approach tile.
 
-- [ ] **T194**: Handle edge case: builder is walking to a construction site that gets demolished mid-way. Builder should abort, become idle at current tile. Add to `notify_demolished` logic. Similarly, if the builder is inside and the building is demolished, builder becomes idle. Write tests.
+- [x] **T194**: Handle edge case: builder is walking to a construction site that gets demolished mid-way. Builder should abort, become idle at current tile. Add to `notify_demolished` logic. Similarly, if the builder is inside and the building is demolished, builder becomes idle. Write tests.
 
 ### 19.6 Transport priority — construction site delivery
 

@@ -427,6 +427,7 @@ class WorkerManager:
     def notify_demolished(self, building: Building) -> None:
         """Workers targeting this building become idle at their current tile."""
         world = getattr(self._registry, "_world", None) if self._registry is not None else None
+        site = building.construction_site
         for w in self._workers:
             if w.assigned_building is building:
                 if world is not None:
@@ -445,6 +446,11 @@ class WorkerManager:
                 w.target_tree = None
                 w.chop_started_ms = 0
                 w.chop_duration_ms = CHOP_DURATION_MS
+            if site is not None:
+                if site.builder is w:
+                    site.builder = None
+                if site.resting_worker is w:
+                    site.resting_worker = None
 
     def reassign_all(self) -> None:
         """Assign one idle worker per free matching building with path-to-approach."""

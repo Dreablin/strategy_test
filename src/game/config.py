@@ -15,8 +15,8 @@ _DEFAULT_SETTINGS: dict = {
         "gather_resource_search_radius": 20,
     },
     "window": {"size": [1280, 720]},
-    "economy": {
-        "initial_resources": {"wheat": 200, "wood": 200, "stone": 0, "iron": 0, "boards": 0},
+    "warehouse_bootstrap": {
+        "town_hall": {"wheat": 200, "wood": 200, "stone": 0, "iron": 0, "boards": 0},
     },
     "gates": {
         "building_min_town_hall_level": {
@@ -91,7 +91,7 @@ def near_town_hall_tile(dx: int = 6, dy: int = 6) -> tuple[int, int]:
 WINDOW_SIZE = tuple(SETTINGS["window"]["size"])
 MAX_LEVEL = int(SETTINGS["levels"]["max_level"])
 
-INITIAL_RESOURCES = dict(SETTINGS["economy"]["initial_resources"])
+TOWN_HALL_STARTING_WAREHOUSE = dict(SETTINGS["warehouse_bootstrap"]["town_hall"])
 
 TOWN_HALL_MIN_LEVEL_FOR_BUILDING = {
     k: int(v) for k, v in SETTINGS["gates"]["building_min_town_hall_level"].items()

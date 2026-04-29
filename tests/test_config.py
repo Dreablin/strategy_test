@@ -9,7 +9,7 @@ def test_config_constants_match_spec() -> None:
     assert config.TILE_H == 32
     assert config.GRID_SIZE == 110
     assert config.GATHER_RESOURCE_SEARCH_RADIUS == 20
-    assert config.INITIAL_RESOURCES == {
+    assert config.TOWN_HALL_STARTING_WAREHOUSE == {
         "wheat": 200,
         "wood": 200,
         "stone": 0,

@@ -4,9 +4,9 @@ import pygame
 
 from game import dev_asset_reload
 from game.buildings.registry import BuildingRegistry
-from game.buildings.town_hall import TownHall
+from game.buildings.town_hall import TownHall, bootstrap_starting_warehouse
 from game.camera import Camera
-from game.config import WINDOW_SIZE, town_hall_origin_tile
+from game.config import TOWN_HALL_STARTING_WAREHOUSE, WINDOW_SIZE, town_hall_origin_tile
 from game.input import TOP_BAR_HEIGHT, GameInput
 from game.render import Renderer
 from game.housing import current_population, max_population
@@ -27,7 +27,8 @@ def main() -> int:
     world = World()
     registry = BuildingRegistry(world)
     # Player starts with a single Town Hall as required by core game rules.
-    registry.place(TownHall, town_hall_origin_tile())
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    bootstrap_starting_warehouse(town_hall, TOWN_HALL_STARTING_WAREHOUSE)
     camera = Camera()
     placement = PlacementController(world, registry, camera)
     worker_manager = WorkerManager(registry, now_ms_fn=pygame.time.get_ticks)

@@ -14,6 +14,7 @@ class ConstructionSite:
     build_started_ms: int | None
     builder: Any | None
     target_level: int
+    resting_worker: Any | None = None
 
     def is_fully_supplied(self) -> bool:
         for key, required in self.required_resources.items():
@@ -53,3 +54,35 @@ class ConstructionSite:
             self.delivered_resources[key] = 0
             return
         self.delivered_resources[key] = min(required, current + n)
+
+
+def complete_construction(building: Any, now_ms: int) -> bool:
+    """Apply finished construction to a building and release parked workers."""
+    site = getattr(building, "construction_site", None)
+    if site is None:
+        return False
+    if not site.is_complete(int(now_ms)):
+        return False
+
+    building.level = int(site.target_level)
+    building.construction_site = None
+
+    builder = site.builder
+    if builder is not None:
+        builder.assigned_building = None
+        builder.idle = True
+        builder.state = "idle"
+        builder.path = []
+        builder.target_tile = None
+        builder.segment_progress = 0.0
+        builder.camp_wait_until_ms = 0
+        builder.carrying = None
+        builder.target_tree = None
+        builder.chop_started_ms = 0
+
+    resting_worker = site.resting_worker
+    if resting_worker is not None and resting_worker.assigned_building is building:
+        resting_worker.idle = False
+        resting_worker.state = "working"
+
+    return True

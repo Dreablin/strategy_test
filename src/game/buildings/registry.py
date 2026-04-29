@@ -155,6 +155,13 @@ class BuildingRegistry:
             return True
 
         spec = req_by_level[next_level]
+        resting_worker = None
+        if self._worker_manager is not None:
+            for worker in self._worker_manager.workers():
+                if worker.assigned_building is building:
+                    worker.state = "resting"
+                    resting_worker = worker
+                    break
         building.construction_site = ConstructionSite(
             required_resources=dict(spec.cost),
             delivered_resources={},
@@ -162,12 +169,8 @@ class BuildingRegistry:
             build_started_ms=None,
             builder=None,
             target_level=next_level,
+            resting_worker=resting_worker,
         )
-        if self._worker_manager is not None:
-            for worker in self._worker_manager.workers():
-                if worker.assigned_building is building:
-                    worker.state = "resting"
-                    break
         return True
 
     def _footprint_inside_grass(self, gx: int, gy: int, w: int, h: int) -> bool:

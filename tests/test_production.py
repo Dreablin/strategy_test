@@ -9,7 +9,7 @@ from game.world import World
 from game.workers import WorkerManager
 
 
-def test_per_cycle_counts_only_staffed_buildings() -> None:
+def test_stone_mine_is_staffed_after_hire_and_reassign() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
     th = registry.place(TownHall, town_hall_origin_tile())
@@ -18,11 +18,10 @@ def test_per_cycle_counts_only_staffed_buildings() -> None:
     wm = WorkerManager(registry)
     assert wm.hire("STONECUTTER") is not None
     wm.reassign_all()
-    registry.sync_resources_per_cycle(staffed_buildings=wm.staffed_buildings())
     assert wm.is_staffed(camp)
 
 
-def test_per_cycle_updates_after_upgrade_for_staffed_building() -> None:
+def test_staffed_stone_mine_can_upgrade() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
     th = registry.place(TownHall, town_hall_origin_tile())
@@ -31,9 +30,7 @@ def test_per_cycle_updates_after_upgrade_for_staffed_building() -> None:
     wm = WorkerManager(registry)
     assert wm.hire("STONECUTTER") is not None
     wm.reassign_all()
-    registry.sync_resources_per_cycle(staffed_buildings=wm.staffed_buildings())
     assert registry.upgrade_building(camp)
-    registry.sync_resources_per_cycle(staffed_buildings=wm.staffed_buildings())
 
 
 def test_staffed_level1_stone_mine_has_no_passive_tick_production() -> None:
@@ -81,7 +78,6 @@ def test_moving_worker_does_not_produce_until_working() -> None:
     assert workers.hire("STONECUTTER") is not None
     workers.reassign_all()
 
-    registry.sync_resources_per_cycle(staffed_buildings=workers.working_buildings())
     assert camp not in workers.working_buildings()
 
     stone_before = th.warehouse_amount("stone")
@@ -89,7 +85,6 @@ def test_moving_worker_does_not_produce_until_working() -> None:
     assert th.warehouse_amount("stone") == stone_before
 
     workers.update(60_000)
-    registry.sync_resources_per_cycle(staffed_buildings=workers.working_buildings())
     stone_before = th.warehouse_amount("stone")
     # No passive tick production path exists anymore.
     assert th.warehouse_amount("stone") == stone_before

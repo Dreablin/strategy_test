@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Collection
 from typing import Any, Type
 
 from game.buildings.base import Building
@@ -124,19 +123,6 @@ class BuildingRegistry:
         self._world.free(gx, gy, w, h)
         self._buildings.remove(building)
 
-    def sync_resources_per_cycle(
-        self,
-        resources: Any = None,
-        *,
-        staffed_buildings: Collection[Building] = (),
-    ) -> None:
-        """Set per-cycle preview totals.
-
-        Passive production is removed globally; all resources are delivered by workers
-        via explicit gather/deposit cycles. Keep this API to avoid touching callers.
-        """
-        _ = (resources, staffed_buildings)
-
     def upgrade_building(self, building: Building, resources: Any = None) -> bool:
         """Upgrade is free: increment ``level`` and refresh cached previews."""
         if building not in self._buildings:
@@ -148,7 +134,6 @@ class BuildingRegistry:
         building.level += 1
         if self._worker_manager is not None:
             self._worker_manager.refresh_building_bonuses(building)
-        self.sync_resources_per_cycle(staffed_buildings=())
         return True
 
     def _footprint_inside_grass(self, gx: int, gy: int, w: int, h: int) -> bool:

@@ -99,7 +99,6 @@ class GameInput:
 
     def _sync_assignments(self) -> None:
         self._worker_manager.reassign_all()
-        self._registry.sync_resources_per_cycle(staffed_buildings=self._worker_manager.working_buildings())
 
     @property
     def panel_building(self) -> Building | None:

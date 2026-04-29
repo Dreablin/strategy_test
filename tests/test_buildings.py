@@ -88,16 +88,14 @@ def test_upgrade_allowed_for_town_hall_below_cap() -> None:
     assert th.level == 2
 
 
-def test_upgrade_updates_per_cycle_when_building_is_staffed() -> None:
-    """No passive per-cycle production should be exposed for active gatherers."""
+def test_upgrade_succeeds_for_stone_mine_with_town_hall_tech_gate() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
     th = registry.place(TownHall, town_hall_origin_tile())
     th.level = 3
     b = registry.place(StoneMine, (10, 10))
-    registry.sync_resources_per_cycle(staffed_buildings={b})
     assert registry.upgrade_building(b)
-    registry.sync_resources_per_cycle(staffed_buildings={b})
+    assert b.level == 2
 
 
 def test_upgrade_rejected_at_max_level() -> None:

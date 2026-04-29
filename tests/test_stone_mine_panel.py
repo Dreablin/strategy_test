@@ -6,14 +6,13 @@ from game.buildings.farm import Farm
 from game.buildings.iron_mine import IronMine
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.stone_mine import StoneMine
-from game.resources import ResourceManager
 from game.ui.stone_mine_panel import StoneMinePanel
 
 
 def test_stone_mine_layout_exposes_toggle_rect() -> None:
     surface = pygame.Surface((800, 600))
     mine = StoneMine(level=1, grid_pos=(10, 10))
-    resources = ResourceManager()
+    resources = None
 
     layout = StoneMinePanel.layout(surface, mine, resources, worker_assigned=False)
 
@@ -32,7 +31,7 @@ def test_stone_mine_toggle_label_reflects_active_state() -> None:
 def test_stone_mine_click_toggle_returns_toggle_action() -> None:
     surface = pygame.Surface((800, 600))
     mine = StoneMine(level=1, grid_pos=(10, 10))
-    resources = ResourceManager()
+    resources = None
     layout = StoneMinePanel.layout(surface, mine, resources, worker_assigned=False)
     cx, cy = layout.toggle.center
 

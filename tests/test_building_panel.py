@@ -4,14 +4,13 @@ import pygame
 
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.town_hall import TownHall
-from game.resources import ResourceManager
 from game.ui.building_panel import BuildingPanel, _income_line
 
 
 def test_building_panel_close_click() -> None:
     surface = pygame.Surface((640, 480))
     building = LumberCamp(level=2, grid_pos=(4, 4))
-    resources = ResourceManager()
+    resources = None
     layout = BuildingPanel.layout(surface, building, resources, worker_assigned=False)
     cx, cy = layout.close.center
     assert BuildingPanel.click_action(surface, (cx, cy), building, resources, worker_assigned=False) == "close"
@@ -20,7 +19,7 @@ def test_building_panel_close_click() -> None:
 def test_building_panel_demolish_click() -> None:
     surface = pygame.Surface((640, 480))
     building = LumberCamp(level=1, grid_pos=(4, 4))
-    resources = ResourceManager()
+    resources = None
     layout = BuildingPanel.layout(surface, building, resources, worker_assigned=False)
     assert layout.demolish is not None
     cx, cy = layout.demolish.center
@@ -30,8 +29,7 @@ def test_building_panel_demolish_click() -> None:
 def test_building_panel_upgrade_enabled_even_when_poor() -> None:
     surface = pygame.Surface((640, 480))
     building = LumberCamp(level=1, grid_pos=(4, 4))
-    resources = ResourceManager()
-    resources.add("wood", -resources.get("wood"))
+    resources = None
     layout = BuildingPanel.layout(surface, building, resources, worker_assigned=False)
     assert layout.upgrade is not None
     assert layout.upgrade_enabled is True
@@ -42,7 +40,7 @@ def test_building_panel_upgrade_enabled_even_when_poor() -> None:
 def test_building_panel_upgrade_click_when_affordable() -> None:
     surface = pygame.Surface((640, 480))
     building = LumberCamp(level=1, grid_pos=(4, 4))
-    resources = ResourceManager()
+    resources = None
     layout = BuildingPanel.layout(surface, building, resources, worker_assigned=False)
     assert layout.upgrade is not None
     assert layout.upgrade_enabled is True
@@ -53,7 +51,7 @@ def test_building_panel_upgrade_click_when_affordable() -> None:
 def test_building_panel_draw_smoke() -> None:
     surface = pygame.Surface((800, 600))
     building = LumberCamp(level=3, grid_pos=(2, 2))
-    resources = ResourceManager()
+    resources = None
     BuildingPanel.draw(surface, building, resources, worker_assigned=True)
     assert surface.get_at((400, 300)) != (0, 0, 0, 255)
 
@@ -61,7 +59,7 @@ def test_building_panel_draw_smoke() -> None:
 def test_building_panel_shows_upgrade_for_town_hall() -> None:
     surface = pygame.Surface((640, 480))
     building = TownHall(level=1, grid_pos=(10, 10))
-    resources = ResourceManager()
+    resources = None
     layout = BuildingPanel.layout(surface, building, resources, worker_assigned=False)
     assert layout.upgrade is not None
 
@@ -79,7 +77,7 @@ def test_income_line_shows_full_value_when_worker_working() -> None:
 def test_layout_grows_when_production_status_line_is_present() -> None:
     surface = pygame.Surface((800, 600))
     building = LumberCamp(level=1, grid_pos=(4, 4))
-    resources = ResourceManager()
+    resources = None
 
     without_status = BuildingPanel.layout(
         surface,

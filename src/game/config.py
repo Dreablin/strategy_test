@@ -20,8 +20,8 @@ _DEFAULT_SETTINGS: dict = {
     },
     "gates": {
         "building_min_town_hall_level": {
-            "STONE_MINE": 3,
-            "IRON_MINE": 5,
+            "STONE_MINE": 1,
+            "IRON_MINE": 1,
             "FORESTER_HUT": 1,
             "SCHOOL": 1,
             "HOUSE": 1,

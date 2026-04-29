@@ -4,7 +4,6 @@ from game.buildings.registry import BuildingRegistry
 from game.buildings.stone_mine import StoneMine
 from game.buildings.town_hall import TownHall
 from game.config import near_town_hall_tile, town_hall_origin_tile
-from game.resources import ResourceManager
 from game.stones import Stone
 from game.world import World
 from game.workers import WorkerManager
@@ -26,12 +25,12 @@ def _setup_stonecutter_cycle():
     mine_pos, s1, s2 = _mine_and_stone_tiles()
     world._stones[s1] = Stone(units=10)  # noqa: SLF001
     world._stones[s2] = Stone(units=10)  # noqa: SLF001
-    resources = ResourceManager()
+    resources = None
     registry = BuildingRegistry(world)
     town_hall = registry.place(TownHall, town_hall_origin_tile())
     town_hall.level = 3
     mine = registry.place(StoneMine, mine_pos)
-    workers = WorkerManager(resources, registry, now_ms_fn=lambda: now_ms[0])
+    workers = WorkerManager(registry, now_ms_fn=lambda: now_ms[0])
     worker = workers.hire("STONECUTTER")
     assert worker is not None
     workers.reassign_all()
@@ -120,11 +119,10 @@ def test_stonecutter_skips_unminable_nearest_stone_and_targets_next() -> None:
     far_stone = (blocked_stone[0] + 4, blocked_stone[1] + 4)
     world._stones[far_stone] = Stone(units=10)  # noqa: SLF001
 
-    resources = ResourceManager()
     registry = BuildingRegistry(world)
     registry.place(TownHall, town_hall_origin_tile()).level = 3
     mine = registry.place(StoneMine, mine_pos)
-    workers = WorkerManager(resources, registry, now_ms_fn=lambda: now_ms[0])
+    workers = WorkerManager(registry, now_ms_fn=lambda: now_ms[0])
     worker = workers.hire("STONECUTTER")
     assert worker is not None
     workers.reassign_all()

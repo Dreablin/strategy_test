@@ -7,7 +7,6 @@ from game.config import near_town_hall_tile, town_hall_footprint_tiles, town_hal
 from game.buildings.registry import BuildingRegistry
 from game.buildings.stone_mine import StoneMine
 from game.buildings.town_hall import TownHall
-from game.resources import ResourceManager
 from game.stones import Stone
 from game.trees import Tree, TreeStage
 from game.world import World
@@ -69,7 +68,6 @@ def test_stonecutter_cycle_toggle_upgrade_and_storage_smoke() -> None:
     world = World()
     world._trees.clear()  # noqa: SLF001
     world._stones.clear()  # noqa: SLF001
-    resources = ResourceManager()
     registry = BuildingRegistry(world)
     town_hall = registry.place(TownHall, town_hall_origin_tile())
     town_hall.level = 3
@@ -83,7 +81,7 @@ def test_stonecutter_cycle_toggle_upgrade_and_storage_smoke() -> None:
     world._stones[(mx + 4, my)] = Stone(units=10)  # noqa: SLF001
 
     now_ms = [0]
-    workers = WorkerManager(resources, registry, now_ms_fn=lambda: now_ms[0])
+    workers = WorkerManager(registry, now_ms_fn=lambda: now_ms[0])
     lumberjack = workers.hire("LUMBERJACK")
     stonecutter = workers.hire("STONECUTTER")
     carrier = workers.hire("CARRIER")
@@ -125,9 +123,7 @@ def test_stonecutter_cycle_toggle_upgrade_and_storage_smoke() -> None:
     assert stonecutter.target_tree is None
 
     # Lumberjack: upgrade camp and validate gather-speed bonus is applied.
-    resources.add("wood", 10_000)
-    resources.add("stone", 10_000)
-    assert registry.upgrade_building(camp, resources)
+    assert registry.upgrade_building(camp)
     assert camp in registry.all()
     assert lumberjack.characteristics.gather_speed_mult == 1.05
 

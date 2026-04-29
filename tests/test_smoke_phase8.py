@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pygame
+from typing import Any
 
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
@@ -11,7 +12,6 @@ from game.config import WINDOW_SIZE, near_town_hall_tile, town_hall_origin_tile
 from game.input import GameInput
 from game.iso import world_to_screen
 from game.render import Renderer
-from game.resources import ResourceManager
 from game.ui.bottom_bar import BUILD_MENU_SELECT, BottomBar
 from game.ui.placement import PlacementController
 from game.ui.top_bar import TopBar
@@ -25,7 +25,7 @@ def _render_frame(
     screen: pygame.Surface,
     world: World,
     registry: BuildingRegistry,
-    resources: ResourceManager,
+    resources: Any,
     worker_manager: WorkerManager,
     placement: PlacementController,
     game_input: GameInput,
@@ -44,11 +44,11 @@ def _render_frame(
 def test_smoke_phase8_build_draw_and_rmb_pan() -> None:
     screen = pygame.Surface(WINDOW_SIZE)
     world = World()
-    resources = ResourceManager()
+    resources = None
     registry = BuildingRegistry(world)
     camera = Camera()
     placement = PlacementController(world, registry, resources, camera)
-    worker_manager = WorkerManager(resources, registry)
+    worker_manager = WorkerManager(registry)
     game_input = GameInput(world, registry, resources, placement, worker_manager, camera)
     town_hall = registry.place(TownHall, town_hall_origin_tile())
 

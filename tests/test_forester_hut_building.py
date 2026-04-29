@@ -5,7 +5,6 @@ from __future__ import annotations
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
 from game.config import near_town_hall_tile, town_hall_origin_tile
-from game.resources import ResourceManager
 from game.ui.bottom_bar import _BUTTONS
 from game.ui.placement import _TAG_TO_CLASS
 from game.world import World
@@ -24,16 +23,12 @@ def test_forester_hut_exists_in_build_menu_and_placement_registry() -> None:
 def test_forester_hut_upgrade_is_rejected_at_fixed_level_one() -> None:
     world = World(world_seed=0)
     registry = BuildingRegistry(world)
-    resources = ResourceManager()
     th = registry.place(TownHall, town_hall_origin_tile())
     th.level = 10
 
     hut = registry.place(_forester_hut_cls(), near_town_hall_tile(8, 8))
     assert hut.level == 1
-    resources.add("wood", 999)
-    resources.add("stone", 999)
-    resources.add("iron", 999)
-    assert registry.upgrade_building(hut, resources) is False
+    assert registry.upgrade_building(hut) is False
     assert hut.level == 1
 
 

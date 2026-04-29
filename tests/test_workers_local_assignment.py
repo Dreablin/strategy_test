@@ -6,7 +6,6 @@ import game.workers as workers_mod
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
-from game.resources import ResourceManager
 from game.world import World
 from game.workers import Worker, WorkerManager, building_center_tile
 
@@ -39,7 +38,7 @@ def test_reassign_all_prefers_closest_target_and_bounded_path_calls(monkeypatch)
     camps.append(closest)
 
     worker = Worker("LUMBERJACK", stand_tile=(10, 10))
-    wm = WorkerManager(ResourceManager(), registry)
+    wm = WorkerManager(registry)
     wm.add_worker(worker)
 
     calls = {"n": 0}

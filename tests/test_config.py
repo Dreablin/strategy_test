@@ -16,7 +16,7 @@ def test_config_constants_match_spec() -> None:
         "iron": 0,
         "boards": 0,
     }
-    assert config.TOWN_HALL_MIN_LEVEL_FOR_BUILDING["STONE_MINE"] == 3
+    assert config.TOWN_HALL_MIN_LEVEL_FOR_BUILDING["STONE_MINE"] == 1
     assert config.TOWN_HALL_MIN_LEVEL_FOR_HIRE["MINER"] == 5
     assert config.MAX_LEVEL == 10
     assert config.WINDOW_SIZE == (1280, 720)

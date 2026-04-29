@@ -9,7 +9,6 @@ from game.config import town_hall_origin_tile, near_town_hall_tile
 from game.buildings.town_hall import TownHall
 from game.iso import world_to_screen
 from game.render import Renderer
-from game.resources import ResourceManager
 from game.trees import Tree, TreeStage
 from game.world import World
 from game.workers import Worker, WorkerManager
@@ -49,9 +48,8 @@ def test_draw_trees_callable_exists() -> None:
 def test_tree_occludes_worker_behind(monkeypatch) -> None:
     world = World()
     registry = BuildingRegistry(world)
-    resources = ResourceManager()
     registry.place(TownHall, town_hall_origin_tile())
-    workers = WorkerManager(resources, registry)
+    workers = WorkerManager(registry)
     tx, ty = near_town_hall_tile()
     w = Worker("LUMBERJACK", stand_tile=(tx, ty))
     workers.add_worker(w)
@@ -73,9 +71,8 @@ def test_tree_occludes_worker_behind(monkeypatch) -> None:
 def test_worker_in_front_remains_visible(monkeypatch) -> None:
     world = World()
     registry = BuildingRegistry(world)
-    resources = ResourceManager()
     registry.place(TownHall, town_hall_origin_tile())
-    workers = WorkerManager(resources, registry)
+    workers = WorkerManager(registry)
     tx, ty = near_town_hall_tile()
     w = Worker("LUMBERJACK", stand_tile=(tx + 1, ty + 1))
     workers.add_worker(w)

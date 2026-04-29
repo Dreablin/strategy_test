@@ -11,7 +11,6 @@ from game.buildings.school import School
 from game.buildings.town_hall import TownHall
 from game.config import near_town_hall_tile, town_hall_origin_tile
 from game.housing import current_population, housing_house, housing_town_hall, max_population
-from game.resources import ResourceManager
 from game.ui.school_panel import SchoolPanel
 from game.workers import Worker, WorkerManager
 from game.world import World
@@ -74,8 +73,7 @@ def test_current_population_counts_spawned_workers_plus_school_queue() -> None:
     registry = BuildingRegistry(world)
     registry.place(TownHall, town_hall_origin_tile())
     school = registry.place(School, near_town_hall_tile(8, 8))
-    resources = ResourceManager()
-    workers = WorkerManager(resources, registry)
+    workers = WorkerManager(registry)
     workers.add_worker(Worker("LUMBERJACK"))
     assert school.enqueue_training("LUMBERJACK")
     assert school.enqueue_training("FARMER")
@@ -86,9 +84,7 @@ def test_hire_is_safe_noop_when_housing_cap_reached() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
     registry.place(TownHall, town_hall_origin_tile())
-    resources = ResourceManager()
-    resources.add("food", 10_000)
-    workers = WorkerManager(resources, registry)
+    workers = WorkerManager(registry)
 
     for _ in range(8):
         assert workers.hire("LUMBERJACK") is not None
@@ -102,9 +98,8 @@ def test_school_panel_disables_hire_when_housing_cap_reached() -> None:
     registry = BuildingRegistry(world)
     registry.place(TownHall, town_hall_origin_tile())
     school = registry.place(School, near_town_hall_tile(8, 8))
-    resources = ResourceManager()
-    resources.add("food", 10_000)
-    workers = WorkerManager(resources, registry)
+    resources = None
+    workers = WorkerManager(registry)
     for _ in range(8):
         assert workers.hire("LUMBERJACK", source_building=school) is not None
 
@@ -130,8 +125,7 @@ def test_enqueue_reserves_population_and_cancel_releases_population() -> None:
     registry = BuildingRegistry(world)
     registry.place(TownHall, town_hall_origin_tile())
     school = registry.place(School, near_town_hall_tile(8, 8))
-    resources = ResourceManager()
-    workers = WorkerManager(resources, registry)
+    workers = WorkerManager(registry)
 
     for _ in range(7):
         workers.add_worker(Worker("LUMBERJACK"))

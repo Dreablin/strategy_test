@@ -174,7 +174,7 @@ class Worker:
 class WorkerManager:
     """Tracks workers; notifies assignments when a staffed building is demolished (PRD F-WORK)."""
 
-    __slots__ = ("_now_ms_fn", "_registry", "_resources", "_workers", "_transport_queue")
+    __slots__ = ("_now_ms_fn", "_registry", "_workers", "_transport_queue")
     _WORKER_TO_BUILDING: dict[str, str] = {
         "LUMBERJACK": "LUMBER_CAMP",
         "STONECUTTER": "STONE_MINE",
@@ -186,11 +186,10 @@ class WorkerManager:
 
     def __init__(
         self,
-        resources: Any | None = None,
         registry: Any | None = None,
+        *,
         now_ms_fn: Callable[[], int] | None = None,
     ) -> None:
-        self._resources = resources
         self._registry = registry
         self._workers: list[Worker] = []
         self._transport_queue: list[TransportTask] = []
@@ -311,8 +310,8 @@ class WorkerManager:
         source_building: Building | None = None,
         charge_cost: bool = True,
     ) -> Worker | None:
-        """Hire a worker if town hall level and resources allow it."""
-        if self._resources is None or self._registry is None:
+        """Hire a worker if town hall level and housing allow it."""
+        if self._registry is None:
             return None
         if worker_type not in self._HIRABLE_WORKERS:
             return None
@@ -367,7 +366,7 @@ class WorkerManager:
 
     def can_hire(self, worker_type: str, *, charge_cost: bool = True) -> bool:
         """Whether current state allows hiring this worker type."""
-        if self._resources is None or self._registry is None:
+        if self._registry is None:
             return False
         if worker_type not in self._HIRABLE_WORKERS:
             return False

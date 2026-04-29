@@ -5,7 +5,6 @@ from game.config import town_hall_origin_tile
 from game.buildings.registry import BuildingRegistry
 from game.buildings.stone_mine import StoneMine
 from game.buildings.town_hall import TownHall
-from game.resources import ResourceManager
 from game.stones import Stone
 from game.trees import Tree, TreeStage
 from game.world import World
@@ -34,8 +33,7 @@ def test_blocked_tiles_matches_legacy_scan_across_world_mutations() -> None:
     world._stones[(13, 12)] = Stone(units=2)  # noqa: SLF001
 
     registry = BuildingRegistry(world)
-    resources = ResourceManager()
-    workers = WorkerManager(resources, registry)
+    workers = WorkerManager(registry)
     th = registry.place(TownHall, town_hall_origin_tile())
     th.level = 3
     camp_a = registry.place(LumberCamp, (20, 20))

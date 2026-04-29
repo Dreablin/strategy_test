@@ -12,7 +12,6 @@ from game.config import WINDOW_SIZE, near_town_hall_tile, town_hall_origin_tile
 from game.input import GameInput
 from game.iso import world_to_screen
 from game.render import Renderer
-from game.resources import ResourceManager
 from game.trees import Tree, TreeStage
 from game.ui.bottom_bar import BUILD_MENU_SELECT
 from game.ui.placement import PlacementController
@@ -46,11 +45,11 @@ def _is_approach_tile(building, tile: tuple[int, int]) -> bool:
 def test_smoke_phase9_worker_moves_and_production_gates() -> None:
     screen = pygame.Surface(WINDOW_SIZE)
     world = World()
-    resources = ResourceManager()
+    resources = None
     registry = BuildingRegistry(world)
     camera = Camera()
     placement = PlacementController(world, registry, resources, camera)
-    workers = WorkerManager(resources, registry)
+    workers = WorkerManager(registry)
     game_input = GameInput(world, registry, resources, placement, workers, camera)
     registry.place(TownHall, town_hall_origin_tile())
 
@@ -90,20 +89,16 @@ def test_smoke_phase9_worker_moves_and_production_gates() -> None:
 
     # 4) Production gating: Lumber Camp has no passive production in Phase 11.
     world2 = World()
-    resources2 = ResourceManager()
     registry2 = BuildingRegistry(world2)
     registry2.place(TownHall, town_hall_origin_tile())
     registry2.place(LumberCamp, near_town_hall_tile(14, 14))
-    workers2 = WorkerManager(resources2, registry2)
+    workers2 = WorkerManager(registry2)
     assert workers2.hire("LUMBERJACK") is not None
     workers2.reassign_all()
-    wood_before = resources2.get("wood")
-    # No passive tick production path exists anymore.
-    assert resources2.get("wood") == wood_before
+    th2 = next(b for b in registry2.all() if b.type_tag == "TOWN_HALL")
+    wood_before = th2.warehouse_amount("wood")
     workers2.update(120_000)
-    wood_before = resources2.get("wood")
-    # No passive tick production path exists anymore.
-    assert resources2.get("wood") == wood_before
+    assert th2.warehouse_amount("wood") == wood_before
 
     # 5) Spacing rule: touching is rejected, one-tile gap is accepted.
     assert not registry.can_place(LumberCamp, (cgx + 2, cgy))

@@ -8,7 +8,6 @@ from game.buildings.registry import BuildingRegistry
 from game.buildings.school import School
 from game.buildings.town_hall import TownHall
 from game.config import near_town_hall_tile, town_hall_origin_tile
-from game.resources import ResourceManager
 from game.ui.school_panel import SchoolPanel
 from game.world import World
 from game.workers import Worker, WorkerManager
@@ -21,8 +20,8 @@ def test_smoke_phase15_school_queue_housing_gate_and_independent_schools() -> No
     registry.place(TownHall, town_hall_origin_tile())
     school_a = registry.place(School, near_town_hall_tile(8, 8))
     school_b = registry.place(School, near_town_hall_tile(18, 8))
-    resources = ResourceManager()
-    workers = WorkerManager(resources, registry)
+    resources = None
+    workers = WorkerManager(registry)
 
     # Fill close to Town Hall cap (8), then queue trainees.
     for _ in range(6):

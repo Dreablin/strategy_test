@@ -32,7 +32,7 @@ def main() -> int:
     registry.place(TownHall, town_hall_origin_tile())
     camera = Camera()
     placement = PlacementController(world, registry, resources, camera)
-    worker_manager = WorkerManager(resources, registry, now_ms_fn=pygame.time.get_ticks)
+    worker_manager = WorkerManager(registry, now_ms_fn=pygame.time.get_ticks)
     game_input = GameInput(world, registry, resources, placement, worker_manager, camera)
 
     running = True

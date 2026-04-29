@@ -4,7 +4,6 @@ from game.buildings.lumber_camp import LumberCamp
 from game.config import town_hall_origin_tile, near_town_hall_tile
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
-from game.resources import ResourceManager
 from game.trees import Tree, TreeStage
 from game.world import World
 from game.workers import CHOP_DURATION_MS, WorkerManager
@@ -14,7 +13,7 @@ def _setup_two_tree_cycle():
     now_ms = [0]
     world = World(world_seed=2)
     world._trees.clear()  # noqa: SLF001
-    resources = ResourceManager()
+    resources = None
     registry = BuildingRegistry(world)
     town_hall = registry.place(TownHall, town_hall_origin_tile())
     town_hall.level = 3
@@ -22,7 +21,7 @@ def _setup_two_tree_cycle():
     gx, gy = camp.grid_pos  # type: ignore[assignment]
     world._trees[(gx + 3, gy)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
     world._trees[(gx + 4, gy)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
-    workers = WorkerManager(resources, registry, now_ms_fn=lambda: now_ms[0])
+    workers = WorkerManager(registry, now_ms_fn=lambda: now_ms[0])
     worker = workers.hire("LUMBERJACK")
     assert worker is not None
     workers.reassign_all()

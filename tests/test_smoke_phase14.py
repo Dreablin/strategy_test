@@ -10,7 +10,6 @@ from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
 from game.config import near_town_hall_tile, town_hall_origin_tile
 from game.render import Renderer
-from game.resources import ResourceManager
 from game.trees import TreeStage
 from game.world import World
 from game.workers import WorkerManager
@@ -22,14 +21,13 @@ def test_smoke_phase14_forestry_cycle_to_render() -> None:
     world._trees.clear()  # noqa: SLF001
     world._stones.clear()  # noqa: SLF001
 
-    resources = ResourceManager()
     registry = BuildingRegistry(world)
     town_hall = registry.place(TownHall, town_hall_origin_tile())
     town_hall.level = 10
     forester_hut = registry.place(ForesterHut, near_town_hall_tile(12, 4))
     lumber_camp = registry.place(LumberCamp, near_town_hall_tile(4, 12))
 
-    workers = WorkerManager(resources, registry, now_ms_fn=lambda: now_ms["t"])
+    workers = WorkerManager(registry, now_ms_fn=lambda: now_ms["t"])
     assert workers.hire("FORESTER") is not None
     assert workers.hire("LUMBERJACK") is not None
     assert workers.hire("CARRIER") is not None

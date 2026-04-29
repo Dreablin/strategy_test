@@ -6,7 +6,6 @@ from game.buildings.registry import BuildingRegistry
 from game.config import TILE_H, TILE_W
 from game.iso import screen_to_world, world_to_screen
 from game.render import Renderer
-from game.resources import ResourceManager
 from game.ui.placement import PlacementController
 from game.world import World
 
@@ -21,35 +20,32 @@ def test_place_lumber_camp_is_free() -> None:
     surface = pygame.Surface((1280, 720))
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
-    resources = ResourceManager()
+    resources = None
     placement = PlacementController(world, registry, resources)
     placement.select("LUMBER_CAMP")
     cx, cy = _cell_center_screen(surface, world, 10, 10)
     placement.try_place(surface, (cx, cy))
     assert len(registry.all()) == 1
-    assert resources.get("wood") == 200
 
 
 def test_cancel_prevents_place() -> None:
     surface = pygame.Surface((1280, 720))
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
-    resources = ResourceManager()
+    resources = None
     placement = PlacementController(world, registry, resources)
     placement.select("LUMBER_CAMP")
     placement.cancel()
     cx, cy = _cell_center_screen(surface, world, 10, 10)
     placement.try_place(surface, (cx, cy))
     assert len(registry.all()) == 0
-    assert resources.get("wood") == 200
 
 
 def test_placement_does_not_require_wallet_resources() -> None:
     surface = pygame.Surface((1280, 720))
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
-    resources = ResourceManager()
-    resources.add("wood", -200)
+    resources = None
     placement = PlacementController(world, registry, resources)
     placement.select("FARM")
     cx, cy = _cell_center_screen(surface, world, 12, 12)
@@ -62,7 +58,7 @@ def test_update_hover_uses_renderer_map_origin() -> None:
     surface = pygame.Surface((1280, 720))
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
-    resources = ResourceManager()
+    resources = None
     placement = PlacementController(world, registry, resources)
     placement.select("LUMBER_CAMP")
     ox, oy = Renderer.map_origin(surface, world)

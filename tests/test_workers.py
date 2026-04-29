@@ -13,6 +13,7 @@ from game.construction import ConstructionSite
 from game.trees import Tree, TreeStage
 from game.world import World
 from game.workers import (
+    CHOP_DURATION_MS,
     Worker,
     WorkerManager,
     building_center_tile,
@@ -892,6 +893,45 @@ def test_unavailable_construction_task_stays_queued_until_stock_appears() -> Non
     site = camp.construction_site
     assert site is not None
     assert int(site.delivered_resources.get("stone", 0)) == 1
+
+
+def test_gatherer_deposit_routes_transport_to_construction_need_before_town_hall() -> None:
+    now_ms = [0]
+    world = World(world_seed=2)
+    world._trees.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    camp = registry.place(LumberCamp, near_town_hall_tile(8, 8))
+    target = registry.place(LumberCamp, near_town_hall_tile(14, 8))
+    target.construction_site = ConstructionSite(
+        required_resources={"wood": 1},
+        delivered_resources={},
+        build_time_ms=10_000,
+        build_started_ms=None,
+        builder=None,
+        target_level=1,
+    )
+    camp.construction_site = None
+    gx, gy = camp.grid_pos  # type: ignore[assignment]
+    world._trees[(gx + 3, gy)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
+    wm = WorkerManager(registry, now_ms_fn=lambda: now_ms[0])
+    lumberjack = wm.hire("LUMBERJACK")
+    assert lumberjack is not None
+    wm.reassign_all()
+
+    now_ms[0] += 120_000
+    wm.update(now_ms[0])
+    now_ms[0] += CHOP_DURATION_MS
+    wm.update(now_ms[0])
+    now_ms[0] += 120_000
+    wm.update(now_ms[0])
+    wm.update(now_ms[0] + 1)
+
+    task = wm._next_transport_task()
+    assert task is not None
+    assert task.source is camp
+    assert task.target is target
+    assert task.priority == 10
 
 
 def test_hire_stonecutter_requires_town_hall_level_3() -> None:

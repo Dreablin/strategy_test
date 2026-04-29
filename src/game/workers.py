@@ -713,13 +713,19 @@ class WorkerManager:
             if worker.carrying == gather_state["carry_resource"]:
                 if hasattr(camp, "add_to_storage"):
                     camp.add_to_storage(1)
-                town_hall = self._primary_town_hall()
-                if town_hall is not None:
+                resource = gather_state["carry_resource"]
+                target = self._construction_target_for_resource(resource)
+                priority = 10
+                if target is None:
+                    target = self._primary_town_hall()
+                    priority = 0
+                if target is not None:
                     self.enqueue_transport_task(
-                        resource=gather_state["carry_resource"],
+                        resource=resource,
                         source=camp,
-                        target=town_hall,
+                        target=target,
                         amount=1,
+                        priority=priority,
                     )
                 if hasattr(camp, gather_state["record_method"]):
                     record_method = getattr(camp, gather_state["record_method"])
@@ -737,6 +743,20 @@ class WorkerManager:
             return None
         for building in self._registry.all():
             if isinstance(building, TownHall):
+                return building
+        return None
+
+    def _construction_target_for_resource(self, resource: str) -> Building | None:
+        if self._registry is None:
+            return None
+        key = str(resource).lower()
+        for building in self._registry.all():
+            if not building.is_under_construction:
+                continue
+            site = building.construction_site
+            if site is None:
+                continue
+            if int(site.remaining_resources().get(key, 0)) > 0:
                 return building
         return None
 

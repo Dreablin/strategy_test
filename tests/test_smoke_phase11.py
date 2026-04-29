@@ -16,6 +16,7 @@ def test_smoke_phase11_lumberjack_cycle_toggle_and_reservation() -> None:
     town_hall = registry.place(TownHall, town_hall_origin_tile())
     town_hall.level = 3
     camp = registry.place(LumberCamp, near_town_hall_tile())
+    camp.construction_site = None
     gx, gy = camp.grid_pos  # type: ignore[assignment]
     tree_a = (gx + 3, gy)
     tree_b = (gx + 4, gy)

@@ -77,6 +77,7 @@ def test_stonecutter_cycle_toggle_upgrade_and_storage_smoke() -> None:
     for i in range(4):
         world._trees[(gx + 3 + i, gy)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
     mine = registry.place(StoneMine, near_town_hall_tile(14, 0))
+    mine.construction_site = None
     mx, my = mine.grid_pos  # type: ignore[assignment]
     world._stones[(mx + 3, my)] = Stone(units=10)  # noqa: SLF001
     world._stones[(mx + 4, my)] = Stone(units=10)  # noqa: SLF001

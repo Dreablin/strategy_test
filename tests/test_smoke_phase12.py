@@ -93,7 +93,6 @@ def test_stonecutter_cycle_toggle_upgrade_and_storage_smoke() -> None:
     workers.reassign_all()
 
     # Stonecutter: walk -> rest -> go to stone -> mine -> deposit +1 stone.
-    stone_before = resources.get("stone")
     wh_stone_before = town_hall.warehouse_amount("stone")
     now_ms[0] += 120_000
     workers.update(now_ms[0])
@@ -117,7 +116,6 @@ def test_stonecutter_cycle_toggle_upgrade_and_storage_smoke() -> None:
         workers.update(now_ms[0])
         if town_hall.warehouse_amount("stone") >= wh_stone_before + 1:
             break
-    assert resources.get("stone") == stone_before
     assert town_hall.warehouse_amount("stone") == wh_stone_before + 1
     assert mine.delivered_stone >= 1
     assert stonecutter.state == "working"

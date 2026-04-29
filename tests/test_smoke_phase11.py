@@ -31,7 +31,6 @@ def test_smoke_phase11_lumberjack_cycle_toggle_and_reservation() -> None:
     workers.reassign_all()
 
     # 1-3) Complete first full cycle: walk -> chop -> return -> deposit.
-    wood_before = resources.get("wood")
     wh_before = town_hall.warehouse_amount("wood")
     now_ms[0] += 120_000
     workers.update(now_ms[0])
@@ -47,7 +46,6 @@ def test_smoke_phase11_lumberjack_cycle_toggle_and_reservation() -> None:
         workers.update(now_ms[0])
         if town_hall.warehouse_amount("wood") >= wh_before + 1:
             break
-    assert resources.get("wood") == wood_before
     assert town_hall.warehouse_amount("wood") == wh_before + 1
     assert camp.delivered_wood >= 1
     assert worker.state in {"going_to_tree", "working"}

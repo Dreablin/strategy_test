@@ -58,7 +58,7 @@ def test_smoke_phase14_forestry_cycle_to_render() -> None:
     assert matured, "expected planted tree to mature during runtime updates"
     # Freeze reforestation so lumberjack has one mature planted target to clear.
     forester_hut.set_active(False)
-    wood_before = resources.get("wood")
+    wood_before = town_hall.warehouse_amount("wood")
     delivered_before = lumber_camp.delivered_wood
 
     chopped = False
@@ -72,7 +72,7 @@ def test_smoke_phase14_forestry_cycle_to_render() -> None:
             chopped = True
             break
     assert chopped, "expected lumberjack to eventually harvest at least one matured planted tree"
-    assert resources.get("wood") == wood_before
+    assert town_hall.warehouse_amount("wood") == wood_before
 
     # Render one frame with mixed tree species present; no exceptions and non-bg pixels.
     planted_species: set[int] = set()

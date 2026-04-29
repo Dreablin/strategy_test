@@ -1,6 +1,7 @@
 """Application entry point for the game window and main loop."""
 
 import pygame
+from typing import Any
 
 from game import dev_asset_reload
 from game.buildings.registry import BuildingRegistry
@@ -9,7 +10,6 @@ from game.camera import Camera
 from game.config import WINDOW_SIZE, town_hall_origin_tile
 from game.input import TOP_BAR_HEIGHT, GameInput
 from game.render import Renderer
-from game.resources import ResourceManager
 from game.housing import current_population, max_population
 from game.ui.bottom_bar import BAR_HEIGHT, BottomBar
 from game.ui.placement import PlacementController
@@ -26,7 +26,7 @@ def main() -> int:
     pygame.display.set_caption("Isometric Strategy")
 
     world = World()
-    resources = ResourceManager()
+    resources: Any = None
     registry = BuildingRegistry(world)
     # Player starts with a single Town Hall as required by core game rules.
     registry.place(TownHall, town_hall_origin_tile())

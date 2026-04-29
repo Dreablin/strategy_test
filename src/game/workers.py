@@ -18,7 +18,6 @@ from game.config import (
 )
 from game.housing import current_population, max_population
 from game.pathfinding import find_path_bfs
-from game.resources import ResourceManager
 from game.world import find_nearest_free_stone, find_nearest_free_tree
 
 CHOP_DURATION_MS = 10_000
@@ -187,7 +186,7 @@ class WorkerManager:
 
     def __init__(
         self,
-        resources: ResourceManager | None = None,
+        resources: Any | None = None,
         registry: Any | None = None,
         now_ms_fn: Callable[[], int] | None = None,
     ) -> None:

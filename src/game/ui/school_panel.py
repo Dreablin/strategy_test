@@ -5,10 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import pygame
+from typing import Any
 
 from game.assets import hire_ui_icon, worker_ui_icon
 from game.buildings.school import SCHOOL_TRAINING_MS, School
-from game.resources import ResourceManager
 from game.ui.building_panel import BuildingPanel
 from game.workers import WorkerManager
 
@@ -50,7 +50,7 @@ class SchoolPanel:
     def layout(
         surface: pygame.Surface,
         school: School,
-        resources: ResourceManager,
+        resources: Any,
         *,
         worker_assigned: bool,
         worker_manager: WorkerManager | None = None,
@@ -104,7 +104,7 @@ class SchoolPanel:
     def draw(
         surface: pygame.Surface,
         school: School,
-        resources: ResourceManager,
+        resources: Any,
         *,
         worker_assigned: bool,
         worker_manager: WorkerManager | None = None,
@@ -172,7 +172,7 @@ class SchoolPanel:
         surface: pygame.Surface,
         pos: tuple[int, int],
         school: School,
-        resources: ResourceManager,
+        resources: Any,
         *,
         worker_assigned: bool,
         worker_manager: WorkerManager | None = None,

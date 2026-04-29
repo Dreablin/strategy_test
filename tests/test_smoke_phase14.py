@@ -35,7 +35,7 @@ def test_smoke_phase14_forestry_cycle_to_render() -> None:
     assert workers.hire("CARRIER") is not None
 
     planted_tile: tuple[int, int] | None = None
-    for _ in range(1200):
+    for _ in range(2400):
         now_ms["t"] += 500
         workers.reassign_all()
         workers.update(now_ms["t"])

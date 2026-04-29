@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 from collections.abc import Collection
-from typing import Type
+from typing import Any, Type
 
 from game.buildings.base import Building
 from game.config import TOWN_HALL_MIN_LEVEL_FOR_BUILDING
 from game.housing import current_population, housing_house, max_population
-from game.resources import ResourceManager
 from game.world import World
 from game.workers import WorkerManager
 
@@ -127,7 +126,7 @@ class BuildingRegistry:
 
     def sync_resources_per_cycle(
         self,
-        resources: ResourceManager,
+        resources: Any = None,
         *,
         staffed_buildings: Collection[Building] = (),
     ) -> None:
@@ -136,10 +135,9 @@ class BuildingRegistry:
         Passive production is removed globally; all resources are delivered by workers
         via explicit gather/deposit cycles. Keep this API to avoid touching callers.
         """
-        _ = staffed_buildings
-        resources.set_per_cycle_totals({"food": 0, "wood": 0, "stone": 0, "iron": 0})
+        _ = (resources, staffed_buildings)
 
-    def upgrade_building(self, building: Building, resources: ResourceManager) -> bool:
+    def upgrade_building(self, building: Building, resources: Any = None) -> bool:
         """Upgrade is free: increment ``level`` and refresh cached previews."""
         if building not in self._buildings:
             return False
@@ -150,7 +148,7 @@ class BuildingRegistry:
         building.level += 1
         if self._worker_manager is not None:
             self._worker_manager.refresh_building_bonuses(building)
-        self.sync_resources_per_cycle(resources, staffed_buildings=())
+        self.sync_resources_per_cycle(staffed_buildings=())
         return True
 
     def _footprint_inside_grass(self, gx: int, gy: int, w: int, h: int) -> bool:

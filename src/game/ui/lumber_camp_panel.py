@@ -5,9 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import pygame
+from typing import Any
 
 from game.buildings.lumber_camp import LumberCamp
-from game.resources import ResourceManager
 from game.ui.building_panel import BuildingPanel
 
 _PANEL_PAD = 16
@@ -38,7 +38,7 @@ class LumberCampPanel:
     def layout(
         surface: pygame.Surface,
         camp: LumberCamp,
-        resources: ResourceManager,
+        resources: Any,
         *,
         worker_assigned: bool,
         production_status: str | None = None,
@@ -70,7 +70,7 @@ class LumberCampPanel:
     def draw(
         surface: pygame.Surface,
         camp: LumberCamp,
-        resources: ResourceManager,
+        resources: Any,
         *,
         worker_assigned: bool,
         worker_status: str = "empty",
@@ -109,7 +109,7 @@ class LumberCampPanel:
         surface: pygame.Surface,
         pos: tuple[int, int],
         camp: LumberCamp,
-        resources: ResourceManager,
+        resources: Any,
         *,
         worker_assigned: bool,
         production_status: str | None = None,

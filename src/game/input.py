@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pygame
+from typing import Any
 
 from game import dev_asset_reload
 from game.buildings.base import Building
@@ -15,7 +16,6 @@ from game.buildings.town_hall import TownHall
 from game.camera import Camera
 from game.iso import screen_to_world
 from game.render import Renderer
-from game.resources import ResourceManager
 from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT, BottomBar
 from game.ui.building_panel import BuildingPanel
 from game.ui.forester_hut_panel import ForesterHutPanel
@@ -70,7 +70,7 @@ class GameInput:
         self,
         world: World,
         registry: BuildingRegistry,
-        resources: ResourceManager,
+        resources: Any,
         placement: PlacementController,
         worker_manager: WorkerManager,
         camera: Camera,
@@ -99,10 +99,7 @@ class GameInput:
 
     def _sync_assignments(self) -> None:
         self._worker_manager.reassign_all()
-        self._registry.sync_resources_per_cycle(
-            self._resources,
-            staffed_buildings=self._worker_manager.working_buildings(),
-        )
+        self._registry.sync_resources_per_cycle(staffed_buildings=self._worker_manager.working_buildings())
 
     @property
     def panel_building(self) -> Building | None:

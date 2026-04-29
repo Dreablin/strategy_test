@@ -5,10 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import pygame
+from typing import Any
 
 from game.assets import resource_icon
 from game.buildings.town_hall import TownHall
-from game.resources import ResourceManager
 from game.ui.building_panel import BuildingPanel
 
 _PANEL_PAD = 16
@@ -44,7 +44,7 @@ class TownHallPanel:
 
     @staticmethod
     def layout(
-        surface: pygame.Surface, town_hall: TownHall, resources: ResourceManager, *, worker_assigned: bool
+        surface: pygame.Surface, town_hall: TownHall, resources: Any, *, worker_assigned: bool
     ) -> TownHallPanelLayout:
         base = BuildingPanel.layout(
             surface,
@@ -83,7 +83,7 @@ class TownHallPanel:
 
     @staticmethod
     def draw(
-        surface: pygame.Surface, town_hall: TownHall, resources: ResourceManager, *, worker_assigned: bool
+        surface: pygame.Surface, town_hall: TownHall, resources: Any, *, worker_assigned: bool
     ) -> None:
         BuildingPanel.draw(
             surface,
@@ -145,7 +145,7 @@ class TownHallPanel:
         surface: pygame.Surface,
         pos: tuple[int, int],
         town_hall: TownHall,
-        resources: ResourceManager,
+        resources: Any,
         *,
         worker_assigned: bool,
     ) -> str | None:

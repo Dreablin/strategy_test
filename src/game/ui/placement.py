@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Type
+from typing import Any
 
 import pygame
 
@@ -19,7 +20,6 @@ from game.buildings.stone_mine import StoneMine
 from game.config import TILE_H, TILE_W
 from game.iso import screen_to_world, world_to_screen
 from game.render import Renderer
-from game.resources import ResourceManager
 from game.stones import Stone
 from game.world import World
 
@@ -57,7 +57,7 @@ class PlacementController:
         self,
         world: World,
         registry: BuildingRegistry,
-        resources: ResourceManager,
+        resources: Any = None,
         camera: Camera | None = None,
     ) -> None:
         self._world = world

@@ -5,9 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import pygame
+from typing import Any
 
 from game.buildings.forester_hut import ForesterHut
-from game.resources import ResourceManager
 from game.ui.building_panel import BuildingPanel
 
 _PANEL_PAD = 16
@@ -39,7 +39,7 @@ class ForesterHutPanel:
     def layout(
         surface: pygame.Surface,
         hut: ForesterHut,
-        resources: ResourceManager,
+        resources: Any,
         *,
         worker_assigned: bool,
         production_status: str | None = None,
@@ -79,7 +79,7 @@ class ForesterHutPanel:
     def draw(
         surface: pygame.Surface,
         hut: ForesterHut,
-        resources: ResourceManager,
+        resources: Any,
         *,
         worker_assigned: bool,
         worker_status: str = "empty",
@@ -129,7 +129,7 @@ class ForesterHutPanel:
         surface: pygame.Surface,
         pos: tuple[int, int],
         hut: ForesterHut,
-        resources: ResourceManager,
+        resources: Any,
         *,
         worker_assigned: bool,
         production_status: str | None = None,

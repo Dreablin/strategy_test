@@ -5,10 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import pygame
+from typing import Any
 
 from game.buildings.base import Building
 from game.config import TICK_MS
-from game.resources import ResourceManager
 
 _PANEL_W = 420
 _PANEL_PAD = 16
@@ -69,7 +69,7 @@ class BuildingPanel:
     def layout(
         surface: pygame.Surface,
         building: Building,
-        resources: ResourceManager,
+        resources: Any,
         *,
         worker_assigned: bool,
         production_status: str | None = None,
@@ -137,7 +137,7 @@ class BuildingPanel:
     def draw(
         surface: pygame.Surface,
         building: Building,
-        resources: ResourceManager,
+        resources: Any,
         *,
         worker_assigned: bool,
         worker_status: str = "empty",
@@ -243,7 +243,7 @@ class BuildingPanel:
         surface: pygame.Surface,
         pos: tuple[int, int],
         building: Building,
-        resources: ResourceManager,
+        resources: Any,
         *,
         worker_assigned: bool,
         production_status: str | None = None,

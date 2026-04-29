@@ -11,7 +11,7 @@ from game.resources import ResourceManager
 from game.stones import Stone
 from game.trees import Tree, TreeStage
 from game.world import World
-from game.workers import CHOP_DURATION_MS, MINE_DURATION_MS, WorkerManager
+from game.workers import MINE_DURATION_MS, WorkerManager
 
 
 def test_world_boots_with_six_stone_clusters_one_on_th_ring_twenty() -> None:

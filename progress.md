@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 18 — Remove ResourceManager globally
-- **Next Task:** T178 — remove ResourceManager from runtime signatures/wiring
-- **Last Completed:** T177 — warehouse-only runtime writes (no global add fallback)
-- **Total Progress:** 177 / 184 (Phase 18: 1 / 8 tasks done)
+- **Next Task:** T179 — test migration to warehouse-centric fixtures/assertions
+- **Last Completed:** T178 — removed runtime ResourceManager type dependencies from signatures/wiring
+- **Total Progress:** 178 / 184 (Phase 18: 2 / 8 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -87,7 +87,7 @@
 **Goal.** Fully remove `ResourceManager` and all global resource counters. Single source of truth for physical resources is warehouse/local storages.
 
 - [x] **T177**: Runtime migration — route producer deposits and carrier deliveries to `TownHall.warehouse` only; remove fallback paths and direct global `resources.add(...)` writes.
-- [ ] **T178**: API migration — remove `ResourceManager` dependencies from `main/input/ui panels/placement/registry/workers` signatures and wiring.
+- [x] **T178**: API migration — remove `ResourceManager` dependencies from `main/input/ui panels/placement/registry/workers` signatures and wiring.
 - [ ] **T179**: Test migration — replace `ResourceManager` fixtures/usages with warehouse-centric setup and assertions; delete `tests/test_resources.py`.
 - [ ] **T180**: Cleanup + verification — delete `src/game/resources.py`, scrub PRD references, run full `pytest -q` + `ruff check src tests`.
 - [ ] **T181**: Food/Wheat normalization cleanup — remove legacy alias flow (`food` ↔ `wheat`) from assets/panels/warehouse APIs; converge on one canonical key and update labels/tests.
@@ -125,6 +125,7 @@
 | 2026-04-28 | T175 | Removed wallet cost gates for placement/upgrade/hiring and switched UI labels to “Free”; deleted cost tables from settings/config and updated tests. | Aligns economy with physical-storage direction and removes legacy abstract spend model. |
 | 2026-04-28 | T176 | Deleted legacy `game.buildings.costs`, removed `ResourceManager.has/try_spend`, and migrated tests to explicit add/get semantics. | Completes cost-economy removal so no dead compatibility APIs remain in runtime code. |
 | 2026-04-28 | T177 | Removed runtime `resources.add(...)` writes from gather and carrier delivery; producer output now enters local storage then warehouse via transport pipeline only. | Establishes Town Hall warehouse as the sole runtime accumulation sink before API-level ResourceManager removal in T178+. |
+| 2026-04-28 | T178 | Removed `ResourceManager` imports/type-coupling from runtime wiring (`main/input/ui panels/placement/registry/workers`) while keeping compatibility arguments where still used by tests. | Decouples runtime API surfaces from global resource manager before the dedicated test-side migration in T179. |
 
 ## Issues & Blockers
 

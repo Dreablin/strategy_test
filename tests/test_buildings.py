@@ -2,6 +2,7 @@
 
 import pytest
 
+from game.construction import ConstructionSite
 from game.buildings.farm import Farm
 from game.config import town_hall_origin_tile
 from game.buildings.iron_mine import IronMine
@@ -157,3 +158,26 @@ def test_town_hall_exposes_warehouse_api() -> None:
     assert th.warehouse_amount("boards") == 3
     th.take_from_warehouse("wood", 1)
     assert th.warehouse_amount("wood") == 1
+
+
+@pytest.mark.parametrize("cls", [LumberCamp, StoneMine, IronMine, Farm, TownHall])
+def test_buildings_default_to_not_under_construction(cls: type) -> None:
+    building = cls(level=1, grid_pos=(10, 10))
+    assert building.construction_site is None
+    assert building.is_under_construction is False
+
+
+def test_building_reports_under_construction_when_site_is_set() -> None:
+    camp = LumberCamp(level=1, grid_pos=(10, 10))
+    camp.construction_site = ConstructionSite(
+        required_resources={"wood": 2},
+        delivered_resources={},
+        build_time_ms=20_000,
+        build_started_ms=None,
+        builder=None,
+        target_level=2,
+    )
+    assert camp.is_under_construction is True
+    # Existing subclass fields/methods still behave with construction_site present.
+    camp.add_to_storage(1)
+    assert camp.stored == 1

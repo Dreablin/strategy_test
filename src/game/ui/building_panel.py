@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import pygame
-from typing import Any
 
 from game.buildings.base import Building
 from game.config import TICK_MS
@@ -69,7 +68,6 @@ class BuildingPanel:
     def layout(
         surface: pygame.Surface,
         building: Building,
-        resources: Any,
         *,
         worker_assigned: bool,
         production_status: str | None = None,
@@ -137,7 +135,6 @@ class BuildingPanel:
     def draw(
         surface: pygame.Surface,
         building: Building,
-        resources: Any,
         *,
         worker_assigned: bool,
         worker_status: str = "empty",
@@ -150,7 +147,6 @@ class BuildingPanel:
         layout = BuildingPanel.layout(
             surface,
             building,
-            resources,
             worker_assigned=worker_assigned,
             production_status=production_status,
             show_upgrade=show_upgrade,
@@ -243,7 +239,6 @@ class BuildingPanel:
         surface: pygame.Surface,
         pos: tuple[int, int],
         building: Building,
-        resources: Any,
         *,
         worker_assigned: bool,
         production_status: str | None = None,
@@ -255,7 +250,6 @@ class BuildingPanel:
         layout = BuildingPanel.layout(
             surface,
             building,
-            resources,
             worker_assigned=worker_assigned,
             production_status=production_status,
             show_upgrade=show_upgrade,

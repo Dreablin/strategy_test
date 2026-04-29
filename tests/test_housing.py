@@ -98,13 +98,12 @@ def test_school_panel_disables_hire_when_housing_cap_reached() -> None:
     registry = BuildingRegistry(world)
     registry.place(TownHall, town_hall_origin_tile())
     school = registry.place(School, near_town_hall_tile(8, 8))
-    resources = None
     workers = WorkerManager(registry)
     for _ in range(8):
         assert workers.hire("LUMBERJACK", source_building=school) is not None
 
     surface = pygame.Surface((900, 700))
-    layout = SchoolPanel.layout(surface, school, resources, worker_assigned=False, worker_manager=workers)
+    layout = SchoolPanel.layout(surface, school, worker_assigned=False, worker_manager=workers)
     worker_type, button = layout.hire_buttons[0]
     assert layout.hire_enabled[worker_type] is False
     assert (
@@ -112,7 +111,6 @@ def test_school_panel_disables_hire_when_housing_cap_reached() -> None:
             surface,
             button.center,
             school,
-            resources,
             worker_assigned=False,
             worker_manager=workers,
         )

@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import pygame
-from typing import Any
 
 from game.assets import resource_icon
 from game.buildings.town_hall import TownHall
@@ -44,12 +43,11 @@ class TownHallPanel:
 
     @staticmethod
     def layout(
-        surface: pygame.Surface, town_hall: TownHall, resources: Any, *, worker_assigned: bool
+        surface: pygame.Surface, town_hall: TownHall, *, worker_assigned: bool
     ) -> TownHallPanelLayout:
         base = BuildingPanel.layout(
             surface,
             town_hall,
-            resources,
             worker_assigned=worker_assigned,
             show_upgrade=False,
             show_demolish=False,
@@ -83,18 +81,17 @@ class TownHallPanel:
 
     @staticmethod
     def draw(
-        surface: pygame.Surface, town_hall: TownHall, resources: Any, *, worker_assigned: bool
+        surface: pygame.Surface, town_hall: TownHall, *, worker_assigned: bool
     ) -> None:
         BuildingPanel.draw(
             surface,
             town_hall,
-            resources,
             worker_assigned=worker_assigned,
             show_upgrade=False,
             show_demolish=False,
             extra_bottom_px=_EXTRA_BOTTOM,
         )
-        layout = TownHallPanel.layout(surface, town_hall, resources, worker_assigned=worker_assigned)
+        layout = TownHallPanel.layout(surface, town_hall, worker_assigned=worker_assigned)
         font = pygame.font.Font(None, 22)
         title_font = pygame.font.Font(None, 24)
 
@@ -142,7 +139,6 @@ class TownHallPanel:
         surface: pygame.Surface,
         pos: tuple[int, int],
         town_hall: TownHall,
-        resources: Any,
         *,
         worker_assigned: bool,
     ) -> str | None:
@@ -151,7 +147,6 @@ class TownHallPanel:
             surface,
             pos,
             town_hall,
-            resources,
             worker_assigned=worker_assigned,
             show_upgrade=False,
             show_demolish=False,
@@ -159,7 +154,7 @@ class TownHallPanel:
         )
         if base_action == "close":
             return "close"
-        layout = TownHallPanel.layout(surface, town_hall, resources, worker_assigned=worker_assigned)
+        layout = TownHallPanel.layout(surface, town_hall, worker_assigned=worker_assigned)
         if layout.storage_frame.collidepoint(pos):
             return None
         if layout.upgrade is not None and layout.upgrade.collidepoint(pos):

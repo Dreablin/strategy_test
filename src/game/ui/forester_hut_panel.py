@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import pygame
-from typing import Any
 
 from game.buildings.forester_hut import ForesterHut
 from game.ui.building_panel import BuildingPanel
@@ -39,7 +38,6 @@ class ForesterHutPanel:
     def layout(
         surface: pygame.Surface,
         hut: ForesterHut,
-        resources: Any,
         *,
         worker_assigned: bool,
         production_status: str | None = None,
@@ -47,7 +45,6 @@ class ForesterHutPanel:
         base = BuildingPanel.layout(
             surface,
             hut,
-            resources,
             worker_assigned=worker_assigned,
             production_status=production_status,
             show_upgrade=False,
@@ -79,7 +76,6 @@ class ForesterHutPanel:
     def draw(
         surface: pygame.Surface,
         hut: ForesterHut,
-        resources: Any,
         *,
         worker_assigned: bool,
         worker_status: str = "empty",
@@ -89,7 +85,6 @@ class ForesterHutPanel:
         BuildingPanel.draw(
             surface,
             hut,
-            resources,
             worker_assigned=worker_assigned,
             worker_status=worker_status,
             production_status=production_status,
@@ -101,7 +96,6 @@ class ForesterHutPanel:
         layout = ForesterHutPanel.layout(
             surface,
             hut,
-            resources,
             worker_assigned=worker_assigned,
             production_status=production_status,
         )
@@ -129,7 +123,6 @@ class ForesterHutPanel:
         surface: pygame.Surface,
         pos: tuple[int, int],
         hut: ForesterHut,
-        resources: Any,
         *,
         worker_assigned: bool,
         production_status: str | None = None,
@@ -138,7 +131,6 @@ class ForesterHutPanel:
             surface,
             pos,
             hut,
-            resources,
             worker_assigned=worker_assigned,
             production_status=production_status,
             show_upgrade=False,
@@ -150,7 +142,6 @@ class ForesterHutPanel:
         layout = ForesterHutPanel.layout(
             surface,
             hut,
-            resources,
             worker_assigned=worker_assigned,
             production_status=production_status,
         )

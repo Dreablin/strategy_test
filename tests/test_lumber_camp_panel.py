@@ -12,9 +12,8 @@ from game.ui.lumber_camp_panel import LumberCampPanel
 def test_lumber_camp_layout_exposes_toggle_rect() -> None:
     surface = pygame.Surface((800, 600))
     camp = LumberCamp(level=1, grid_pos=(10, 10))
-    resources = None
 
-    layout = LumberCampPanel.layout(surface, camp, resources, worker_assigned=False)
+    layout = LumberCampPanel.layout(surface, camp, worker_assigned=False)
 
     assert layout.toggle is not None
 
@@ -31,11 +30,10 @@ def test_lumber_camp_toggle_label_reflects_active_state() -> None:
 def test_lumber_camp_click_toggle_returns_toggle_action() -> None:
     surface = pygame.Surface((800, 600))
     camp = LumberCamp(level=1, grid_pos=(10, 10))
-    resources = None
-    layout = LumberCampPanel.layout(surface, camp, resources, worker_assigned=False)
+    layout = LumberCampPanel.layout(surface, camp, worker_assigned=False)
     cx, cy = layout.toggle.center
 
-    action = LumberCampPanel.click_action(surface, (cx, cy), camp, resources, worker_assigned=False)
+    action = LumberCampPanel.click_action(surface, (cx, cy), camp, worker_assigned=False)
 
     assert action == "toggle_active"
 
@@ -59,15 +57,14 @@ def test_lumber_camp_click_upgrade_returns_upgrade_not_demolish() -> None:
     """
     surface = pygame.Surface((1280, 720))
     camp = LumberCamp(level=1, grid_pos=(10, 10))
-    resources = None
 
-    layout = LumberCampPanel.layout(surface, camp, resources, worker_assigned=False)
+    layout = LumberCampPanel.layout(surface, camp, worker_assigned=False)
     assert layout.upgrade is not None, "panel must expose an Upgrade button at L1"
 
     for offset_y in (0, layout.upgrade.height // 2 - 1, -(layout.upgrade.height // 2 - 1)):
         click = (layout.upgrade.centerx, layout.upgrade.centery + offset_y)
         action = LumberCampPanel.click_action(
-            surface, click, camp, resources, worker_assigned=False
+            surface, click, camp, worker_assigned=False
         )
         assert action == "upgrade", (
             f"click anywhere inside the visible Upgrade button must return 'upgrade', "
@@ -79,10 +76,9 @@ def test_lumber_camp_click_demolish_still_returns_demolish() -> None:
     """Negative companion: clicking the Demolish button still works correctly."""
     surface = pygame.Surface((1280, 720))
     camp = LumberCamp(level=1, grid_pos=(10, 10))
-    resources = None
 
-    layout = LumberCampPanel.layout(surface, camp, resources, worker_assigned=False)
+    layout = LumberCampPanel.layout(surface, camp, worker_assigned=False)
     assert layout.demolish is not None
     click = (layout.demolish.centerx, layout.demolish.centery)
-    action = LumberCampPanel.click_action(surface, click, camp, resources, worker_assigned=False)
+    action = LumberCampPanel.click_action(surface, click, camp, worker_assigned=False)
     assert action == "demolish"

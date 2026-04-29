@@ -211,17 +211,15 @@ def test_rejected_place_does_not_remove_stones_in_footprint() -> None:
 def test_upgrade_keeps_building_in_registry_list() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
-    resources = None
     camp = registry.place(LumberCamp, (12, 12))
 
-    assert registry.upgrade_building(camp, resources)
+    assert registry.upgrade_building(camp)
     assert camp in registry.all()
 
 
 def test_upgrade_refreshes_assigned_worker_gather_speed_bonus() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
-    resources = None
     camp = registry.place(LumberCamp, (14, 14))
     workers = WorkerManager(registry)
     worker = Worker("LUMBERJACK")
@@ -229,22 +227,21 @@ def test_upgrade_refreshes_assigned_worker_gather_speed_bonus() -> None:
     workers.assign_to_building(worker, camp)
     assert worker.characteristics.gather_speed_mult == pytest.approx(1.0)
 
-    assert registry.upgrade_building(camp, resources)
+    assert registry.upgrade_building(camp)
     assert worker.characteristics.gather_speed_mult == pytest.approx(1.05)
 
 
 def test_consecutive_upgrades_stack_additively_for_assigned_worker() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
-    resources = None
     camp = registry.place(LumberCamp, (18, 18))
     workers = WorkerManager(registry)
     worker = Worker("LUMBERJACK")
     workers.add_worker(worker)
     workers.assign_to_building(worker, camp)
 
-    assert registry.upgrade_building(camp, resources)
-    assert registry.upgrade_building(camp, resources)
+    assert registry.upgrade_building(camp)
+    assert registry.upgrade_building(camp)
     assert worker.characteristics.move_speed_mult == pytest.approx(1.10)
     assert worker.characteristics.gather_speed_mult == pytest.approx(1.10)
 
@@ -252,15 +249,14 @@ def test_consecutive_upgrades_stack_additively_for_assigned_worker() -> None:
 def test_demolish_after_upgrades_clears_move_and_gather_bonus_sources() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
-    resources = None
     camp = registry.place(LumberCamp, near_town_hall_tile())
     workers = WorkerManager(registry)
     worker = Worker("LUMBERJACK")
     workers.add_worker(worker)
     workers.assign_to_building(worker, camp)
 
-    assert registry.upgrade_building(camp, resources)
-    assert registry.upgrade_building(camp, resources)
+    assert registry.upgrade_building(camp)
+    assert registry.upgrade_building(camp)
     assert worker.characteristics.move_speed_mult == pytest.approx(1.10)
     assert worker.characteristics.gather_speed_mult == pytest.approx(1.10)
 

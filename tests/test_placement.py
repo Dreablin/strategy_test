@@ -20,8 +20,7 @@ def test_place_lumber_camp_is_free() -> None:
     surface = pygame.Surface((1280, 720))
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
-    resources = None
-    placement = PlacementController(world, registry, resources)
+    placement = PlacementController(world, registry)
     placement.select("LUMBER_CAMP")
     cx, cy = _cell_center_screen(surface, world, 10, 10)
     placement.try_place(surface, (cx, cy))
@@ -32,8 +31,7 @@ def test_cancel_prevents_place() -> None:
     surface = pygame.Surface((1280, 720))
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
-    resources = None
-    placement = PlacementController(world, registry, resources)
+    placement = PlacementController(world, registry)
     placement.select("LUMBER_CAMP")
     placement.cancel()
     cx, cy = _cell_center_screen(surface, world, 10, 10)
@@ -45,8 +43,7 @@ def test_placement_does_not_require_wallet_resources() -> None:
     surface = pygame.Surface((1280, 720))
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
-    resources = None
-    placement = PlacementController(world, registry, resources)
+    placement = PlacementController(world, registry)
     placement.select("FARM")
     cx, cy = _cell_center_screen(surface, world, 12, 12)
     placement.try_place(surface, (cx, cy))
@@ -58,8 +55,7 @@ def test_update_hover_uses_renderer_map_origin() -> None:
     surface = pygame.Surface((1280, 720))
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
-    resources = None
-    placement = PlacementController(world, registry, resources)
+    placement = PlacementController(world, registry)
     placement.select("LUMBER_CAMP")
     ox, oy = Renderer.map_origin(surface, world)
     mx, my = 512, 360

@@ -45,12 +45,11 @@ def _is_approach_tile(building, tile: tuple[int, int]) -> bool:
 def test_smoke_phase9_worker_moves_and_production_gates() -> None:
     screen = pygame.Surface(WINDOW_SIZE)
     world = World()
-    resources = None
     registry = BuildingRegistry(world)
     camera = Camera()
-    placement = PlacementController(world, registry, resources, camera)
+    placement = PlacementController(world, registry, camera)
     workers = WorkerManager(registry)
-    game_input = GameInput(world, registry, resources, placement, workers, camera)
+    game_input = GameInput(world, registry, placement, workers, camera)
     registry.place(TownHall, town_hall_origin_tile())
 
     # 1) Build Lumber Camp at a valid location through input routing.

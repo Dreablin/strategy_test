@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from typing import Type
-from typing import Any
 
 import pygame
 
@@ -51,18 +50,16 @@ def _diamond_screen_points(
 class PlacementController:
     """Tracks pending building type, hover cell, preview tint, and commits via registry."""
 
-    __slots__ = ("_camera", "_hover", "_pending", "_pending_dev", "_registry", "_resources", "_world")
+    __slots__ = ("_camera", "_hover", "_pending", "_pending_dev", "_registry", "_world")
 
     def __init__(
         self,
         world: World,
         registry: BuildingRegistry,
-        resources: Any = None,
         camera: Camera | None = None,
     ) -> None:
         self._world = world
         self._registry = registry
-        self._resources = resources
         self._camera = camera if camera is not None else Camera()
         self._pending: Type[Building] | None = None
         self._pending_dev: str | None = None  # DEV_TREE | DEV_STONE

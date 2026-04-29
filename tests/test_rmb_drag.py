@@ -29,11 +29,10 @@ def _setup() -> tuple[pygame.Surface, GameInput, PlacementController, _StubCamer
     surface = pygame.Surface((1280, 720))
     world = World()
     registry = BuildingRegistry(world)
-    resources = None
     camera = _StubCamera()
-    placement = PlacementController(world, registry, resources, camera)
+    placement = PlacementController(world, registry, camera)
     workers = WorkerManager(registry)
-    gi = GameInput(world, registry, resources, placement, workers, camera)
+    gi = GameInput(world, registry, placement, workers, camera)
     gi.handle(surface, pygame.event.Event(BUILD_MENU_SELECT, building_type="LUMBER_CAMP"))
     return surface, gi, placement, camera
 

@@ -30,7 +30,6 @@ def test_draw_buildings_attribute() -> None:
 def test_initial_town_hall_drawn() -> None:
     world = World()
     registry = BuildingRegistry(world)
-    _resources = None
     registry.place(TownHall, town_hall_origin_tile())
     surface = pygame.Surface((1280, 720))
     surface.fill(_SENTINEL)
@@ -48,7 +47,6 @@ def test_initial_town_hall_drawn() -> None:
 def test_placed_building_drawn() -> None:
     world = World()
     registry = BuildingRegistry(world)
-    _resources = None
     registry.place(TownHall, town_hall_origin_tile())
     camp = registry.place(LumberCamp, near_town_hall_tile(8, 8))
     surface = pygame.Surface((1280, 720))
@@ -82,7 +80,6 @@ class _Spy:
 def test_painters_order() -> None:
     world = World()
     registry = BuildingRegistry(world)
-    _resources = None
     registry.place(TownHall, town_hall_origin_tile())
     registry.place(LumberCamp, near_town_hall_tile(8, 8))
     registry.place(LumberCamp, near_town_hall_tile(15, 15))
@@ -99,7 +96,6 @@ def test_painters_order() -> None:
 def test_draw_building_shifted_by_camera_offset() -> None:
     world = World()
     registry = BuildingRegistry(world)
-    _resources = None
     registry.place(TownHall, town_hall_origin_tile())
     camp = registry.place(LumberCamp, near_town_hall_tile(8, 8))
 

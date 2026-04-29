@@ -20,7 +20,6 @@ def test_smoke_phase15_school_queue_housing_gate_and_independent_schools() -> No
     registry.place(TownHall, town_hall_origin_tile())
     school_a = registry.place(School, near_town_hall_tile(8, 8))
     school_b = registry.place(School, near_town_hall_tile(18, 8))
-    resources = None
     workers = WorkerManager(registry)
 
     # Fill close to Town Hall cap (8), then queue trainees.
@@ -43,7 +42,6 @@ def test_smoke_phase15_school_queue_housing_gate_and_independent_schools() -> No
     layout = SchoolPanel.layout(
         surface,
         school_a,
-        resources,
         worker_assigned=False,
         worker_manager=workers,
     )
@@ -54,7 +52,6 @@ def test_smoke_phase15_school_queue_housing_gate_and_independent_schools() -> No
             surface,
             button.center,
             school_a,
-            resources,
             worker_assigned=False,
             worker_manager=workers,
         )

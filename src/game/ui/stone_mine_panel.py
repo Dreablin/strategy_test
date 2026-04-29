@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import pygame
-from typing import Any
 
 from game.buildings.stone_mine import StoneMine
 from game.ui.building_panel import BuildingPanel
@@ -38,7 +37,6 @@ class StoneMinePanel:
     def layout(
         surface: pygame.Surface,
         mine: StoneMine,
-        resources: Any,
         *,
         worker_assigned: bool,
         production_status: str | None = None,
@@ -46,7 +44,6 @@ class StoneMinePanel:
         base = BuildingPanel.layout(
             surface,
             mine,
-            resources,
             worker_assigned=worker_assigned,
             production_status=production_status,
             extra_bottom_px=_EXTRA_BOTTOM,
@@ -70,7 +67,6 @@ class StoneMinePanel:
     def draw(
         surface: pygame.Surface,
         mine: StoneMine,
-        resources: Any,
         *,
         worker_assigned: bool,
         worker_status: str = "empty",
@@ -80,7 +76,6 @@ class StoneMinePanel:
         BuildingPanel.draw(
             surface,
             mine,
-            resources,
             worker_assigned=worker_assigned,
             worker_status=worker_status,
             production_status=production_status,
@@ -90,7 +85,6 @@ class StoneMinePanel:
         layout = StoneMinePanel.layout(
             surface,
             mine,
-            resources,
             worker_assigned=worker_assigned,
             production_status=production_status,
         )
@@ -109,7 +103,6 @@ class StoneMinePanel:
         surface: pygame.Surface,
         pos: tuple[int, int],
         mine: StoneMine,
-        resources: Any,
         *,
         worker_assigned: bool,
         production_status: str | None = None,
@@ -118,7 +111,6 @@ class StoneMinePanel:
             surface,
             pos,
             mine,
-            resources,
             worker_assigned=worker_assigned,
             production_status=production_status,
             extra_bottom_px=_EXTRA_BOTTOM,
@@ -128,7 +120,6 @@ class StoneMinePanel:
         layout = StoneMinePanel.layout(
             surface,
             mine,
-            resources,
             worker_assigned=worker_assigned,
             production_status=production_status,
         )

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pygame
-from typing import Any
 
 from game.assets import building_sprite, resource_icon
 
@@ -34,7 +33,7 @@ class BottomBar:
     _menu: str = "main"  # main | resource | processing | dev
 
     @staticmethod
-    def draw(surface: pygame.Surface, resources: Any = None) -> None:
+    def draw(surface: pygame.Surface) -> None:
         w, h = surface.get_width(), surface.get_height()
         y0 = h - BAR_HEIGHT
         pygame.draw.rect(surface, (26, 28, 34), (0, y0, w, BAR_HEIGHT))
@@ -133,9 +132,7 @@ class BottomBar:
             surface.blit(free_s, (tx, ty_name + name_s.get_height() + 4))
 
     @staticmethod
-    def handle_click(
-        surface: pygame.Surface, pos: tuple[int, int], resources: Any = None
-    ) -> None:
+    def handle_click(surface: pygame.Surface, pos: tuple[int, int]) -> None:
         menu = BottomBar._menu
         if menu == "main":
             entries = ("resource", "social", "processing", "dev")

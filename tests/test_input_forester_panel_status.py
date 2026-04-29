@@ -14,12 +14,11 @@ from game.workers import WorkerManager
 def test_panel_production_status_exists_for_forester_hut() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
-    resources = None
     registry.place(TownHall, town_hall_origin_tile()).level = 10
     hut = registry.place(ForesterHut, near_town_hall_tile(12, 4))
-    placement = PlacementController(world, registry, resources, Camera())
+    placement = PlacementController(world, registry, Camera())
     workers = WorkerManager(registry)
-    inp = GameInput(world, registry, resources, placement, workers, Camera())
+    inp = GameInput(world, registry, placement, workers, Camera())
     inp._panel = hut  # noqa: SLF001 - direct panel setup for focused regression test
     status = inp._panel_production_status()  # noqa: SLF001
     assert status is not None

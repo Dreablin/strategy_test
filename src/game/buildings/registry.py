@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Type
+from typing import Type
 
 from game.buildings.base import Building
 from game.config import TOWN_HALL_MIN_LEVEL_FOR_BUILDING
@@ -123,14 +123,13 @@ class BuildingRegistry:
         self._world.free(gx, gy, w, h)
         self._buildings.remove(building)
 
-    def upgrade_building(self, building: Building, resources: Any = None) -> bool:
+    def upgrade_building(self, building: Building) -> bool:
         """Upgrade is free: increment ``level`` and refresh cached previews."""
         if building not in self._buildings:
             return False
         cls = type(building)
         if building.level >= cls.max_level():
             return False
-        _ = resources
         building.level += 1
         if self._worker_manager is not None:
             self._worker_manager.refresh_building_bonuses(building)

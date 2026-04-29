@@ -5,7 +5,8 @@ from __future__ import annotations
 from typing import Type
 
 from game.buildings.base import Building
-from game.config import TOWN_HALL_MIN_LEVEL_FOR_BUILDING
+from game.construction import ConstructionSite
+from game.config import CONSTRUCTION_REQUIREMENTS, TOWN_HALL_MIN_LEVEL_FOR_BUILDING
 from game.housing import current_population, housing_house, max_population
 from game.world import World
 from game.workers import WorkerManager
@@ -99,6 +100,18 @@ class BuildingRegistry:
             for tx in range(gx, gx + w):
                 self._world.remove_tree(tx, ty)
         inst = cls(level=1, grid_pos=grid_pos)
+        req_by_level = CONSTRUCTION_REQUIREMENTS.get(cls.type_tag)
+        if req_by_level is not None:
+            level1 = req_by_level.get(1)
+            if level1 is not None:
+                inst.construction_site = ConstructionSite(
+                    required_resources=dict(level1.cost),
+                    delivered_resources={},
+                    build_time_ms=int(level1.build_time_ms),
+                    build_started_ms=None,
+                    builder=None,
+                    target_level=1,
+                )
         self._world.mark_occupied(gx, gy, w, h)
         self._buildings.append(inst)
         return inst

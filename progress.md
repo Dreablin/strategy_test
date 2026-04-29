@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 19 — Construction System (queued)
-- **Next Task:** T188 — registry placement initializes construction site
-- **Last Completed:** T187 — `Building` now has `construction_site` slot and `is_under_construction`
-- **Total Progress:** 187 / 209 (Phase 19: 3 / 25 tasks done)
+- **Next Task:** T189 — upgrade starts construction-site flow
+- **Last Completed:** T188 — `BuildingRegistry.place()` attaches level-1 `ConstructionSite` from config
+- **Total Progress:** 188 / 209 (Phase 19: 4 / 25 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -115,7 +115,7 @@
 
 ### 19.3 Registry — place as construction site
 
-- [ ] **T188**: Modify `BuildingRegistry.place()` to look up `CONSTRUCTION_REQUIREMENTS` for the building type at level 1. If an entry exists, set `building.construction_site = ConstructionSite(...)` on the newly placed instance. Existing behaviour (place → functional) must still work for types without construction config (currently TOWN_HALL has no construction cost). Write tests: place a LUMBER_CAMP → verify `is_under_construction`, verify `construction_site.required_resources` matches config. Place TOWN_HALL → verify NOT under construction.
+- [x] **T188**: Modify `BuildingRegistry.place()` to look up `CONSTRUCTION_REQUIREMENTS` for the building type at level 1. If an entry exists, set `building.construction_site = ConstructionSite(...)` on the newly placed instance. Existing behaviour (place → functional) must still work for types without construction config (currently TOWN_HALL has no construction cost). Write tests: place a LUMBER_CAMP → verify `is_under_construction`, verify `construction_site.required_resources` matches config. Place TOWN_HALL → verify NOT under construction.
 
 - [ ] **T189**: Modify `BuildingRegistry.upgrade_building()` to initiate a construction site for the **next level** instead of instantly incrementing level. Store `target_level = building.level + 1` in the `ConstructionSite`. The building keeps its current level until construction completes; `is_under_construction` becomes True. If the building has a worker assigned (e.g. LUMBERJACK), that worker transitions to state `"resting"` inside the building (idle but not unassigned). Return `True` to indicate upgrade process started. Write tests: upgrade a level-1 building → verify `is_under_construction`, `target_level == 2`, worker state if assigned.
 
@@ -215,6 +215,7 @@
 | 2026-04-29 | T185 | Added `ConstructionSpec` + `CONSTRUCTION_REQUIREMENTS` parsing in `config.py`; introduced `construction.<TYPE>.levels.<N>.{cost,build_time_ms}` for all Phase-19 building types with levels 1..10 in `game_settings.json`; added `tests/test_construction_config.py`. | Locks construction settings contract before runtime integration tasks (T186+). |
 | 2026-04-29 | T186 | Added `src/game/construction.py` with `ConstructionSite` dataclass and pure methods (`is_fully_supplied`, `is_building`, `build_progress`, `is_complete`, `remaining_resources`, `deliver_resource`); added `tests/test_construction.py`. | Establishes core construction state model before wiring into `Building`/registry/workers in T187+. |
 | 2026-04-29 | T187 | Added `construction_site` to `Building.__slots__` with default `None` and new `is_under_construction` property; extended `tests/test_buildings.py` to verify default compatibility and explicit construction-site state. | Prepares all building subclasses for construction flow without breaking existing behavior. |
+| 2026-04-29 | T188 | `BuildingRegistry.place()` now attaches level-1 `ConstructionSite` from `CONSTRUCTION_REQUIREMENTS` for configured building types; Town Hall remains instant (no construction config). Added registry tests for both paths. | Enables place-as-construction behavior needed before upgrade/runtime construction flow. |
 
 ## Issues & Blockers
 

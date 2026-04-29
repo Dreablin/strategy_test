@@ -9,7 +9,7 @@ from game.buildings.iron_mine import IronMine
 from game.buildings.stone_mine import StoneMine
 from game.buildings.town_hall import TownHall
 from game.buildings.registry import BuildingRegistry
-from game.config import GRID_SIZE, near_town_hall_tile, town_hall_origin_tile
+from game.config import CONSTRUCTION_REQUIREMENTS, GRID_SIZE, near_town_hall_tile, town_hall_origin_tile
 from game.world import World
 from game.workers import Worker, WorkerManager
 
@@ -185,6 +185,22 @@ def test_tree_presence_does_not_bypass_overlap_or_spacing_rules(
     assert first is not None
     assert not registry.can_place(StoneMine, (10, 10))
     assert not registry.can_place(StoneMine, (12, 10))
+
+
+def test_place_lumber_camp_starts_under_construction_with_level1_requirements(
+    registry: BuildingRegistry,
+) -> None:
+    camp = registry.place(LumberCamp, (10, 10))
+    assert camp.is_under_construction
+    assert camp.construction_site is not None
+    expected = CONSTRUCTION_REQUIREMENTS["LUMBER_CAMP"][1]
+    assert camp.construction_site.required_resources == expected.cost
+
+
+def test_place_town_hall_has_no_construction_site(registry: BuildingRegistry) -> None:
+    th = registry.place(TownHall, town_hall_origin_tile())
+    assert th.is_under_construction is False
+    assert th.construction_site is None
 
 
 def test_cannot_place_when_footprint_covers_stone_tile() -> None:

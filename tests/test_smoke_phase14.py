@@ -32,6 +32,7 @@ def test_smoke_phase14_forestry_cycle_to_render() -> None:
     workers = WorkerManager(resources, registry, now_ms_fn=lambda: now_ms["t"])
     assert workers.hire("FORESTER") is not None
     assert workers.hire("LUMBERJACK") is not None
+    assert workers.hire("CARRIER") is not None
 
     planted_tile: tuple[int, int] | None = None
     for _ in range(1200):
@@ -58,6 +59,7 @@ def test_smoke_phase14_forestry_cycle_to_render() -> None:
     # Freeze reforestation so lumberjack has one mature planted target to clear.
     forester_hut.set_active(False)
     wood_before = resources.get("wood")
+    delivered_before = lumber_camp.delivered_wood
 
     chopped = False
     for _ in range(1200):
@@ -66,10 +68,11 @@ def test_smoke_phase14_forestry_cycle_to_render() -> None:
         workers.update(now_ms["t"])
         # Forester picks random valid tiles; validate that lumberjack eventually harvests wood,
         # not strictly that this exact planted tile is the one chopped first.
-        if resources.get("wood") > wood_before:
+        if lumber_camp.delivered_wood > delivered_before:
             chopped = True
             break
     assert chopped, "expected lumberjack to eventually harvest at least one matured planted tree"
+    assert resources.get("wood") == wood_before
 
     # Render one frame with mixed tree species present; no exceptions and non-bg pixels.
     planted_species: set[int] = set()

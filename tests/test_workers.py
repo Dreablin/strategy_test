@@ -512,12 +512,12 @@ def test_carrier_transports_from_lumber_camp_to_town_hall_warehouse() -> None:
 
     for now_ms in range(0, 120_000, 500):
         wm.update(now_ms)
-        if camp.stored == 0 and town_hall.warehouse_amount("wood") == 1 and resources.get("wood") >= 201:
+        if camp.stored == 0 and town_hall.warehouse_amount("wood") == 1:
             break
 
     assert camp.stored == 0
     assert town_hall.warehouse_amount("wood") == 1
-    assert resources.get("wood") >= 201
+    assert resources.get("wood") == 200
 
 
 def test_carrier_waits_2s_inside_buildings_on_pickup_and_dropoff() -> None:

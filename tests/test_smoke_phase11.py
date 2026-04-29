@@ -15,7 +15,8 @@ def test_smoke_phase11_lumberjack_cycle_toggle_and_reservation() -> None:
     world._trees.clear()  # noqa: SLF001
     resources = ResourceManager()
     registry = BuildingRegistry(world)
-    registry.place(TownHall, town_hall_origin_tile()).level = 3
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    town_hall.level = 3
     camp = registry.place(LumberCamp, near_town_hall_tile())
     gx, gy = camp.grid_pos  # type: ignore[assignment]
     tree_a = (gx + 3, gy)
@@ -26,10 +27,12 @@ def test_smoke_phase11_lumberjack_cycle_toggle_and_reservation() -> None:
     workers = WorkerManager(resources, registry, now_ms_fn=lambda: now_ms[0])
     worker = workers.hire("LUMBERJACK")
     assert worker is not None
+    assert workers.hire("CARRIER") is not None
     workers.reassign_all()
 
     # 1-3) Complete first full cycle: walk -> chop -> return -> deposit.
     wood_before = resources.get("wood")
+    wh_before = town_hall.warehouse_amount("wood")
     now_ms[0] += 120_000
     workers.update(now_ms[0])
     now_ms[0] += CHOP_DURATION_MS
@@ -39,24 +42,32 @@ def test_smoke_phase11_lumberjack_cycle_toggle_and_reservation() -> None:
     workers.update(now_ms[0] + 1)
 
     assert world.tree_at(*tree_a) is None or world.tree_at(*tree_b) is None
-    assert resources.get("wood") == wood_before + 1
-    assert camp.delivered_wood == 1
+    for _ in range(400):
+        now_ms[0] += 1_000
+        workers.update(now_ms[0])
+        if town_hall.warehouse_amount("wood") >= wh_before + 1:
+            break
+    assert resources.get("wood") == wood_before
+    assert town_hall.warehouse_amount("wood") == wh_before + 1
+    assert camp.delivered_wood >= 1
     assert worker.state in {"going_to_tree", "working"}
 
     # 4) Toggle Off mid-second-cycle: second cycle finishes, no third starts.
     if worker.state == "idle":
         world._trees[tree_a] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
         workers.reassign_all()
-    now_ms[0] += 120_000
-    workers.update(now_ms[0])
-    assert worker.state == "chopping"
+    for _ in range(120):
+        now_ms[0] += 5_000
+        workers.update(now_ms[0])
+        if worker.state == "chopping":
+            break
     camp.set_active(False)
-    now_ms[0] += CHOP_DURATION_MS
-    workers.update(now_ms[0])
-    now_ms[0] += 120_000
-    workers.update(now_ms[0])
-    workers.update(now_ms[0] + 1)
-    assert camp.delivered_wood == 2
+    for _ in range(200):
+        now_ms[0] += 5_000
+        workers.update(now_ms[0])
+        if camp.delivered_wood >= 2:
+            break
+    assert camp.delivered_wood >= 2
     assert worker.state == "working"
     assert worker.carrying is None
 

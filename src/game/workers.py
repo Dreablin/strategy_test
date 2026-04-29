@@ -601,17 +601,13 @@ class WorkerManager:
                     if hasattr(camp, "add_to_storage"):
                         camp.add_to_storage(1)
                     town_hall = self._primary_town_hall()
-                    has_carrier = any(w.type_tag == "CARRIER" for w in self._workers)
-                    if town_hall is not None and has_carrier:
+                    if town_hall is not None:
                         self.enqueue_transport_task(
                             resource=gather_state["carry_resource"],
                             source=camp,
                             target=town_hall,
                             amount=1,
                         )
-                    elif self._resources is not None:
-                        # Backward-compatible fallback when no carrier exists yet.
-                        self._resources.add(gather_state["carry_resource"], 1)
                     if hasattr(camp, gather_state["record_method"]):
                         record_method = getattr(camp, gather_state["record_method"])
                         record_method(1)
@@ -745,8 +741,6 @@ class WorkerManager:
             return
         if hasattr(task.target, "add_to_warehouse"):
             task.target.add_to_warehouse(task.resource, 1)  # type: ignore[attr-defined]
-        if self._resources is not None:
-            self._resources.add(task.resource, 1)
         self._move_worker_to_building_approach(worker, task.target)
         worker.carrying = None
         worker.transport_task = None

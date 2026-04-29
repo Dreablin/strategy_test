@@ -217,6 +217,38 @@ def test_update_completes_construction_and_reassigns_with_idle_builder() -> None
     assert builder.assigned_building is None
 
 
+def test_idle_builder_targets_fully_supplied_site_and_starts_building() -> None:
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    camp = registry.place(LumberCamp, near_town_hall_tile(10, 10))
+    camp.construction_site = ConstructionSite(
+        required_resources={"wood": 2},
+        delivered_resources={"wood": 2},
+        build_time_ms=10_000,
+        build_started_ms=None,
+        builder=None,
+        target_level=1,
+    )
+    bx, by = camp.grid_pos  # type: ignore[assignment]
+    builder = Worker("BUILDER", stand_tile=(bx - 4, by))
+    wm = WorkerManager(registry, now_ms_fn=lambda: 1_000)
+    wm.add_worker(builder)
+
+    wm.update(1_000)
+    assert builder.state == "moving"
+    assert builder.assigned_building is camp
+    assert camp.construction_site is not None
+    assert camp.construction_site.builder is None
+
+    wm.update(120_000)
+    assert camp.construction_site is not None
+    assert camp.construction_site.builder is builder
+    assert camp.construction_site.build_started_ms == 120_000
+    assert builder.state == "building"
+    assert builder.current_tile == building_center_tile(camp)
+
+
 def test_reassign_all_does_not_assign_stonecutter_to_lumber_camp() -> None:
     world = World(world_seed=0)
     registry = BuildingRegistry(world)

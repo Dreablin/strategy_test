@@ -8,6 +8,7 @@ from game.buildings.school import School
 from game.buildings.town_hall import TownHall
 from game.characteristics import Characteristics
 from game.config import near_town_hall_tile, town_hall_origin_tile
+from game.construction import ConstructionSite
 from game.trees import Tree, TreeStage
 from game.world import World
 from game.workers import Worker, WorkerManager, building_center_tile, town_hall_spawn_tile
@@ -184,6 +185,36 @@ def test_reassign_all_assigns_one_idle_lumberjack_to_empty_lumber_camp() -> None
     w = wm.workers()[0]
     assert not w.idle
     assert w.assigned_building is camp
+
+
+def test_update_completes_construction_and_reassigns_with_idle_builder() -> None:
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    camp = registry.place(LumberCamp, near_town_hall_tile(8, 8))
+    camp.construction_site = ConstructionSite(
+        required_resources={"wood": 2},
+        delivered_resources={"wood": 2},
+        build_time_ms=1_000,
+        build_started_ms=100,
+        builder=None,
+        target_level=1,
+    )
+    builder = Worker("BUILDER")
+    builder.idle = False
+    builder.state = "building"
+    builder.assigned_building = camp
+    camp.construction_site.builder = builder
+
+    wm = WorkerManager(registry, now_ms_fn=lambda: 1_100)
+    wm.add_worker(builder)
+
+    wm.update(1_100)
+
+    assert camp.is_under_construction is False
+    assert builder.idle is True
+    assert builder.state == "idle"
+    assert builder.assigned_building is None
 
 
 def test_reassign_all_does_not_assign_stonecutter_to_lumber_camp() -> None:

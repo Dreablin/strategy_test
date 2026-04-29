@@ -16,6 +16,7 @@ from game.config import (
     TOWN_HALL_MIN_LEVEL_FOR_HIRE,
     WORKER_TILE_TRAVEL_MS,
 )
+from game.construction import complete_construction
 from game.housing import current_population, max_population
 from game.pathfinding import find_path_bfs
 from game.world import find_nearest_free_stone, find_nearest_free_tree
@@ -552,6 +553,7 @@ class WorkerManager:
     def update(self, now_ms: int) -> None:
         """Advance worker movement interpolation/state for this frame."""
         world = getattr(self._registry, "_world", None) if self._registry is not None else None
+        completed_buildings: list[Building] = []
         for worker in self._workers:
             worker.update(now_ms)
             updater = self._updaters.get(worker.type_tag)
@@ -559,6 +561,18 @@ class WorkerManager:
                 updater(worker, int(now_ms), world)
         spawned = False
         if self._registry is not None:
+            for building in self._registry.all():
+                if not building.is_under_construction:
+                    continue
+                site = building.construction_site
+                if site is None or not site.is_building():
+                    continue
+                if complete_construction(building, int(now_ms)):
+                    completed_buildings.append(building)
+            for building in completed_buildings:
+                self.refresh_building_bonuses(building)
+            if completed_buildings:
+                self.reassign_all()
             for building in self._registry.all():
                 if not isinstance(building, School):
                     continue

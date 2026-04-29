@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 19 — Construction System (queued)
-- **Next Task:** T191 — wire `complete_construction` into `WorkerManager.update()`
-- **Last Completed:** T190 — add `complete_construction()` for level apply + builder release + resting worker resume
-- **Total Progress:** 190 / 209 (Phase 19: 6 / 25 tasks done)
+- **Next Task:** T192 — add BUILDER updater state machine
+- **Last Completed:** T191 — wire `complete_construction` into `WorkerManager.update()` with post-completion `reassign_all()`
+- **Total Progress:** 191 / 209 (Phase 19: 7 / 25 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -123,7 +123,7 @@
 
 - [x] **T190**: Add `complete_construction(building, now_ms)` function in `construction.py`. When `construction_site.is_complete(now_ms)`: set `building.level = target_level`, clear `construction_site = None`, release the builder (set idle state, unassign from site), if there was a resting worker inside the building → restore to `"working"` state. Write tests for level-1 initial build completion (building becomes functional) and level-N upgrade completion (level increments, worker resumes). Ensure building bonuses are refreshed after level change.
 
-- [ ] **T191**: Wire `complete_construction` into `WorkerManager.update()` loop: each frame, iterate buildings with `is_under_construction and construction_site.is_building()`, check `is_complete(now_ms)`, call completion. After any completion, call `reassign_all()`. Write test: building + builder inside → advance time past build_time_ms → building is no longer under construction, builder is idle.
+- [x] **T191**: Wire `complete_construction` into `WorkerManager.update()` loop: each frame, iterate buildings with `is_under_construction and construction_site.is_building()`, check `is_complete(now_ms)`, call completion. After any completion, call `reassign_all()`. Write test: building + builder inside → advance time past build_time_ms → building is no longer under construction, builder is idle.
 
 ### 19.5 Builder worker — construction state machine
 

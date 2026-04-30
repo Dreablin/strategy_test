@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 21 — Wheat fields + farmer field cycle
-- **Next Task:** T237 — Transport task generation RED tests
-- **Last Completed:** T236 — Farm storage capacity implementation + guards
-- **Total Progress:** 236 / 245 (Phase 19: 25 / 25 done; Phase 20: 11 / 11 done; Phase 21: 16 / 25 done)
+- **Next Task:** T238 — Farm wheat transport task emission implementation
+- **Last Completed:** T237 — Transport task generation RED tests
+- **Total Progress:** 237 / 245 (Phase 19: 25 / 25 done; Phase 20: 11 / 11 done; Phase 21: 17 / 25 done)
 
 > **Archive:** Full history and completed phases are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -55,7 +55,7 @@
 
 ### 21.6 Transport queue integration (carrier)
 
-- [ ] **T237**: Add RED tests for transport task generation from farm local wheat storage into shared transport queue using existing priority rules (construction highest, then normal production logistics).
+- [x] **T237**: Add RED tests for transport task generation from farm local wheat storage into shared transport queue using existing priority rules (construction highest, then normal production logistics).
 - [ ] **T238**: Implement task emission for wheat export/import through current generic `TransportTask` pipeline; avoid per-frame duplicate spam (dedupe/throttle consistent with sawmill logic).
 - [ ] **T239**: Add edge-case tests for mid-route state changes (target full/no longer needs resource): carrier redirects/fallbacks using existing conventions, no task loss/deadlock.
 
@@ -111,3 +111,4 @@
 - T234 GREEN check: `pytest -q` passes with explicit tests proving farmer remains in `resting` until rest timeout after sow and harvest actions.
 - T235 RED check: `pytest -q` fails as expected on farm storage capacity formula (current `storage_capacity()` returns `5` at level 2, expected `3`).
 - T236 GREEN check: `pytest -q` passes with farm-specific capacity ladder (`+1` every 2 levels) and farmer harvest dispatch blocked when farm storage is full.
+- T237 RED check: `pytest -q` fails because no wheat export tasks are generated from farm local storage into the shared transport queue.

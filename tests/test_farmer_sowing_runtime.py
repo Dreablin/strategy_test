@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from game.buildings.farm import Farm
-from game.buildings.field import WHEAT_EMPTY, WHEAT_PHASE_1
+from game.buildings.field import WHEAT_EMPTY, WHEAT_PHASE_1, WHEAT_PHASE_4
 from game.buildings.field import Field
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
@@ -40,4 +40,60 @@ def test_farmer_sows_empty_field_to_phase_1_after_action_time() -> None:
 
     assert workers._read_field_phase(field) == WHEAT_PHASE_1  # noqa: SLF001
     assert farmer.state in {"resting", "working_field"}
+
+
+def test_farmer_waits_full_rest_interval_before_next_dispatch_after_sow() -> None:
+    now_ms = {"t": 0}
+    world = World(world_seed=2)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    farm = registry.place(Farm, near_town_hall_tile(10, 8))
+    farm.construction_site = None
+    field = registry.place(Field, near_town_hall_tile(7, 8))
+    field.construction_site = None
+    workers = WorkerManager(registry, now_ms_fn=lambda: now_ms["t"])
+    workers._write_field_phase(field, WHEAT_EMPTY)  # noqa: SLF001
+    farmer = workers.hire("FARMER")
+    assert farmer is not None
+
+    _advance(workers, now_ms, steps=200, step_ms=500)
+    assert farmer.state == "resting"
+    rest_until = farmer.camp_wait_until_ms
+    assert rest_until > now_ms["t"]
+
+    while now_ms["t"] + 500 < rest_until:
+        now_ms["t"] += 500
+        workers.reassign_all()
+        workers.update(now_ms["t"])
+        assert farmer.state == "resting"
+
+
+def test_farmer_waits_full_rest_interval_before_next_dispatch_after_harvest() -> None:
+    now_ms = {"t": 0}
+    world = World(world_seed=3)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    farm = registry.place(Farm, near_town_hall_tile(10, 8))
+    farm.construction_site = None
+    field = registry.place(Field, near_town_hall_tile(7, 8))
+    field.construction_site = None
+    workers = WorkerManager(registry, now_ms_fn=lambda: now_ms["t"])
+    workers._write_field_phase(field, WHEAT_PHASE_4)  # noqa: SLF001
+    farmer = workers.hire("FARMER")
+    assert farmer is not None
+
+    _advance(workers, now_ms, steps=250, step_ms=500)
+    assert farmer.state == "resting"
+    rest_until = farmer.camp_wait_until_ms
+    assert rest_until > now_ms["t"]
+
+    while now_ms["t"] + 500 < rest_until:
+        now_ms["t"] += 500
+        workers.reassign_all()
+        workers.update(now_ms["t"])
+        assert farmer.state == "resting"
 

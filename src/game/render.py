@@ -15,6 +15,7 @@ from game.assets import (
     tree_sprite_anchor,
     tree_sprite_offset,
 )
+from game.buildings.field import WHEAT_PHASE_1, WHEAT_PHASE_2, WHEAT_PHASE_3, WHEAT_PHASE_4
 from game.buildings.registry import BuildingRegistry
 from game.config import TILE_H, TILE_W
 from game.iso import screen_to_world, world_to_screen
@@ -84,6 +85,7 @@ class Renderer:
         surface: pygame.Surface,
         world: World,
         registry: BuildingRegistry,
+        worker_manager: WorkerManager | None = None,
         camera=None,
     ) -> None:
         """Draw building sprites in painter order, anchored to footprint bottom-center."""
@@ -130,6 +132,18 @@ class Renderer:
             foot_cx = (min_x + max_x) // 2
             foot_by = max_y
             sprite_level = int(b.level)
+            if b.type_tag == "FIELD" and not b.is_under_construction:
+                phase_lookup = getattr(worker_manager, "_read_field_phase", None)
+                if callable(phase_lookup):
+                    phase = str(phase_lookup(b)).upper()
+                else:
+                    phase = WHEAT_PHASE_1
+                sprite_level = {
+                    WHEAT_PHASE_1: 1,
+                    WHEAT_PHASE_2: 2,
+                    WHEAT_PHASE_3: 3,
+                    WHEAT_PHASE_4: 4,
+                }.get(phase, 1)
             if b.is_under_construction and b.construction_site is not None:
                 sprite_level = int(b.construction_site.target_level)
                 spr = building_sprite_construction(b.type_tag, sprite_level)

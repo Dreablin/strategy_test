@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 21 — Wheat fields + farmer field cycle
-- **Next Task:** T241 — Field visual wheat phase states
-- **Last Completed:** T240 — Farm panel/status lines
-- **Total Progress:** 240 / 245 (Phase 19: 25 / 25 done; Phase 20: 11 / 11 done; Phase 21: 20 / 25 done)
+- **Next Task:** T242 — Farmer action progress bars draw order
+- **Last Completed:** T241 — Field visual wheat phase states
+- **Total Progress:** 241 / 245 (Phase 19: 25 / 25 done; Phase 20: 11 / 11 done; Phase 21: 21 / 25 done)
 
 > **Archive:** Full history and completed phases are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -62,7 +62,7 @@
 ### 21.7 UI, statuses, and player feedback
 
 - [x] **T240**: Add/extend farm panel lines: local wheat storage `stored/capacity`, farmer status, blocked hints (no fields in radius, storage full, resting, moving, sowing, harvesting).
-- [ ] **T241**: Add field visual states for wheat phases (`PHASE_1..PHASE_4`) with disk-first assets + procedural fallback. Include render tests ensuring phase-specific sprite selection.
+- [x] **T241**: Add field visual states for wheat phases (`PHASE_1..PHASE_4`) with disk-first assets + procedural fallback. Include render tests ensuring phase-specific sprite selection.
 - [ ] **T242**: Add action progress bars for farmer on field tile (sow/harvest) and verify draw order does not hide bar behind building sprites in common camera positions.
 
 ### 21.8 Regression, integration, and phase close
@@ -115,3 +115,4 @@
 - T238 GREEN check: `pytest -q` passes with farm wheat export tasks emitted into shared queue and deduped per desired-count parity with current queue/in-flight tasks.
 - T239 GREEN check: `pytest -q` passes with stale farm wheat tasks dropped after farm source empties mid-route while construction unavailable tasks remain queued for retry.
 - T240 GREEN check: `pytest -q` passes with farm panel/status hints for `No fields in radius`, `Storage full`, `Resting`, `Moving`, `Sowing`, and `Harvesting`.
+- T241 GREEN check: `pytest -q` passes with phase-specific FIELD sprite selection (`PHASE_1..PHASE_4`) and render test coverage.

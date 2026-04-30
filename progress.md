@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 21 — Wheat fields + farmer field cycle
-- **Next Task:** T226 — FIELD construction progress bar render support
-- **Last Completed:** T225 — Implement FIELD construction specialization
-- **Total Progress:** 225 / 245 (Phase 19: 25 / 25 done; Phase 20: 11 / 11 done; Phase 21: 5 / 25 done)
+- **Next Task:** T227 — Wheat growth timing RED tests
+- **Last Completed:** T226 — FIELD construction progress bar render support
+- **Total Progress:** 226 / 245 (Phase 19: 25 / 25 done; Phase 20: 11 / 11 done; Phase 21: 6 / 25 done)
 
 > **Archive:** Full history and completed phases are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -29,7 +29,7 @@
 
 - [x] **T224**: Add failing tests for FIELD-specific construction behavior: builder path target is the field tile itself (not approach tile), builder stands on tile, build progress runs for `10_000 ms`, then construction completes into built field.
 - [x] **T225**: Implement FIELD construction specialization in builder/construction runtime while keeping generic construction behavior unchanged for other buildings. Ensure no carrier resource delivery tasks are generated for FIELD construction sites.
-- [ ] **T226**: Add rendering/UI support for FIELD construction progress bar under builder while building (on-map world progress bar). Include headless render test that verifies bar appears only during FIELD build.
+- [x] **T226**: Add rendering/UI support for FIELD construction progress bar under builder while building (on-map world progress bar). Include headless render test that verifies bar appears only during FIELD build.
 
 ### 21.3 Wheat growth runtime
 
@@ -100,3 +100,4 @@
 - T223 GREEN check: `pytest -q` passes after adding wheat lifecycle constants/helpers in `game.buildings.field`.
 - T224 RED check: `pytest -q` fails because builder targets non-field tiles and never begins FIELD build (`construction_site.builder` remains `None`).
 - T225 GREEN check: `pytest -q` passes with FIELD builder destination targeting the field tile itself; full suite green.
+- T226 GREEN check: `pytest -q` passes with world-space FIELD build progress bar rendered only during active field construction.

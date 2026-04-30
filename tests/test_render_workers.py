@@ -3,6 +3,7 @@
 import pygame
 
 import game.assets as assets
+from game.buildings.field import Field
 from game.buildings.lumber_camp import LumberCamp
 from game.config import town_hall_origin_tile, near_town_hall_tile
 from game.buildings.registry import BuildingRegistry
@@ -239,3 +240,48 @@ def test_draw_workers_uses_carrying_variant_for_stonecutter(monkeypatch) -> None
     surface = pygame.Surface((1280, 720), pygame.SRCALPHA)
     Renderer.draw_workers(surface, world, registry, wm)
     assert calls == [True]
+
+
+def test_draw_workers_field_build_progress_bar_only_during_active_field_build(monkeypatch) -> None:
+    now_ms = {"t": 0}
+    world = World(world_seed=0)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    field = registry.place(Field, near_town_hall_tile(8, 8))
+    wm = WorkerManager(registry, now_ms_fn=lambda: now_ms["t"])
+    builder = wm.hire("BUILDER")
+    assert builder is not None
+
+    # Make worker dot transparent so any drawn pixels come from progress bar.
+    dot = pygame.Surface((1, 1), pygame.SRCALPHA)
+    dot.fill((0, 0, 0, 0))
+    monkeypatch.setattr(assets, "worker_dot", lambda _t, carrying=False: dot)
+
+    # Advance until field build starts with assigned builder.
+    started = False
+    for _ in range(3000):
+        now_ms["t"] += 500
+        wm.reassign_all()
+        wm.update(now_ms["t"])
+        site = field.construction_site
+        if site is not None and site.builder is builder and site.is_building():
+            started = True
+            break
+    assert started
+
+    surface = pygame.Surface((1280, 720), pygame.SRCALPHA)
+    surface.fill((0, 0, 0, 0))
+    Renderer.draw_workers(surface, world, registry, wm)
+    assert surface.get_bounding_rect().width > 0
+
+    # After build completes, no field build progress bar should be drawn.
+    assert field.construction_site is not None
+    complete_at = int(field.construction_site.build_started_ms) + int(field.construction_site.build_time_ms)
+    now_ms["t"] = complete_at
+    wm.update(now_ms["t"])
+
+    surface.fill((0, 0, 0, 0))
+    Renderer.draw_workers(surface, world, registry, wm)
+    assert surface.get_bounding_rect().width == 0

@@ -167,6 +167,8 @@ class Renderer:
 
         ox, oy = Renderer.map_origin(surface, world)
         cam_x, cam_y = (0, 0) if camera is None else camera.offset
+        now_ms_fn = getattr(worker_manager, "_now_ms_fn", None)
+        now_ms = int(now_ms_fn()) if callable(now_ms_fn) else 0
         gx_min, gy_min, gx_max, gy_max = Renderer.visible_tile_range(surface, world, camera)
         if gx_max < gx_min or gy_max < gy_min:
             return
@@ -205,6 +207,28 @@ class Renderer:
             px = ox + cam_x + sx + TILE_W // 2 - dot.get_width() // 2
             py = oy + cam_y + sy + TILE_H // 2 - dot.get_height() // 2
             surface.blit(dot, (px, py))
+
+        for worker in worker_manager.workers():
+            building = worker.assigned_building
+            if building is None or building.type_tag != "FIELD" or not building.is_under_construction:
+                continue
+            site = building.construction_site
+            if site is None or site.builder is not worker or not site.is_building():
+                continue
+            wx, wy = worker.current_tile
+            if not (gx_min <= wx <= gx_max and gy_min <= wy <= gy_max):
+                continue
+            progress = site.build_progress(now_ms)
+            sx, sy = world_to_screen(wx, wy)
+            center_x = ox + cam_x + sx + TILE_W // 2
+            bar_w = 22
+            bar_h = 4
+            bar_x = center_x - bar_w // 2
+            bar_y = oy + cam_y + sy + TILE_H // 2 + 8
+            pygame.draw.rect(surface, (40, 40, 48), (bar_x, bar_y, bar_w, bar_h), border_radius=2)
+            fill_w = max(0, min(bar_w, int(round(bar_w * progress))))
+            if fill_w > 0:
+                pygame.draw.rect(surface, (240, 210, 80), (bar_x, bar_y, fill_w, bar_h), border_radius=2)
 
     @staticmethod
     def draw_trees(surface: pygame.Surface, world: World, camera=None) -> None:

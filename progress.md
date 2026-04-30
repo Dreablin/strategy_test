@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 19 — Construction System (complete)
-- **Next Task:** T211 — implement Sawmill building class storage behavior
-- **Last Completed:** T210 — add SAWMILL scaffold in config, placement, registry, and processing menu
-- **Total Progress:** 210 / 220 (Phase 19: 25 / 25 tasks done; Phase 20: 1 / 11 tasks done)
+- **Next Task:** T212 — add SAWYER worker type and school integration
+- **Last Completed:** T211 — implement Sawmill split storages and panel-facing helpers
+- **Total Progress:** 211 / 220 (Phase 19: 25 / 25 tasks done; Phase 20: 2 / 11 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -186,7 +186,7 @@
 ### 20.1 Domain and config scaffold
 
 - [x] **T210**: Add failing tests + config wiring for new building type `SAWMILL`: level/cost/build-time config in `game_settings.json` + `src/game/settings/buildings/sawmill.json`, registry visibility, bottom bar category placement (`Processing`), and construction-stage compatibility (site on place/upgrade).
-- [ ] **T211**: Implement `Sawmill` building class (2x2 unless explicitly changed) with `StorageMixin`-style split storages: `wood_in` capacity 3 at L1 and `boards_out` capacity 3 at L1, `active` toggle, panel-facing helpers (`input_amount`, `output_amount`, capacities, progress state). Add assets folder hooks under `assets/buildings/sawmill/` with normal construction sprite fallback.
+- [x] **T211**: Implement `Sawmill` building class (2x2 unless explicitly changed) with `StorageMixin`-style split storages: `wood_in` capacity 3 at L1 and `boards_out` capacity 3 at L1, `active` toggle, panel-facing helpers (`input_amount`, `output_amount`, capacities, progress state). Add assets folder hooks under `assets/buildings/sawmill/` with normal construction sprite fallback.
 
 ### 20.2 New worker type (School-trained)
 
@@ -259,6 +259,7 @@
 | 2026-04-29 | T208 | Added `tests/test_smoke_phase19.py` integration smoke covering full construction lifecycle: initial LumberCamp construction (carrier+builder), post-build lumberjack assignment and chop/deposit activity, upgrade-to-level-2 construction, and post-upgrade worker resume. Verified with full `pytest -q` + `ruff check src tests`. | Provides end-to-end guardrail for Phase-19 runtime interactions across registry, worker AI, transport, construction completion, and upgrade flow. |
 | 2026-04-29 | T209 | Final closeout gate passed with full `pytest -q` and `ruff check src tests` green (434 tests). Marked all Phase 19 tasks complete and created `.cursor/ralph/done` termination flag. | Concludes Phase 19 with deterministic loop stop signal and final verification snapshot. |
 | 2026-04-30 | T210 | Added SAWMILL scaffold: new `Sawmill` building class shell, placement mapping, processing menu entry/event in `BottomBar`, construction settings in `src/game/settings/buildings/sawmill.json` and `game_settings.json`, plus registry/input/bottom-bar/config tests for SAWMILL construction place+upgrade paths. Updated legacy assignment tests to clear `construction_site` for non-construction staffing scenarios. | Establishes Phase 20 entry-point wiring so SAWMILL is selectable/placeable and participates in construction flow before detailed storage/runtime behavior in T211+. |
+| 2026-04-30 | T211 | Implemented `Sawmill` split storage scaffold (`wood_in`, `boards_out`) with level-scaled capacities, active toggle, bounded add/take APIs, and panel-facing helper methods (`input_amount`, `output_amount`, capacities, progress state/progress ratio). Added `tests/test_sawmill.py` and created `assets/buildings/sawmill/.gitkeep` asset hook folder for disk-first sprite path fallback. | Provides concrete sawmill domain shape for upcoming SAWYER runtime cycle and carrier transport tasks while preserving fallback rendering behavior. |
 
 ## Issues & Blockers
 

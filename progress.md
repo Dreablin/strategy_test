@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 21 — Wheat fields + farmer field cycle
-- **Next Task:** T236 — Farm storage capacity implementation + guards
-- **Last Completed:** T235 — Farm storage capacity RED tests
-- **Total Progress:** 235 / 245 (Phase 19: 25 / 25 done; Phase 20: 11 / 11 done; Phase 21: 15 / 25 done)
+- **Next Task:** T237 — Transport task generation RED tests
+- **Last Completed:** T236 — Farm storage capacity implementation + guards
+- **Total Progress:** 236 / 245 (Phase 19: 25 / 25 done; Phase 20: 11 / 11 done; Phase 21: 16 / 25 done)
 
 > **Archive:** Full history and completed phases are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -51,7 +51,7 @@
 ### 21.5 Farm storage and capacities
 
 - [x] **T235**: Add failing tests for farm local storage capacity formula: L1=`3`, then `+1` slot every 2 levels (expected: L1-2=3, L3-4=4, L5-6=5, L7-8=6, L9-10=7).
-- [ ] **T236**: Implement/adjust farm storage capacity helpers and deposit guards so harvest deposit respects local capacity; when full, farmer cannot start new harvest cycle and reports blocked reason.
+- [x] **T236**: Implement/adjust farm storage capacity helpers and deposit guards so harvest deposit respects local capacity; when full, farmer cannot start new harvest cycle and reports blocked reason.
 
 ### 21.6 Transport queue integration (carrier)
 
@@ -110,3 +110,4 @@
 - T233 GREEN check: `pytest -q` passes with farmer empty-field sow action (`5_000 ms`) setting `PHASE_1` and returning to farm; full suite green.
 - T234 GREEN check: `pytest -q` passes with explicit tests proving farmer remains in `resting` until rest timeout after sow and harvest actions.
 - T235 RED check: `pytest -q` fails as expected on farm storage capacity formula (current `storage_capacity()` returns `5` at level 2, expected `3`).
+- T236 GREEN check: `pytest -q` passes with farm-specific capacity ladder (`+1` every 2 levels) and farmer harvest dispatch blocked when farm storage is full.

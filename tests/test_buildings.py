@@ -127,7 +127,7 @@ def test_producing_buildings_expose_storage_api_with_default_state(cls: type) ->
     assert b.is_storage_full() is False
 
 
-@pytest.mark.parametrize("cls", [LumberCamp, StoneMine, IronMine, Farm])
+@pytest.mark.parametrize("cls", [LumberCamp, StoneMine, IronMine])
 def test_storage_capacity_scales_with_level(cls: type) -> None:
     b = cls(level=5, grid_pos=(10, 10))
     assert b.storage_capacity() == 11

@@ -1503,6 +1503,7 @@ class WorkerManager:
     def _select_farmer_target_field(self, farm: Building) -> Building | None:
         if self._registry is None:
             return None
+        storage_full = bool(hasattr(farm, "is_storage_full") and farm.is_storage_full())
         farm_home = building_center_tile(farm)
         phases: dict[tuple[int, int], str] = {}
         tile_to_field: dict[tuple[int, int], Building] = {}
@@ -1513,7 +1514,11 @@ class WorkerManager:
                 continue
             tile = (int(building.grid_pos[0]), int(building.grid_pos[1]))
             tile_to_field[tile] = building
-            phases[tile] = self._read_field_phase(building, tile=tile)
+            phase = self._read_field_phase(building, tile=tile)
+            if storage_full and phase == WHEAT_PHASE_4:
+                # Block new harvest dispatch while farm local storage is full.
+                continue
+            phases[tile] = phase
         selected_tile = select_farmer_field_target(
             farm_home=farm_home,
             field_phases=phases,

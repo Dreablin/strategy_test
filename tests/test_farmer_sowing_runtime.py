@@ -97,3 +97,26 @@ def test_farmer_waits_full_rest_interval_before_next_dispatch_after_harvest() ->
         workers.update(now_ms["t"])
         assert farmer.state == "resting"
 
+
+def test_farmer_does_not_start_new_harvest_when_farm_storage_is_full() -> None:
+    now_ms = {"t": 0}
+    world = World(world_seed=4)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    farm = registry.place(Farm, near_town_hall_tile(10, 8))
+    farm.construction_site = None
+    field = registry.place(Field, near_town_hall_tile(7, 8))
+    field.construction_site = None
+    workers = WorkerManager(registry, now_ms_fn=lambda: now_ms["t"])
+    workers._write_field_phase(field, WHEAT_PHASE_4)  # noqa: SLF001
+    farm.stored = farm.storage_capacity()
+    farmer = workers.hire("FARMER")
+    assert farmer is not None
+
+    _advance(workers, now_ms, steps=220, step_ms=500)
+
+    assert workers._read_field_phase(field) == WHEAT_PHASE_4  # noqa: SLF001
+    assert farmer.state in {"resting", "working_field"}
+

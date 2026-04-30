@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 21 — Wheat fields + farmer field cycle
-- **Next Task:** T239 — Transport mid-route edge-case RED tests
-- **Last Completed:** T238 — Farm wheat transport task emission implementation
-- **Total Progress:** 238 / 245 (Phase 19: 25 / 25 done; Phase 20: 11 / 11 done; Phase 21: 18 / 25 done)
+- **Next Task:** T240 — Farm panel/status lines
+- **Last Completed:** T239 — Transport mid-route edge-case RED tests
+- **Total Progress:** 239 / 245 (Phase 19: 25 / 25 done; Phase 20: 11 / 11 done; Phase 21: 19 / 25 done)
 
 > **Archive:** Full history and completed phases are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -57,7 +57,7 @@
 
 - [x] **T237**: Add RED tests for transport task generation from farm local wheat storage into shared transport queue using existing priority rules (construction highest, then normal production logistics).
 - [x] **T238**: Implement task emission for wheat export/import through current generic `TransportTask` pipeline; avoid per-frame duplicate spam (dedupe/throttle consistent with sawmill logic).
-- [ ] **T239**: Add edge-case tests for mid-route state changes (target full/no longer needs resource): carrier redirects/fallbacks using existing conventions, no task loss/deadlock.
+- [x] **T239**: Add edge-case tests for mid-route state changes (target full/no longer needs resource): carrier redirects/fallbacks using existing conventions, no task loss/deadlock.
 
 ### 21.7 UI, statuses, and player feedback
 
@@ -113,3 +113,4 @@
 - T236 GREEN check: `pytest -q` passes with farm-specific capacity ladder (`+1` every 2 levels) and farmer harvest dispatch blocked when farm storage is full.
 - T237 RED check: `pytest -q` fails because no wheat export tasks are generated from farm local storage into the shared transport queue.
 - T238 GREEN check: `pytest -q` passes with farm wheat export tasks emitted into shared queue and deduped per desired-count parity with current queue/in-flight tasks.
+- T239 RED check: `pytest -q` fails because stale farm wheat tasks remain queued after source empties mid-route, indicating missing cleanup/fallback behavior.

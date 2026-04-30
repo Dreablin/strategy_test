@@ -88,6 +88,7 @@ _DEFAULT_SETTINGS: dict = {
             "FARMER": 1,
             "CARRIER": 1,
             "BUILDER": 1,
+            "SAWYER": 1,
         },
     },
     "levels": {"max_level": 10},

@@ -9,6 +9,8 @@ from game.assets import (
     building_sprite_anchor,
     grass_tile,
     stone_sprite,
+    stone_sprite_anchor,
+    stone_sprite_offset,
     tree_sprite,
     tree_sprite_anchor,
     tree_sprite_offset,
@@ -263,9 +265,18 @@ class Renderer:
         )
         for (gx, gy), _stone in entries:
             sx, sy = world_to_screen(gx, gy)
-            spr = stone_sprite()
-            px = ox + cam_x + sx + TILE_W // 2 - spr.get_width() // 2
-            py = oy + cam_y + sy + TILE_H - spr.get_height()
+            variant = int(getattr(_stone, "variant", 0))
+            try:
+                spr = stone_sprite(variant)
+                anchor_x, anchor_y = stone_sprite_anchor(variant)
+                off_x, off_y = stone_sprite_offset(variant)
+            except TypeError:
+                # Backward compatibility for tests monkeypatching legacy 0-arg stone_sprite.
+                spr = stone_sprite()
+                anchor_x, anchor_y = spr.get_width() // 2, spr.get_height()
+                off_x, off_y = 0, 0
+            px = ox + cam_x + sx + TILE_W // 2 - anchor_x + off_x
+            py = oy + cam_y + sy + TILE_H - anchor_y + off_y
             surface.blit(spr, (px, py))
 
     @staticmethod

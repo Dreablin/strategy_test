@@ -162,6 +162,97 @@ def _iter_cluster_tiles(cx: int, cy: int, rng: random.Random) -> set[tuple[int, 
     return out
 
 
+def _iter_stone_circle_noise_tiles(cx: int, cy: int, radius: int, rng: random.Random) -> set[tuple[int, int]]:
+    """Circle-like blob with noisy boundary."""
+    out: set[tuple[int, int]] = set()
+    dense_r = max(1.0, radius * 0.6)
+    for y in range(cy - radius, cy + radius + 1):
+        for x in range(cx - radius, cx + radius + 1):
+            dx = x - cx
+            dy = y - cy
+            dist = math.hypot(dx, dy)
+            if dist > radius:
+                continue
+            if dist <= dense_r:
+                density = 0.92
+            else:
+                fade = (radius - dist) / max(1.0, radius - dense_r)
+                density = 0.25 + 0.6 * max(0.0, fade)
+            density *= 0.8 + 0.4 * rng.random()
+            if rng.random() < density:
+                out.add((x, y))
+    return out
+
+
+def _iter_stone_frontier_tiles(cx: int, cy: int, radius: int, rng: random.Random) -> set[tuple[int, int]]:
+    """Grow a lumpy connected patch from center via randomized frontier expansion."""
+    target = rng.randint(max(6, radius * radius // 2), max(10, radius * radius + 6))
+    out: set[tuple[int, int]] = set()
+    frontier: deque[tuple[int, int]] = deque([(cx, cy)])
+    seen: set[tuple[int, int]] = {(cx, cy)}
+    while frontier and len(out) < target:
+        px, py = frontier.popleft()
+        if max(abs(px - cx), abs(py - cy)) > radius:
+            continue
+        out.add((px, py))
+        nbrs = [(px + dx, py + dy) for dx, dy in _NEIGHBORS_4]
+        rng.shuffle(nbrs)
+        for nx, ny in nbrs:
+            tile = (nx, ny)
+            if tile in seen:
+                continue
+            seen.add(tile)
+            if max(abs(nx - cx), abs(ny - cy)) > radius:
+                continue
+            if rng.random() < 0.72:
+                frontier.append(tile)
+        if frontier and rng.random() < 0.15:
+            frontier.rotate(rng.randint(-2, 2))
+    return out
+
+
+def _iter_stone_morph_blob_tiles(cx: int, cy: int, radius: int, rng: random.Random) -> set[tuple[int, int]]:
+    """Blob with one pass of random erosion/dilation to produce broken edges."""
+    base: set[tuple[int, int]] = set()
+    for y in range(cy - radius, cy + radius + 1):
+        for x in range(cx - radius, cx + radius + 1):
+            if max(abs(x - cx), abs(y - cy)) > radius:
+                continue
+            if rng.random() < 0.72:
+                base.add((x, y))
+
+    # Erode sparse-edge pixels.
+    eroded: set[tuple[int, int]] = set()
+    for x, y in base:
+        neigh = 0
+        for dx, dy in _NEIGHBORS_4:
+            if (x + dx, y + dy) in base:
+                neigh += 1
+        if neigh >= 2 or rng.random() < 0.2:
+            eroded.add((x, y))
+
+    # Dilate back selected boundary to avoid over-thinning.
+    out = set(eroded)
+    for x, y in list(eroded):
+        if rng.random() < 0.25:
+            for dx, dy in _NEIGHBORS_4:
+                nx, ny = x + dx, y + dy
+                if max(abs(nx - cx), abs(ny - cy)) <= radius:
+                    out.add((nx, ny))
+    return out
+
+
+def _iter_stone_cluster_pattern_tiles(
+    cx: int, cy: int, radius: int, rng: random.Random
+) -> set[tuple[int, int]]:
+    pattern = rng.choice(("circle_noise", "frontier", "morph_blob"))
+    if pattern == "circle_noise":
+        return _iter_stone_circle_noise_tiles(cx, cy, radius, rng)
+    if pattern == "frontier":
+        return _iter_stone_frontier_tiles(cx, cy, radius, rng)
+    return _iter_stone_morph_blob_tiles(cx, cy, radius, rng)
+
+
 def _iter_tree_grove_pattern_tiles(
     cx: int,
     cy: int,
@@ -540,8 +631,6 @@ class World:
                 continue
             if (x, y) in protected_th:
                 continue
-            if not relax_map_center_clear and max(abs(x - mid), abs(y - mid)) <= center_clear_radius:
-                continue
             if self.is_stone_blocking(x, y):
                 continue
             if (x, y) in self._trees:
@@ -613,22 +702,19 @@ class World:
         for cx, cy in self._stone_centers:
             radius = rng.randint(1, 4)
             relax_center_clear = ring_center is not None and (cx, cy) == ring_center
-            for y in range(cy - radius, cy + radius + 1):
-                for x in range(cx - radius, cx + radius + 1):
-                    if not self.is_in_grass(x, y):
-                        continue
-                    if (x, y) in protected_th:
-                        continue
-                    if not relax_center_clear and max(abs(x - mid), abs(y - mid)) <= center_clear_radius:
-                        continue
-                    if max(abs(x - cx), abs(y - cy)) > radius:
-                        continue
-                    if self.is_tree_blocking(x, y):
-                        continue
-                    if (x, y) in self._stones:
-                        continue
-                    tile = (x, y)
-                    self._stones[tile] = Stone()
+            for x, y in _iter_stone_cluster_pattern_tiles(cx, cy, radius, rng):
+                if not self.is_in_grass(x, y):
+                    continue
+                if (x, y) in protected_th:
+                    continue
+                if not relax_center_clear and max(abs(x - mid), abs(y - mid)) <= center_clear_radius:
+                    continue
+                if self.is_tree_blocking(x, y):
+                    continue
+                if (x, y) in self._stones:
+                    continue
+                tile = (x, y)
+                self._stones[tile] = Stone(variant=rng.randint(0, 4))
 
 
 def _min_chebyshev_to_tiles(px: int, py: int, tiles: set[tuple[int, int]]) -> int:

@@ -108,7 +108,7 @@ class SawmillPanel:
         font = pygame.font.Font(None, 22)
         body = pygame.font.Font(None, 20)
 
-        details_y = (layout.upgrade.bottom + 24) if layout.upgrade is not None else (layout.frame.bottom - 132)
+        details_y = layout.frame.top + _PANEL_PAD + 4 * 26 + 32
         io = body.render(
             f"Input wood: {sawmill.input_amount()} / {sawmill.input_capacity()}",
             True,
@@ -127,7 +127,8 @@ class SawmillPanel:
         reason_text = body.render(f"Blocked: {reason}", True, (200, 204, 214))
         surface.blit(reason_text, (layout.frame.left + _PANEL_PAD, details_y + 44))
 
-        bar_bg = pygame.Rect(layout.frame.left + _PANEL_PAD, details_y + 68, layout.frame.width - _PANEL_PAD * 2, 12)
+        bar_y = details_y + 68
+        bar_bg = pygame.Rect(layout.frame.left + _PANEL_PAD, bar_y, layout.frame.width - _PANEL_PAD * 2, 12)
         pygame.draw.rect(surface, (52, 58, 66), bar_bg, border_radius=4)
         progress = max(0.0, min(1.0, sawmill.processing_progress(now_ms)))
         if progress > 0.0:

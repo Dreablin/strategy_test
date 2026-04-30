@@ -7,8 +7,6 @@ from dataclasses import dataclass
 import pygame
 
 from game.buildings.base import Building
-from game.config import TICK_MS
-
 _PANEL_W = 420
 _PANEL_PAD = 16
 _ROW = 26
@@ -33,17 +31,6 @@ _DESCRIPTION: dict[str, str] = {
     "FORESTER_HUT": "Forester plants new trees around the hut.",
 }
 
-def _income_line(building: Building, *, worker_working: bool) -> str:
-    inc = type(building).income(building.level)
-    if not inc:
-        return "Income: —"
-    (res, n), = inc.items()
-    if not worker_working:
-        n = 0
-    sec = TICK_MS // 1000
-    return f"Income: +{n} {res} / {sec} s"
-
-
 def _upgrade_label(building: Building) -> str:
     nxt = building.level + 1
     _ = building
@@ -62,7 +49,7 @@ class BuildingPanelLayout:
 
 
 class BuildingPanel:
-    """PRD §3 F-UI-PANEL-02: name, level, description, income, worker row, actions, ×."""
+    """PRD §3 F-UI-PANEL-02: name, level, description, worker row, actions, ×."""
 
     @staticmethod
     def layout(
@@ -85,7 +72,7 @@ class BuildingPanel:
 
         has_storage_row = hasattr(building, "storage_capacity") and hasattr(building, "stored")
         has_status_row = production_status is not None
-        text_rows = 5 + int(has_storage_row) + int(has_status_row)
+        text_rows = 4 + int(has_storage_row) + int(has_status_row)
         btn_count = int(can_upgrade) + int(show_demolish)
         h = (
             _PANEL_PAD * 2
@@ -186,11 +173,6 @@ class BuildingPanel:
         y = layout.frame.top + _PANEL_PAD + _ROW + 6
         desc = _DESCRIPTION.get(building.type_tag, "")
         surface.blit(body_font.render(desc, True, (200, 204, 214)), (layout.frame.left + _PANEL_PAD, y))
-        y += _ROW
-        surface.blit(
-            body_font.render(_income_line(building, worker_working=worker_working), True, (200, 204, 214)),
-            (layout.frame.left + _PANEL_PAD, y),
-        )
         y += _ROW
         if worker_status not in {"empty", "on the way", "assigned"}:
             worker_status = "assigned" if worker_assigned else "empty"

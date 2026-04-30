@@ -1,7 +1,14 @@
 {
   "default": {
-    "scale": 1.00,
-    "anchor_norm": [0.50, 1.00]
+    "scale": 1.0,
+    "anchor_norm": [0.5, 1.0],
+    "offset_px": [0, 0]
   },
-  "levels": {}
+  "variants": {
+    "0": {"scale": 0.15, "anchor_norm": [0.5, 0.95], "offset_px": [0, 0]},
+    "1": {"scale": 0.16, "anchor_norm": [0.5, 0.93], "offset_px": [0, 0]},
+    "2": {"scale": 0.16, "anchor_norm": [0.5, 0.84], "offset_px": [0, 0]},
+    "3": {"scale": 0.15, "anchor_norm": [0.5, 0.84], "offset_px": [0, 0]},
+    "4": {"scale": 0.15, "anchor_norm": [0.5, 0.9], "offset_px": [0, 0]}
+  }
 }

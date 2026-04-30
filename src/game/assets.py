@@ -13,6 +13,7 @@ _ASSETS_ROOT = _PROJECT_ROOT / "assets"
 _BUILDINGS_ROOT = _ASSETS_ROOT / "buildings"
 _TREES_ROOT = _ASSETS_ROOT / "trees"
 _WORLD_ROOT = _ASSETS_ROOT / "world"
+_STONE_ROOT = _WORLD_ROOT / "stone"
 _NPC_ROOT = _ASSETS_ROOT / "npc"
 _ICONS_ROOT = _ASSETS_ROOT / "icons"
 _UI_ROOT = _ASSETS_ROOT / "ui"
@@ -36,6 +37,7 @@ _WORKER_FOLDER: dict[str, str] = {
     "FORESTER": "forester",
     "CARRIER": "carrier",
     "BUILDER": "builder",
+    "SAWYER": "sawyer",
 }
 
 
@@ -119,26 +121,51 @@ def _tree_render_spec(stage: str, species: int = 0) -> tuple[pygame.Surface, tup
     return _apply_tree_meta(src, meta)
 
 
-def _procedural_stone_sprite() -> pygame.Surface:
+def _procedural_stone_sprite(variant: int = 0) -> pygame.Surface:
     """Fallback stone pile sprite when no disk asset is present."""
     w, h = 42, 26
     surf = pygame.Surface((w, h), pygame.SRCALPHA)
     mid = w // 2
     base = [(mid, 2), (w - 3, h // 2), (mid, h - 3), (3, h // 2)]
-    pygame.draw.polygon(surf, (142, 146, 154), base)
-    pygame.draw.polygon(surf, (76, 80, 92), base, 1)
-    pygame.draw.circle(surf, (170, 174, 182), (mid - 6, h // 2 - 3), 5)
-    pygame.draw.circle(surf, (124, 128, 138), (mid + 5, h // 2 + 1), 4)
+    palettes = [
+        ((142, 146, 154), (76, 80, 92), (170, 174, 182), (124, 128, 138)),
+        ((154, 146, 138), (92, 80, 72), (182, 174, 166), (138, 128, 120)),
+        ((136, 152, 148), (72, 92, 86), (166, 182, 176), (120, 138, 132)),
+        ((148, 140, 160), (84, 76, 100), (176, 168, 190), (132, 124, 146)),
+        ((158, 154, 136), (96, 92, 74), (186, 182, 162), (142, 138, 118)),
+    ]
+    fill, outline, top_a, top_b = palettes[int(variant) % len(palettes)]
+    pygame.draw.polygon(surf, fill, base)
+    pygame.draw.polygon(surf, outline, base, 1)
+    pygame.draw.circle(surf, top_a, (mid - 6, h // 2 - 3), 5)
+    pygame.draw.circle(surf, top_b, (mid + 5, h // 2 + 1), 4)
     return surf
 
 
-@functools.lru_cache(maxsize=8)
-def stone_sprite() -> pygame.Surface:
-    """Load stone world sprite from disk, fallback to procedural."""
-    loaded = _load_png(str(_WORLD_ROOT / "stone" / "default.png"))
-    if loaded is not None:
-        return loaded
-    return _procedural_stone_sprite()
+def stone_sprite(variant: int = 0) -> pygame.Surface:
+    """Load stone world sprite by variant, fallback to procedural."""
+    return _stone_render_spec(variant)[0]
+
+
+def stone_sprite_anchor(variant: int = 0) -> tuple[int, int]:
+    """Return anchor pixel in stone sprite (x,y)."""
+    return _stone_render_spec(variant)[1]
+
+
+def stone_sprite_offset(variant: int = 0) -> tuple[int, int]:
+    """Return render offset in pixels for stone sprite (dx,dy)."""
+    return _stone_render_spec(variant)[2]
+
+
+@functools.lru_cache(maxsize=16)
+def _stone_render_spec(variant: int = 0) -> tuple[pygame.Surface, tuple[int, int], tuple[int, int]]:
+    variant_key = max(0, min(4, int(variant)))
+    loaded = _load_png(str(_STONE_ROOT / f"species_{variant_key}" / "default.png"))
+    if loaded is None:
+        loaded = _load_png(str(_STONE_ROOT / "default.png"))
+    src = loaded if loaded is not None else _procedural_stone_sprite(variant_key)
+    meta = _stone_meta_for(variant_key)
+    return _apply_stone_meta(src, meta)
 
 
 def _building_palette(b_type: str) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
@@ -195,6 +222,70 @@ def _load_tree_meta() -> dict:
     except (json.JSONDecodeError, OSError):
         return {}
     return parsed if isinstance(parsed, dict) else {}
+
+
+@functools.lru_cache(maxsize=1)
+def _load_stone_meta() -> dict:
+    path = _STONE_ROOT / "asset_meta.json"
+    if not path.exists():
+        return {}
+    try:
+        parsed = json.loads(path.read_text(encoding="utf-8-sig"))
+    except (json.JSONDecodeError, OSError):
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def _stone_meta_for(variant: int) -> dict:
+    meta = _load_stone_meta()
+    out: dict = {}
+    default = meta.get("default")
+    if isinstance(default, dict):
+        out.update(default)
+    variants = meta.get("variants")
+    if isinstance(variants, dict):
+        cfg = variants.get(str(variant))
+        if isinstance(cfg, dict):
+            out.update(cfg)
+    return out
+
+
+def _apply_stone_meta(src: pygame.Surface, meta: dict) -> tuple[pygame.Surface, tuple[int, int], tuple[int, int]]:
+    scale_raw = meta.get("scale", 1.0)
+    try:
+        scale = float(scale_raw)
+    except (TypeError, ValueError):
+        scale = 1.0
+    if scale <= 0:
+        scale = 1.0
+    if scale != 1.0:
+        sw = max(1, int(round(src.get_width() * scale)))
+        sh = max(1, int(round(src.get_height() * scale)))
+        src = pygame.transform.smoothscale(src, (sw, sh))
+
+    ax = src.get_width() // 2
+    ay = src.get_height()
+    anchor_norm = meta.get("anchor_norm")
+    if isinstance(anchor_norm, (list, tuple)) and len(anchor_norm) == 2:
+        try:
+            nx = float(anchor_norm[0])
+            ny = float(anchor_norm[1])
+            ax = int(round(nx * src.get_width()))
+            ay = int(round(ny * src.get_height()))
+        except (TypeError, ValueError):
+            pass
+
+    dx, dy = 0, 0
+    offset_px = meta.get("offset_px")
+    if isinstance(offset_px, (list, tuple)) and len(offset_px) == 2:
+        try:
+            dx = int(round(float(offset_px[0])))
+            dy = int(round(float(offset_px[1])))
+        except (TypeError, ValueError):
+            dx, dy = 0, 0
+    ax = max(0, min(src.get_width(), ax))
+    ay = max(0, min(src.get_height(), ay))
+    return src, (ax, ay), (dx, dy)
 
 
 def _tree_meta_for(species: int, stage_key: str) -> dict:
@@ -623,10 +714,11 @@ def clear_asset_caches() -> None:
     grass_tile.cache_clear()
     _load_png_by_mtime.cache_clear()
     _load_tree_meta.cache_clear()
+    _load_stone_meta.cache_clear()
     _tree_render_spec.cache_clear()
+    _stone_render_spec.cache_clear()
     _load_building_meta_by_mtime.cache_clear()
     _load_fixed_icon.cache_clear()
     _worker_dot_by_mtime.cache_clear()
-    stone_sprite.cache_clear()
     resource_icon.cache_clear()
     population_icon.cache_clear()

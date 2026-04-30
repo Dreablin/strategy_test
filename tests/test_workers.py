@@ -255,10 +255,12 @@ def test_sawyer_does_not_start_processing_when_inactive_or_no_input() -> None:
     sawmill.set_active(False)
     sawmill.add_wood_in(1)
     wm.update(1_000)
-    assert sawyer.state == "working"
+    assert sawyer.state == "resting"
+    assert sawyer.current_tile == building_center_tile(sawmill)
     assert sawmill.processing_started_ms == 0
 
     sawmill.set_active(True)
+    sawyer.state = "working"
     sawmill.take_wood_in(1)
     wm.update(2_000)
     assert sawyer.state == "working"
@@ -318,11 +320,57 @@ def test_sawyer_inactive_mid_cycle_finishes_current_then_blocks_next() -> None:
     assert sawyer.state == "resting"
 
     wm.update(41_001)
-    assert sawyer.state == "working"
+    assert sawyer.state == "resting"
+    assert sawyer.current_tile == building_center_tile(sawmill)
     assert sawmill.processing_started_ms == 0
     wm.update(42_000)
-    assert sawyer.state == "working"
+    assert sawyer.state == "resting"
     assert sawmill.output_amount() == 1
+
+
+def test_sawyer_stays_resting_inside_when_sawmill_inactive() -> None:
+    world = World(world_seed=0)
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    sawmill = registry.place(Sawmill, near_town_hall_tile(23, 10))
+    sawmill.construction_site = None
+    wm = WorkerManager(registry, now_ms_fn=lambda: 0)
+    sawyer = Worker("SAWYER")
+    wm.add_worker(sawyer)
+    wm.assign_to_building(sawyer, sawmill)
+    sawmill.set_active(False)
+
+    sawyer.state = "resting"
+    sawyer.camp_wait_until_ms = 5_000
+    sawyer.current_tile = (0, 0)
+    wm.update(6_000)
+
+    assert sawyer.state == "resting"
+    assert sawyer.current_tile == building_center_tile(sawmill)
+
+
+def test_sawyer_enters_sawmill_before_processing_starts() -> None:
+    world = World(world_seed=0)
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    sawmill = registry.place(Sawmill, near_town_hall_tile(24, 10))
+    sawmill.construction_site = None
+    sawmill.add_wood_in(1)
+    wm = WorkerManager(registry, now_ms_fn=lambda: 0)
+    sawyer = Worker("SAWYER")
+    wm.add_worker(sawyer)
+    wm.assign_to_building(sawyer, sawmill)
+    sawyer.state = "working"
+    sawyer.current_tile = (0, 0)
+
+    wm.update(1_000)
+    assert sawyer.current_tile == building_center_tile(sawmill)
+    assert sawyer.state == "working"
+    assert sawmill.processing_started_ms == 0
+
+    wm.update(2_000)
+    assert sawyer.state == "processing"
+    assert sawmill.processing_started_ms == 2_000
 
 
 def test_hired_worker_has_characteristics_defaults() -> None:
@@ -1086,6 +1134,29 @@ def test_construction_transport_tasks_ignore_non_construction_buildings() -> Non
 
     assert len(tasks) == 1
     assert tasks[0].target is mine
+
+
+def test_next_transport_task_drops_stale_construction_task_when_need_is_zero() -> None:
+    world = World(world_seed=0)
+    registry = BuildingRegistry(world)
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    camp = registry.place(LumberCamp, near_town_hall_tile(8, 8))
+    camp.construction_site = ConstructionSite(
+        required_resources={"wood": 1},
+        delivered_resources={"wood": 1},
+        build_time_ms=10_000,
+        build_started_ms=None,
+        builder=None,
+        target_level=1,
+    )
+    town_hall.add_to_warehouse("wood", 1)
+    wm = WorkerManager(registry)
+    wm.enqueue_transport_task(resource="wood", source=town_hall, target=camp, amount=1, priority=10)
+
+    picked = wm._next_transport_task()
+
+    assert picked is None
+    assert wm._transport_queue == []  # noqa: SLF001
 
 
 def test_sawmill_input_transport_tasks_generate_low_priority_wood_refill() -> None:

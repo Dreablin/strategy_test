@@ -849,9 +849,21 @@ class WorkerManager:
             return None
         known = set(self._registry.all())
         eligible: list[tuple[int, TransportTask]] = []
+        stale_indices: list[int] = []
         for idx, task in enumerate(self._transport_queue):
             if task.source not in known or task.target not in known:
+                stale_indices.append(idx)
                 continue
+            site = getattr(task.target, "construction_site", None)
+            if (
+                task.source.type_tag == "TOWN_HALL"
+                and bool(getattr(task.target, "is_under_construction", False))
+                and site is not None
+            ):
+                remaining = int(site.remaining_resources().get(str(task.resource).lower(), 0))
+                if remaining <= 0:
+                    stale_indices.append(idx)
+                    continue
             has_storage_source = False
             if hasattr(task.source, "stored") and int(getattr(task.source, "stored", 0)) > 0:
                 has_storage_source = True
@@ -865,10 +877,15 @@ class WorkerManager:
             if not has_storage_source and not has_warehouse_source:
                 continue
             eligible.append((idx, task))
+        for idx in reversed(stale_indices):
+            self._transport_queue.pop(idx)
         if not eligible:
             return None
-        best_idx, _ = max(eligible, key=lambda item: (int(item[1].priority), -item[0]))
-        return self._transport_queue.pop(best_idx)
+        _best_idx, best_task = max(eligible, key=lambda item: (int(item[1].priority), -item[0]))
+        if best_task in self._transport_queue:
+            self._transport_queue.remove(best_task)
+            return best_task
+        return None
 
     def _start_move_to_building(self, worker: Worker, building: Building, now_ms: int) -> bool:
         if self._registry is None:
@@ -1340,9 +1357,21 @@ class WorkerManager:
             return
         if sawmill.is_under_construction:
             return
+        center_tile = building_center_tile(sawmill)
+        # Sawmill production may run only while the sawyer is physically inside.
+        if worker.state in {"working", "resting", "processing"} and worker.current_tile != center_tile:
+            worker.current_tile = center_tile
+            # Do not start/advance processing in the same tick as the enter step.
+            if worker.state == "processing":
+                worker.state = "working"
+                sawmill.processing_started_ms = 0
+            return
         active = bool(getattr(sawmill, "active", False))
         if worker.state == "resting":
             if now_ms < worker.camp_wait_until_ms:
+                return
+            if not active:
+                worker.current_tile = center_tile
                 return
             worker.state = "working"
             worker.camp_wait_until_ms = 0
@@ -1366,9 +1395,12 @@ class WorkerManager:
             sawmill.processing_started_ms = 0
             worker.state = "resting"
             worker.camp_wait_until_ms = int(now_ms) + SAWYER_REST_MS
+            worker.current_tile = center_tile
             worker.idle = False
             return
         if not active:
+            worker.state = "resting"
+            worker.current_tile = center_tile
             return
         if getattr(sawmill, "input_amount", lambda: 0)() <= 0:
             return

@@ -4,7 +4,7 @@ import pygame
 
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.town_hall import TownHall
-from game.ui.building_panel import BuildingPanel, _income_line
+from game.ui.building_panel import BuildingPanel
 
 
 def test_building_panel_close_click() -> None:
@@ -56,16 +56,6 @@ def test_building_panel_shows_upgrade_for_town_hall() -> None:
     building = TownHall(level=1, grid_pos=(10, 10))
     layout = BuildingPanel.layout(surface, building, worker_assigned=False)
     assert layout.upgrade is not None
-
-
-def test_income_line_is_zero_while_worker_not_arrived() -> None:
-    building = LumberCamp(level=3, grid_pos=(4, 4))
-    assert _income_line(building, worker_working=False) == "Income: —"
-
-
-def test_income_line_shows_full_value_when_worker_working() -> None:
-    building = LumberCamp(level=3, grid_pos=(4, 4))
-    assert _income_line(building, worker_working=True) == "Income: —"
 
 
 def test_layout_grows_when_production_status_line_is_present() -> None:

@@ -6,12 +6,15 @@ from __future__ import annotations
 class Stone:
     """Harvestable stone node with finite units."""
 
-    __slots__ = ("units",)
+    __slots__ = ("units", "variant")
 
-    def __init__(self, units: int = 15) -> None:
+    def __init__(self, units: int = 15, variant: int = 0) -> None:
         self.units = int(units)
         if self.units < 0:
             raise ValueError("units must be non-negative")
+        self.variant = int(variant)
+        if self.variant < 0 or self.variant > 4:
+            raise ValueError("variant must be in range [0, 4]")
 
     @property
     def is_depleted(self) -> bool:

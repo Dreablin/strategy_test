@@ -74,10 +74,12 @@ def test_smoke_phase11_lumberjack_cycle_toggle_and_reservation() -> None:
     registry2 = BuildingRegistry(world2)
     registry2.place(TownHall, town_hall_origin_tile()).level = 3
     camp2a = registry2.place(LumberCamp, near_town_hall_tile())
+    camp2a.construction_site = None
     gxa, gya = camp2a.grid_pos  # type: ignore[assignment]
     lone_tree = (gxa + 3, gya)
     world2._trees[lone_tree] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
-    registry2.place(LumberCamp, near_town_hall_tile(18, 2))
+    camp2b = registry2.place(LumberCamp, near_town_hall_tile(18, 2))
+    camp2b.construction_site = None
     workers2 = WorkerManager(registry2, now_ms_fn=lambda: 0)
     assert workers2.hire("LUMBERJACK") is not None
     assert workers2.hire("LUMBERJACK") is not None

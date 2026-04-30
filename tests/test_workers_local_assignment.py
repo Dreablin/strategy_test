@@ -33,8 +33,13 @@ def test_reassign_all_prefers_closest_target_and_bounded_path_calls(monkeypatch)
         (48, 2),
         (48, 18),
     ]
-    camps = [registry.place(LumberCamp, pos) for pos in far_positions]
+    camps = []
+    for pos in far_positions:
+        camp = registry.place(LumberCamp, pos)
+        camp.construction_site = None
+        camps.append(camp)
     closest = registry.place(LumberCamp, (12, 9))
+    closest.construction_site = None
     camps.append(closest)
 
     worker = Worker("LUMBERJACK", stand_tile=(10, 10))

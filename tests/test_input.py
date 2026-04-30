@@ -205,6 +205,8 @@ def test_under_construction_panel_close_click_closes_without_demolish() -> None:
 def test_place_calls_reassign_all_and_assigns_idle_worker() -> None:
     surface = pygame.Surface((1280, 720))
     world = World(world_seed=2)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
     registry = BuildingRegistry(world)
     camera = Camera()
     placement = PlacementController(world, registry, camera)
@@ -225,6 +227,8 @@ def test_place_calls_reassign_all_and_assigns_idle_worker() -> None:
 def test_school_hire_button_calls_worker_manager_hire_and_spawns_at_school() -> None:
     surface = pygame.Surface((1280, 720))
     world = World(world_seed=2)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
     registry = BuildingRegistry(world)
     registry.place(TownHall, town_hall_origin_tile())
     school = registry.place(School, near_town_hall_tile(8, 8))

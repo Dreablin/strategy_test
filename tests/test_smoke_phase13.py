@@ -31,7 +31,9 @@ def test_smoke_phase13_paths_calls_and_render() -> None:
     town_hall = registry.place(TownHall, town_hall_origin_tile())
     town_hall.level = 3
     camp = registry.place(LumberCamp, near_town_hall_tile())
+    camp.construction_site = None
     mine = registry.place(StoneMine, (28, 22))
+    mine.construction_site = None
 
     now_ms = {"t": 0}
     manager = WorkerManager(registry, now_ms_fn=lambda: now_ms["t"])

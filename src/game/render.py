@@ -4,11 +4,14 @@ import pygame
 
 from game.assets import (
     building_sprite_construction,
+    building_sprite_construction_anchor,
     building_sprite,
     building_sprite_anchor,
     grass_tile,
     stone_sprite,
     tree_sprite,
+    tree_sprite_anchor,
+    tree_sprite_offset,
 )
 from game.buildings.registry import BuildingRegistry
 from game.config import TILE_H, TILE_W
@@ -128,9 +131,10 @@ class Renderer:
             if b.is_under_construction and b.construction_site is not None:
                 sprite_level = int(b.construction_site.target_level)
                 spr = building_sprite_construction(b.type_tag, sprite_level)
+                anchor_x, anchor_y = building_sprite_construction_anchor(b.type_tag, sprite_level)
             else:
                 spr = building_sprite(b.type_tag, sprite_level)
-            anchor_x, anchor_y = building_sprite_anchor(b.type_tag, sprite_level)
+                anchor_x, anchor_y = building_sprite_anchor(b.type_tag, sprite_level)
             dx = ox + cam_x + foot_cx - anchor_x
             dy = oy + cam_y + foot_by - anchor_y
             surface.blit(spr, (dx, dy))
@@ -220,17 +224,25 @@ class Renderer:
             sx, sy = world_to_screen(gx, gy)
             try:
                 spr = tree_sprite(tree.stage.name.lower(), species=getattr(tree, "species", 0))
+                anchor_x, anchor_y = tree_sprite_anchor(tree.stage.name.lower(), species=getattr(tree, "species", 0))
+                off_x, off_y = tree_sprite_offset(tree.stage.name.lower(), species=getattr(tree, "species", 0))
             except TypeError:
                 # Backward compatibility for tests monkeypatching legacy 1-arg tree_sprite.
                 spr = tree_sprite(tree.stage.name.lower())
+                anchor_x, anchor_y = spr.get_width() // 2, spr.get_height()
+                off_x, off_y = 0, 0
             except Exception:
                 # Renderer fallback: keep drawing even if a species-specific asset path fails.
                 try:
                     spr = tree_sprite(tree.stage.name.lower(), species=0)
+                    anchor_x, anchor_y = tree_sprite_anchor(tree.stage.name.lower(), species=0)
+                    off_x, off_y = tree_sprite_offset(tree.stage.name.lower(), species=0)
                 except TypeError:
                     spr = tree_sprite(tree.stage.name.lower())
-            px = ox + cam_x + sx + TILE_W // 2 - spr.get_width() // 2
-            py = oy + cam_y + sy + TILE_H - spr.get_height()
+                    anchor_x, anchor_y = spr.get_width() // 2, spr.get_height()
+                    off_x, off_y = 0, 0
+            px = ox + cam_x + sx + TILE_W // 2 - anchor_x + off_x
+            py = oy + cam_y + sy + TILE_H - anchor_y + off_y
             surface.blit(spr, (px, py))
 
     @staticmethod

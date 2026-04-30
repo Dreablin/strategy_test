@@ -1,0 +1,15 @@
+{
+  "building_type": "IRON_MINE",
+  "levels": {
+    "1": {"cost": {"wood": 3, "stone": 1}, "build_time_ms": 30000},
+    "2": {"cost": {"wood": 3, "stone": 1}, "build_time_ms": 30000},
+    "3": {"cost": {"wood": 3, "stone": 1}, "build_time_ms": 30000},
+    "4": {"cost": {"wood": 3, "stone": 1}, "build_time_ms": 30000},
+    "5": {"cost": {"wood": 3, "stone": 1}, "build_time_ms": 30000},
+    "6": {"cost": {"wood": 3, "stone": 1}, "build_time_ms": 30000},
+    "7": {"cost": {"wood": 3, "stone": 1}, "build_time_ms": 30000},
+    "8": {"cost": {"wood": 3, "stone": 1}, "build_time_ms": 30000},
+    "9": {"cost": {"wood": 3, "stone": 1}, "build_time_ms": 30000},
+    "10": {"cost": {"wood": 3, "stone": 1}, "build_time_ms": 30000}
+  }
+}

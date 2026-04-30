@@ -85,6 +85,7 @@ def test_two_camps_track_deliveries_independently() -> None:
     now_ms = [0]
     world = World()
     world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
     registry = BuildingRegistry(world)
     town_hall = registry.place(TownHall, town_hall_origin_tile())
     town_hall.level = 3

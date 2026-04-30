@@ -91,20 +91,32 @@ def _procedural_tree_sprite(stage: str, species: int = 0) -> pygame.Surface:
     return surf
 
 
-@functools.lru_cache(maxsize=128)
 def tree_sprite(stage: str, species: int = 0) -> pygame.Surface:
-    """Load species+stage tree sprite from disk, fallback to defaults/procedural."""
+    """Load species+stage tree sprite from disk, fallback to procedural."""
+    return _tree_render_spec(stage, species)[0]
+
+
+def tree_sprite_anchor(stage: str, species: int = 0) -> tuple[int, int]:
+    """Return anchor pixel in tree sprite (x,y)."""
+    return _tree_render_spec(stage, species)[1]
+
+
+def tree_sprite_offset(stage: str, species: int = 0) -> tuple[int, int]:
+    """Return render offset in pixels for tree sprite (dx,dy)."""
+    return _tree_render_spec(stage, species)[2]
+
+
+@functools.lru_cache(maxsize=32)
+def _tree_render_spec(stage: str, species: int = 0) -> tuple[pygame.Surface, tuple[int, int], tuple[int, int]]:
+    """Load tree sprite, anchor and offset from assets/meta, fallback to procedural defaults."""
     stage_key = str(stage).lower().strip()
     if "." in stage_key:
         stage_key = stage_key.split(".")[-1]
     species_key = int(species)
     loaded = _load_png(str(_TREES_ROOT / f"species_{species_key}" / stage_key / "default.png"))
-    if loaded is not None:
-        return loaded
-    loaded = _load_png(str(_TREES_ROOT / stage_key / "default.png"))
-    if loaded is not None:
-        return loaded
-    return _procedural_tree_sprite(stage_key, species_key)
+    src = loaded if loaded is not None else _procedural_tree_sprite(stage_key, species_key)
+    meta = _tree_meta_for(species_key, stage_key)
+    return _apply_tree_meta(src, meta)
 
 
 def _procedural_stone_sprite() -> pygame.Surface:
@@ -170,6 +182,82 @@ def _load_png(path_s: str) -> pygame.Surface | None:
     except OSError:
         return None
     return _load_png_by_mtime(path_s, mtime_ns)
+
+
+@functools.lru_cache(maxsize=1)
+def _load_tree_meta() -> dict:
+    """Read tree asset meta once; refresh via clear_asset_caches()."""
+    path = _TREES_ROOT / "asset_meta.json"
+    if not path.exists():
+        return {}
+    try:
+        parsed = json.loads(path.read_text(encoding="utf-8-sig"))
+    except (json.JSONDecodeError, OSError):
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def _tree_meta_for(species: int, stage_key: str) -> dict:
+    meta = _load_tree_meta()
+    out: dict = {}
+    default = meta.get("default")
+    if isinstance(default, dict):
+        out.update(default)
+    stages = meta.get("stages")
+    if isinstance(stages, dict):
+        stage_cfg = stages.get(stage_key)
+        if isinstance(stage_cfg, dict):
+            out.update(stage_cfg)
+    species_map = meta.get("species")
+    if isinstance(species_map, dict):
+        sp_cfg = species_map.get(str(species))
+        if isinstance(sp_cfg, dict):
+            sp_default = sp_cfg.get("default")
+            if isinstance(sp_default, dict):
+                out.update(sp_default)
+            sp_stages = sp_cfg.get("stages")
+            if isinstance(sp_stages, dict):
+                sp_stage_cfg = sp_stages.get(stage_key)
+                if isinstance(sp_stage_cfg, dict):
+                    out.update(sp_stage_cfg)
+    return out
+
+
+def _apply_tree_meta(src: pygame.Surface, meta: dict) -> tuple[pygame.Surface, tuple[int, int], tuple[int, int]]:
+    scale_raw = meta.get("scale", 1.0)
+    try:
+        scale = float(scale_raw)
+    except (TypeError, ValueError):
+        scale = 1.0
+    if scale <= 0:
+        scale = 1.0
+    if scale != 1.0:
+        sw = max(1, int(round(src.get_width() * scale)))
+        sh = max(1, int(round(src.get_height() * scale)))
+        src = pygame.transform.smoothscale(src, (sw, sh))
+
+    ax = src.get_width() // 2
+    ay = src.get_height()
+    anchor_norm = meta.get("anchor_norm")
+    if isinstance(anchor_norm, (list, tuple)) and len(anchor_norm) == 2:
+        try:
+            nx = float(anchor_norm[0])
+            ny = float(anchor_norm[1])
+            ax = int(round(nx * src.get_width()))
+            ay = int(round(ny * src.get_height()))
+        except (TypeError, ValueError):
+            pass
+    dx, dy = 0, 0
+    offset_px = meta.get("offset_px")
+    if isinstance(offset_px, (list, tuple)) and len(offset_px) == 2:
+        try:
+            dx = int(round(float(offset_px[0])))
+            dy = int(round(float(offset_px[1])))
+        except (TypeError, ValueError):
+            dx, dy = 0, 0
+    ax = max(0, min(src.get_width(), ax))
+    ay = max(0, min(src.get_height(), ay))
+    return src, (ax, ay), (dx, dy)
 
 
 def _procedural_building_sprite(b_type: str, level: int) -> pygame.Surface:
@@ -248,18 +336,16 @@ def _meta_for_level(meta: dict, lvl: int) -> dict:
     return out
 
 
-def _building_render_spec(b_type: str, level: int) -> tuple[pygame.Surface, tuple[int, int]]:
-    """Return (surface, anchor_px) where anchor sits on footprint bottom-center."""
-    folder = _building_folder_name(b_type)
-    lvl = max(1, min(level, 10))
-    src: pygame.Surface | None = None
-    for candidate in _building_level_candidates(folder, lvl):
-        src = _load_png(str(candidate))
-        if src is not None:
-            break
-    if src is None:
-        src = _procedural_building_sprite(b_type, lvl)
-    meta = _meta_for_level(_load_building_meta(folder), lvl)
+def _meta_for_variant_level(meta: dict, variant: str, lvl: int) -> dict:
+    """Read meta for a specific visual variant (ready/construction), with legacy fallback."""
+    payload = meta.get(variant)
+    if isinstance(payload, dict):
+        return _meta_for_level(payload, lvl)
+    # Backward compatibility for legacy flat format.
+    return _meta_for_level(meta, lvl)
+
+
+def _apply_building_meta(src: pygame.Surface, meta: dict) -> tuple[pygame.Surface, tuple[int, int]]:
     scale_raw = meta.get("scale", 1.0)
     try:
         scale = float(scale_raw)
@@ -301,6 +387,21 @@ def _building_render_spec(b_type: str, level: int) -> tuple[pygame.Surface, tupl
     return src, (ax, ay)
 
 
+def _building_render_spec(b_type: str, level: int) -> tuple[pygame.Surface, tuple[int, int]]:
+    """Return (surface, anchor_px) where anchor sits on footprint bottom-center."""
+    folder = _building_folder_name(b_type)
+    lvl = max(1, min(level, 10))
+    src: pygame.Surface | None = None
+    for candidate in _building_level_candidates(folder, lvl):
+        src = _load_png(str(candidate))
+        if src is not None:
+            break
+    if src is None:
+        src = _procedural_building_sprite(b_type, lvl)
+    meta = _meta_for_variant_level(_load_building_meta(folder), "ready", lvl)
+    return _apply_building_meta(src, meta)
+
+
 def building_sprite(b_type: str, level: int) -> pygame.Surface:
     """Load building sprite from assets folder, fallback to procedural."""
     return _building_render_spec(b_type, level)[0]
@@ -325,16 +426,31 @@ def _procedural_building_construction_sprite(b_type: str, target_level: int) -> 
     return base
 
 
-@functools.lru_cache(maxsize=256)
-def building_sprite_construction(b_type: str, target_level: int) -> pygame.Surface:
-    """Load construction-state sprite from disk, fallback to scaffolded procedural variant."""
+def _building_construction_render_spec(
+    b_type: str, target_level: int
+) -> tuple[pygame.Surface, tuple[int, int]]:
+    """Load construction-state sprite + anchor, applying building asset meta transform."""
     folder = _building_folder_name(b_type)
     lvl = max(1, min(int(target_level), 10))
+    src: pygame.Surface | None = None
     for candidate in _building_construction_candidates(folder, lvl):
-        loaded = _load_png(str(candidate))
-        if loaded is not None:
-            return loaded
-    return _procedural_building_construction_sprite(b_type, lvl)
+        src = _load_png(str(candidate))
+        if src is not None:
+            break
+    if src is None:
+        src = _procedural_building_construction_sprite(b_type, lvl)
+    meta = _meta_for_variant_level(_load_building_meta(folder), "construction", lvl)
+    return _apply_building_meta(src, meta)
+
+
+def building_sprite_construction(b_type: str, target_level: int) -> pygame.Surface:
+    """Load construction-state sprite from disk, fallback to scaffolded procedural variant."""
+    return _building_construction_render_spec(b_type, target_level)[0]
+
+
+def building_sprite_construction_anchor(b_type: str, target_level: int) -> tuple[int, int]:
+    """Return anchor pixel in construction-state building sprite (x,y)."""
+    return _building_construction_render_spec(b_type, target_level)[1]
 
 
 def _worker_color(w_type: str) -> tuple[int, int, int]:
@@ -506,11 +622,11 @@ def clear_asset_caches() -> None:
     """Clear all in-memory asset caches (used by dev reload button)."""
     grass_tile.cache_clear()
     _load_png_by_mtime.cache_clear()
+    _load_tree_meta.cache_clear()
+    _tree_render_spec.cache_clear()
     _load_building_meta_by_mtime.cache_clear()
     _load_fixed_icon.cache_clear()
     _worker_dot_by_mtime.cache_clear()
-    tree_sprite.cache_clear()
     stone_sprite.cache_clear()
-    building_sprite_construction.cache_clear()
     resource_icon.cache_clear()
     population_icon.cache_clear()

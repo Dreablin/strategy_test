@@ -30,6 +30,7 @@ def _setup_stonecutter_cycle():
     town_hall = registry.place(TownHall, town_hall_origin_tile())
     town_hall.level = 3
     mine = registry.place(StoneMine, mine_pos)
+    mine.construction_site = None
     workers = WorkerManager(registry, now_ms_fn=lambda: now_ms[0])
     worker = workers.hire("STONECUTTER")
     assert worker is not None
@@ -66,7 +67,8 @@ def test_stonecutter_full_cycle_states_and_carrying_toggle() -> None:
 
 def test_second_stonecutter_cannot_claim_reserved_stone() -> None:
     now_ms, world, resources, registry, _mine, workers, worker_a, s1, s2, _th = _setup_stonecutter_cycle()
-    registry.place(StoneMine, near_town_hall_tile(20, 5))
+    mine2 = registry.place(StoneMine, near_town_hall_tile(20, 5))
+    mine2.construction_site = None
     worker_b = workers.hire("STONECUTTER")
     assert worker_b is not None
     workers.reassign_all()
@@ -122,6 +124,7 @@ def test_stonecutter_skips_unminable_nearest_stone_and_targets_next() -> None:
     registry = BuildingRegistry(world)
     registry.place(TownHall, town_hall_origin_tile()).level = 3
     mine = registry.place(StoneMine, mine_pos)
+    mine.construction_site = None
     workers = WorkerManager(registry, now_ms_fn=lambda: now_ms[0])
     worker = workers.hire("STONECUTTER")
     assert worker is not None

@@ -18,6 +18,7 @@ def _setup_two_tree_cycle():
     town_hall = registry.place(TownHall, town_hall_origin_tile())
     town_hall.level = 3
     camp = registry.place(LumberCamp, near_town_hall_tile())
+    camp.construction_site = None
     gx, gy = camp.grid_pos  # type: ignore[assignment]
     world._trees[(gx + 3, gy)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
     world._trees[(gx + 4, gy)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
@@ -67,6 +68,7 @@ def test_level1_chop_completes_on_exact_chop_duration_boundary() -> None:
 def test_second_lumberjack_can_target_another_tree_same_cycle() -> None:
     now_ms, world, resources, registry, camp_a, workers, worker_a, town_hall = _setup_two_tree_cycle()
     camp_b = registry.place(LumberCamp, near_town_hall_tile(18, 2))
+    camp_b.construction_site = None
     bx, by = camp_b.grid_pos  # type: ignore[assignment]
     world._trees[(bx + 3, by)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
     world._trees[(bx + 4, by)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001

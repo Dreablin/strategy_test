@@ -64,6 +64,7 @@ def test_smoke_phase9_worker_moves_and_production_gates() -> None:
     )
     camp = next((b for b in registry.all() if b.type_tag == "LUMBER_CAMP"), None)
     assert camp is not None
+    camp.construction_site = None
     cgx, cgy = camp.grid_pos  # type: ignore[assignment]
     world._trees[(cgx + 3, cgy)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
     world._trees[(cgx + 4, cgy)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
@@ -90,7 +91,8 @@ def test_smoke_phase9_worker_moves_and_production_gates() -> None:
     world2 = World()
     registry2 = BuildingRegistry(world2)
     registry2.place(TownHall, town_hall_origin_tile())
-    registry2.place(LumberCamp, near_town_hall_tile(14, 14))
+    camp2 = registry2.place(LumberCamp, near_town_hall_tile(14, 14))
+    camp2.construction_site = None
     workers2 = WorkerManager(registry2)
     assert workers2.hire("LUMBERJACK") is not None
     workers2.reassign_all()

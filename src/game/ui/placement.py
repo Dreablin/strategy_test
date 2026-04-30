@@ -139,8 +139,7 @@ class PlacementController:
                 return False
             if self._world.is_occupied(gx, gy) or self._world.is_tree_blocking(gx, gy) or self._world.is_stone_blocking(gx, gy):
                 return False
-            species = (gx + gy) % 3
-            return self._world.plant_tree(gx, gy, now_ms=0, species=species) is not None
+            return self._world.plant_tree(gx, gy, now_ms=0) is not None
         if self._pending_dev == "DEV_STONE":
             if not self._world.is_in_grass(gx, gy):
                 return False

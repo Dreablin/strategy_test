@@ -183,6 +183,8 @@ def test_hire_does_not_consume_warehouse_wheat() -> None:
 
 def test_reassign_all_assigns_one_idle_lumberjack_to_empty_lumber_camp() -> None:
     world = World(world_seed=0)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
     registry = BuildingRegistry(world)
     registry.place(TownHall, town_hall_origin_tile())
     camp = registry.place(LumberCamp, (10, 10))
@@ -308,6 +310,8 @@ def test_reassign_all_does_not_assign_stonecutter_to_lumber_camp() -> None:
 
 def test_demolish_then_reassign_moves_worker_to_new_matching_building() -> None:
     world = World(world_seed=2)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
     registry = BuildingRegistry(world)
     registry.place(TownHall, town_hall_origin_tile())
     camp1 = registry.place(LumberCamp, (8, 8))
@@ -326,6 +330,8 @@ def test_demolish_then_reassign_moves_worker_to_new_matching_building() -> None:
 
 def test_reassign_all_assigns_farmer_to_empty_farm() -> None:
     world = World(world_seed=0)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
     registry = BuildingRegistry(world)
     town_hall = registry.place(TownHall, town_hall_origin_tile())
     town_hall.level = 5
@@ -341,6 +347,8 @@ def test_reassign_all_assigns_farmer_to_empty_farm() -> None:
 
 def test_reassign_all_assigns_miner_to_empty_iron_mine() -> None:
     world = World(world_seed=0)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
     registry = BuildingRegistry(world)
     town_hall = registry.place(TownHall, town_hall_origin_tile())
     town_hall.level = 5
@@ -354,6 +362,8 @@ def test_reassign_all_assigns_miner_to_empty_iron_mine() -> None:
 
 def test_reassign_all_sets_moving_path_to_reachable_approach_tile() -> None:
     world = World(world_seed=0)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
     registry = BuildingRegistry(world)
     registry.place(TownHall, town_hall_origin_tile())
     camp = registry.place(LumberCamp, near_town_hall_tile(8, 8))
@@ -377,6 +387,8 @@ def test_reassign_all_sets_moving_path_to_reachable_approach_tile() -> None:
 
 def test_reassign_all_uses_current_time_for_move_start_no_first_frame_teleport() -> None:
     world = World(world_seed=0)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
     registry = BuildingRegistry(world)
     town_hall = registry.place(TownHall, town_hall_origin_tile())
     town_hall.level = 5
@@ -420,6 +432,8 @@ def test_reassign_all_keeps_worker_idle_when_no_approach_tile_reachable() -> Non
 
 def test_working_buildings_excludes_moving_worker_until_arrival() -> None:
     world = World(world_seed=0)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
     registry = BuildingRegistry(world)
     registry.place(TownHall, town_hall_origin_tile())
     camp = registry.place(LumberCamp, near_town_hall_tile(8, 8))
@@ -544,6 +558,8 @@ def test_production_status_for_under_construction_is_explicit() -> None:
 
 def test_demolish_moving_worker_becomes_idle_at_current_tile() -> None:
     world = World(world_seed=0)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
     registry = BuildingRegistry(world)
     registry.place(TownHall, town_hall_origin_tile())
     camp = registry.place(LumberCamp, near_town_hall_tile(8, 8))
@@ -628,6 +644,8 @@ def test_notify_demolished_builder_inside_site_becomes_idle_and_clears_site_buil
 
 def test_reassign_all_does_not_retarget_worker_already_moving() -> None:
     world = World(world_seed=0)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
     registry = BuildingRegistry(world)
     registry.place(TownHall, town_hall_origin_tile())
     camp_a = registry.place(LumberCamp, near_town_hall_tile())
@@ -648,6 +666,8 @@ def test_reassign_all_does_not_retarget_worker_already_moving() -> None:
 
 def test_reassign_all_one_slot_two_workers_only_one_assigned() -> None:
     world = World(world_seed=0)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
     registry = BuildingRegistry(world)
     registry.place(TownHall, town_hall_origin_tile())
     camp = registry.place(LumberCamp, near_town_hall_tile(8, 8))
@@ -1034,6 +1054,8 @@ def test_hire_miner_requires_town_hall_level_5() -> None:
 
 def test_reassign_all_detours_around_alive_tree_tile() -> None:
     world = World(world_seed=0)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
     registry = BuildingRegistry(world)
     registry.place(TownHall, town_hall_origin_tile())
     camp = registry.place(LumberCamp, near_town_hall_tile(8, 8))
@@ -1055,6 +1077,7 @@ def test_reassign_all_can_use_tile_after_tree_removed() -> None:
     world = World(world_seed=0)
     registry = BuildingRegistry(world)
     world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
     registry.place(TownHall, town_hall_origin_tile())
     camp = registry.place(LumberCamp, near_town_hall_tile(8, 8))
     cx, cy = camp.grid_pos  # type: ignore[assignment]
@@ -1084,6 +1107,8 @@ def test_reassign_all_detours_around_alive_stone_tile() -> None:
     from game.stones import Stone
 
     world = World(world_seed=0)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
     registry = BuildingRegistry(world)
     registry.place(TownHall, town_hall_origin_tile())
     camp = registry.place(LumberCamp, near_town_hall_tile(8, 8))

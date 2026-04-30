@@ -1,0 +1,114 @@
+{
+  "default": {
+    "scale": 1.0,
+    "anchor_norm": [0.50, 1.00]
+  },
+  "stages": {
+    "sapling": {
+      "scale": 1.0,
+      "offset_px": [0, 0],
+      "anchor_norm": [0.50, 1.00]
+    },
+    "young": {
+      "scale": 1.0,
+      "offset_px": [0, 0],
+      "anchor_norm": [0.50, 1.00]
+    },
+    "mature": {
+      "scale": 1.0,
+      "offset_px": [0, 0],
+      "anchor_norm": [0.50, 1.00]
+    },
+    "adult": {
+      "scale": 1.0,
+      "offset_px": [0, 0],
+      "anchor_norm": [0.50, 1.00]
+    }
+  },
+  "species": {
+    "0": {
+      "default": {
+        "scale": 0.2,
+        "anchor_norm": [0.50, 1.00]
+      },
+      "stages": {
+        "sapling": {
+          "scale": 0.075,
+          "offset_px": [0, -7],
+          "anchor_norm": [0.50, 1]
+        },
+        "young": {
+          "scale": 0.14,
+          "offset_px": [0, -5],
+          "anchor_norm": [0.50, 1.00]
+        },
+        "mature": {
+          "scale": 0.15,
+          "offset_px": [0, 0],
+          "anchor_norm": [0.50, 1.00]
+        },
+        "adult": {
+          "scale": 0.2,
+          "offset_px": [0, 0],
+          "anchor_norm": [0.50, 1.00]
+        }
+      }
+    },
+    "1": {
+      "default": {
+        "scale": 1.0,
+        "anchor_norm": [0.50, 1.00]
+      },
+      "stages": {
+        "sapling": {
+          "scale": 0.075,
+          "offset_px": [0, -8],
+          "anchor_norm": [0.50, 1.00]
+        },
+        "young": {
+          "scale": 0.12,
+          "offset_px": [0, -4],
+          "anchor_norm": [0.50, 1.00]
+        },
+        "mature": {
+          "scale": 0.16,
+          "offset_px": [0, -3],
+          "anchor_norm": [0.50, 1.00]
+        },
+        "adult": {
+          "scale": 0.2,
+          "offset_px": [0, 0],
+          "anchor_norm": [0.50, 1.00]
+        }
+      }
+    },
+    "2": {
+      "default": {
+        "scale": 1.0,
+        "anchor_norm": [0.50, 1.00]
+      },
+      "stages": {
+        "sapling": {
+          "scale": 0.075,
+          "offset_px": [0, -8],
+          "anchor_norm": [0.50, 1.00]
+        },
+        "young": {
+          "scale": 0.12,
+          "offset_px": [0, -5],
+          "anchor_norm": [0.50, 1.00]
+        },
+        "mature": {
+          "scale": 0.2,
+          "offset_px": [0, -1],
+          "anchor_norm": [0.50, 1.00]
+        },
+        "adult": {
+          "scale": 0.25,
+          "offset_px": [0, 0],
+          "anchor_norm": [0.50, 1.00]
+        }
+      }
+    }
+  }
+}

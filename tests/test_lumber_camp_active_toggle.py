@@ -19,6 +19,7 @@ def _setup_toggle_world():
     registry = BuildingRegistry(world)
     registry.place(TownHall, town_hall_origin_tile()).level = 3
     camp = registry.place(LumberCamp, near_town_hall_tile())
+    camp.construction_site = None
     gx, gy = camp.grid_pos  # type: ignore[assignment]
     world._trees[(gx + 3, gy)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
     world._trees[(gx + 4, gy)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001

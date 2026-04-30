@@ -523,13 +523,14 @@ class WorkerManager:
                 worker.type_tag in {"LUMBERJACK", "STONECUTTER"}
                 and worker.assigned_building is not None
                 and worker.assigned_building.type_tag == want
+                and not worker.assigned_building.is_under_construction
             ):
                 camp = worker.assigned_building
                 self._park_worker_inside_camp(worker, camp)
                 rest_ms = LUMBERJACK_REST_MS if worker.type_tag == "LUMBERJACK" else STONECUTTER_REST_MS
                 worker.camp_wait_until_ms = max(worker.camp_wait_until_ms, now_ms + rest_ms)
                 continue
-            targets = [b for b in self._registry.all() if b.type_tag == want and not self.is_staffed(b)]
+            targets = [b for b in self._registry.all() if b.type_tag == want and not self.is_staffed(b) and not b.is_under_construction]
             targets.sort(
                 key=lambda b: (
                     abs(worker.current_tile[0] - building_center_tile(b)[0])
@@ -657,6 +658,9 @@ class WorkerManager:
         camp = worker.assigned_building
         if camp is None:
             world.release_reservations_for(worker)
+            return
+        # Under-construction buildings must not run production cycles.
+        if camp.is_under_construction:
             return
 
         gather_state = self._gather_state_for(worker.type_tag)
@@ -970,6 +974,9 @@ class WorkerManager:
         if hut is None:
             world.release_reservations_for(worker)
             return
+        # Under-construction huts must not run planting cycles.
+        if hut.is_under_construction:
+            return
 
         if worker.state == "working":
             self._park_forester_inside_hut(worker, hut)
@@ -998,8 +1005,7 @@ class WorkerManager:
                 return
             target_tile = worker.target_tile
             if target_tile is not None:
-                species = (target_tile[0] + target_tile[1]) % 3
-                world.plant_tree(*target_tile, now_ms=now_ms, species=species)
+                world.plant_tree(*target_tile, now_ms=now_ms)
             if not self._start_return_to_camp(worker, now_ms):
                 # Never teleport forester home: if path is temporarily unavailable,
                 # stay on the current tile and retry pathing on next ticks.

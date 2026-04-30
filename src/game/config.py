@@ -25,6 +25,41 @@ def _scaled_levels(base_cost: dict[str, int], base_time_ms: int) -> dict[str, di
     return levels
 
 
+def _construction_fallback_defaults() -> dict[str, dict]:
+    return {
+        "LUMBER_CAMP": {"levels": _scaled_levels({"wood": 12, "stone": 4}, 30_000)},
+        "STONE_MINE": {"levels": _scaled_levels({"wood": 10, "stone": 8}, 34_000)},
+        "IRON_MINE": {"levels": _scaled_levels({"wood": 10, "stone": 10, "iron": 2}, 38_000)},
+        "FARM": {"levels": _scaled_levels({"wood": 8, "stone": 3, "wheat": 2}, 26_000)},
+        "FORESTER_HUT": {"levels": _scaled_levels({"wood": 9, "stone": 3}, 28_000)},
+        "SCHOOL": {"levels": _scaled_levels({"wood": 14, "stone": 8, "boards": 4}, 40_000)},
+        "HOUSE": {"levels": _scaled_levels({"wood": 12, "stone": 6, "boards": 2}, 36_000)},
+    }
+
+
+def _default_construction_from_files() -> dict[str, dict]:
+    project_root = Path(__file__).resolve().parents[2]
+    buildings_dir = project_root / "src" / "game" / "settings" / "buildings"
+    if not buildings_dir.exists():
+        return _construction_fallback_defaults()
+    result: dict[str, dict] = {}
+    for path in sorted(buildings_dir.glob("*.json")):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8-sig"))
+        except (json.JSONDecodeError, OSError):
+            continue
+        if not isinstance(payload, dict):
+            continue
+        b_type = str(payload.get("building_type", path.stem)).upper()
+        if not b_type:
+            continue
+        if isinstance(payload.get("levels"), dict):
+            result[b_type] = {"levels": payload["levels"]}
+    if result:
+        return result
+    return _construction_fallback_defaults()
+
+
 _DEFAULT_SETTINGS: dict = {
     "timing": {"tick_ms": 10_000, "worker_tile_travel_ms": 3_000},
     "world": {
@@ -37,15 +72,7 @@ _DEFAULT_SETTINGS: dict = {
     "warehouse_bootstrap": {
         "town_hall": {"wheat": 200, "wood": 200, "stone": 0, "iron": 0, "boards": 0},
     },
-    "construction": {
-        "LUMBER_CAMP": {"levels": _scaled_levels({"wood": 12, "stone": 4}, 30_000)},
-        "STONE_MINE": {"levels": _scaled_levels({"wood": 10, "stone": 8}, 34_000)},
-        "IRON_MINE": {"levels": _scaled_levels({"wood": 10, "stone": 10, "iron": 2}, 38_000)},
-        "FARM": {"levels": _scaled_levels({"wood": 8, "stone": 3, "wheat": 2}, 26_000)},
-        "FORESTER_HUT": {"levels": _scaled_levels({"wood": 9, "stone": 3}, 28_000)},
-        "SCHOOL": {"levels": _scaled_levels({"wood": 14, "stone": 8, "boards": 4}, 40_000)},
-        "HOUSE": {"levels": _scaled_levels({"wood": 12, "stone": 6, "boards": 2}, 36_000)},
-    },
+    "construction": _default_construction_from_files(),
     "gates": {
         "building_min_town_hall_level": {
             "STONE_MINE": 1,

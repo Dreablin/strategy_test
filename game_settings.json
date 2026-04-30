@@ -42,6 +42,22 @@
       "BUILDER": 1
     }
   },
+  "construction": {
+    "SAWMILL": {
+      "levels": {
+        "1": {"cost": {"wood": 14, "stone": 8}, "build_time_ms": 32000},
+        "2": {"cost": {"wood": 16, "stone": 9}, "build_time_ms": 35200},
+        "3": {"cost": {"wood": 18, "stone": 10}, "build_time_ms": 38400},
+        "4": {"cost": {"wood": 20, "stone": 11}, "build_time_ms": 41600},
+        "5": {"cost": {"wood": 22, "stone": 12}, "build_time_ms": 44800},
+        "6": {"cost": {"wood": 24, "stone": 13}, "build_time_ms": 48000},
+        "7": {"cost": {"wood": 26, "stone": 14}, "build_time_ms": 51200},
+        "8": {"cost": {"wood": 28, "stone": 15}, "build_time_ms": 54400},
+        "9": {"cost": {"wood": 30, "stone": 16}, "build_time_ms": 57600},
+        "10": {"cost": {"wood": 32, "stone": 17}, "build_time_ms": 60800}
+      }
+    }
+  },
   "levels": {
     "max_level": 10
   }

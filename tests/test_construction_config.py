@@ -12,6 +12,7 @@ def test_construction_requirements_cover_all_building_types() -> None:
         "FORESTER_HUT",
         "SCHOOL",
         "HOUSE",
+        "SAWMILL",
     }
     assert set(config.CONSTRUCTION_REQUIREMENTS) == expected
 

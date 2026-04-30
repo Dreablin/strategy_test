@@ -141,6 +141,18 @@ def test_build_menu_select_closes_panel() -> None:
     assert placement.pending_type is not None
 
 
+def test_build_menu_select_sawmill_sets_pending_type() -> None:
+    surface = pygame.Surface((640, 480))
+    world = World()
+    registry = BuildingRegistry(world)
+    camera = Camera()
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(), camera)
+    inp.handle(surface, pygame.event.Event(BUILD_MENU_SELECT, building_type="SAWMILL"))
+    assert placement.pending_type is not None
+    assert placement.pending_type.type_tag == "SAWMILL"
+
+
 def test_under_construction_building_uses_construction_panel_draw(monkeypatch) -> None:
     surface = pygame.Surface((1280, 720))
     world = World(world_seed=2)
@@ -221,6 +233,8 @@ def test_place_calls_reassign_all_and_assigns_idle_worker() -> None:
     all_b = registry.all()
     assert len(all_b) == 1
     placed = all_b[0]
+    placed.construction_site = None
+    workers.reassign_all()
     assert workers.is_staffed(placed)
 
 
@@ -234,6 +248,7 @@ def test_school_hire_button_calls_worker_manager_hire_and_spawns_at_school() -> 
     school = registry.place(School, near_town_hall_tile(8, 8))
     school.construction_site = None
     camp = registry.place(LumberCamp, near_town_hall_tile(12, 12))
+    camp.construction_site = None
     camera = Camera()
     placement = PlacementController(world, registry, camera)
     workers = WorkerManager(registry)

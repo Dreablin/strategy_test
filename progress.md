@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 19 — Construction System (complete)
-- **Next Task:** None (all queued tasks completed)
-- **Last Completed:** T209 — final verification, closeout, completion signal, and done flag
-- **Total Progress:** 209 / 209 (Phase 19: 25 / 25 tasks done)
+- **Next Task:** T211 — implement Sawmill building class storage behavior
+- **Last Completed:** T210 — add SAWMILL scaffold in config, placement, registry, and processing menu
+- **Total Progress:** 210 / 220 (Phase 19: 25 / 25 tasks done; Phase 20: 1 / 11 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -177,6 +177,40 @@
 
 ---
 
+## Phase 20 — Sawmill processing chain (boards)
+
+**Goal.** Add a **SAWMILL** processing building that consumes local `wood` and produces local `boards`, integrated with carriers and School hiring. Sawmill follows normal construction/upgrade flows and can be toggled active/inactive. Carriers should refill wood input while not full and export produced boards to Town Hall warehouse. Builder transport remains highest priority.
+
+**PRD refs (to add/align):** processing building flow, worker training via School, carrier transport priorities, construction compatibility.
+
+### 20.1 Domain and config scaffold
+
+- [x] **T210**: Add failing tests + config wiring for new building type `SAWMILL`: level/cost/build-time config in `game_settings.json` + `src/game/settings/buildings/sawmill.json`, registry visibility, bottom bar category placement (`Processing`), and construction-stage compatibility (site on place/upgrade).
+- [ ] **T211**: Implement `Sawmill` building class (2x2 unless explicitly changed) with `StorageMixin`-style split storages: `wood_in` capacity 3 at L1 and `boards_out` capacity 3 at L1, `active` toggle, panel-facing helpers (`input_amount`, `output_amount`, capacities, progress state). Add assets folder hooks under `assets/buildings/sawmill/` with normal construction sprite fallback.
+
+### 20.2 New worker type (School-trained)
+
+- [ ] **T212**: Introduce new worker type **`SAWYER`** (name chosen for sawmill operator) across domain/constants/UI icons/panels. Add School queue/train integration so `SAWYER` can be produced like other workers, spawns at School, and is assignable only to `SAWMILL`.
+
+### 20.3 Sawmill runtime production cycle
+
+- [ ] **T213**: Add failing cycle tests and implement core sawmill worker updater: if assigned `SAWYER`, sawmill active, `wood_in > 0`, `boards_out` not full, and worker not resting, start processing cycle with progress timer.
+- [ ] **T214**: Implement processing duration math: base cycle `30_000 ms`, reduced by `2%` per level above 1 (`effective = 30_000 * (1 - 0.02*(L-1))`, clamped to sensible minimum). On completion: `wood_in -= 1`, `boards_out += 1`, then worker enters mandatory rest `10_000 ms`.
+- [ ] **T215**: Enforce pause/stop rules with tests: no new cycle starts when sawmill inactive, input empty, output full, worker absent, or building under construction/upgrading. If inactive mid-cycle, current cycle behavior should follow existing production convention (finish current cycle, block next) and be tested explicitly.
+
+### 20.4 Carrier task generation and priorities
+
+- [ ] **T216**: Add transport-task generation for sawmill input refill: while sawmill active and `wood_in` below capacity, enqueue carrier tasks `TownHall warehouse wood -> Sawmill` (or producer source abstraction if already available). Ensure these tasks are lower priority than construction transport.
+- [ ] **T217**: Add export tasks for sawmill output: whenever `boards_out > 0`, enqueue carrier tasks `Sawmill boards -> TownHall warehouse`. Ensure tasks are deduplicated/throttled so queue does not spam duplicates each frame.
+- [ ] **T218**: Integrate carrier load/unload hooks for sawmill storages (`take wood_in`, `put wood_in`, `take boards_out`, `deliver boards`) with edge-case handling when state changes mid-route (inactive/full/empty) using existing redirect/cancel conventions.
+
+### 20.5 Level bonuses and UI
+
+- [ ] **T219**: Add level milestone storage expansion tests and implementation: on levels **5** and **10**, increase both sawmill storages (`wood_in` and `boards_out`) per agreed step function; expose capacities in building panel/status methods.
+- [ ] **T220**: Implement/extend `SawmillPanel` UI: show active toggle, worker status, input/output counts, production progress bar, and blocked reason hints (`inactive`, `no wood`, `output full`, `no worker`, `resting`). Add headless panel interaction tests and one end-to-end smoke test: train SAWYER -> deliver wood -> produce boards -> rest -> export boards.
+
+---
+
 ## Decisions Log
 
 | Date | Task | Decision | Rationale |
@@ -224,6 +258,7 @@
 | 2026-04-29 | T207 | Ran full regression sweep (`pytest -q`, `ruff check src tests`) after construction-site integration updates; fixed legacy status tests by explicitly clearing default `construction_site` in non-construction scenarios (workers/forester fixtures). | Confirms backward compatibility of placement/demolish/upgrade/status behavior while preserving new construction defaults. |
 | 2026-04-29 | T208 | Added `tests/test_smoke_phase19.py` integration smoke covering full construction lifecycle: initial LumberCamp construction (carrier+builder), post-build lumberjack assignment and chop/deposit activity, upgrade-to-level-2 construction, and post-upgrade worker resume. Verified with full `pytest -q` + `ruff check src tests`. | Provides end-to-end guardrail for Phase-19 runtime interactions across registry, worker AI, transport, construction completion, and upgrade flow. |
 | 2026-04-29 | T209 | Final closeout gate passed with full `pytest -q` and `ruff check src tests` green (434 tests). Marked all Phase 19 tasks complete and created `.cursor/ralph/done` termination flag. | Concludes Phase 19 with deterministic loop stop signal and final verification snapshot. |
+| 2026-04-30 | T210 | Added SAWMILL scaffold: new `Sawmill` building class shell, placement mapping, processing menu entry/event in `BottomBar`, construction settings in `src/game/settings/buildings/sawmill.json` and `game_settings.json`, plus registry/input/bottom-bar/config tests for SAWMILL construction place+upgrade paths. Updated legacy assignment tests to clear `construction_site` for non-construction staffing scenarios. | Establishes Phase 20 entry-point wiring so SAWMILL is selectable/placeable and participates in construction flow before detailed storage/runtime behavior in T211+. |
 
 ## Issues & Blockers
 

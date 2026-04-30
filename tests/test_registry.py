@@ -7,6 +7,7 @@ import pytest
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.iron_mine import IronMine
 from game.buildings.stone_mine import StoneMine
+from game.buildings.sawmill import Sawmill
 from game.buildings.town_hall import TownHall
 from game.buildings.registry import BuildingRegistry
 from game.config import CONSTRUCTION_REQUIREMENTS, GRID_SIZE, near_town_hall_tile, town_hall_origin_tile
@@ -201,6 +202,29 @@ def test_place_town_hall_has_no_construction_site(registry: BuildingRegistry) ->
     th = registry.place(TownHall, town_hall_origin_tile())
     assert th.is_under_construction is False
     assert th.construction_site is None
+
+
+def test_place_sawmill_starts_under_construction_with_level1_requirements(
+    registry: BuildingRegistry,
+) -> None:
+    sawmill = registry.place(Sawmill, (16, 16))
+    assert sawmill.is_under_construction
+    assert sawmill.construction_site is not None
+    expected = CONSTRUCTION_REQUIREMENTS["SAWMILL"][1]
+    assert sawmill.construction_site.required_resources == expected.cost
+
+
+def test_upgrade_sawmill_starts_construction_for_level2() -> None:
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    sawmill = registry.place(Sawmill, (22, 22))
+    sawmill.construction_site = None
+
+    assert registry.upgrade_building(sawmill)
+    assert sawmill.level == 1
+    assert sawmill.is_under_construction
+    assert sawmill.construction_site is not None
+    assert sawmill.construction_site.target_level == 2
 
 
 def test_cannot_place_when_footprint_covers_stone_tile() -> None:

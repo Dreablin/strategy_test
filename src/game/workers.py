@@ -141,6 +141,28 @@ def sawmill_output_transport_tasks(registry: Any) -> list[TransportTask]:
     return tasks
 
 
+def farm_wheat_output_transport_tasks(registry: Any) -> list[TransportTask]:
+    """Build low-priority wheat export tasks from farms to Town Hall."""
+    if registry is None:
+        return []
+    buildings = list(registry.all())
+    town_hall = next((b for b in buildings if b.type_tag == "TOWN_HALL"), None)
+    if town_hall is None:
+        return []
+    tasks: list[TransportTask] = []
+    for building in buildings:
+        if building.type_tag != "FARM":
+            continue
+        if getattr(building, "is_under_construction", False):
+            continue
+        amount = int(getattr(building, "stored", 0))
+        if amount <= 0:
+            continue
+        for _ in range(amount):
+            tasks.append(TransportTask(resource="wheat", source=building, target=town_hall, priority=0))
+    return tasks
+
+
 def building_center_tile(building: Building) -> tuple[int, int]:
     """Integer grid cell at the footprint center (for stand / orphan position)."""
     pos = building.grid_pos
@@ -744,6 +766,7 @@ class WorkerManager:
         self._enqueue_construction_transport_tasks()
         self._enqueue_sawmill_refill_tasks()
         self._enqueue_sawmill_output_tasks()
+        self._enqueue_farm_wheat_output_tasks()
         completed_buildings: list[Building] = []
         completed_site_builders: dict[int, Worker] = {}
         for worker in self._workers:
@@ -1207,6 +1230,39 @@ class WorkerManager:
         if self._registry is None:
             return
         desired = sawmill_output_transport_tasks(self._registry)
+        desired_counts: dict[tuple[int, int, str, int], int] = {}
+        for task in desired:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            desired_counts[key] = desired_counts.get(key, 0) + 1
+
+        existing_counts: dict[tuple[int, int, str, int], int] = {}
+        for task in self._transport_queue:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+        for worker in self._workers:
+            task = worker.transport_task
+            if task is None:
+                continue
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+
+        for task in desired:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            if existing_counts.get(key, 0) >= desired_counts.get(key, 0):
+                continue
+            self.enqueue_transport_task(
+                resource=task.resource,
+                source=task.source,
+                target=task.target,
+                amount=1,
+                priority=task.priority,
+            )
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+
+    def _enqueue_farm_wheat_output_tasks(self) -> None:
+        if self._registry is None:
+            return
+        desired = farm_wheat_output_transport_tasks(self._registry)
         desired_counts: dict[tuple[int, int, str, int], int] = {}
         for task in desired:
             key = (id(task.source), id(task.target), task.resource, int(task.priority))

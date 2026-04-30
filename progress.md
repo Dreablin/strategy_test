@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 21 — Wheat fields + farmer field cycle
-- **Next Task:** T229 — Harvest reset runtime integration
-- **Last Completed:** T228 — Implement wheat growth runtime updater
-- **Total Progress:** 228 / 245 (Phase 19: 25 / 25 done; Phase 20: 11 / 11 done; Phase 21: 8 / 25 done)
+- **Next Task:** T230 — Farmer assignment lifecycle RED tests
+- **Last Completed:** T229 — Harvest reset runtime integration
+- **Total Progress:** 229 / 245 (Phase 19: 25 / 25 done; Phase 20: 11 / 11 done; Phase 21: 9 / 25 done)
 
 > **Archive:** Full history and completed phases are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -35,7 +35,7 @@
 
 - [x] **T227**: Add failing tests for wheat autonomous growth timing on built fields: `PHASE_1 -> PHASE_2 -> PHASE_3 -> PHASE_4`, each step every `45_000 ms`, growth pauses only if field is not sown.
 - [x] **T228**: Implement runtime growth updater (world/worker manager tick path): deterministic timestamp-based progression using existing `now_ms` flow; no per-frame floating accumulation drift.
-- [ ] **T229**: Add tests + implementation for harvest reset: when farmer harvests `PHASE_4`, field becomes `EMPTY` immediately and can be selected for sowing in the same/next farmer cycle.
+- [x] **T229**: Add tests + implementation for harvest reset: when farmer harvests `PHASE_4`, field becomes `EMPTY` immediately and can be selected for sowing in the same/next farmer cycle.
 
 ### 21.4 Farmer behavior cycle (Farm worker AI)
 
@@ -103,3 +103,4 @@
 - T226 GREEN check: `pytest -q` passes with world-space FIELD build progress bar rendered only during active field construction.
 - T227 RED check: `pytest -q` fails on missing `game.buildings.field.advance_wheat_growth` timing helper (45_000 ms steps).
 - T228 GREEN check: `pytest -q` passes with deterministic 45-second phase advancement helper (`advance_wheat_growth`) and full suite green.
+- T229 GREEN check: `pytest -q` passes with immediate harvest reset (`PHASE_4 -> EMPTY`) and sow-eligibility helper for same/next cycle selection.

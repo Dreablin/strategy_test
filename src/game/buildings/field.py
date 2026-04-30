@@ -44,6 +44,16 @@ def reset_after_harvest(current_phase: str) -> str:
     return WHEAT_EMPTY
 
 
+def on_field_harvest(current_phase: str) -> str:
+    """Apply harvest action to a field phase and return resulting phase."""
+    return reset_after_harvest(current_phase)
+
+
+def is_ready_for_sowing(current_phase: str) -> bool:
+    """Whether the field can be selected for sowing in current cycle."""
+    return str(current_phase).upper() == WHEAT_EMPTY
+
+
 def advance_wheat_growth(
     current_phase: str,
     last_change_ms: int,

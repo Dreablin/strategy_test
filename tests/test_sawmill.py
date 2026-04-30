@@ -49,6 +49,19 @@ def test_sawmill_active_toggle_and_processing_progress() -> None:
     assert sawmill.processing_progress(now_ms=50_000) == 1.0
 
 
+def test_sawmill_storage_capacity_milestones_level5_and_level10() -> None:
+    sawmill_l1 = Sawmill(level=1, grid_pos=(10, 10))
+    sawmill_l5 = Sawmill(level=5, grid_pos=(10, 10))
+    sawmill_l10 = Sawmill(level=10, grid_pos=(10, 10))
+
+    assert sawmill_l1.input_capacity() == 3
+    assert sawmill_l1.output_capacity() == 3
+    assert sawmill_l5.input_capacity() == 4
+    assert sawmill_l5.output_capacity() == 4
+    assert sawmill_l10.input_capacity() == 5
+    assert sawmill_l10.output_capacity() == 5
+
+
 def test_sawmill_asset_hook_folder_exists() -> None:
     root = Path(__file__).resolve().parents[1]
     sawmill_dir = root / "assets" / "buildings" / "sawmill"

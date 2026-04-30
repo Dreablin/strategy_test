@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 20 — Sawmill processing chain (boards)
-- **Next Task:** T217 — add sawmill boards export transport tasks with dedupe/throttle
-- **Last Completed:** T216 — sawmill wood refill transport-task generation
-- **Total Progress:** 216 / 220 (Phase 19: 25 / 25 tasks done; Phase 20: 7 / 11 tasks done)
+- **Next Task:** T218 — integrate carrier load/unload hooks for sawmill storages
+- **Last Completed:** T217 — sawmill boards export task generation and dedupe
+- **Total Progress:** 217 / 220 (Phase 19: 25 / 25 tasks done; Phase 20: 8 / 11 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -201,7 +201,7 @@
 ### 20.4 Carrier task generation and priorities
 
 - [x] **T216**: Add transport-task generation for sawmill input refill: while sawmill active and `wood_in` below capacity, enqueue carrier tasks `TownHall warehouse wood -> Sawmill` (or producer source abstraction if already available). Ensure these tasks are lower priority than construction transport.
-- [ ] **T217**: Add export tasks for sawmill output: whenever `boards_out > 0`, enqueue carrier tasks `Sawmill boards -> TownHall warehouse`. Ensure tasks are deduplicated/throttled so queue does not spam duplicates each frame.
+- [x] **T217**: Add export tasks for sawmill output: whenever `boards_out > 0`, enqueue carrier tasks `Sawmill boards -> TownHall warehouse`. Ensure tasks are deduplicated/throttled so queue does not spam duplicates each frame.
 - [ ] **T218**: Integrate carrier load/unload hooks for sawmill storages (`take wood_in`, `put wood_in`, `take boards_out`, `deliver boards`) with edge-case handling when state changes mid-route (inactive/full/empty) using existing redirect/cancel conventions.
 
 ### 20.5 Level bonuses and UI
@@ -265,6 +265,7 @@
 | 2026-04-30 | T214 | Implemented SAWMILL cycle completion behavior in `WorkerManager._update_sawyer`: per-cycle duration scales by level (`30_000 * (1 - 0.02*(L-1))`, clamped), completion consumes one `wood_in`, produces one `boards_out`, resets processing timer, and enforces mandatory `SAWYER` rest (`10_000ms`) before next cycle. Added tests for completion/rest + level timing. Stabilized one existing stone smoke placement check to search any valid adjacent tile under current stone cluster patterns so full-suite regression remains deterministic. | Completes runtime cycle timing/effects foundation for sawmill production and preserves global test reliability needed for Ralph full-suite gating. |
 | 2026-04-30 | T215 | Added gating tests for sawmill cycle start/continuation (`inactive`, `no wood`, `output full`, `worker absent`, `under construction`) and explicit inactive-mid-cycle convention coverage. Updated `WorkerManager._update_sawyer` so active-state gate blocks only new cycle starts while allowing an already running cycle to finish, then applies normal rest cooldown and blocks subsequent starts while inactive. | Matches existing production convention (“finish current cycle, block next”) and hardens pause/stop edge cases before adding carrier transport layers in T216+. |
 | 2026-04-30 | T216 | Added `sawmill_input_transport_tasks(registry)` and `_enqueue_sawmill_refill_tasks()` in `WorkerManager.update()` to generate low-priority TownHall→Sawmill wood refill tasks for active, non-construction sawmills below input capacity, bounded by Town Hall warehouse wood. Added task-generation and enqueue/priority interaction coverage in `tests/test_workers.py`, and restored construction-task enqueue dedupe logic after integrating the new refill enqueue pass. | Enables carrier-side sawmill input replenishment while preserving construction delivery precedence and existing construction transport behavior. |
+| 2026-04-30 | T217 | Added `sawmill_output_transport_tasks(registry)` plus `_enqueue_sawmill_output_tasks()` in `WorkerManager.update()` to emit deduped low-priority `boards` export tasks from non-construction sawmills with `boards_out > 0` to Town Hall. Added tests for export task generation shape and cross-tick dedupe/throttle behavior to prevent queue spam. | Prepares carrier-side boards export flow while keeping task generation bounded and stable before source/target storage hook integration in T218. |
 
 ## Issues & Blockers
 

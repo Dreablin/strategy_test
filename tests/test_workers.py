@@ -20,6 +20,7 @@ from game.workers import (
     building_center_tile,
     construction_transport_tasks,
     sawmill_input_transport_tasks,
+    sawmill_output_transport_tasks,
     town_hall_spawn_tile,
 )
 
@@ -1138,6 +1139,41 @@ def test_update_enqueues_sawmill_refill_tasks_for_active_sawmill() -> None:
     assert second.target is sawmill
     assert second.resource == "wood"
     assert second.priority == 0
+
+
+def test_sawmill_output_transport_tasks_generate_boards_exports() -> None:
+    world = World(world_seed=0)
+    registry = BuildingRegistry(world)
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    sawmill = registry.place(Sawmill, near_town_hall_tile(16, 8))
+    sawmill.construction_site = None
+    sawmill.add_boards_out(2)
+
+    tasks = sawmill_output_transport_tasks(registry)
+
+    assert len(tasks) == 2
+    assert all(t.resource == "boards" for t in tasks)
+    assert all(t.source is sawmill for t in tasks)
+    assert all(t.target is town_hall for t in tasks)
+    assert all(t.priority == 0 for t in tasks)
+
+
+def test_update_sawmill_output_enqueue_is_deduped_across_ticks() -> None:
+    world = World(world_seed=0)
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    sawmill = registry.place(Sawmill, near_town_hall_tile(18, 8))
+    sawmill.construction_site = None
+    sawmill.add_boards_out(2)
+    wm = WorkerManager(registry)
+
+    wm.update(1_000)
+    wm.update(2_000)
+    wm.update(3_000)
+
+    queued = [t for t in wm._transport_queue if t.resource == "boards"]  # noqa: SLF001
+    assert len(queued) == 2
+    assert all(t.source is sawmill for t in queued)
 
 
 def test_next_transport_task_picks_highest_priority_available_task_first() -> None:

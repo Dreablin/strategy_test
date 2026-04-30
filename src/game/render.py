@@ -244,6 +244,29 @@ class Renderer:
             if fill_w > 0:
                 pygame.draw.rect(surface, (240, 210, 80), (bar_x, bar_y, fill_w, bar_h), border_radius=2)
 
+        for worker in worker_manager.workers():
+            if worker.type_tag != "FARMER":
+                continue
+            if worker.state not in {"sowing", "harvesting"}:
+                continue
+            wx, wy = worker.current_tile
+            if not (gx_min <= wx <= gx_max and gy_min <= wy <= gy_max):
+                continue
+            duration = max(1, int(getattr(worker, "chop_duration_ms", 1)))
+            started = int(getattr(worker, "chop_started_ms", now_ms))
+            progress = max(0.0, min(1.0, float(now_ms - started) / float(duration)))
+            sx, sy = world_to_screen(wx, wy)
+            center_x = ox + cam_x + sx + TILE_W // 2
+            bar_w = 24
+            bar_h = 4
+            bar_x = center_x - bar_w // 2
+            bar_y = oy + cam_y + sy + TILE_H // 2 + 8
+            pygame.draw.rect(surface, (40, 40, 48), (bar_x, bar_y, bar_w, bar_h), border_radius=2)
+            fill_w = max(0, min(bar_w, int(round(bar_w * progress))))
+            if fill_w > 0:
+                fill = (110, 220, 120) if worker.state == "sowing" else (240, 210, 80)
+                pygame.draw.rect(surface, fill, (bar_x, bar_y, fill_w, bar_h), border_radius=2)
+
     @staticmethod
     def draw_trees(surface: pygame.Surface, world: World, camera=None) -> None:
         """Draw world-owned trees as tall sprites anchored at tile bottom-center."""

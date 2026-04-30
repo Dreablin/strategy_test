@@ -285,3 +285,44 @@ def test_draw_workers_field_build_progress_bar_only_during_active_field_build(mo
     surface.fill((0, 0, 0, 0))
     Renderer.draw_workers(surface, world, registry, wm)
     assert surface.get_bounding_rect().width == 0
+
+
+def test_draw_workers_farmer_action_progress_bar_visible_during_sow_and_harvest(monkeypatch) -> None:
+    world = World(world_seed=0)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    field = registry.place(Field, near_town_hall_tile(8, 8))
+    field.construction_site = None
+
+    now_ms = {"t": 5_000}
+    wm = WorkerManager(registry, now_ms_fn=lambda: now_ms["t"])
+    farmer = Worker("FARMER", stand_tile=field.grid_pos)
+    farmer.assigned_building = registry.place(LumberCamp, near_town_hall_tile(12, 8))
+    farmer.current_tile = field.grid_pos
+    farmer.chop_started_ms = 0
+    farmer.chop_duration_ms = 10_000
+    wm.add_worker(farmer)
+
+    dot = pygame.Surface((1, 1), pygame.SRCALPHA)
+    dot.fill((0, 0, 0, 0))
+    monkeypatch.setattr(assets, "worker_dot", lambda _t, carrying=False: dot)
+
+    surface = pygame.Surface((1280, 720), pygame.SRCALPHA)
+    surface.fill((0, 0, 0, 0))
+    farmer.state = "sowing"
+    Renderer.draw_workers(surface, world, registry, wm)
+    sow_rect = surface.get_bounding_rect()
+    assert sow_rect.width > 0
+
+    surface.fill((0, 0, 0, 0))
+    farmer.state = "harvesting"
+    Renderer.draw_workers(surface, world, registry, wm)
+    harvest_rect = surface.get_bounding_rect()
+    assert harvest_rect.width > 0
+
+    surface.fill((0, 0, 0, 0))
+    farmer.state = "resting"
+    Renderer.draw_workers(surface, world, registry, wm)
+    assert surface.get_bounding_rect().width == 0

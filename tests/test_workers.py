@@ -19,6 +19,7 @@ from game.workers import (
     WorkerManager,
     building_center_tile,
     construction_transport_tasks,
+    sawmill_input_transport_tasks,
     town_hall_spawn_tile,
 )
 
@@ -1062,6 +1063,81 @@ def test_construction_transport_tasks_ignore_non_construction_buildings() -> Non
 
     assert len(tasks) == 1
     assert tasks[0].target is mine
+
+
+def test_sawmill_input_transport_tasks_generate_low_priority_wood_refill() -> None:
+    world = World(world_seed=0)
+    registry = BuildingRegistry(world)
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    sawmill = registry.place(Sawmill, near_town_hall_tile(12, 8))
+    sawmill.construction_site = None
+    sawmill.set_active(True)
+    sawmill.add_wood_in(1)
+    town_hall.add_to_warehouse("wood", 2)
+
+    tasks = sawmill_input_transport_tasks(registry)
+
+    assert len(tasks) == 2
+    assert all(t.resource == "wood" for t in tasks)
+    assert all(t.source is town_hall for t in tasks)
+    assert all(t.target is sawmill for t in tasks)
+    assert all(t.priority == 0 for t in tasks)
+
+
+def test_sawmill_input_transport_tasks_are_lower_priority_than_construction_tasks() -> None:
+    world = World(world_seed=0)
+    registry = BuildingRegistry(world)
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    camp = registry.place(LumberCamp, near_town_hall_tile(8, 8))
+    sawmill = registry.place(Sawmill, near_town_hall_tile(12, 8))
+    camp.construction_site = ConstructionSite(
+        required_resources={"wood": 1},
+        delivered_resources={},
+        build_time_ms=10_000,
+        build_started_ms=None,
+        builder=None,
+        target_level=1,
+    )
+    sawmill.construction_site = None
+    sawmill.set_active(True)
+    town_hall.add_to_warehouse("wood", 2)
+
+    construction = construction_transport_tasks(registry)
+    refill = sawmill_input_transport_tasks(registry)
+
+    assert construction
+    assert refill
+    assert min(t.priority for t in construction) > max(t.priority for t in refill)
+
+
+def test_update_enqueues_sawmill_refill_tasks_for_active_sawmill() -> None:
+    world = World(world_seed=0)
+    registry = BuildingRegistry(world)
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    camp = registry.place(LumberCamp, near_town_hall_tile(8, 8))
+    sawmill = registry.place(Sawmill, near_town_hall_tile(14, 8))
+    camp.construction_site = ConstructionSite(
+        required_resources={"wood": 1},
+        delivered_resources={},
+        build_time_ms=10_000,
+        build_started_ms=None,
+        builder=None,
+        target_level=1,
+    )
+    sawmill.construction_site = None
+    town_hall.add_to_warehouse("wood", 2)
+    wm = WorkerManager(registry)
+
+    wm.update(1_000)
+    first = wm._next_transport_task()
+    second = wm._next_transport_task()
+    assert first is not None
+    assert second is not None
+    assert first.target is camp
+    assert first.priority == 10
+    assert second.target is sawmill
+    assert second.resource == "wood"
+    assert second.priority == 0
 
 
 def test_next_transport_task_picks_highest_priority_available_task_first() -> None:

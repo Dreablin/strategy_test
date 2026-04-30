@@ -76,6 +76,38 @@ def construction_transport_tasks(registry: Any) -> list[TransportTask]:
     return tasks
 
 
+def sawmill_input_transport_tasks(registry: Any) -> list[TransportTask]:
+    """Build low-priority refill tasks from Town Hall to active sawmills."""
+    if registry is None:
+        return []
+    buildings = list(registry.all())
+    town_hall = next((b for b in buildings if b.type_tag == "TOWN_HALL"), None)
+    if town_hall is None or not hasattr(town_hall, "warehouse_amount"):
+        return []
+    available = int(town_hall.warehouse_amount("wood"))
+    if available <= 0:
+        return []
+    tasks: list[TransportTask] = []
+    remaining_wood = available
+    for building in buildings:
+        if building.type_tag != "SAWMILL":
+            continue
+        if getattr(building, "is_under_construction", False):
+            continue
+        if not getattr(building, "active", False):
+            continue
+        want = max(0, int(getattr(building, "input_capacity", lambda: 0)()) - int(getattr(building, "input_amount", lambda: 0)()))
+        if want <= 0:
+            continue
+        count = min(want, remaining_wood)
+        for _ in range(count):
+            tasks.append(TransportTask(resource="wood", source=town_hall, target=building, priority=0))
+        remaining_wood -= count
+        if remaining_wood <= 0:
+            break
+    return tasks
+
+
 def building_center_tile(building: Building) -> tuple[int, int]:
     """Integer grid cell at the footprint center (for stand / orphan position)."""
     pos = building.grid_pos
@@ -620,6 +652,7 @@ class WorkerManager:
         """Advance worker movement interpolation/state for this frame."""
         world = getattr(self._registry, "_world", None) if self._registry is not None else None
         self._enqueue_construction_transport_tasks()
+        self._enqueue_sawmill_refill_tasks()
         completed_buildings: list[Building] = []
         completed_site_builders: dict[int, Worker] = {}
         for worker in self._workers:
@@ -943,6 +976,39 @@ class WorkerManager:
         if self._registry is None:
             return
         desired = construction_transport_tasks(self._registry)
+        desired_counts: dict[tuple[int, int, str, int], int] = {}
+        for task in desired:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            desired_counts[key] = desired_counts.get(key, 0) + 1
+
+        existing_counts: dict[tuple[int, int, str, int], int] = {}
+        for task in self._transport_queue:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+        for worker in self._workers:
+            task = worker.transport_task
+            if task is None:
+                continue
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+
+        for task in desired:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            if existing_counts.get(key, 0) >= desired_counts.get(key, 0):
+                continue
+            self.enqueue_transport_task(
+                resource=task.resource,
+                source=task.source,
+                target=task.target,
+                amount=1,
+                priority=task.priority,
+            )
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+
+    def _enqueue_sawmill_refill_tasks(self) -> None:
+        if self._registry is None:
+            return
+        desired = sawmill_input_transport_tasks(self._registry)
         desired_counts: dict[tuple[int, int, str, int], int] = {}
         for task in desired:
             key = (id(task.source), id(task.target), task.resource, int(task.priority))

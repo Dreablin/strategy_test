@@ -8,6 +8,12 @@ import random
 from typing import Any
 
 from game.buildings.base import Building
+from game.buildings.field import (
+    WHEAT_EMPTY,
+    WHEAT_PHASE_1,
+    WHEAT_PHASE_4,
+    on_field_harvest,
+)
 from game.buildings.school import School
 from game.buildings.town_hall import TownHall
 from game.characteristics import Characteristics
@@ -34,6 +40,10 @@ CARRIER_INTERACT_MS = 2_000
 SAWMILL_BASE_CYCLE_MS = 30_000
 SAWMILL_MIN_CYCLE_MS = 5_000
 SAWYER_REST_MS = 10_000
+FARMER_REST_MS = 5_000
+FARMER_ACTION_MS = 5_000
+FARMER_FIELD_RADIUS = 10
+FARMER_NO_TARGET_WORKING_STATE_MS = 900_000
 MOVE_SPEED_PER_LEVEL = 0.05
 GATHER_SPEED_PER_LEVEL = 0.05
 
@@ -138,6 +148,47 @@ def building_center_tile(building: Building) -> tuple[int, int]:
     gx, gy = pos
     w, h = type(building).footprint
     return gx + w // 2, gy + h // 2
+
+
+def select_farmer_field_target(
+    *,
+    farm_home: tuple[int, int],
+    field_phases: dict[tuple[int, int], str],
+    max_radius: int = FARMER_FIELD_RADIUS,
+) -> tuple[int, int] | None:
+    """Pick farmer target in priority order: ripe first, then empty."""
+    radius = int(max_radius)
+    ripe: list[tuple[int, int]] = []
+    empty: list[tuple[int, int]] = []
+    for tile, phase in field_phases.items():
+        if max(abs(int(tile[0]) - int(farm_home[0])), abs(int(tile[1]) - int(farm_home[1]))) > radius:
+            continue
+        norm = str(phase).upper()
+        if norm == WHEAT_PHASE_4:
+            ripe.append(tile)
+        elif norm == WHEAT_EMPTY:
+            empty.append(tile)
+    if ripe:
+        return min(
+            ripe,
+            key=lambda t: (
+                max(abs(t[0] - farm_home[0]), abs(t[1] - farm_home[1])),
+                abs(t[0] - farm_home[0]) + abs(t[1] - farm_home[1]),
+                t[0],
+                t[1],
+            ),
+        )
+    if empty:
+        return min(
+            empty,
+            key=lambda t: (
+                max(abs(t[0] - farm_home[0]), abs(t[1] - farm_home[1])),
+                abs(t[0] - farm_home[0]) + abs(t[1] - farm_home[1]),
+                t[0],
+                t[1],
+            ),
+        )
+    return None
 
 
 def town_hall_spawn_tile(building: Building) -> tuple[int, int]:
@@ -291,6 +342,7 @@ class WorkerManager:
             "STONECUTTER": self._update_gatherer,
             "BUILDER": self._update_builder,
             "SAWYER": self._update_sawyer,
+            "FARMER": self._update_farmer,
         }
         if registry is not None and hasattr(registry, "bind_worker_manager"):
             registry.bind_worker_manager(self)
@@ -1342,11 +1394,152 @@ class WorkerManager:
             return
         return True
 
+    def _update_farmer(self, worker: Worker, now_ms: int, world: Any) -> None:
+        if self._registry is None or world is None:
+            return
+        farm = worker.assigned_building
+        if farm is None or farm.type_tag != "FARM":
+            return
+        if farm.is_under_construction:
+            return
+
+        # Enter the farm home base first and begin a rest window.
+        if worker.state in {"working", "arrived_camp"}:
+            self._park_worker_inside_building(worker, farm)
+            worker.state = "resting"
+            if worker.camp_wait_until_ms <= now_ms:
+                worker.camp_wait_until_ms = now_ms + FARMER_REST_MS
+            return
+
+        if worker.state == "resting":
+            self._park_worker_inside_building(worker, farm)
+            if now_ms < worker.camp_wait_until_ms:
+                return
+            target_field = self._select_farmer_target_field(farm)
+            if target_field is None:
+                worker.state = "working_field" if now_ms >= FARMER_NO_TARGET_WORKING_STATE_MS else "resting"
+                worker.camp_wait_until_ms = now_ms + 1_000
+                return
+            if not self._start_farmer_move_to_field(worker, target_field, now_ms, world):
+                worker.state = "working_field" if now_ms >= FARMER_NO_TARGET_WORKING_STATE_MS else "resting"
+                worker.camp_wait_until_ms = now_ms + 1_000
+                return
+            worker.state = "going_to_field"
+            worker.target_tree = target_field.grid_pos
+            worker.camp_wait_until_ms = 0
+            return
+
+        if worker.state == "working_field":
+            self._park_worker_inside_building(worker, farm)
+            if now_ms < worker.camp_wait_until_ms:
+                return
+            worker.state = "resting"
+            worker.camp_wait_until_ms = now_ms
+            return
+
+        if worker.state == "going_to_field":
+            if worker.target_tile == worker.current_tile:
+                worker.state = "harvesting"
+                worker.chop_started_ms = now_ms
+                worker.chop_duration_ms = FARMER_ACTION_MS
+            return
+
+        if worker.state == "harvesting":
+            if now_ms - worker.chop_started_ms < worker.chop_duration_ms:
+                return
+            target_tile = worker.target_tree
+            if target_tile is not None:
+                field = self._field_at(target_tile)
+                if field is not None:
+                    try:
+                        on_field_harvest(self._read_field_phase(field))
+                        self._write_field_phase(field, WHEAT_EMPTY)
+                        worker.carrying = "wheat"
+                    except ValueError:
+                        worker.carrying = None
+            if self._start_return_to_camp(worker, now_ms):
+                return
+            worker.state = "arrived_camp"
+            return
+
+        if worker.state == "arrived_camp":
+            self._park_worker_inside_building(worker, farm)
+            if worker.carrying == "wheat":
+                try:
+                    farm.add_to_storage(1)  # type: ignore[attr-defined]
+                except ValueError:
+                    pass
+            worker.carrying = None
+            worker.target_tree = None
+            worker.chop_started_ms = 0
+            worker.chop_duration_ms = CHOP_DURATION_MS
+            worker.state = "resting"
+            worker.camp_wait_until_ms = now_ms + FARMER_REST_MS
+
     def _builder_destination_tiles(self, building: Building) -> list[tuple[int, int]]:
         """Builder path target tiles for construction entry."""
         if building.type_tag == "FIELD" and building.grid_pos is not None:
             return [building.grid_pos]
         return self._approach_tiles(building)
+
+    def _select_farmer_target_field(self, farm: Building) -> Building | None:
+        if self._registry is None:
+            return None
+        farm_home = building_center_tile(farm)
+        phases: dict[tuple[int, int], str] = {}
+        tile_to_field: dict[tuple[int, int], Building] = {}
+        for building in self._registry.all():
+            if building.type_tag != "FIELD":
+                continue
+            if building.is_under_construction or building.grid_pos is None:
+                continue
+            tile = (int(building.grid_pos[0]), int(building.grid_pos[1]))
+            tile_to_field[tile] = building
+            phases[tile] = self._read_field_phase(building)
+        selected_tile = select_farmer_field_target(
+            farm_home=farm_home,
+            field_phases=phases,
+            max_radius=FARMER_FIELD_RADIUS,
+        )
+        if selected_tile is None:
+            return None
+        return tile_to_field.get(selected_tile)
+
+    @staticmethod
+    def _read_field_phase(field: Building) -> str:
+        return str(getattr(field, "wheat_phase", WHEAT_PHASE_1)).upper()
+
+    @staticmethod
+    def _write_field_phase(field: Building, phase: str) -> None:
+        # Field currently uses slots; keep state in this helper once expanded.
+        try:
+            setattr(field, "wheat_phase", str(phase).upper())
+        except AttributeError:
+            pass
+
+    def _field_at(self, tile: tuple[int, int]) -> Building | None:
+        if self._registry is None:
+            return None
+        for building in self._registry.all():
+            if building.type_tag != "FIELD":
+                continue
+            if building.grid_pos is None:
+                continue
+            if tuple(building.grid_pos) == tuple(tile):
+                return building
+        return None
+
+    @staticmethod
+    def _start_farmer_move_to_field(worker: Worker, field: Building, now_ms: int, world: Any) -> bool:
+        if field.grid_pos is None:
+            return False
+        blocked = world.blocked_tiles()
+        blocked.discard(worker.current_tile)
+        path = find_path_bfs(world, worker.current_tile, field.grid_pos, blocked)
+        if path is None:
+            return False
+        worker.start_move(path, started_ms=now_ms, move_state="going_to_field")
+        return True
 
     @staticmethod
     def _sawmill_cycle_duration_ms(sawmill: Any) -> int:

@@ -1147,8 +1147,9 @@ class WorkerManager:
         sawmill = worker.assigned_building
         if sawmill is None or sawmill.type_tag != "SAWMILL":
             return
-        if sawmill.is_under_construction or not getattr(sawmill, "active", False):
+        if sawmill.is_under_construction:
             return
+        active = bool(getattr(sawmill, "active", False))
         if worker.state == "resting":
             if now_ms < worker.camp_wait_until_ms:
                 return
@@ -1175,6 +1176,8 @@ class WorkerManager:
             worker.state = "resting"
             worker.camp_wait_until_ms = int(now_ms) + SAWYER_REST_MS
             worker.idle = False
+            return
+        if not active:
             return
         if getattr(sawmill, "input_amount", lambda: 0)() <= 0:
             return

@@ -31,6 +31,9 @@ FORESTER_TARGET_RANDOM_TRIES = 3
 FORESTER_TARGET_RETRY_MS = 1_000
 FORESTER_RETURN_RETRY_MS = 3_000
 CARRIER_INTERACT_MS = 2_000
+SAWMILL_BASE_CYCLE_MS = 30_000
+SAWMILL_MIN_CYCLE_MS = 5_000
+SAWYER_REST_MS = 10_000
 MOVE_SPEED_PER_LEVEL = 0.05
 GATHER_SPEED_PER_LEVEL = 0.05
 
@@ -1132,6 +1135,13 @@ class WorkerManager:
         return True
 
     @staticmethod
+    def _sawmill_cycle_duration_ms(sawmill: Any) -> int:
+        level = max(1, int(getattr(sawmill, "level", 1)))
+        mult = 1.0 - 0.02 * float(level - 1)
+        effective = int(round(SAWMILL_BASE_CYCLE_MS * mult))
+        return max(SAWMILL_MIN_CYCLE_MS, effective)
+
+    @staticmethod
     def _update_sawyer(worker: Worker, now_ms: int, world: Any) -> None:
         _ = world
         sawmill = worker.assigned_building
@@ -1140,17 +1150,41 @@ class WorkerManager:
         if sawmill.is_under_construction or not getattr(sawmill, "active", False):
             return
         if worker.state == "resting":
+            if now_ms < worker.camp_wait_until_ms:
+                return
+            worker.state = "working"
+            worker.camp_wait_until_ms = 0
+            worker.idle = False
+        if worker.state == "resting":
+            return
+        if worker.state == "processing":
+            started = int(getattr(sawmill, "processing_started_ms", 0))
+            if started <= 0:
+                worker.state = "working"
+                return
+            duration = WorkerManager._sawmill_cycle_duration_ms(sawmill)
+            sawmill.processing_duration_ms = duration
+            if now_ms - started < duration:
+                return
+            if getattr(sawmill, "input_amount", lambda: 0)() > 0 and getattr(
+                sawmill, "output_amount", lambda: 0
+            )() < getattr(sawmill, "output_capacity", lambda: 0)():
+                sawmill.take_wood_in(1)
+                sawmill.add_boards_out(1)
+            sawmill.processing_started_ms = 0
+            worker.state = "resting"
+            worker.camp_wait_until_ms = int(now_ms) + SAWYER_REST_MS
+            worker.idle = False
             return
         if getattr(sawmill, "input_amount", lambda: 0)() <= 0:
             return
         if getattr(sawmill, "output_amount", lambda: 0)() >= getattr(sawmill, "output_capacity", lambda: 0)():
             return
-        if worker.state == "processing":
-            return
         if worker.state != "working":
             return
         if int(getattr(sawmill, "processing_started_ms", 0)) <= 0:
             sawmill.processing_started_ms = int(now_ms)
+        sawmill.processing_duration_ms = WorkerManager._sawmill_cycle_duration_ms(sawmill)
         worker.state = "processing"
         worker.idle = False
 

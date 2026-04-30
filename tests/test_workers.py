@@ -185,6 +185,59 @@ def test_sawyer_does_not_start_processing_when_output_full() -> None:
     assert sawmill.processing_started_ms == 0
 
 
+def test_sawyer_processing_completes_consumes_input_and_rests() -> None:
+    world = World(world_seed=0)
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    sawmill = registry.place(Sawmill, near_town_hall_tile(15, 10))
+    sawmill.construction_site = None
+    sawmill.add_wood_in(1)
+    wm = WorkerManager(registry, now_ms_fn=lambda: 0)
+    sawyer = Worker("SAWYER")
+    wm.add_worker(sawyer)
+    wm.assign_to_building(sawyer, sawmill)
+    sawyer.state = "working"
+    sawyer.idle = False
+
+    wm.update(1_000)
+    assert sawyer.state == "processing"
+    assert sawmill.processing_started_ms == 1_000
+
+    wm.update(31_000)
+
+    assert sawmill.input_amount() == 0
+    assert sawmill.output_amount() == 1
+    assert sawmill.processing_started_ms == 0
+    assert sawyer.state == "resting"
+    assert sawyer.camp_wait_until_ms == 41_000
+
+
+def test_sawyer_cycle_duration_scales_by_level() -> None:
+    world = World(world_seed=0)
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    sawmill = registry.place(Sawmill, near_town_hall_tile(16, 10))
+    sawmill.construction_site = None
+    sawmill.level = 5
+    sawmill.add_wood_in(1)
+    wm = WorkerManager(registry, now_ms_fn=lambda: 0)
+    sawyer = Worker("SAWYER")
+    wm.add_worker(sawyer)
+    wm.assign_to_building(sawyer, sawmill)
+    sawyer.state = "working"
+    sawyer.idle = False
+
+    wm.update(1_000)
+    # Level 5 => 30_000 * (1 - 0.02 * 4) = 27_600ms.
+    wm.update(28_000)
+    assert sawyer.state == "processing"
+    assert sawmill.output_amount() == 0
+
+    wm.update(28_700)
+    assert sawyer.state == "resting"
+    assert sawmill.output_amount() == 1
+
+
 def test_hired_worker_has_characteristics_defaults() -> None:
     world = World(world_seed=0)
     registry = BuildingRegistry(world)

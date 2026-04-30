@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 20 — Sawmill processing chain (boards)
-- **Next Task:** T214 — implement sawmill cycle duration scaling and completion effects
-- **Last Completed:** T213 — core SAWYER production-cycle start updater
-- **Total Progress:** 213 / 220 (Phase 19: 25 / 25 tasks done; Phase 20: 4 / 11 tasks done)
+- **Next Task:** T215 — enforce sawmill pause/stop gating and mid-cycle inactive behavior
+- **Last Completed:** T214 — sawmill cycle duration scaling and completion effects
+- **Total Progress:** 214 / 220 (Phase 19: 25 / 25 tasks done; Phase 20: 5 / 11 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -195,7 +195,7 @@
 ### 20.3 Sawmill runtime production cycle
 
 - [x] **T213**: Add failing cycle tests and implement core sawmill worker updater: if assigned `SAWYER`, sawmill active, `wood_in > 0`, `boards_out` not full, and worker not resting, start processing cycle with progress timer.
-- [ ] **T214**: Implement processing duration math: base cycle `30_000 ms`, reduced by `2%` per level above 1 (`effective = 30_000 * (1 - 0.02*(L-1))`, clamped to sensible minimum). On completion: `wood_in -= 1`, `boards_out += 1`, then worker enters mandatory rest `10_000 ms`.
+- [x] **T214**: Implement processing duration math: base cycle `30_000 ms`, reduced by `2%` per level above 1 (`effective = 30_000 * (1 - 0.02*(L-1))`, clamped to sensible minimum). On completion: `wood_in -= 1`, `boards_out += 1`, then worker enters mandatory rest `10_000 ms`.
 - [ ] **T215**: Enforce pause/stop rules with tests: no new cycle starts when sawmill inactive, input empty, output full, worker absent, or building under construction/upgrading. If inactive mid-cycle, current cycle behavior should follow existing production convention (finish current cycle, block next) and be tested explicitly.
 
 ### 20.4 Carrier task generation and priorities
@@ -262,6 +262,7 @@
 | 2026-04-30 | T211 | Implemented `Sawmill` split storage scaffold (`wood_in`, `boards_out`) with level-scaled capacities, active toggle, bounded add/take APIs, and panel-facing helper methods (`input_amount`, `output_amount`, capacities, progress state/progress ratio). Added `tests/test_sawmill.py` and created `assets/buildings/sawmill/.gitkeep` asset hook folder for disk-first sprite path fallback. | Provides concrete sawmill domain shape for upcoming SAWYER runtime cycle and carrier transport tasks while preserving fallback rendering behavior. |
 | 2026-04-30 | T212 | Added `SAWYER` as a first-class worker type across domain/UI constants: `WorkerManager` now maps `SAWYER -> SAWMILL` for assignment and hiring, School panel shows a Sawyer hire row/button, and worker icon mapping includes sawyer fallback assets. Added coverage for sawyer school spawn, sawyer-only sawmill reassignment, and school-panel sawyer hire action. | Unlocks School-trained sawmill staffing and guarantees SAWYER assignment is constrained to SAWMILL before implementing runtime production cycle behavior in T213+. |
 | 2026-04-30 | T213 | Added RED/green worker tests for sawmill cycle start and implemented `WorkerManager._update_sawyer` dispatch: when assigned SAWYER is in a ready SAWMILL (`active`, not under construction, `wood_in > 0`, `boards_out < capacity`, worker not resting), update starts processing by setting `processing_started_ms` and worker state `processing`. | Establishes the first runtime production state transition for SAWMILL so T214 can safely add cycle-completion math and rest behavior on top. |
+| 2026-04-30 | T214 | Implemented SAWMILL cycle completion behavior in `WorkerManager._update_sawyer`: per-cycle duration scales by level (`30_000 * (1 - 0.02*(L-1))`, clamped), completion consumes one `wood_in`, produces one `boards_out`, resets processing timer, and enforces mandatory `SAWYER` rest (`10_000ms`) before next cycle. Added tests for completion/rest + level timing. Stabilized one existing stone smoke placement check to search any valid adjacent tile under current stone cluster patterns so full-suite regression remains deterministic. | Completes runtime cycle timing/effects foundation for sawmill production and preserves global test reliability needed for Ralph full-suite gating. |
 
 ## Issues & Blockers
 

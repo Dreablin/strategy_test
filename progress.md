@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 21 — Wheat fields + farmer field cycle
-- **Next Task:** T230 — Farmer assignment lifecycle RED tests
-- **Last Completed:** T229 — Harvest reset runtime integration
-- **Total Progress:** 229 / 245 (Phase 19: 25 / 25 done; Phase 20: 11 / 11 done; Phase 21: 9 / 25 done)
+- **Next Task:** T231 — Farmer target priority RED tests
+- **Last Completed:** T230 — Farmer assignment lifecycle RED tests
+- **Total Progress:** 230 / 245 (Phase 19: 25 / 25 done; Phase 20: 11 / 11 done; Phase 21: 10 / 25 done)
 
 > **Archive:** Full history and completed phases are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -39,7 +39,7 @@
 
 ### 21.4 Farmer behavior cycle (Farm worker AI)
 
-- [ ] **T230**: Add RED tests for farmer assignment lifecycle: after hire farmer enters farm, rests, then starts field work cycles from farm home base.
+- [x] **T230**: Add RED tests for farmer assignment lifecycle: after hire farmer enters farm, rests, then starts field work cycles from farm home base.
 - [ ] **T231**: Add RED tests for farmer target selection priority within radius **10** (Chebyshev) from assigned farm:  
   1) pick ripe field (`PHASE_4`) first;  
   2) if none, pick empty field (`EMPTY`) for sowing;  
@@ -104,3 +104,4 @@
 - T227 RED check: `pytest -q` fails on missing `game.buildings.field.advance_wheat_growth` timing helper (45_000 ms steps).
 - T228 GREEN check: `pytest -q` passes with deterministic 45-second phase advancement helper (`advance_wheat_growth`) and full suite green.
 - T229 GREEN check: `pytest -q` passes with immediate harvest reset (`PHASE_4 -> EMPTY`) and sow-eligibility helper for same/next cycle selection.
+- T230 RED check: `pytest -q` fails because farmer stays generic `working` and does not enter farm rest/field-cycle states.

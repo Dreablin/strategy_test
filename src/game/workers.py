@@ -457,6 +457,20 @@ class WorkerManager:
         for worker in self._workers:
             if worker.assigned_building is not building:
                 continue
+            if building.type_tag == "FARM":
+                if worker.state in {"moving", "going_to_field", "returning"}:
+                    return "moving"
+                if worker.state == "sowing":
+                    return "sowing"
+                if worker.state == "harvesting":
+                    return "harvesting"
+                if worker.state in {"resting", "working_field"}:
+                    return "resting"
+                if worker.state == "working":
+                    now_ms = int(self._now_ms_fn())
+                    if worker.camp_wait_until_ms > now_ms:
+                        return "resting"
+                return "assigned"
             if worker.type_tag == "FORESTER":
                 if worker.state == "moving":
                     return "on the way"
@@ -495,6 +509,22 @@ class WorkerManager:
 
         if hasattr(building, "active") and not bool(getattr(building, "active")):
             return "Inactive"
+        if building.type_tag == "FARM":
+            if hasattr(building, "is_storage_full") and building.is_storage_full():
+                return "Storage full"
+            if worker.state in {"moving", "going_to_field", "returning"}:
+                return "Moving"
+            if worker.state == "sowing":
+                return "Sowing"
+            if worker.state == "harvesting":
+                return "Harvesting"
+            if worker.state in {"resting", "working_field"}:
+                return "Resting" if self._farm_has_actionable_field(building) else "No fields in radius"
+            if worker.state == "working":
+                now_ms = int(self._now_ms_fn())
+                if worker.camp_wait_until_ms > now_ms:
+                    return "Resting"
+            return "Ready"
         if building.type_tag == "SAWMILL":
             if worker.state == "resting":
                 return "Resting"
@@ -954,6 +984,8 @@ class WorkerManager:
                 task.source.warehouse_amount(task.resource)  # type: ignore[attr-defined]
             ) > 0
             if not has_storage_source and not has_warehouse_source:
+                if task.resource == "wheat" and task.source.type_tag == "FARM":
+                    stale_indices.append(idx)
                 continue
             eligible.append((idx, task))
         for idx in reversed(stale_indices):
@@ -1583,6 +1615,21 @@ class WorkerManager:
         if selected_tile is None:
             return None
         return tile_to_field.get(selected_tile)
+
+    def _farm_has_actionable_field(self, farm: Building) -> bool:
+        if self._registry is None:
+            return False
+        farm_home = building_center_tile(farm)
+        for building in self._registry.all():
+            if building.type_tag != "FIELD" or building.is_under_construction or building.grid_pos is None:
+                continue
+            tile = (int(building.grid_pos[0]), int(building.grid_pos[1]))
+            if max(abs(tile[0] - farm_home[0]), abs(tile[1] - farm_home[1])) > FARMER_FIELD_RADIUS:
+                continue
+            phase = self._read_field_phase(building, tile=tile)
+            if phase in {WHEAT_EMPTY, WHEAT_PHASE_4}:
+                return True
+        return False
 
     def _read_field_phase(self, field: Building, *, tile: tuple[int, int] | None = None) -> str:
         pos = tile if tile is not None else field.grid_pos

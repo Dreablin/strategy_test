@@ -30,31 +30,32 @@ def test_world_boots_with_six_stone_clusters_one_on_th_ring_twenty() -> None:
 
 
 def test_stone_mine_placement_rejects_stone_tile_but_accepts_adjacent() -> None:
-    world = World()
+    world = World(world_seed=0)
     registry = BuildingRegistry(world)
     town_hall = registry.place(TownHall, town_hall_origin_tile())
     town_hall.level = 3
 
-    stone_tile, _stone = world.iter_stones()[0]
-    sx, sy = stone_tile
-    assert registry.can_place(StoneMine, (sx, sy)) is False
-
     placed = None
-    for y in range(sy - 4, sy + 5):
-        for x in range(sx - 4, sx + 5):
-            if not registry.can_place(StoneMine, (x, y)):
-                continue
-            bx, by = x, y
-            adjacent = False
-            for fy in range(by, by + 2):
-                for fx in range(bx, bx + 2):
-                    if max(abs(fx - sx), abs(fy - sy)) == 1:
-                        adjacent = True
+    for stone_tile, _stone in world.iter_stones():
+        sx, sy = stone_tile
+        assert registry.can_place(StoneMine, (sx, sy)) is False
+        for y in range(sy - 8, sy + 9):
+            for x in range(sx - 8, sx + 9):
+                if not registry.can_place(StoneMine, (x, y)):
+                    continue
+                bx, by = x, y
+                adjacent = False
+                for fy in range(by, by + 2):
+                    for fx in range(bx, bx + 2):
+                        if max(abs(fx - sx), abs(fy - sy)) == 1:
+                            adjacent = True
+                            break
+                    if adjacent:
                         break
                 if adjacent:
+                    placed = registry.place(StoneMine, (x, y))
                     break
-            if adjacent:
-                placed = registry.place(StoneMine, (x, y))
+            if placed is not None:
                 break
         if placed is not None:
             break
@@ -72,10 +73,12 @@ def test_stonecutter_cycle_toggle_upgrade_and_storage_smoke() -> None:
     town_hall = registry.place(TownHall, town_hall_origin_tile())
     town_hall.level = 3
     camp = registry.place(LumberCamp, near_town_hall_tile())
+    camp.construction_site = None
     gx, gy = camp.grid_pos  # type: ignore[assignment]
     for i in range(4):
         world._trees[(gx + 3 + i, gy)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
     mine = registry.place(StoneMine, near_town_hall_tile(14, 0))
+    mine.construction_site = None
     mx, my = mine.grid_pos  # type: ignore[assignment]
     world._stones[(mx + 3, my)] = Stone(units=10)  # noqa: SLF001
     world._stones[(mx + 4, my)] = Stone(units=10)  # noqa: SLF001
@@ -125,7 +128,8 @@ def test_stonecutter_cycle_toggle_upgrade_and_storage_smoke() -> None:
     # Lumberjack: upgrade camp and validate gather-speed bonus is applied.
     assert registry.upgrade_building(camp)
     assert camp in registry.all()
-    assert lumberjack.characteristics.gather_speed_mult == 1.05
+    assert camp.is_under_construction
+    assert lumberjack.state == "resting"
 
     # Storage-full gate: no new cycle starts until storage decreases.
     camp.stored = camp.storage_capacity()

@@ -2,6 +2,7 @@
 
 import pytest
 
+from game.construction import ConstructionSite
 from game.buildings.farm import Farm
 from game.config import town_hall_origin_tile
 from game.buildings.iron_mine import IronMine
@@ -64,20 +65,26 @@ def test_town_hall_max_level_10() -> None:
         TownHall(level=11)
 
 
-def test_upgrade_lumber_camp_is_free_and_increments_level() -> None:
+def test_upgrade_lumber_camp_starts_construction_to_level_2() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
     b = registry.place(LumberCamp, (11, 11))
+    b.construction_site = None
     assert registry.upgrade_building(b)
-    assert b.level == 2
+    assert b.level == 1
+    assert b.is_under_construction
+    assert b.construction_site is not None
+    assert b.construction_site.target_level == 2
 
 
-def test_upgrade_no_longer_depends_on_wallet_resources() -> None:
+def test_upgrade_no_longer_depends_on_wallet_resources_and_starts_construction() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
     b = registry.place(LumberCamp, (12, 12))
+    b.construction_site = None
     assert registry.upgrade_building(b)
-    assert b.level == 2
+    assert b.level == 1
+    assert b.is_under_construction
 
 
 def test_upgrade_allowed_for_town_hall_below_cap() -> None:
@@ -88,20 +95,24 @@ def test_upgrade_allowed_for_town_hall_below_cap() -> None:
     assert th.level == 2
 
 
-def test_upgrade_succeeds_for_stone_mine_with_town_hall_tech_gate() -> None:
+def test_upgrade_succeeds_for_stone_mine_with_town_hall_tech_gate_and_starts_construction() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
     th = registry.place(TownHall, town_hall_origin_tile())
     th.level = 3
     b = registry.place(StoneMine, (10, 10))
+    b.construction_site = None
     assert registry.upgrade_building(b)
-    assert b.level == 2
+    assert b.level == 1
+    assert b.is_under_construction
+    assert b.construction_site is not None
+    assert b.construction_site.target_level == 2
 
 
 def test_upgrade_rejected_at_max_level() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
-    b = registry.place(LumberCamp, (18, 18))
+    b = registry.place(TownHall, town_hall_origin_tile())
     for _ in range(9):
         assert registry.upgrade_building(b)
     assert b.level == 10
@@ -157,3 +168,26 @@ def test_town_hall_exposes_warehouse_api() -> None:
     assert th.warehouse_amount("boards") == 3
     th.take_from_warehouse("wood", 1)
     assert th.warehouse_amount("wood") == 1
+
+
+@pytest.mark.parametrize("cls", [LumberCamp, StoneMine, IronMine, Farm, TownHall])
+def test_buildings_default_to_not_under_construction(cls: type) -> None:
+    building = cls(level=1, grid_pos=(10, 10))
+    assert building.construction_site is None
+    assert building.is_under_construction is False
+
+
+def test_building_reports_under_construction_when_site_is_set() -> None:
+    camp = LumberCamp(level=1, grid_pos=(10, 10))
+    camp.construction_site = ConstructionSite(
+        required_resources={"wood": 2},
+        delivered_resources={},
+        build_time_ms=20_000,
+        build_started_ms=None,
+        builder=None,
+        target_level=2,
+    )
+    assert camp.is_under_construction is True
+    # Existing subclass fields/methods still behave with construction_site present.
+    camp.add_to_storage(1)
+    assert camp.stored == 1

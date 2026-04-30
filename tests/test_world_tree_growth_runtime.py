@@ -14,6 +14,15 @@ def _clear_resource_layers(world: World) -> None:
     world._stones.clear()  # noqa: SLF001
 
 
+def test_world_generated_trees_are_adult_without_growth_timer() -> None:
+    world = World(world_seed=42)
+    trees = list(world.iter_alive_trees())
+    assert trees
+    for _pos, tree in trees:
+        assert tree.stage == TreeStage.ADULT
+        assert tree.next_growth_at_ms is None
+
+
 def test_plant_tree_creates_sapling_on_valid_free_tile() -> None:
     world = World(world_seed=0)
     _clear_resource_layers(world)
@@ -24,6 +33,15 @@ def test_plant_tree_creates_sapling_on_valid_free_tile() -> None:
     assert planted.species == 2
     assert planted.next_growth_at_ms == 31_000
     assert world.tree_at(5, 5) is planted
+
+
+def test_plant_tree_without_species_uses_random_species(monkeypatch) -> None:
+    world = World(world_seed=0)
+    _clear_resource_layers(world)
+    monkeypatch.setattr("game.world.random.randint", lambda _a, _b: 1)
+    planted = world.plant_tree(6, 6, now_ms=0)
+    assert planted is not None
+    assert planted.species == 1
 
 
 def test_plant_tree_rejects_occupied_stone_existing_and_th_tiles() -> None:

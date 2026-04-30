@@ -10,11 +10,11 @@ def test_config_constants_match_spec() -> None:
     assert config.GRID_SIZE == 110
     assert config.GATHER_RESOURCE_SEARCH_RADIUS == 20
     assert config.TOWN_HALL_STARTING_WAREHOUSE == {
-        "wheat": 200,
-        "wood": 200,
-        "stone": 0,
-        "iron": 0,
-        "boards": 0,
+        "wheat": 15,
+        "wood": 15,
+        "stone": 10,
+        "iron": 5,
+        "boards": 10,
     }
     assert config.TOWN_HALL_MIN_LEVEL_FOR_BUILDING["STONE_MINE"] == 1
     assert config.TOWN_HALL_MIN_LEVEL_FOR_HIRE["MINER"] == 5

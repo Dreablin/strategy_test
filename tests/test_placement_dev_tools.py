@@ -40,3 +40,19 @@ def test_dev_stone_tool_places_stone_on_free_tile() -> None:
     assert placement.try_place(surface, _cell_center_screen(surface, world, 13, 12))
     gx, gy = placement.hover_grid  # type: ignore[misc]
     assert world.stone_at(gx, gy) is not None
+
+
+def test_dev_stone_tool_uses_random_variant(monkeypatch) -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World(world_seed=2)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    placement = PlacementController(world, registry)
+    placement.select_dev("DEV_STONE")
+    monkeypatch.setattr("game.ui.placement.random.randint", lambda _a, _b: 3)
+    assert placement.try_place(surface, _cell_center_screen(surface, world, 15, 12))
+    gx, gy = placement.hover_grid  # type: ignore[misc]
+    stone = world.stone_at(gx, gy)
+    assert stone is not None
+    assert stone.variant == 3

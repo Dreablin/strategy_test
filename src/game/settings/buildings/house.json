@@ -1,0 +1,15 @@
+{
+  "building_type": "HOUSE",
+  "levels": {
+    "1": {"cost": {"wood": 2}, "build_time_ms": 30000},
+    "2": {"cost": {"boards": 2}, "build_time_ms": 30000},
+    "3": {"cost": {"boards": 3, "stone": 1}, "build_time_ms": 30000},
+    "4": {"cost": {"boards": 4, "stone": 2}, "build_time_ms": 30000},
+    "5": {"cost": {"boards": 5, "stone": 3}, "build_time_ms": 30000},
+    "6": {"cost": {"boards": 6, "stone": 4}, "build_time_ms": 30000},
+    "7": {"cost": {"boards": 7, "stone": 5, "iron": 1}, "build_time_ms": 30000},
+    "8": {"cost": {"boards": 8, "stone": 6, "iron": 2}, "build_time_ms": 30000},
+    "9": {"cost": {"boards": 9, "stone": 7, "iron": 3}, "build_time_ms": 30000},
+    "10": {"cost": {"boards": 10, "stone": 8, "iron": 4}, "build_time_ms": 30000}
+  }
+}

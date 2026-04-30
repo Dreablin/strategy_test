@@ -1,4 +1,4 @@
-"""Tree domain models and deterministic stage selection."""
+"""Tree domain models and growth."""
 
 from __future__ import annotations
 
@@ -50,9 +50,4 @@ class Tree:
 
     def remove(self) -> None:
         self.cut_down()
-
-
-def stage_from_tile_seed(seed: int) -> TreeStage:
-    """Pick a deterministic growth stage from any integer tile seed."""
-    return TreeStage(seed % len(TreeStage))
 

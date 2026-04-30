@@ -8,6 +8,7 @@ import pygame
 
 import game.assets as assets_mod
 from game.assets import (
+    building_sprite_construction,
     building_sprite,
     building_sprite_anchor,
     clear_asset_caches,
@@ -16,6 +17,8 @@ from game.assets import (
     population_icon,
     resource_icon,
     tree_sprite,
+    tree_sprite_anchor,
+    tree_sprite_offset,
     worker_dot,
     worker_ui_icon,
 )
@@ -196,6 +199,30 @@ def test_building_sprite_applies_scale_and_anchor_norm(tmp_path, monkeypatch) ->
     clear_asset_caches()
 
 
+def test_building_sprite_construction_prefers_level_file_then_generic(tmp_path, monkeypatch) -> None:
+    root = tmp_path / "buildings"
+    farm_dir = root / "farm"
+    _write_png(farm_dir / "construction.png", (20, 20), (200, 10, 10))
+    _write_png(farm_dir / "construction_2.png", (34, 26), (10, 200, 10))
+    monkeypatch.setattr(assets_mod, "_BUILDINGS_ROOT", root)
+    clear_asset_caches()
+    spr = building_sprite_construction("FARM", 2)
+    assert spr.get_size() == (34, 26)
+    clear_asset_caches()
+
+
+def test_building_sprite_construction_falls_back_to_procedural_overlay(tmp_path, monkeypatch) -> None:
+    root = tmp_path / "buildings"
+    monkeypatch.setattr(assets_mod, "_BUILDINGS_ROOT", root)
+    clear_asset_caches()
+    spr = building_sprite_construction("FORESTER_HUT", 3)
+    _assert_nonempty_surface(spr)
+    # Fallback should still be visibly non-opaque after alpha blend.
+    sample = spr.get_at((spr.get_width() // 2, spr.get_height() // 2))
+    assert sample.a < 255
+    clear_asset_caches()
+
+
 def test_building_meta_bom_is_accepted(tmp_path, monkeypatch) -> None:
     root = tmp_path / "buildings"
     farm_dir = root / "farm"
@@ -225,4 +252,31 @@ def test_tree_sprite_falls_back_procedural_when_stage_missing(tmp_path, monkeypa
     clear_asset_caches()
     spr = tree_sprite("adult")
     _assert_nonempty_surface(spr)
+    clear_asset_caches()
+
+
+def test_tree_sprite_applies_species_stage_meta_scale_and_anchor(tmp_path, monkeypatch) -> None:
+    root = tmp_path / "trees"
+    _write_png(root / "species_2" / "sapling" / "default.png", (100, 80), (70, 140, 90))
+    (root / "asset_meta.json").write_text(
+        (
+            "{"
+            "\"default\":{\"scale\":1.0,\"anchor_norm\":[0.5,1.0]},"
+            "\"stages\":{},"
+            "\"species\":{"
+            "\"2\":{\"default\":{\"scale\":1.0,\"anchor_norm\":[0.5,1.0]},"
+            "\"stages\":{\"sapling\":{\"scale\":0.5,\"anchor_norm\":[0.25,0.75],\"offset_px\":[3,-2]}}}"
+            "}"
+            "}"
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(assets_mod, "_TREES_ROOT", root)
+    clear_asset_caches()
+    spr = tree_sprite("sapling", species=2)
+    ax, ay = tree_sprite_anchor("sapling", species=2)
+    ox, oy = tree_sprite_offset("sapling", species=2)
+    assert spr.get_size() == (50, 40)
+    assert (ax, ay) == (12, 30)
+    assert (ox, oy) == (3, -2)
     clear_asset_caches()

@@ -5,7 +5,8 @@ from __future__ import annotations
 from typing import Type
 
 from game.buildings.base import Building
-from game.config import TOWN_HALL_MIN_LEVEL_FOR_BUILDING
+from game.construction import ConstructionSite
+from game.config import CONSTRUCTION_REQUIREMENTS, TOWN_HALL_MIN_LEVEL_FOR_BUILDING
 from game.housing import current_population, housing_house, max_population
 from game.world import World
 from game.workers import WorkerManager
@@ -99,6 +100,18 @@ class BuildingRegistry:
             for tx in range(gx, gx + w):
                 self._world.remove_tree(tx, ty)
         inst = cls(level=1, grid_pos=grid_pos)
+        req_by_level = CONSTRUCTION_REQUIREMENTS.get(cls.type_tag)
+        if req_by_level is not None:
+            level1 = req_by_level.get(1)
+            if level1 is not None:
+                inst.construction_site = ConstructionSite(
+                    required_resources=dict(level1.cost),
+                    delivered_resources={},
+                    build_time_ms=int(level1.build_time_ms),
+                    build_started_ms=None,
+                    builder=None,
+                    target_level=1,
+                )
         self._world.mark_occupied(gx, gy, w, h)
         self._buildings.append(inst)
         return inst
@@ -124,15 +137,53 @@ class BuildingRegistry:
         self._buildings.remove(building)
 
     def upgrade_building(self, building: Building) -> bool:
-        """Upgrade is free: increment ``level`` and refresh cached previews."""
+        """Start construction for upgrade when config exists; otherwise upgrade instantly."""
         if building not in self._buildings:
             return False
         cls = type(building)
         if building.level >= cls.max_level():
             return False
-        building.level += 1
+
+        if building.construction_site is not None:
+            return False
+        next_level = building.level + 1
+        req_by_level = CONSTRUCTION_REQUIREMENTS.get(cls.type_tag)
+        if req_by_level is None or next_level not in req_by_level:
+            building.level += 1
+            if self._worker_manager is not None:
+                self._worker_manager.refresh_building_bonuses(building)
+            return True
+
+        spec = req_by_level[next_level]
+        resting_worker = None
+        if hasattr(building, "set_active"):
+            building.set_active(False)
+        elif hasattr(building, "active"):
+            setattr(building, "active", False)
         if self._worker_manager is not None:
-            self._worker_manager.refresh_building_bonuses(building)
+            for worker in self._worker_manager.workers():
+                if worker.assigned_building is building:
+                    bx, by = building.grid_pos if building.grid_pos is not None else (0, 0)
+                    bw, bh = type(building).footprint
+                    cx = bx + bw // 2
+                    cy = by + bh // 2
+                    worker.state = "resting"
+                    worker.current_tile = (cx, cy)
+                    worker.stand_tile = (cx, cy)
+                    worker.target_tile = (cx, cy)
+                    worker.path = []
+                    worker.segment_progress = 0.0
+                    resting_worker = worker
+                    break
+        building.construction_site = ConstructionSite(
+            required_resources=dict(spec.cost),
+            delivered_resources={},
+            build_time_ms=int(spec.build_time_ms),
+            build_started_ms=None,
+            builder=None,
+            target_level=next_level,
+            resting_worker=resting_worker,
+        )
         return True
 
     def _footprint_inside_grass(self, gx: int, gy: int, w: int, h: int) -> bool:

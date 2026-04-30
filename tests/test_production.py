@@ -11,10 +11,13 @@ from game.workers import WorkerManager
 
 def test_stone_mine_is_staffed_after_hire_and_reassign() -> None:
     world = World(world_seed=2)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
     registry = BuildingRegistry(world)
     th = registry.place(TownHall, town_hall_origin_tile())
     th.level = 3
     camp = registry.place(StoneMine, (10, 10))
+    camp.construction_site = None
     wm = WorkerManager(registry)
     assert wm.hire("STONECUTTER") is not None
     wm.reassign_all()
@@ -27,6 +30,7 @@ def test_staffed_stone_mine_can_upgrade() -> None:
     th = registry.place(TownHall, town_hall_origin_tile())
     th.level = 3
     camp = registry.place(StoneMine, (10, 10))
+    camp.construction_site = None
     wm = WorkerManager(registry)
     assert wm.hire("STONECUTTER") is not None
     wm.reassign_all()
@@ -39,7 +43,8 @@ def test_staffed_level1_stone_mine_has_no_passive_tick_production() -> None:
     workers = WorkerManager(registry)
     th = registry.place(TownHall, town_hall_origin_tile())
     th.level = 3
-    registry.place(StoneMine, (10, 10))
+    mine = registry.place(StoneMine, (10, 10))
+    mine.construction_site = None
     assert workers.hire("STONECUTTER") is not None
     workers.reassign_all()
     workers.update(120_000)
@@ -56,6 +61,7 @@ def test_upgraded_stone_mine_still_has_no_passive_tick_production() -> None:
     th = registry.place(TownHall, town_hall_origin_tile())
     th.level = 3
     camp = registry.place(StoneMine, (10, 10))
+    camp.construction_site = None
     assert workers.hire("STONECUTTER") is not None
     workers.reassign_all()
     workers.update(120_000)
@@ -75,6 +81,7 @@ def test_moving_worker_does_not_produce_until_working() -> None:
     th = registry.place(TownHall, town_hall_origin_tile())
     th.level = 3
     camp = registry.place(StoneMine, near_town_hall_tile(10, 4))
+    camp.construction_site = None
     assert workers.hire("STONECUTTER") is not None
     workers.reassign_all()
 
@@ -96,6 +103,7 @@ def test_farm_has_no_passive_income_even_when_staffed() -> None:
     town_hall = registry.place(TownHall, town_hall_origin_tile())
     town_hall.level = 5
     _farm = registry.place(Farm, (10, 10))
+    _farm.construction_site = None
     workers = WorkerManager(registry)
     worker = workers.hire("FARMER")
     assert worker is not None
@@ -112,6 +120,7 @@ def test_iron_mine_has_no_passive_income_even_when_staffed() -> None:
     th = registry.place(TownHall, town_hall_origin_tile())
     th.level = 5
     _mine = registry.place(IronMine, (10, 10))
+    _mine.construction_site = None
     workers = WorkerManager(registry)
     assert workers.hire("MINER") is not None
     workers.reassign_all()

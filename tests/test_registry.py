@@ -7,9 +7,10 @@ import pytest
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.iron_mine import IronMine
 from game.buildings.stone_mine import StoneMine
+from game.buildings.sawmill import Sawmill
 from game.buildings.town_hall import TownHall
 from game.buildings.registry import BuildingRegistry
-from game.config import GRID_SIZE, near_town_hall_tile, town_hall_origin_tile
+from game.config import CONSTRUCTION_REQUIREMENTS, GRID_SIZE, near_town_hall_tile, town_hall_origin_tile
 from game.world import World
 from game.workers import Worker, WorkerManager
 
@@ -187,6 +188,45 @@ def test_tree_presence_does_not_bypass_overlap_or_spacing_rules(
     assert not registry.can_place(StoneMine, (12, 10))
 
 
+def test_place_lumber_camp_starts_under_construction_with_level1_requirements(
+    registry: BuildingRegistry,
+) -> None:
+    camp = registry.place(LumberCamp, (10, 10))
+    assert camp.is_under_construction
+    assert camp.construction_site is not None
+    expected = CONSTRUCTION_REQUIREMENTS["LUMBER_CAMP"][1]
+    assert camp.construction_site.required_resources == expected.cost
+
+
+def test_place_town_hall_has_no_construction_site(registry: BuildingRegistry) -> None:
+    th = registry.place(TownHall, town_hall_origin_tile())
+    assert th.is_under_construction is False
+    assert th.construction_site is None
+
+
+def test_place_sawmill_starts_under_construction_with_level1_requirements(
+    registry: BuildingRegistry,
+) -> None:
+    sawmill = registry.place(Sawmill, (16, 16))
+    assert sawmill.is_under_construction
+    assert sawmill.construction_site is not None
+    expected = CONSTRUCTION_REQUIREMENTS["SAWMILL"][1]
+    assert sawmill.construction_site.required_resources == expected.cost
+
+
+def test_upgrade_sawmill_starts_construction_for_level2() -> None:
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    sawmill = registry.place(Sawmill, (22, 22))
+    sawmill.construction_site = None
+
+    assert registry.upgrade_building(sawmill)
+    assert sawmill.level == 1
+    assert sawmill.is_under_construction
+    assert sawmill.construction_site is not None
+    assert sawmill.construction_site.target_level == 2
+
+
 def test_cannot_place_when_footprint_covers_stone_tile() -> None:
     from game.stones import Stone
 
@@ -212,54 +252,78 @@ def test_upgrade_keeps_building_in_registry_list() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
     camp = registry.place(LumberCamp, (12, 12))
+    camp.construction_site = None
 
     assert registry.upgrade_building(camp)
     assert camp in registry.all()
+    assert camp.level == 1
+    assert camp.is_under_construction
+    assert camp.construction_site is not None
+    assert camp.construction_site.target_level == 2
 
 
-def test_upgrade_refreshes_assigned_worker_gather_speed_bonus() -> None:
+def test_upgrade_assigned_worker_transitions_to_resting_inside_building() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
     camp = registry.place(LumberCamp, (14, 14))
+    camp.construction_site = None
     workers = WorkerManager(registry)
     worker = Worker("LUMBERJACK")
     workers.add_worker(worker)
     workers.assign_to_building(worker, camp)
-    assert worker.characteristics.gather_speed_mult == pytest.approx(1.0)
 
     assert registry.upgrade_building(camp)
-    assert worker.characteristics.gather_speed_mult == pytest.approx(1.05)
+    assert worker.assigned_building is camp
+    assert worker.idle is False
+    assert worker.state == "resting"
+    assert worker.current_tile == (15, 15)
 
 
-def test_consecutive_upgrades_stack_additively_for_assigned_worker() -> None:
+def test_upgrade_pauses_active_building_and_parks_gathering_worker_inside() -> None:
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    camp = registry.place(LumberCamp, (14, 14))
+    camp.construction_site = None
+    workers = WorkerManager(registry)
+    worker = Worker("LUMBERJACK")
+    workers.add_worker(worker)
+    workers.assign_to_building(worker, camp)
+    worker.state = "going_to_tree"
+    worker.current_tile = (20, 20)
+
+    assert camp.active is True
+    assert registry.upgrade_building(camp)
+
+    assert camp.active is False
+    assert worker.assigned_building is camp
+    assert worker.state == "resting"
+    assert worker.current_tile == (15, 15)
+    assert worker.stand_tile == (15, 15)
+
+
+def test_upgrade_rejected_while_building_already_under_construction() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
     camp = registry.place(LumberCamp, (18, 18))
-    workers = WorkerManager(registry)
-    worker = Worker("LUMBERJACK")
-    workers.add_worker(worker)
-    workers.assign_to_building(worker, camp)
-
+    camp.construction_site = None
     assert registry.upgrade_building(camp)
-    assert registry.upgrade_building(camp)
-    assert worker.characteristics.move_speed_mult == pytest.approx(1.10)
-    assert worker.characteristics.gather_speed_mult == pytest.approx(1.10)
+    assert camp.is_under_construction
+    assert not registry.upgrade_building(camp)
 
 
-def test_demolish_after_upgrades_clears_move_and_gather_bonus_sources() -> None:
+def test_demolish_after_upgrade_construction_still_clears_worker_assignment() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
     camp = registry.place(LumberCamp, near_town_hall_tile())
+    camp.construction_site = None
     workers = WorkerManager(registry)
     worker = Worker("LUMBERJACK")
     workers.add_worker(worker)
     workers.assign_to_building(worker, camp)
 
     assert registry.upgrade_building(camp)
-    assert registry.upgrade_building(camp)
-    assert worker.characteristics.move_speed_mult == pytest.approx(1.10)
-    assert worker.characteristics.gather_speed_mult == pytest.approx(1.10)
+    assert camp.is_under_construction
 
     registry.demolish(camp, workers)
-    assert worker.characteristics.move_speed_mult == pytest.approx(1.0)
-    assert worker.characteristics.gather_speed_mult == pytest.approx(1.0)
+    assert worker.assigned_building is None
+    assert worker.idle

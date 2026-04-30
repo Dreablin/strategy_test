@@ -16,6 +16,7 @@ from game.config import (
     TOWN_HALL_MIN_LEVEL_FOR_HIRE,
     WORKER_TILE_TRAVEL_MS,
 )
+from game.construction import complete_construction
 from game.housing import current_population, max_population
 from game.pathfinding import find_path_bfs
 from game.world import find_nearest_free_stone, find_nearest_free_tree
@@ -30,6 +31,9 @@ FORESTER_TARGET_RANDOM_TRIES = 3
 FORESTER_TARGET_RETRY_MS = 1_000
 FORESTER_RETURN_RETRY_MS = 3_000
 CARRIER_INTERACT_MS = 2_000
+SAWMILL_BASE_CYCLE_MS = 30_000
+SAWMILL_MIN_CYCLE_MS = 5_000
+SAWYER_REST_MS = 10_000
 MOVE_SPEED_PER_LEVEL = 0.05
 GATHER_SPEED_PER_LEVEL = 0.05
 
@@ -39,6 +43,91 @@ class TransportTask:
     resource: str
     source: Building
     target: Building
+    priority: int = 0
+
+
+def construction_transport_tasks(registry: Any) -> list[TransportTask]:
+    """Build high-priority transport tasks from Town Hall to construction sites."""
+    if registry is None:
+        return []
+    buildings = list(registry.all())
+    town_hall = next((b for b in buildings if b.type_tag == "TOWN_HALL"), None)
+    if town_hall is None or not hasattr(town_hall, "warehouse_amount"):
+        return []
+    tasks: list[TransportTask] = []
+    for building in buildings:
+        if not getattr(building, "is_under_construction", False):
+            continue
+        site = getattr(building, "construction_site", None)
+        if site is None:
+            continue
+        for resource, need in site.remaining_resources().items():
+            available = int(town_hall.warehouse_amount(resource))
+            count = min(int(need), max(0, available))
+            for _ in range(count):
+                tasks.append(
+                    TransportTask(
+                        resource=str(resource),
+                        source=town_hall,
+                        target=building,
+                        priority=10,
+                    )
+                )
+    return tasks
+
+
+def sawmill_input_transport_tasks(registry: Any) -> list[TransportTask]:
+    """Build low-priority refill tasks from Town Hall to active sawmills."""
+    if registry is None:
+        return []
+    buildings = list(registry.all())
+    town_hall = next((b for b in buildings if b.type_tag == "TOWN_HALL"), None)
+    if town_hall is None or not hasattr(town_hall, "warehouse_amount"):
+        return []
+    available = int(town_hall.warehouse_amount("wood"))
+    if available <= 0:
+        return []
+    tasks: list[TransportTask] = []
+    remaining_wood = available
+    for building in buildings:
+        if building.type_tag != "SAWMILL":
+            continue
+        if getattr(building, "is_under_construction", False):
+            continue
+        if not getattr(building, "active", False):
+            continue
+        want = max(0, int(getattr(building, "input_capacity", lambda: 0)()) - int(getattr(building, "input_amount", lambda: 0)()))
+        if want <= 0:
+            continue
+        count = min(want, remaining_wood)
+        for _ in range(count):
+            tasks.append(TransportTask(resource="wood", source=town_hall, target=building, priority=0))
+        remaining_wood -= count
+        if remaining_wood <= 0:
+            break
+    return tasks
+
+
+def sawmill_output_transport_tasks(registry: Any) -> list[TransportTask]:
+    """Build low-priority export tasks from sawmills to Town Hall warehouse."""
+    if registry is None:
+        return []
+    buildings = list(registry.all())
+    town_hall = next((b for b in buildings if b.type_tag == "TOWN_HALL"), None)
+    if town_hall is None:
+        return []
+    tasks: list[TransportTask] = []
+    for building in buildings:
+        if building.type_tag != "SAWMILL":
+            continue
+        if getattr(building, "is_under_construction", False):
+            continue
+        amount = int(getattr(building, "output_amount", lambda: 0)())
+        if amount <= 0:
+            continue
+        for _ in range(amount):
+            tasks.append(TransportTask(resource="boards", source=building, target=town_hall, priority=0))
+    return tasks
 
 
 def building_center_tile(building: Building) -> tuple[int, int]:
@@ -174,13 +263,14 @@ class Worker:
 class WorkerManager:
     """Tracks workers; notifies assignments when a staffed building is demolished (PRD F-WORK)."""
 
-    __slots__ = ("_now_ms_fn", "_registry", "_workers", "_transport_queue")
+    __slots__ = ("_now_ms_fn", "_registry", "_workers", "_transport_queue", "_updaters")
     _WORKER_TO_BUILDING: dict[str, str] = {
         "LUMBERJACK": "LUMBER_CAMP",
         "STONECUTTER": "STONE_MINE",
         "MINER": "IRON_MINE",
         "FARMER": "FARM",
         "FORESTER": "FORESTER_HUT",
+        "SAWYER": "SAWMILL",
     }
     _HIRABLE_WORKERS: set[str] = set(_WORKER_TO_BUILDING) | {"CARRIER", "BUILDER"}
 
@@ -194,6 +284,14 @@ class WorkerManager:
         self._workers: list[Worker] = []
         self._transport_queue: list[TransportTask] = []
         self._now_ms_fn = now_ms_fn or (lambda: 0)
+        self._updaters: dict[str, Callable[[Worker, int, Any], None]] = {
+            "FORESTER": self._update_forester,
+            "CARRIER": self._update_carrier,
+            "LUMBERJACK": self._update_gatherer,
+            "STONECUTTER": self._update_gatherer,
+            "BUILDER": self._update_builder,
+            "SAWYER": self._update_sawyer,
+        }
         if registry is not None and hasattr(registry, "bind_worker_manager"):
             registry.bind_worker_manager(self)
 
@@ -231,10 +329,25 @@ class WorkerManager:
     def workers(self) -> tuple[Worker, ...]:
         return tuple(self._workers)
 
-    def enqueue_transport_task(self, *, resource: str, source: Building, target: Building, amount: int = 1) -> None:
+    def enqueue_transport_task(
+        self,
+        *,
+        resource: str,
+        source: Building,
+        target: Building,
+        amount: int = 1,
+        priority: int = 0,
+    ) -> None:
         n = max(0, int(amount))
         for _ in range(n):
-            self._transport_queue.append(TransportTask(resource=str(resource), source=source, target=target))
+            self._transport_queue.append(
+                TransportTask(
+                    resource=str(resource),
+                    source=source,
+                    target=target,
+                    priority=int(priority),
+                )
+            )
 
     def idle(self) -> list[Worker]:
         """Idle workers (PRD ``WorkerManager.idle``)."""
@@ -258,6 +371,11 @@ class WorkerManager:
 
     def worker_status_for_building(self, building: Building) -> str:
         """Return panel-friendly worker status: empty | on the way | assigned."""
+        if building.is_under_construction:
+            for worker in self._workers:
+                if worker.assigned_building is building:
+                    return "resting"
+            return "empty"
         for worker in self._workers:
             if worker.assigned_building is not building:
                 continue
@@ -287,6 +405,8 @@ class WorkerManager:
 
     def production_status_for_building(self, building: Building) -> str:
         """Human-readable production status for building panels."""
+        if building.is_under_construction:
+            return "Under construction"
         worker: Worker | None = None
         for candidate in self._workers:
             if candidate.assigned_building is building:
@@ -297,6 +417,16 @@ class WorkerManager:
 
         if hasattr(building, "active") and not bool(getattr(building, "active")):
             return "Inactive"
+        if building.type_tag == "SAWMILL":
+            if worker.state == "resting":
+                return "Resting"
+            if int(getattr(building, "output_amount", lambda: 0)()) >= int(getattr(building, "output_capacity", lambda: 0)()):
+                return "Output full"
+            if int(getattr(building, "input_amount", lambda: 0)()) <= 0:
+                return "No wood"
+            if worker.state == "processing":
+                return "Processing"
+            return "Ready"
         if hasattr(building, "is_storage_full") and building.is_storage_full():
             return "Storage full"
 
@@ -318,6 +448,8 @@ class WorkerManager:
             return "Ready"
         if worker.state == "idle":
             return "Waiting target"
+        if worker.state == "resting":
+            return "Resting"
         return "Unknown"
 
     def staffed_buildings(self) -> set[Building]:
@@ -419,6 +551,7 @@ class WorkerManager:
     def notify_demolished(self, building: Building) -> None:
         """Workers targeting this building become idle at their current tile."""
         world = getattr(self._registry, "_world", None) if self._registry is not None else None
+        site = building.construction_site
         for w in self._workers:
             if w.assigned_building is building:
                 if world is not None:
@@ -437,6 +570,11 @@ class WorkerManager:
                 w.target_tree = None
                 w.chop_started_ms = 0
                 w.chop_duration_ms = CHOP_DURATION_MS
+            if site is not None:
+                if site.builder is w:
+                    site.builder = None
+                if site.resting_worker is w:
+                    site.resting_worker = None
 
     def reassign_all(self) -> None:
         """Assign one idle worker per free matching building with path-to-approach."""
@@ -456,13 +594,14 @@ class WorkerManager:
                 worker.type_tag in {"LUMBERJACK", "STONECUTTER"}
                 and worker.assigned_building is not None
                 and worker.assigned_building.type_tag == want
+                and not worker.assigned_building.is_under_construction
             ):
                 camp = worker.assigned_building
                 self._park_worker_inside_camp(worker, camp)
                 rest_ms = LUMBERJACK_REST_MS if worker.type_tag == "LUMBERJACK" else STONECUTTER_REST_MS
                 worker.camp_wait_until_ms = max(worker.camp_wait_until_ms, now_ms + rest_ms)
                 continue
-            targets = [b for b in self._registry.all() if b.type_tag == want and not self.is_staffed(b)]
+            targets = [b for b in self._registry.all() if b.type_tag == want and not self.is_staffed(b) and not b.is_under_construction]
             targets.sort(
                 key=lambda b: (
                     abs(worker.current_tile[0] - building_center_tile(b)[0])
@@ -546,106 +685,35 @@ class WorkerManager:
     def update(self, now_ms: int) -> None:
         """Advance worker movement interpolation/state for this frame."""
         world = getattr(self._registry, "_world", None) if self._registry is not None else None
-        if world is not None:
-            world.update_tree_growth(now_ms=int(now_ms))
+        self._enqueue_construction_transport_tasks()
+        self._enqueue_sawmill_refill_tasks()
+        self._enqueue_sawmill_output_tasks()
+        completed_buildings: list[Building] = []
+        completed_site_builders: dict[int, Worker] = {}
         for worker in self._workers:
             worker.update(now_ms)
-            if worker.type_tag == "FORESTER":
-                self._update_forester(worker, int(now_ms), world)
-                continue
-            if worker.type_tag == "CARRIER":
-                self._update_carrier(worker, int(now_ms), world)
-                continue
-            if worker.type_tag not in {"LUMBERJACK", "STONECUTTER"}:
-                continue
-            if world is None:
-                continue
-            camp = worker.assigned_building
-            if camp is None:
-                world.release_reservations_for(worker)
-                continue
-
-            gather_state = self._gather_state_for(worker.type_tag)
-            if gather_state is None:
-                continue
-
-            # Gather worker just walked into the camp: kick off the cycle from the
-            # actual arrival timestamp so leftover time in this tick still moves the
-            # worker further along the new (resource-targeting) path.
-            if worker.state == "working":
-                self._park_worker_inside_camp(worker, camp)
-                if worker.camp_wait_until_ms <= 0:
-                    worker.camp_wait_until_ms = worker.arrival_ms + gather_state["rest_ms"]
-                if int(now_ms) < worker.camp_wait_until_ms:
-                    continue
-                if not getattr(camp, "active", False):
-                    continue
-                if hasattr(camp, "is_storage_full") and camp.is_storage_full():
-                    # Keep waiting inside the camp while storage is full.
-                    worker.camp_wait_until_ms = int(now_ms) + 1_000
-                    continue
-                depart_ms = worker.camp_wait_until_ms
-                if not self._start_gather_cycle(worker, camp, depart_ms, world_query=gather_state["world_query"]):
-                    # No target/path right now: stay inside camp and retry later.
-                    self._park_worker_inside_camp(worker, camp)
-                    worker.camp_wait_until_ms = int(now_ms) + 1_000
-                    continue
-                worker.camp_wait_until_ms = 0
-                worker.update(now_ms)
-
-            if worker.state == gather_state["arrived_state"]:
-                worker.state = gather_state["work_state"]
-                worker.chop_started_ms = int(now_ms)
-                speed = worker.characteristics.gather_speed_mult
-                if speed <= 0.0:
-                    worker.chop_duration_ms = gather_state["duration_ms"]
-                else:
-                    worker.chop_duration_ms = max(1, int(round(gather_state["duration_ms"] / speed)))
-                continue
-
-            if worker.state == gather_state["work_state"]:
-                if int(now_ms) - worker.chop_started_ms < worker.chop_duration_ms:
-                    continue
-                target_tile = worker.target_tree
-                if target_tile is not None:
-                    if gather_state["world_query"] == "tree":
-                        world.remove_tree(*target_tile)
-                    else:
-                        world.harvest_stone(*target_tile)
-                worker.carrying = gather_state["carry_resource"]
-                if not self._start_return_to_camp(worker, int(now_ms)):
-                    worker.state = "depositing"
-                continue
-
-            if worker.state == "arrived_camp":
-                self._park_worker_inside_camp(worker, camp)
-                worker.state = "depositing"
-                continue
-
-            if worker.state == "depositing":
-                if worker.carrying == gather_state["carry_resource"]:
-                    if hasattr(camp, "add_to_storage"):
-                        camp.add_to_storage(1)
-                    town_hall = self._primary_town_hall()
-                    if town_hall is not None:
-                        self.enqueue_transport_task(
-                            resource=gather_state["carry_resource"],
-                            source=camp,
-                            target=town_hall,
-                            amount=1,
-                        )
-                    if hasattr(camp, gather_state["record_method"]):
-                        record_method = getattr(camp, gather_state["record_method"])
-                        record_method(1)
-                worker.carrying = None
-                worker.target_tree = None
-                worker.chop_started_ms = 0
-                worker.chop_duration_ms = CHOP_DURATION_MS
-                self._park_worker_inside_camp(worker, camp)
-                worker.camp_wait_until_ms = int(now_ms) + gather_state["rest_ms"]
-                continue
+            updater = self._updaters.get(worker.type_tag)
+            if updater is not None:
+                updater(worker, int(now_ms), world)
         spawned = False
         if self._registry is not None:
+            for building in self._registry.all():
+                if not building.is_under_construction:
+                    continue
+                site = building.construction_site
+                if site is None or not site.is_building():
+                    continue
+                if site.builder is not None:
+                    completed_site_builders[id(building)] = site.builder
+                if complete_construction(building, int(now_ms)):
+                    completed_buildings.append(building)
+            for building in completed_buildings:
+                builder = completed_site_builders.get(id(building))
+                if builder is not None:
+                    self._move_worker_to_building_approach(builder, building)
+                self.refresh_building_bonuses(building)
+            if completed_buildings:
+                self.reassign_all()
             for building in self._registry.all():
                 if not isinstance(building, School):
                     continue
@@ -657,6 +725,103 @@ class WorkerManager:
             if spawned:
                 self.reassign_all()
 
+    def _update_gatherer(self, worker: Worker, now_ms: int, world: Any) -> None:
+        if world is None:
+            return
+        camp = worker.assigned_building
+        if camp is None:
+            world.release_reservations_for(worker)
+            return
+        # Under-construction buildings must not run production cycles.
+        if camp.is_under_construction:
+            return
+
+        gather_state = self._gather_state_for(worker.type_tag)
+        if gather_state is None:
+            return
+
+        # Gather worker just walked into the camp: kick off the cycle from the
+        # actual arrival timestamp so leftover time in this tick still moves the
+        # worker further along the new (resource-targeting) path.
+        if worker.state == "working":
+            self._park_worker_inside_camp(worker, camp)
+            if worker.camp_wait_until_ms <= 0:
+                worker.camp_wait_until_ms = worker.arrival_ms + gather_state["rest_ms"]
+            if now_ms < worker.camp_wait_until_ms:
+                return
+            if not getattr(camp, "active", False):
+                return
+            if hasattr(camp, "is_storage_full") and camp.is_storage_full():
+                # Keep waiting inside the camp while storage is full.
+                worker.camp_wait_until_ms = now_ms + 1_000
+                return
+            depart_ms = worker.camp_wait_until_ms
+            if not self._start_gather_cycle(worker, camp, depart_ms, world_query=gather_state["world_query"]):
+                # No target/path right now: stay inside camp and retry later.
+                self._park_worker_inside_camp(worker, camp)
+                worker.camp_wait_until_ms = now_ms + 1_000
+                return
+            worker.camp_wait_until_ms = 0
+            worker.update(now_ms)
+
+        if worker.state == gather_state["arrived_state"]:
+            worker.state = gather_state["work_state"]
+            worker.chop_started_ms = now_ms
+            speed = worker.characteristics.gather_speed_mult
+            if speed <= 0.0:
+                worker.chop_duration_ms = gather_state["duration_ms"]
+            else:
+                worker.chop_duration_ms = max(1, int(round(gather_state["duration_ms"] / speed)))
+            return
+
+        if worker.state == gather_state["work_state"]:
+            if now_ms - worker.chop_started_ms < worker.chop_duration_ms:
+                return
+            target_tile = worker.target_tree
+            if target_tile is not None:
+                if gather_state["world_query"] == "tree":
+                    world.remove_tree(*target_tile)
+                else:
+                    world.harvest_stone(*target_tile)
+            worker.carrying = gather_state["carry_resource"]
+            if not self._start_return_to_camp(worker, now_ms):
+                worker.state = "depositing"
+            return
+
+        if worker.state == "arrived_camp":
+            self._park_worker_inside_camp(worker, camp)
+            worker.state = "depositing"
+            return
+
+        if worker.state == "depositing":
+            if worker.carrying == gather_state["carry_resource"]:
+                if hasattr(camp, "add_to_storage"):
+                    camp.add_to_storage(1)
+                resource = gather_state["carry_resource"]
+                target = self._construction_target_for_resource(resource)
+                priority = 10
+                if target is None:
+                    target = self._primary_town_hall()
+                    priority = 0
+                if target is not None:
+                    self.enqueue_transport_task(
+                        resource=resource,
+                        source=camp,
+                        target=target,
+                        amount=1,
+                        priority=priority,
+                    )
+                if hasattr(camp, gather_state["record_method"]):
+                    record_method = getattr(camp, gather_state["record_method"])
+                    record_method(1)
+            worker.carrying = None
+            worker.target_tree = None
+            worker.chop_started_ms = 0
+            worker.chop_duration_ms = CHOP_DURATION_MS
+            self._park_worker_inside_camp(worker, camp)
+            worker.camp_wait_until_ms = now_ms + gather_state["rest_ms"]
+            return
+
     def _primary_town_hall(self) -> TownHall | None:
         if self._registry is None:
             return None
@@ -665,18 +830,61 @@ class WorkerManager:
                 return building
         return None
 
+    def _construction_target_for_resource(self, resource: str) -> Building | None:
+        if self._registry is None:
+            return None
+        key = str(resource).lower()
+        for building in self._registry.all():
+            if not building.is_under_construction:
+                continue
+            site = building.construction_site
+            if site is None:
+                continue
+            if int(site.remaining_resources().get(key, 0)) > 0:
+                return building
+        return None
+
     def _next_transport_task(self) -> TransportTask | None:
         if self._registry is None:
             return None
         known = set(self._registry.all())
+        eligible: list[tuple[int, TransportTask]] = []
+        stale_indices: list[int] = []
         for idx, task in enumerate(self._transport_queue):
             if task.source not in known or task.target not in known:
+                stale_indices.append(idx)
                 continue
-            if not hasattr(task.source, "stored"):
+            site = getattr(task.target, "construction_site", None)
+            if (
+                task.source.type_tag == "TOWN_HALL"
+                and bool(getattr(task.target, "is_under_construction", False))
+                and site is not None
+            ):
+                remaining = int(site.remaining_resources().get(str(task.resource).lower(), 0))
+                if remaining <= 0:
+                    stale_indices.append(idx)
+                    continue
+            has_storage_source = False
+            if hasattr(task.source, "stored") and int(getattr(task.source, "stored", 0)) > 0:
+                has_storage_source = True
+            elif task.resource == "wood" and hasattr(task.source, "input_amount"):
+                has_storage_source = int(task.source.input_amount()) > 0  # type: ignore[attr-defined]
+            elif task.resource == "boards" and hasattr(task.source, "output_amount"):
+                has_storage_source = int(task.source.output_amount()) > 0  # type: ignore[attr-defined]
+            has_warehouse_source = hasattr(task.source, "warehouse_amount") and int(
+                task.source.warehouse_amount(task.resource)  # type: ignore[attr-defined]
+            ) > 0
+            if not has_storage_source and not has_warehouse_source:
                 continue
-            if int(getattr(task.source, "stored", 0)) <= 0:
-                continue
-            return self._transport_queue.pop(idx)
+            eligible.append((idx, task))
+        for idx in reversed(stale_indices):
+            self._transport_queue.pop(idx)
+        if not eligible:
+            return None
+        _best_idx, best_task = max(eligible, key=lambda item: (int(item[1].priority), -item[0]))
+        if best_task in self._transport_queue:
+            self._transport_queue.remove(best_task)
+            return best_task
         return None
 
     def _start_move_to_building(self, worker: Worker, building: Building, now_ms: int) -> bool:
@@ -736,21 +944,96 @@ class WorkerManager:
                 worker.idle = True
                 return
             if not hasattr(task.source, "take_from_storage"):
-                worker.transport_task = None
-                worker.state = "idle"
-                worker.idle = True
-                return
-            try:
-                task.source.take_from_storage(1)  # type: ignore[attr-defined]
-            except ValueError:
-                worker.transport_task = None
-                worker.state = "idle"
-                worker.idle = True
-                return
+                if task.resource == "wood" and hasattr(task.source, "take_wood_in"):
+                    try:
+                        task.source.take_wood_in(1)  # type: ignore[attr-defined]
+                    except ValueError:
+                        self._transport_queue.append(task)
+                        worker.transport_task = None
+                        worker.state = "idle"
+                        worker.idle = True
+                        next_task = self._next_transport_task()
+                        if next_task is not None:
+                            worker.transport_task = next_task
+                            worker.carrying = None
+                            if not self._start_move_to_building(worker, next_task.source, now_ms):
+                                self._transport_queue.insert(0, next_task)
+                                worker.transport_task = None
+                                worker.state = "idle"
+                                worker.idle = True
+                        return
+                elif task.resource == "boards" and hasattr(task.source, "take_boards_out"):
+                    try:
+                        task.source.take_boards_out(1)  # type: ignore[attr-defined]
+                    except ValueError:
+                        self._transport_queue.append(task)
+                        worker.transport_task = None
+                        worker.state = "idle"
+                        worker.idle = True
+                        next_task = self._next_transport_task()
+                        if next_task is not None:
+                            worker.transport_task = next_task
+                            worker.carrying = None
+                            if not self._start_move_to_building(worker, next_task.source, now_ms):
+                                self._transport_queue.insert(0, next_task)
+                                worker.transport_task = None
+                                worker.state = "idle"
+                                worker.idle = True
+                        return
+                elif not hasattr(task.source, "take_from_warehouse"):
+                    worker.transport_task = None
+                    worker.state = "idle"
+                    worker.idle = True
+                    return
+                else:
+                    try:
+                        task.source.take_from_warehouse(task.resource, 1)  # type: ignore[attr-defined]
+                    except ValueError:
+                        self._transport_queue.append(task)
+                        worker.transport_task = None
+                        worker.state = "idle"
+                        worker.idle = True
+                        next_task = self._next_transport_task()
+                        if next_task is not None:
+                            worker.transport_task = next_task
+                            worker.carrying = None
+                            if not self._start_move_to_building(worker, next_task.source, now_ms):
+                                self._transport_queue.insert(0, next_task)
+                                worker.transport_task = None
+                                worker.state = "idle"
+                                worker.idle = True
+                        return
+            else:
+                try:
+                    task.source.take_from_storage(1)  # type: ignore[attr-defined]
+                except ValueError:
+                    self._transport_queue.append(task)
+                    worker.transport_task = None
+                    worker.state = "idle"
+                    worker.idle = True
+                    next_task = self._next_transport_task()
+                    if next_task is not None:
+                        worker.transport_task = next_task
+                        worker.carrying = None
+                        if not self._start_move_to_building(worker, next_task.source, now_ms):
+                            self._transport_queue.insert(0, next_task)
+                            worker.transport_task = None
+                            worker.state = "idle"
+                            worker.idle = True
+                    return
             worker.carrying = task.resource
+            if isinstance(task.source, TownHall):
+                # Town Hall center can trap pathfinding because it is fully enclosed by occupied tiles.
+                self._move_worker_to_building_approach(worker, task.source)
             if not self._start_move_to_building(worker, task.target, now_ms):
-                if hasattr(task.source, "add_to_storage"):
+                if task.resource == "wood" and hasattr(task.source, "add_wood_in"):
+                    task.source.add_wood_in(1)  # type: ignore[attr-defined]
+                elif task.resource == "boards" and hasattr(task.source, "add_boards_out"):
+                    task.source.add_boards_out(1)  # type: ignore[attr-defined]
+                elif hasattr(task.source, "add_to_storage"):
                     task.source.add_to_storage(1)  # type: ignore[attr-defined]
+                elif hasattr(task.source, "add_to_warehouse"):
+                    task.source.add_to_warehouse(task.resource, 1)  # type: ignore[attr-defined]
                 worker.carrying = None
                 self._transport_queue.insert(0, task)
                 worker.transport_task = None
@@ -765,13 +1048,137 @@ class WorkerManager:
             return
         if now_ms < worker.camp_wait_until_ms:
             return
-        if hasattr(task.target, "add_to_warehouse"):
+        delivered_target = task.target
+        site = task.target.construction_site if task.target.is_under_construction else None
+        if site is not None:
+            remaining = int(site.remaining_resources().get(str(task.resource).lower(), 0))
+            if remaining > 0:
+                site.deliver_resource(task.resource, 1)
+            else:
+                town_hall = self._primary_town_hall()
+                if town_hall is not None:
+                    town_hall.add_to_warehouse(task.resource, 1)
+                    delivered_target = town_hall
+                elif hasattr(task.target, "add_to_warehouse"):
+                    task.target.add_to_warehouse(task.resource, 1)  # type: ignore[attr-defined]
+        elif task.resource == "wood" and hasattr(task.target, "add_wood_in"):
+            if int(task.target.input_amount()) < int(task.target.input_capacity()):  # type: ignore[attr-defined]
+                task.target.add_wood_in(1)  # type: ignore[attr-defined]
+            else:
+                town_hall = self._primary_town_hall()
+                if town_hall is not None:
+                    town_hall.add_to_warehouse(task.resource, 1)
+                    delivered_target = town_hall
+                elif hasattr(task.target, "add_to_warehouse"):
+                    task.target.add_to_warehouse(task.resource, 1)  # type: ignore[attr-defined]
+        elif task.resource == "boards" and hasattr(task.target, "add_to_warehouse"):
             task.target.add_to_warehouse(task.resource, 1)  # type: ignore[attr-defined]
-        self._move_worker_to_building_approach(worker, task.target)
+        elif hasattr(task.target, "add_to_warehouse"):
+            task.target.add_to_warehouse(task.resource, 1)  # type: ignore[attr-defined]
+        self._move_worker_to_building_approach(worker, delivered_target)
         worker.carrying = None
         worker.transport_task = None
         worker.state = "idle"
         worker.idle = True
+
+    def _enqueue_construction_transport_tasks(self) -> None:
+        if self._registry is None:
+            return
+        desired = construction_transport_tasks(self._registry)
+        desired_counts: dict[tuple[int, int, str, int], int] = {}
+        for task in desired:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            desired_counts[key] = desired_counts.get(key, 0) + 1
+
+        existing_counts: dict[tuple[int, int, str, int], int] = {}
+        for task in self._transport_queue:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+        for worker in self._workers:
+            task = worker.transport_task
+            if task is None:
+                continue
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+
+        for task in desired:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            if existing_counts.get(key, 0) >= desired_counts.get(key, 0):
+                continue
+            self.enqueue_transport_task(
+                resource=task.resource,
+                source=task.source,
+                target=task.target,
+                amount=1,
+                priority=task.priority,
+            )
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+
+    def _enqueue_sawmill_refill_tasks(self) -> None:
+        if self._registry is None:
+            return
+        desired = sawmill_input_transport_tasks(self._registry)
+        desired_counts: dict[tuple[int, int, str, int], int] = {}
+        for task in desired:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            desired_counts[key] = desired_counts.get(key, 0) + 1
+
+        existing_counts: dict[tuple[int, int, str, int], int] = {}
+        for task in self._transport_queue:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+        for worker in self._workers:
+            task = worker.transport_task
+            if task is None:
+                continue
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+
+        for task in desired:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            if existing_counts.get(key, 0) >= desired_counts.get(key, 0):
+                continue
+            self.enqueue_transport_task(
+                resource=task.resource,
+                source=task.source,
+                target=task.target,
+                amount=1,
+                priority=task.priority,
+            )
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+
+    def _enqueue_sawmill_output_tasks(self) -> None:
+        if self._registry is None:
+            return
+        desired = sawmill_output_transport_tasks(self._registry)
+        desired_counts: dict[tuple[int, int, str, int], int] = {}
+        for task in desired:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            desired_counts[key] = desired_counts.get(key, 0) + 1
+
+        existing_counts: dict[tuple[int, int, str, int], int] = {}
+        for task in self._transport_queue:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+        for worker in self._workers:
+            task = worker.transport_task
+            if task is None:
+                continue
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+
+        for task in desired:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            if existing_counts.get(key, 0) >= desired_counts.get(key, 0):
+                continue
+            self.enqueue_transport_task(
+                resource=task.resource,
+                source=task.source,
+                target=task.target,
+                amount=1,
+                priority=task.priority,
+            )
+            existing_counts[key] = existing_counts.get(key, 0) + 1
 
     def _update_forester(self, worker: Worker, now_ms: int, world: Any) -> None:
         if world is None:
@@ -779,6 +1186,9 @@ class WorkerManager:
         hut = worker.assigned_building
         if hut is None:
             world.release_reservations_for(worker)
+            return
+        # Under-construction huts must not run planting cycles.
+        if hut.is_under_construction:
             return
 
         if worker.state == "working":
@@ -808,8 +1218,7 @@ class WorkerManager:
                 return
             target_tile = worker.target_tile
             if target_tile is not None:
-                species = (target_tile[0] + target_tile[1]) % 3
-                world.plant_tree(*target_tile, now_ms=now_ms, species=species)
+                world.plant_tree(*target_tile, now_ms=now_ms)
             if not self._start_return_to_camp(worker, now_ms):
                 # Never teleport forester home: if path is temporarily unavailable,
                 # stay on the current tile and retry pathing on next ticks.
@@ -870,7 +1279,140 @@ class WorkerManager:
             return False
         worker.target_tile = target_tile
         worker.start_move(path, started_ms=now_ms, move_state="going_to_plant_tile")
+
+    def _update_builder(self, worker: Worker, now_ms: int, world: Any) -> None:
+        if world is None or self._registry is None:
+            return
+        building = worker.assigned_building
+        if building is not None:
+            site = building.construction_site
+            if site is None or not building.is_under_construction:
+                worker.assigned_building = None
+                worker.idle = True
+                worker.state = "idle"
+                return
+            if site.builder is worker:
+                worker.idle = False
+                worker.state = "building"
+                return
+            if site.builder is not None or not site.is_fully_supplied():
+                worker.assigned_building = None
+                worker.idle = True
+                worker.state = "idle"
+                return
+            if worker.state == "moving":
+                return
+            worker.state = "entering_site"
+            self._park_worker_inside_building(worker, building)
+            site.builder = worker
+            site.build_started_ms = int(now_ms)
+            worker.state = "building"
+            return
+
+        if not worker.idle:
+            return
+        targets = [
+            b
+            for b in self._registry.all()
+            if b.is_under_construction
+            and b.construction_site is not None
+            and b.construction_site.is_fully_supplied()
+            and b.construction_site.builder is None
+        ]
+        targets.sort(
+            key=lambda b: (
+                abs(worker.current_tile[0] - building_center_tile(b)[0])
+                + abs(worker.current_tile[1] - building_center_tile(b)[1])
+            )
+        )
+        blocked = world.blocked_tiles()
+        blocked.discard(worker.current_tile)
+        for target in targets:
+            best_path: list[tuple[int, int]] | None = None
+            for tile in self._approach_tiles(target):
+                path = find_path_bfs(world, worker.current_tile, tile, blocked)
+                if path is None:
+                    continue
+                if best_path is None or len(path) < len(best_path):
+                    best_path = path
+            if best_path is None:
+                continue
+            worker.assigned_building = target
+            worker.start_move(best_path, started_ms=now_ms)
+            return
         return True
+
+    @staticmethod
+    def _sawmill_cycle_duration_ms(sawmill: Any) -> int:
+        level = max(1, int(getattr(sawmill, "level", 1)))
+        mult = 1.0 - 0.02 * float(level - 1)
+        effective = int(round(SAWMILL_BASE_CYCLE_MS * mult))
+        return max(SAWMILL_MIN_CYCLE_MS, effective)
+
+    @staticmethod
+    def _update_sawyer(worker: Worker, now_ms: int, world: Any) -> None:
+        _ = world
+        sawmill = worker.assigned_building
+        if sawmill is None or sawmill.type_tag != "SAWMILL":
+            return
+        if sawmill.is_under_construction:
+            return
+        center_tile = building_center_tile(sawmill)
+        # Sawmill production may run only while the sawyer is physically inside.
+        if worker.state in {"working", "resting", "processing"} and worker.current_tile != center_tile:
+            worker.current_tile = center_tile
+            # Do not start/advance processing in the same tick as the enter step.
+            if worker.state == "processing":
+                worker.state = "working"
+                sawmill.processing_started_ms = 0
+            return
+        active = bool(getattr(sawmill, "active", False))
+        if worker.state == "resting":
+            if now_ms < worker.camp_wait_until_ms:
+                return
+            if not active:
+                worker.current_tile = center_tile
+                return
+            worker.state = "working"
+            worker.camp_wait_until_ms = 0
+            worker.idle = False
+        if worker.state == "resting":
+            return
+        if worker.state == "processing":
+            started = int(getattr(sawmill, "processing_started_ms", 0))
+            if started <= 0:
+                worker.state = "working"
+                return
+            duration = WorkerManager._sawmill_cycle_duration_ms(sawmill)
+            sawmill.processing_duration_ms = duration
+            if now_ms - started < duration:
+                return
+            if getattr(sawmill, "input_amount", lambda: 0)() > 0 and getattr(
+                sawmill, "output_amount", lambda: 0
+            )() < getattr(sawmill, "output_capacity", lambda: 0)():
+                sawmill.take_wood_in(1)
+                sawmill.add_boards_out(1)
+            sawmill.processing_started_ms = 0
+            worker.state = "resting"
+            worker.camp_wait_until_ms = int(now_ms) + SAWYER_REST_MS
+            worker.current_tile = center_tile
+            worker.idle = False
+            return
+        if not active:
+            worker.state = "resting"
+            worker.current_tile = center_tile
+            return
+        if getattr(sawmill, "input_amount", lambda: 0)() <= 0:
+            return
+        if getattr(sawmill, "output_amount", lambda: 0)() >= getattr(sawmill, "output_capacity", lambda: 0)():
+            return
+        if worker.state != "working":
+            return
+        if int(getattr(sawmill, "processing_started_ms", 0)) <= 0:
+            sawmill.processing_started_ms = int(now_ms)
+        sawmill.processing_duration_ms = WorkerManager._sawmill_cycle_duration_ms(sawmill)
+        worker.state = "processing"
+        worker.idle = False
 
     @staticmethod
     def _select_forester_target(
@@ -1119,6 +1661,10 @@ class WorkerManager:
                 target = preferred_tile
             worker.current_tile = target
             worker.stand_tile = target
+        else:
+            center = building_center_tile(building)
+            worker.current_tile = center
+            worker.stand_tile = center
         worker.target_tile = worker.current_tile
         worker.path = []
         worker.segment_progress = 0.0

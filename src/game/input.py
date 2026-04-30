@@ -11,16 +11,19 @@ from game.buildings.lumber_camp import LumberCamp
 from game.buildings.stone_mine import StoneMine
 from game.buildings.registry import BuildingRegistry
 from game.buildings.school import School
+from game.buildings.sawmill import Sawmill
 from game.buildings.town_hall import TownHall
 from game.camera import Camera
 from game.iso import screen_to_world
 from game.render import Renderer
 from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT, BottomBar
 from game.ui.building_panel import BuildingPanel
+from game.ui.construction_panel import ConstructionPanel
 from game.ui.forester_hut_panel import ForesterHutPanel
 from game.ui.lumber_camp_panel import LumberCampPanel
 from game.ui.stone_mine_panel import StoneMinePanel
 from game.ui.school_panel import SchoolPanel
+from game.ui.sawmill_panel import SawmillPanel
 from game.ui.placement import PlacementController
 from game.ui.town_hall_panel import TownHallPanel
 from game.world import World
@@ -170,6 +173,9 @@ class GameInput:
         self._sync_panel_stale()
         if self._panel is None:
             return
+        if self._panel.is_under_construction:
+            ConstructionPanel.draw(surface, self._panel, now_ms=pygame.time.get_ticks())
+            return
         if self._panel.type_tag == "TOWN_HALL":
             assert isinstance(self._panel, TownHall)
             TownHallPanel.draw(
@@ -227,6 +233,19 @@ class GameInput:
                 worker_manager=self._worker_manager,
             )
             return
+        if SawmillPanel.supports_building(self._panel):
+            assert isinstance(self._panel, Sawmill)
+            worker_status = self._panel_worker_status()
+            production_status = self._panel_production_status()
+            SawmillPanel.draw(
+                surface,
+                self._panel,
+                worker_assigned=worker_status != "empty",
+                worker_status=worker_status,
+                production_status=production_status,
+                now_ms=pygame.time.get_ticks(),
+            )
+            return
         worker_status = self._panel_worker_status()
         production_status = self._panel_production_status()
         BuildingPanel.draw(
@@ -248,6 +267,13 @@ class GameInput:
 
         if self._panel is not None:
             wa = self._panel_worker_status() != "empty"
+            if self._panel.is_under_construction:
+                layout = ConstructionPanel.layout(surface, self._panel)
+                if layout.frame.collidepoint(pos):
+                    action = ConstructionPanel.click_action(surface, pos, self._panel)
+                    if action == "close":
+                        self._panel = None
+                    return
             if self._panel.type_tag == "TOWN_HALL":
                 assert isinstance(self._panel, TownHall)
                 layout = TownHallPanel.layout(
@@ -399,6 +425,37 @@ class GameInput:
                         now_fn = getattr(self._worker_manager, "_now_ms_fn", None)
                         now_ms = int(now_fn()) if callable(now_fn) else pygame.time.get_ticks()
                         self._panel.cancel_training_at(slot_idx, now_ms=now_ms)
+                    return
+            if SawmillPanel.supports_building(self._panel):
+                assert isinstance(self._panel, Sawmill)
+                production_status = self._panel_production_status()
+                layout = SawmillPanel.layout(
+                    surface,
+                    self._panel,
+                    worker_assigned=wa,
+                    production_status=production_status,
+                )
+                if layout.frame.collidepoint(pos):
+                    action = SawmillPanel.click_action(
+                        surface,
+                        pos,
+                        self._panel,
+                        worker_assigned=wa,
+                        production_status=production_status,
+                    )
+                    if action == "close":
+                        self._panel = None
+                    elif action == "upgrade" and self._panel is not None:
+                        if self._registry.upgrade_building(self._panel):
+                            self._sync_assignments()
+                    elif action == "demolish" and self._panel is not None:
+                        b = self._panel
+                        self._registry.demolish(b, self._worker_manager)
+                        self._panel = None
+                        self._sync_assignments()
+                    elif action == "toggle_active" and self._panel is not None:
+                        self._panel.set_active(not self._panel.active)
+                        self._sync_assignments()
                     return
             layout = BuildingPanel.layout(
                 surface,

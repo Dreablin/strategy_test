@@ -5,17 +5,21 @@ import pygame
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.registry import BuildingRegistry
 from game.buildings.school import School
+from game.buildings.sawmill import Sawmill
 from game.buildings.town_hall import TownHall
 from game.camera import Camera
 from game.input import TOP_BAR_HEIGHT, GameInput, screen_to_grid
 from game.render import Renderer
 from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT
 from game.ui.building_panel import BuildingPanel
+from game.ui.construction_panel import ConstructionPanel
 from game.ui.lumber_camp_panel import LumberCampPanel
 from game.ui.placement import PlacementController
 from game.ui.school_panel import SchoolPanel
+from game.ui.sawmill_panel import SawmillPanel
 from game.world import World
 from game.workers import Worker, WorkerManager
+from game.construction import ConstructionSite
 
 from game.config import TILE_H, TILE_W, near_town_hall_tile, town_hall_origin_tile
 from game.iso import world_to_screen
@@ -139,9 +143,122 @@ def test_build_menu_select_closes_panel() -> None:
     assert placement.pending_type is not None
 
 
+def test_build_menu_select_sawmill_sets_pending_type() -> None:
+    surface = pygame.Surface((640, 480))
+    world = World()
+    registry = BuildingRegistry(world)
+    camera = Camera()
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(), camera)
+    inp.handle(surface, pygame.event.Event(BUILD_MENU_SELECT, building_type="SAWMILL"))
+    assert placement.pending_type is not None
+    assert placement.pending_type.type_tag == "SAWMILL"
+
+
+def test_under_construction_building_uses_construction_panel_draw(monkeypatch) -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    camp = registry.place(LumberCamp, near_town_hall_tile())
+    camp.construction_site = ConstructionSite(
+        required_resources={"wood": 2},
+        delivered_resources={},
+        build_time_ms=10_000,
+        build_started_ms=None,
+        builder=None,
+        target_level=1,
+    )
+    camera = Camera()
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(registry), camera)
+    inp._panel = camp  # noqa: SLF001 - direct panel setup for focused routing test
+    calls = {"construction": 0, "lumber": 0}
+
+    def _draw_construction(*args, **kwargs):
+        calls["construction"] += 1
+
+    def _draw_lumber(*args, **kwargs):
+        calls["lumber"] += 1
+
+    monkeypatch.setattr(ConstructionPanel, "draw", staticmethod(_draw_construction))
+    monkeypatch.setattr(LumberCampPanel, "draw", staticmethod(_draw_lumber))
+
+    inp.draw_panel(surface)
+
+    assert calls["construction"] == 1
+    assert calls["lumber"] == 0
+
+
+def test_under_construction_panel_close_click_closes_without_demolish() -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    camp = registry.place(LumberCamp, near_town_hall_tile())
+    camp.construction_site = ConstructionSite(
+        required_resources={"wood": 2},
+        delivered_resources={},
+        build_time_ms=10_000,
+        build_started_ms=None,
+        builder=None,
+        target_level=1,
+    )
+    camera = Camera()
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(registry), camera)
+    pos = _tile_center(surface, world, *near_town_hall_tile())
+    inp.handle(surface, pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=pos))
+    assert inp.panel_building is camp
+
+    close_center = ConstructionPanel.layout(surface, camp).close.center
+    inp.handle(surface, pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=close_center))
+
+    assert inp.panel_building is None
+    assert camp in registry.all()
+
+
+def test_sawmill_panel_draw_routing(monkeypatch) -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    sawmill = registry.place(Sawmill, near_town_hall_tile(16, 8))
+    sawmill.construction_site = None
+    camera = Camera()
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(registry), camera)
+    inp._panel = sawmill  # noqa: SLF001
+    called = {"sawmill": 0}
+
+    def _draw_sawmill(*args, **kwargs):
+        called["sawmill"] += 1
+
+    monkeypatch.setattr(SawmillPanel, "draw", staticmethod(_draw_sawmill))
+    inp.draw_panel(surface)
+    assert called["sawmill"] == 1
+
+
+def test_sawmill_panel_toggle_click_toggles_active() -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    sawmill = registry.place(Sawmill, near_town_hall_tile(18, 8))
+    sawmill.construction_site = None
+    camera = Camera()
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(registry), camera)
+    inp._panel = sawmill  # noqa: SLF001
+    layout = SawmillPanel.layout(surface, sawmill, worker_assigned=False, production_status="No worker")
+    inp.handle(
+        surface,
+        pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=layout.toggle.center),
+    )
+    assert sawmill.active is False
+
+
 def test_place_calls_reassign_all_and_assigns_idle_worker() -> None:
     surface = pygame.Surface((1280, 720))
     world = World(world_seed=2)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
     registry = BuildingRegistry(world)
     camera = Camera()
     placement = PlacementController(world, registry, camera)
@@ -156,16 +273,22 @@ def test_place_calls_reassign_all_and_assigns_idle_worker() -> None:
     all_b = registry.all()
     assert len(all_b) == 1
     placed = all_b[0]
+    placed.construction_site = None
+    workers.reassign_all()
     assert workers.is_staffed(placed)
 
 
 def test_school_hire_button_calls_worker_manager_hire_and_spawns_at_school() -> None:
     surface = pygame.Surface((1280, 720))
     world = World(world_seed=2)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
     registry = BuildingRegistry(world)
     registry.place(TownHall, town_hall_origin_tile())
     school = registry.place(School, near_town_hall_tile(8, 8))
+    school.construction_site = None
     camp = registry.place(LumberCamp, near_town_hall_tile(12, 12))
+    camp.construction_site = None
     camera = Camera()
     placement = PlacementController(world, registry, camera)
     workers = WorkerManager(registry)
@@ -191,8 +314,10 @@ def test_hire_from_second_school_spawns_near_second_school() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
     registry.place(TownHall, town_hall_origin_tile())
-    registry.place(School, near_town_hall_tile(8, 8))
+    school1 = registry.place(School, near_town_hall_tile(8, 8))
+    school1.construction_site = None
     school2 = registry.place(School, near_town_hall_tile(18, 8))
+    school2.construction_site = None
     camera = Camera()
     placement = PlacementController(world, registry, camera)
     workers = WorkerManager(registry)
@@ -220,6 +345,7 @@ def test_school_enqueue_does_not_consume_wheat_or_spawn_instantly() -> None:
     registry = BuildingRegistry(world)
     town_hall = registry.place(TownHall, town_hall_origin_tile())
     school = registry.place(School, near_town_hall_tile(8, 8))
+    school.construction_site = None
     town_hall.add_to_warehouse("wheat", 500)
     wheat_before = town_hall.warehouse_amount("wheat")
     camera = Camera()

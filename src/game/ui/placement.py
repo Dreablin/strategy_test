@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import random
 from typing import Type
 
 import pygame
@@ -14,6 +15,7 @@ from game.buildings.iron_mine import IronMine
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.registry import BuildingRegistry
 from game.buildings.school import School
+from game.buildings.sawmill import Sawmill
 from game.camera import Camera
 from game.buildings.stone_mine import StoneMine
 from game.config import TILE_H, TILE_W
@@ -30,6 +32,7 @@ _TAG_TO_CLASS: dict[str, Type[Building]] = {
     "FORESTER_HUT": ForesterHut,
     "SCHOOL": School,
     "HOUSE": House,
+    "SAWMILL": Sawmill,
 }
 
 
@@ -139,14 +142,13 @@ class PlacementController:
                 return False
             if self._world.is_occupied(gx, gy) or self._world.is_tree_blocking(gx, gy) or self._world.is_stone_blocking(gx, gy):
                 return False
-            species = (gx + gy) % 3
-            return self._world.plant_tree(gx, gy, now_ms=0, species=species) is not None
+            return self._world.plant_tree(gx, gy, now_ms=0) is not None
         if self._pending_dev == "DEV_STONE":
             if not self._world.is_in_grass(gx, gy):
                 return False
             if self._world.is_occupied(gx, gy) or self._world.is_tree_blocking(gx, gy) or self._world.is_stone_blocking(gx, gy):
                 return False
-            self._world._stones[(gx, gy)] = Stone()  # noqa: SLF001
+            self._world._stones[(gx, gy)] = Stone(variant=random.randint(0, 4))  # noqa: SLF001
             return True
         return False
 

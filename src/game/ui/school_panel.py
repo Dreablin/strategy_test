@@ -16,10 +16,20 @@ _BTN_H = 32
 _GAP = 8
 _QUEUE_SLOT = 30
 _SECTION_TITLE_GAP = 24
-_HIRE_ROWS: tuple[str, ...] = ("CARRIER", "BUILDER", "LUMBERJACK", "STONECUTTER", "MINER", "FARMER", "FORESTER")
+_HIRE_ROWS: tuple[str, ...] = (
+    "CARRIER",
+    "BUILDER",
+    "SAWYER",
+    "LUMBERJACK",
+    "STONECUTTER",
+    "MINER",
+    "FARMER",
+    "FORESTER",
+)
 _WORKER_LABEL: dict[str, str] = {
     "CARRIER": "Carrier",
     "BUILDER": "Builder",
+    "SAWYER": "Sawyer",
     "LUMBERJACK": "Lumberjack",
     "STONECUTTER": "Stonecutter",
     "MINER": "Miner",

@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 from collections import deque
+import math
 import random
 import secrets
 from typing import Any, cast
 
 from game.config import GRID_SIZE, town_hall_footprint_tiles
 from game.stones import Stone
-from game.trees import Tree, TreeStage, stage_from_tile_seed
+from game.trees import Tree, TreeStage
 
 _STONE_CENTER_COUNT = 6
 _STONE_GUARANTEED_TH_RING_CHEB = 20  # one cluster center: min Chebyshev to TH footprint == this
@@ -18,6 +19,16 @@ _STONE_MIN_DISTANCE_FROM_TOWN_HALL = 12
 _TREE_GROVE_RADIUS_MIN = 5
 _TREE_GROVE_RADIUS_MAX = 8
 _TREE_GROVE_FILL_PROBABILITY = 0.7
+_TREE_GROVE_CIRCLE_DENSE_RADIUS = 10
+_TREE_GROVE_CIRCLE_MAX_RADIUS = 20
+_TREE_GROVE_CRESCENT_RADIUS = 20
+_TREE_GROVE_ELLIPSE_MAJOR_AXIS = 20
+_TREE_GROVE_ELLIPSE_MINOR_AXIS_MIN = 4
+_TREE_GROVE_ELLIPSE_MINOR_AXIS_MAX = 5
+_TREE_GROVE_CLUSTER_EDGE_BAND = 10
+_TREE_GROVE_CLUSTER_MAX_CENTER_DISTANCE = 35
+_TREE_GROVE_CLUSTER_TARGET_MIN = 110
+_TREE_GROVE_CLUSTER_TARGET_MAX = 170
 _PRIORITY_TREE_RING_NEAR = 12  # first bonus grove: min Chebyshev to TH footprint
 _PRIORITY_TREE_RING_FAR = 20  # second bonus grove
 # L∞ disks r≤R do not overlap if center separation > 2R (here R = max grove radius).
@@ -31,6 +42,253 @@ _NEIGHBORS_4: tuple[tuple[int, int], ...] = (
 )
 
 _POP_MISSING = object()
+
+
+def _rotate(dx: float, dy: float, angle_rad: float) -> tuple[float, float]:
+    cos_a = math.cos(angle_rad)
+    sin_a = math.sin(angle_rad)
+    return (dx * cos_a + dy * sin_a, -dx * sin_a + dy * cos_a)
+
+
+def _iter_circle_noise_falloff_tiles(
+    cx: int,
+    cy: int,
+    rng: random.Random,
+) -> set[tuple[int, int]]:
+    """Circle with dense inner core and noisy falloff ring."""
+    out: set[tuple[int, int]] = set()
+    dense = _TREE_GROVE_CIRCLE_DENSE_RADIUS
+    max_r = _TREE_GROVE_CIRCLE_MAX_RADIUS
+    for y in range(cy - max_r, cy + max_r + 1):
+        for x in range(cx - max_r, cx + max_r + 1):
+            dx = x - cx
+            dy = y - cy
+            dist = math.hypot(dx, dy)
+            if dist > max_r:
+                continue
+            if dist <= dense:
+                density = 0.92
+            else:
+                fade = (max_r - dist) / max(1.0, max_r - dense)
+                density = 0.2 + 0.55 * max(0.0, fade)
+            density *= 0.8 + 0.4 * rng.random()
+            if rng.random() < density:
+                out.add((x, y))
+    return out
+
+
+def _iter_crescent_tiles(cx: int, cy: int, rng: random.Random) -> set[tuple[int, int]]:
+    """Rotated crescent (outer disk minus shifted inner disk)."""
+    out: set[tuple[int, int]] = set()
+    outer = _TREE_GROVE_CRESCENT_RADIUS
+    inner = 14.5
+    shift = 8.0
+    angle = rng.random() * math.tau
+    for y in range(cy - outer, cy + outer + 1):
+        for x in range(cx - outer, cx + outer + 1):
+            dx = float(x - cx)
+            dy = float(y - cy)
+            u, v = _rotate(dx, dy, angle)
+            in_outer = (u * u + v * v) <= (outer * outer)
+            du = u - shift
+            in_inner = (du * du + v * v) <= (inner * inner)
+            if not in_outer or in_inner:
+                continue
+            edge = math.sqrt((u * u + v * v) / (outer * outer))
+            density = 0.85 - 0.3 * min(1.0, edge)
+            if rng.random() < density:
+                out.add((x, y))
+    return out
+
+
+def _iter_ellipse_tiles(cx: int, cy: int, rng: random.Random) -> set[tuple[int, int]]:
+    """Long rotated ellipse with thinner edges."""
+    out: set[tuple[int, int]] = set()
+    a = float(_TREE_GROVE_ELLIPSE_MAJOR_AXIS)
+    b = float(rng.randint(_TREE_GROVE_ELLIPSE_MINOR_AXIS_MIN, _TREE_GROVE_ELLIPSE_MINOR_AXIS_MAX))
+    angle = rng.random() * math.tau
+    reach = int(math.ceil(a))
+    for y in range(cy - reach, cy + reach + 1):
+        for x in range(cx - reach, cx + reach + 1):
+            dx = float(x - cx)
+            dy = float(y - cy)
+            u, v = _rotate(dx, dy, angle)
+            norm = (u * u) / (a * a) + (v * v) / (b * b)
+            if norm > 1.0:
+                continue
+            density = 0.9 - 0.45 * norm
+            if rng.random() < density:
+                out.add((x, y))
+    return out
+
+
+def _iter_cluster_tiles(cx: int, cy: int, rng: random.Random) -> set[tuple[int, int]]:
+    """Organic cluster grown by randomized queue expansion."""
+    out: set[tuple[int, int]] = set()
+    edge_candidates: list[tuple[int, int]] = []
+    for gy in range(GRID_SIZE):
+        for gx in range(GRID_SIZE):
+            edge_dist = min(gx, gy, GRID_SIZE - 1 - gx, GRID_SIZE - 1 - gy)
+            if edge_dist > _TREE_GROVE_CLUSTER_EDGE_BAND:
+                continue
+            if max(abs(gx - cx), abs(gy - cy)) > _TREE_GROVE_CLUSTER_MAX_CENTER_DISTANCE:
+                continue
+            edge_candidates.append((gx, gy))
+    if not edge_candidates:
+        seed = (cx, cy)
+    else:
+        seed = edge_candidates[rng.randrange(len(edge_candidates))]
+    q: deque[tuple[int, int]] = deque([seed])
+    seen: set[tuple[int, int]] = {seed}
+    target = rng.randint(_TREE_GROVE_CLUSTER_TARGET_MIN, _TREE_GROVE_CLUSTER_TARGET_MAX)
+    while q and len(out) < target:
+        px, py = q.popleft()
+        out.add((px, py))
+        neighbors = [(px + dx, py + dy) for dx, dy in _NEIGHBORS_4]
+        rng.shuffle(neighbors)
+        for nx, ny in neighbors:
+            tile = (nx, ny)
+            if tile in seen:
+                continue
+            seen.add(tile)
+            if not (0 <= nx < GRID_SIZE and 0 <= ny < GRID_SIZE):
+                continue
+            if max(abs(nx - cx), abs(ny - cy)) > _TREE_GROVE_CLUSTER_MAX_CENTER_DISTANCE:
+                continue
+            if rng.random() < 0.72:
+                q.append(tile)
+        if q and rng.random() < 0.08:
+            q.rotate(rng.randint(-3, 3))
+    return out
+
+
+def _iter_stone_circle_noise_tiles(cx: int, cy: int, radius: int, rng: random.Random) -> set[tuple[int, int]]:
+    """Circle-like blob with noisy boundary."""
+    out: set[tuple[int, int]] = set()
+    dense_r = max(1.0, radius * 0.6)
+    for y in range(cy - radius, cy + radius + 1):
+        for x in range(cx - radius, cx + radius + 1):
+            dx = x - cx
+            dy = y - cy
+            dist = math.hypot(dx, dy)
+            if dist > radius:
+                continue
+            if dist <= dense_r:
+                density = 0.92
+            else:
+                fade = (radius - dist) / max(1.0, radius - dense_r)
+                density = 0.25 + 0.6 * max(0.0, fade)
+            density *= 0.8 + 0.4 * rng.random()
+            if rng.random() < density:
+                out.add((x, y))
+    return out
+
+
+def _iter_stone_frontier_tiles(cx: int, cy: int, radius: int, rng: random.Random) -> set[tuple[int, int]]:
+    """Grow a lumpy connected patch from center via randomized frontier expansion."""
+    target = rng.randint(max(6, radius * radius // 2), max(10, radius * radius + 6))
+    out: set[tuple[int, int]] = set()
+    frontier: deque[tuple[int, int]] = deque([(cx, cy)])
+    seen: set[tuple[int, int]] = {(cx, cy)}
+    while frontier and len(out) < target:
+        px, py = frontier.popleft()
+        if max(abs(px - cx), abs(py - cy)) > radius:
+            continue
+        out.add((px, py))
+        nbrs = [(px + dx, py + dy) for dx, dy in _NEIGHBORS_4]
+        rng.shuffle(nbrs)
+        for nx, ny in nbrs:
+            tile = (nx, ny)
+            if tile in seen:
+                continue
+            seen.add(tile)
+            if max(abs(nx - cx), abs(ny - cy)) > radius:
+                continue
+            if rng.random() < 0.72:
+                frontier.append(tile)
+        if frontier and rng.random() < 0.15:
+            frontier.rotate(rng.randint(-2, 2))
+    return out
+
+
+def _iter_stone_morph_blob_tiles(cx: int, cy: int, radius: int, rng: random.Random) -> set[tuple[int, int]]:
+    """Blob with one pass of random erosion/dilation to produce broken edges."""
+    base: set[tuple[int, int]] = set()
+    for y in range(cy - radius, cy + radius + 1):
+        for x in range(cx - radius, cx + radius + 1):
+            if max(abs(x - cx), abs(y - cy)) > radius:
+                continue
+            if rng.random() < 0.72:
+                base.add((x, y))
+
+    # Erode sparse-edge pixels.
+    eroded: set[tuple[int, int]] = set()
+    for x, y in base:
+        neigh = 0
+        for dx, dy in _NEIGHBORS_4:
+            if (x + dx, y + dy) in base:
+                neigh += 1
+        if neigh >= 2 or rng.random() < 0.2:
+            eroded.add((x, y))
+
+    # Dilate back selected boundary to avoid over-thinning.
+    out = set(eroded)
+    for x, y in list(eroded):
+        if rng.random() < 0.25:
+            for dx, dy in _NEIGHBORS_4:
+                nx, ny = x + dx, y + dy
+                if max(abs(nx - cx), abs(ny - cy)) <= radius:
+                    out.add((nx, ny))
+    return out
+
+
+def _iter_stone_cluster_pattern_tiles(
+    cx: int, cy: int, radius: int, rng: random.Random
+) -> set[tuple[int, int]]:
+    pattern = rng.choice(("circle_noise", "frontier", "morph_blob"))
+    if pattern == "circle_noise":
+        return _iter_stone_circle_noise_tiles(cx, cy, radius, rng)
+    if pattern == "frontier":
+        return _iter_stone_frontier_tiles(cx, cy, radius, rng)
+    return _iter_stone_morph_blob_tiles(cx, cy, radius, rng)
+
+
+def _iter_tree_grove_pattern_tiles(
+    cx: int,
+    cy: int,
+    rng: random.Random,
+) -> set[tuple[int, int]]:
+    """Pick one grove pattern randomly for each center."""
+    pattern = rng.choice(("circle_noise", "crescent", "ellipse", "cluster"))
+    if pattern == "circle_noise":
+        return _iter_circle_noise_falloff_tiles(cx, cy, rng)
+    if pattern == "crescent":
+        return _iter_crescent_tiles(cx, cy, rng)
+    if pattern == "ellipse":
+        return _iter_ellipse_tiles(cx, cy, rng)
+    return _iter_cluster_tiles(cx, cy, rng)
+
+
+def _iter_compact_priority_grove_tiles(
+    cx: int,
+    cy: int,
+    rng: random.Random,
+) -> set[tuple[int, int]]:
+    """Small, dense grove footprint used for TH-near priority centers."""
+    out: set[tuple[int, int]] = set()
+    radius = rng.randint(_TREE_GROVE_RADIUS_MIN, _TREE_GROVE_RADIUS_MAX)
+    for y in range(cy - radius, cy + radius + 1):
+        for x in range(cx - radius, cx + radius + 1):
+            dx = x - cx
+            dy = y - cy
+            if math.hypot(dx, dy) > radius:
+                continue
+            # Keep compact center dense, fade edges a bit.
+            edge = math.hypot(dx, dy) / max(1.0, float(radius))
+            density = 0.9 - 0.35 * edge
+            if rng.random() < density:
+                out.add((x, y))
+    return out
 
 
 def _world_generation_rng_pair(world_seed: int | None) -> tuple[random.Random, random.Random]:
@@ -234,7 +492,7 @@ class World:
         self._trees.pop(tile, None)
         self._tree_reservations.pop(tile, None)
 
-    def plant_tree(self, gx: int, gy: int, *, now_ms: int, species: int) -> Tree | None:
+    def plant_tree(self, gx: int, gy: int, *, now_ms: int, species: int | None = None) -> Tree | None:
         """Plant a new sapling on a valid free tile, else return ``None``."""
         tile = (gx, gy)
         if not self.is_in_grass(gx, gy):
@@ -247,9 +505,14 @@ class World:
             return None
         if self.tree_at(gx, gy) is not None:
             return None
-        planted = Tree(stage=TreeStage.SAPLING, species=species, next_growth_at_ms=int(now_ms) + 30_000)
+        chosen_species = random.randint(0, 2) if species is None else int(species)
+        planted = Tree(stage=TreeStage.SAPLING, species=chosen_species, next_growth_at_ms=int(now_ms) + 30_000)
         self._trees[tile] = planted
         return planted
+
+    def update(self, now_ms: int) -> None:
+        """Advance world state for this frame (e.g. tree growth)."""
+        self.update_tree_growth(now_ms=now_ms)
 
     def update_tree_growth(self, *, now_ms: int) -> None:
         """Advance all alive trees with growth timers based on ``now_ms``."""
@@ -348,25 +611,33 @@ class World:
         protected_th: set[tuple[int, int]],
         relax_map_center_clear: bool,
     ) -> None:
-        radius = rng.randint(_TREE_GROVE_RADIUS_MIN, _TREE_GROVE_RADIUS_MAX)
-        for y in range(cy - radius, cy + radius + 1):
-            for x in range(cx - radius, cx + radius + 1):
-                if not self.is_in_grass(x, y):
-                    continue
-                if (x, y) in protected_th:
-                    continue
-                if not relax_map_center_clear and max(abs(x - mid), abs(y - mid)) <= center_clear_radius:
-                    continue
-                if max(abs(x - cx), abs(y - cy)) > radius:
-                    continue
-                if self.is_stone_blocking(x, y):
-                    continue
-                if (x, y) in self._trees:
-                    continue
-                if rng.random() >= _TREE_GROVE_FILL_PROBABILITY:
-                    continue
-                seed = x * 92821 + y * 68917 + GRID_SIZE * 37
-                self._trees[(x, y)] = Tree(stage=stage_from_tile_seed(seed), species=seed % 3)
+        # Guarantee a visible anchor tree on priority grove centers (ring 12 / ring 20).
+        if relax_map_center_clear:
+            if (
+                self.is_in_grass(cx, cy)
+                and (cx, cy) not in protected_th
+                and not self.is_stone_blocking(cx, cy)
+                and (cx, cy) not in self._trees
+            ):
+                self._trees[(cx, cy)] = Tree(stage=TreeStage.ADULT, species=rng.randint(0, 2))
+
+        candidate_tiles = (
+            _iter_compact_priority_grove_tiles(cx, cy, rng)
+            if relax_map_center_clear
+            else _iter_tree_grove_pattern_tiles(cx, cy, rng)
+        )
+        for x, y in candidate_tiles:
+            if not self.is_in_grass(x, y):
+                continue
+            if (x, y) in protected_th:
+                continue
+            if self.is_stone_blocking(x, y):
+                continue
+            if (x, y) in self._trees:
+                continue
+            if rng.random() >= _TREE_GROVE_FILL_PROBABILITY:
+                continue
+            self._trees[(x, y)] = Tree(stage=TreeStage.ADULT, species=rng.randint(0, 2))
 
     def _init_trees(self, rng: random.Random) -> None:
         mid = GRID_SIZE // 2
@@ -418,8 +689,7 @@ class World:
         for gx, gy in eligible:
             if placed >= target:
                 break
-            seed = gx * 92821 + gy * 68917 + GRID_SIZE * 37
-            self._trees[(gx, gy)] = Tree(stage=stage_from_tile_seed(seed), species=seed % 3)
+            self._trees[(gx, gy)] = Tree(stage=TreeStage.ADULT, species=rng.randint(0, 2))
             placed += 1
         self._scatter_trees_placed = placed
 
@@ -432,22 +702,19 @@ class World:
         for cx, cy in self._stone_centers:
             radius = rng.randint(1, 4)
             relax_center_clear = ring_center is not None and (cx, cy) == ring_center
-            for y in range(cy - radius, cy + radius + 1):
-                for x in range(cx - radius, cx + radius + 1):
-                    if not self.is_in_grass(x, y):
-                        continue
-                    if (x, y) in protected_th:
-                        continue
-                    if not relax_center_clear and max(abs(x - mid), abs(y - mid)) <= center_clear_radius:
-                        continue
-                    if max(abs(x - cx), abs(y - cy)) > radius:
-                        continue
-                    if self.is_tree_blocking(x, y):
-                        continue
-                    if (x, y) in self._stones:
-                        continue
-                    tile = (x, y)
-                    self._stones[tile] = Stone()
+            for x, y in _iter_stone_cluster_pattern_tiles(cx, cy, radius, rng):
+                if not self.is_in_grass(x, y):
+                    continue
+                if (x, y) in protected_th:
+                    continue
+                if not relax_center_clear and max(abs(x - mid), abs(y - mid)) <= center_clear_radius:
+                    continue
+                if self.is_tree_blocking(x, y):
+                    continue
+                if (x, y) in self._stones:
+                    continue
+                tile = (x, y)
+                self._stones[tile] = Stone(variant=rng.randint(0, 4))
 
 
 def _min_chebyshev_to_tiles(px: int, py: int, tiles: set[tuple[int, int]]) -> int:
@@ -490,6 +757,22 @@ def _ring_center_candidates_no_stone_disk(
     return out
 
 
+def _ring_center_candidates(world: World, ring: int) -> list[tuple[int, int]]:
+    """Candidates exactly on a TH-distance ring, requiring only in-bounds + no stone at center."""
+    protected = town_hall_footprint_tiles()
+    out: list[tuple[int, int]] = []
+    for cy in range(GRID_SIZE):
+        for cx in range(GRID_SIZE):
+            if not world.is_in_grass(cx, cy):
+                continue
+            if _min_chebyshev_to_tiles(cx, cy, protected) != ring:
+                continue
+            if world.is_stone_blocking(cx, cy):
+                continue
+            out.append((cx, cy))
+    return out
+
+
 def _pick_pair_priority_tree_grove_centers(world: World, rng: random.Random) -> list[tuple[int, int]]:
     """Up to two centers: ring ``_PRIORITY_TREE_RING_NEAR`` then ``_PRIORITY_TREE_RING_FAR`` from TH.
 
@@ -507,6 +790,21 @@ def _pick_pair_priority_tree_grove_centers(world: World, rng: random.Random) -> 
         for b in ring_far:
             if _chebyshev_point_distance(a, b) >= min_sep:
                 return [a, b]
+    # Fallback 1: keep both rings even if separation rule cannot be satisfied.
+    if ring_near and ring_far:
+        return [ring_near[0], ring_far[0]]
+
+    # Fallback 2: relax "no stones in full grove disk", keep exact ring requirement.
+    relaxed_near = _ring_center_candidates(world, _PRIORITY_TREE_RING_NEAR)
+    relaxed_far = _ring_center_candidates(world, _PRIORITY_TREE_RING_FAR)
+    rng.shuffle(relaxed_near)
+    rng.shuffle(relaxed_far)
+    if relaxed_near and relaxed_far:
+        for a in relaxed_near:
+            for b in relaxed_far:
+                if _chebyshev_point_distance(a, b) >= min_sep:
+                    return [a, b]
+        return [relaxed_near[0], relaxed_far[0]]
     return []
 
 

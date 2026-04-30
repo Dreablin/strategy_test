@@ -9,6 +9,7 @@ from game.world import World
 def test_stone_harvest_decrements_units_and_reports_depletion() -> None:
     stone = Stone()
     assert stone.units == 15
+    assert stone.variant == 0
     for expected in range(14, -1, -1):
         assert stone.harvest() == expected
     assert stone.is_depleted
@@ -63,3 +64,12 @@ def test_world_stone_reservation_api_mirrors_tree_behavior() -> None:
     assert world.reserve_stone(7, 8, worker_b) is True
     world.release_reservations_for(worker_b)
     assert world.is_stone_reserved(7, 8) is False
+
+
+def test_stone_variant_must_be_in_supported_range() -> None:
+    Stone(variant=0)
+    Stone(variant=4)
+    with pytest.raises(ValueError):
+        Stone(variant=-1)
+    with pytest.raises(ValueError):
+        Stone(variant=5)

@@ -10,14 +10,17 @@
     "gather_resource_search_radius": 20
   },
   "window": {
-    "size": [1280, 720]
+    "size": [
+      1280,
+      720
+    ]
   },
   "warehouse_bootstrap": {
     "town_hall": {
-      "wheat": 10,
-      "wood": 10,
-      "stone": 6,
-      "iron": 6,
+      "wheat": 15,
+      "wood": 15,
+      "stone": 10,
+      "iron": 5,
       "boards": 10
     }
   },
@@ -36,7 +39,8 @@
       "FARMER": 1,
       "FORESTER": 1,
       "CARRIER": 1,
-      "BUILDER": 1
+      "BUILDER": 1,
+      "SAWYER": 1
     }
   },
   "levels": {

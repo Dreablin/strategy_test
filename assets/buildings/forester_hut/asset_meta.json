@@ -1,4 +1,38 @@
 {
-  "anchor_px": [36, 48],
-  "notes": "Uses procedural fallback sprite until authored art is provided."
+  "ready": {
+    "default": {
+      "scale": 0.35,
+      "anchor_norm": [0.50, 0.93]
+    },
+    "levels": {
+      "1": {"scale": 0.26, "anchor_norm": [0.50, 0.89]},
+      "2": {"scale": 0.41, "anchor_norm": [0.47, 0.96]},
+      "3": {"scale": 0.41, "anchor_norm": [0.47, 0.96]},
+      "4": {"scale": 0.46, "anchor_norm": [0.47, 0.96]},
+      "5": {"scale": 0.46, "anchor_norm": [0.50, 0.93]},
+      "6": {"scale": 0.50, "anchor_norm": [0.50, 0.98]},
+      "7": {"scale": 0.50, "anchor_norm": [0.50, 0.98]},
+      "8": {"scale": 0.50, "anchor_norm": [0.50, 0.98]},
+      "9": {"scale": 0.50, "anchor_norm": [0.50, 0.98]},
+      "10": {"scale": 0.50, "anchor_norm": [0.50, 0.99]}
+    }
+  },
+  "construction": {
+    "default": {
+      "scale": 0.35,
+      "anchor_norm": [0.50, 0.93]
+    },
+    "levels": {
+      "1": {"scale": 0.23, "anchor_norm": [0.50, 0.83]},
+      "2": {"scale": 0.41, "anchor_norm": [0.47, 0.96]},
+      "3": {"scale": 0.41, "anchor_norm": [0.47, 0.96]},
+      "4": {"scale": 0.46, "anchor_norm": [0.47, 0.96]},
+      "5": {"scale": 0.46, "anchor_norm": [0.50, 0.93]},
+      "6": {"scale": 0.50, "anchor_norm": [0.50, 0.98]},
+      "7": {"scale": 0.50, "anchor_norm": [0.50, 0.98]},
+      "8": {"scale": 0.50, "anchor_norm": [0.50, 0.98]},
+      "9": {"scale": 0.50, "anchor_norm": [0.50, 0.98]},
+      "10": {"scale": 0.50, "anchor_norm": [0.50, 0.99]}
+    }
+  }
 }

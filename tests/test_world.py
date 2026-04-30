@@ -92,6 +92,7 @@ def test_generated_stones_have_units_and_never_overlap_trees() -> None:
     assert stones
     for (gx, gy), stone in stones:
         assert stone.units == 15
+        assert 0 <= stone.variant <= 4
         assert not world.is_tree_blocking(gx, gy)
 
 

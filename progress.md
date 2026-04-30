@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 21 — Wheat fields + farmer field cycle
-- **Next Task:** T244 — Phase 21 end-to-end smoke test
-- **Last Completed:** T243 — Regression sweep
-- **Total Progress:** 243 / 245 (Phase 19: 25 / 25 done; Phase 20: 11 / 11 done; Phase 21: 23 / 25 done)
+- **Next Task:** T245 — Final verification gate
+- **Last Completed:** T244 — Phase 21 end-to-end smoke test
+- **Total Progress:** 244 / 245 (Phase 19: 25 / 25 done; Phase 20: 11 / 11 done; Phase 21: 24 / 25 done)
 
 > **Archive:** Full history and completed phases are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -68,7 +68,7 @@
 ### 21.8 Regression, integration, and phase close
 
 - [x] **T243**: Regression sweep for existing worker/building/pathfinding behavior (especially construction, sawmill, carriers, forester). Fix any breakages; run targeted tests while iterating.
-- [ ] **T244**: Add end-to-end smoke `tests/test_smoke_phase21.py`: place farm + several fields, build fields via builder, sow to `PHASE_4`, harvest to farm storage, carrier exports wheat via shared queue, ensure loop repeats.
+- [x] **T244**: Add end-to-end smoke `tests/test_smoke_phase21.py`: place farm + several fields, build fields via builder, sow to `PHASE_4`, harvest to farm storage, carrier exports wheat via shared queue, ensure loop repeats.
 - [ ] **T245**: Final verification gate: full `pytest -q` + `ruff check src tests`; update Current Status and Notes; mark Phase 21 tasks; emit completion marker only when all tasks are `[x]`.
 
 ---
@@ -118,3 +118,4 @@
 - T241 GREEN check: `pytest -q` passes with phase-specific FIELD sprite selection (`PHASE_1..PHASE_4`) and render test coverage.
 - T242 GREEN check: `pytest -q` passes with farmer `sowing`/`harvesting` field-tile action bars rendered in worker overlay order and dedicated render test coverage.
 - T243 GREEN check: targeted regression sweep passes (`pytest -q` on construction, sawmill, forester, workers, pathfinding, and transport suites: `107 passed`).
+- T244 GREEN check: `tests/test_smoke_phase21.py` added and passing; fixed farmer `arrived_camp` deposit path so harvest now reaches farm storage and exports to Town Hall via carrier; full suite green (`504 passed`).

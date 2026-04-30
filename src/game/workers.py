@@ -1496,7 +1496,7 @@ class WorkerManager:
             return
 
         # Enter the farm home base first and begin a rest window.
-        if worker.state in {"working", "arrived_camp"}:
+        if worker.state == "working":
             self._park_worker_inside_building(worker, farm)
             worker.state = "resting"
             if worker.camp_wait_until_ms <= now_ms:

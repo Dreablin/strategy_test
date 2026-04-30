@@ -1329,7 +1329,7 @@ class WorkerManager:
         blocked.discard(worker.current_tile)
         for target in targets:
             best_path: list[tuple[int, int]] | None = None
-            for tile in self._approach_tiles(target):
+            for tile in self._builder_destination_tiles(target):
                 path = find_path_bfs(world, worker.current_tile, tile, blocked)
                 if path is None:
                     continue
@@ -1341,6 +1341,12 @@ class WorkerManager:
             worker.start_move(best_path, started_ms=now_ms)
             return
         return True
+
+    def _builder_destination_tiles(self, building: Building) -> list[tuple[int, int]]:
+        """Builder path target tiles for construction entry."""
+        if building.type_tag == "FIELD" and building.grid_pos is not None:
+            return [building.grid_pos]
+        return self._approach_tiles(building)
 
     @staticmethod
     def _sawmill_cycle_duration_ms(sawmill: Any) -> int:

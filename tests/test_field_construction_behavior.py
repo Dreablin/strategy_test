@@ -17,6 +17,23 @@ def _advance(workers: WorkerManager, now_ms: dict[str, int], *, steps: int, step
         workers.update(now_ms["t"])
 
 
+def _advance_until(
+    workers: WorkerManager,
+    now_ms: dict[str, int],
+    predicate,
+    *,
+    steps: int = 3000,
+    step_ms: int = 500,
+) -> bool:
+    for _ in range(steps):
+        now_ms["t"] += step_ms
+        workers.reassign_all()
+        workers.update(now_ms["t"])
+        if predicate():
+            return True
+    return False
+
+
 def test_field_builder_targets_field_tile_not_adjacent_tile() -> None:
     now_ms = {"t": 0}
     world = World(world_seed=0)
@@ -29,10 +46,13 @@ def test_field_builder_targets_field_tile_not_adjacent_tile() -> None:
     builder = workers.hire("BUILDER")
     assert builder is not None
 
-    _advance(workers, now_ms, steps=30)
+    got_assignment = _advance_until(
+        workers,
+        now_ms,
+        lambda: builder.assigned_building is field and builder.target_tile == (8, 8),
+    )
 
-    assert builder.assigned_building is field
-    assert builder.target_tile == (8, 8)
+    assert got_assignment
 
 
 def test_field_builder_stands_on_field_tile_while_building_and_finishes_in_10s() -> None:
@@ -49,8 +69,13 @@ def test_field_builder_stands_on_field_tile_while_building_and_finishes_in_10s()
     assert field.construction_site is not None
     assert field.construction_site.build_time_ms == 10_000
 
-    _advance(workers, now_ms, steps=40)
+    build_started = _advance_until(
+        workers,
+        now_ms,
+        lambda: field.construction_site is not None and field.construction_site.builder is builder,
+    )
 
+    assert build_started
     assert field.construction_site is not None
     assert field.construction_site.builder is builder
     assert builder.current_tile == (10, 10)

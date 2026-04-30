@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 21 — Wheat fields + farmer field cycle
-- **Next Task:** T223 — Wheat lifecycle domain model + RED tests (in progress)
-- **Last Completed:** T222 — Implement `Field` class + registration wiring
-- **Total Progress:** 222 / 245 (Phase 19: 25 / 25 done; Phase 20: 11 / 11 done; Phase 21: 2 / 25 done)
+- **Next Task:** T224 — FIELD construction behavior RED tests
+- **Last Completed:** T223 — Wheat lifecycle domain model + RED tests
+- **Total Progress:** 223 / 245 (Phase 19: 25 / 25 done; Phase 20: 11 / 11 done; Phase 21: 3 / 25 done)
 
 > **Archive:** Full history and completed phases are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -23,7 +23,7 @@
 
 - [x] **T221**: Add failing tests for new `FIELD` building type: footprint **1x1**, placeable from **Resource/Production** menu, cannot be upgraded (or level fixed at 1), and walkability semantics: field tile is always walkable for all workers. Include placement/registry/pathfinding assertions.
 - [x] **T222**: Implement `Field` domain model/building class + registration wiring (`config`, placement mapping, bottom bar entry under production/resource group). Keep construction resource cost empty (`{}`) and construction time `10_000 ms`.
-- [~] **T223**: Add wheat lifecycle domain model in a dedicated module (or field module): states `PHASE_1..PHASE_4` plus `EMPTY` (ready-to-sow). Add pure helpers for transitions and timestamps. Write RED tests for state progression and reset-after-harvest.
+- [x] **T223**: Add wheat lifecycle domain model in a dedicated module (or field module): states `PHASE_1..PHASE_4` plus `EMPTY` (ready-to-sow). Add pure helpers for transitions and timestamps. Write RED tests for state progression and reset-after-harvest.
 
 ### 21.2 Construction flow — builder-on-tile build for FIELD
 
@@ -97,4 +97,4 @@
 - Tests run headless via `SDL_VIDEODRIVER=dummy` in `tests/conftest.py`.
 - Extended history, completed phase checklists, and decisions log: **`progress_archive.md`**.
 - Pathfinding contract: **4-dir** `find_path_bfs` (no diagonals), aligned with PRD.
-- T223 RED check: `pytest -q` fails on missing `game.buildings.field` wheat lifecycle constants/helpers (`WHEAT_EMPTY`, `next_wheat_phase`, `reset_after_harvest`).
+- T223 GREEN check: `pytest -q` passes after adding wheat lifecycle constants/helpers in `game.buildings.field`.

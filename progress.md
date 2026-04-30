@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 21 — Wheat fields + farmer field cycle
-- **Next Task:** T243 — Regression sweep
-- **Last Completed:** T242 — Farmer action progress bars draw order
-- **Total Progress:** 242 / 245 (Phase 19: 25 / 25 done; Phase 20: 11 / 11 done; Phase 21: 22 / 25 done)
+- **Next Task:** T244 — Phase 21 end-to-end smoke test
+- **Last Completed:** T243 — Regression sweep
+- **Total Progress:** 243 / 245 (Phase 19: 25 / 25 done; Phase 20: 11 / 11 done; Phase 21: 23 / 25 done)
 
 > **Archive:** Full history and completed phases are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -67,7 +67,7 @@
 
 ### 21.8 Regression, integration, and phase close
 
-- [ ] **T243**: Regression sweep for existing worker/building/pathfinding behavior (especially construction, sawmill, carriers, forester). Fix any breakages; run targeted tests while iterating.
+- [x] **T243**: Regression sweep for existing worker/building/pathfinding behavior (especially construction, sawmill, carriers, forester). Fix any breakages; run targeted tests while iterating.
 - [ ] **T244**: Add end-to-end smoke `tests/test_smoke_phase21.py`: place farm + several fields, build fields via builder, sow to `PHASE_4`, harvest to farm storage, carrier exports wheat via shared queue, ensure loop repeats.
 - [ ] **T245**: Final verification gate: full `pytest -q` + `ruff check src tests`; update Current Status and Notes; mark Phase 21 tasks; emit completion marker only when all tasks are `[x]`.
 
@@ -117,3 +117,4 @@
 - T240 GREEN check: `pytest -q` passes with farm panel/status hints for `No fields in radius`, `Storage full`, `Resting`, `Moving`, `Sowing`, and `Harvesting`.
 - T241 GREEN check: `pytest -q` passes with phase-specific FIELD sprite selection (`PHASE_1..PHASE_4`) and render test coverage.
 - T242 GREEN check: `pytest -q` passes with farmer `sowing`/`harvesting` field-tile action bars rendered in worker overlay order and dedicated render test coverage.
+- T243 GREEN check: targeted regression sweep passes (`pytest -q` on construction, sawmill, forester, workers, pathfinding, and transport suites: `107 passed`).

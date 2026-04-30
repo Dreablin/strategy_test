@@ -72,8 +72,10 @@ class BuildingRegistry:
             return False
         if self._world_footprint_overlaps_stones(gx, gy, w, h):
             return False
-        # Require at least one empty tile between any two footprints.
-        min_allowed = 2
+        # Spacing rule:
+        # - regular buildings require one empty tile gap (min chebyshev distance 2),
+        # - FIELD tiles may be placed directly adjacent to buildings.
+        min_allowed = 1 if cls.type_tag == "FIELD" else 2
         for b in self._buildings:
             pos = b.grid_pos
             if pos is None:

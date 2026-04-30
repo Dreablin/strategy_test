@@ -42,6 +42,26 @@ def test_farmer_sows_empty_field_to_phase_1_after_action_time() -> None:
     assert farmer.state in {"resting", "working_field"}
 
 
+def test_farmer_treats_newly_built_field_as_empty_and_can_sow() -> None:
+    now_ms = {"t": 0}
+    world = World(world_seed=11)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    farm = registry.place(Farm, near_town_hall_tile(10, 8))
+    farm.construction_site = None
+    field = registry.place(Field, near_town_hall_tile(7, 8))
+    field.construction_site = None
+    workers = WorkerManager(registry, now_ms_fn=lambda: now_ms["t"])
+    farmer = workers.hire("FARMER")
+    assert farmer is not None
+
+    # No explicit _write_field_phase call: freshly built field should be considered EMPTY.
+    _advance(workers, now_ms, steps=220, step_ms=500)
+    assert workers._read_field_phase(field) == WHEAT_PHASE_1  # noqa: SLF001
+
+
 def test_farmer_waits_full_rest_interval_before_next_dispatch_after_sow() -> None:
     now_ms = {"t": 0}
     world = World(world_seed=2)

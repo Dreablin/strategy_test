@@ -8,6 +8,7 @@ import pytest
 
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
+from game.buildings.lumber_camp import LumberCamp
 from game.pathfinding import find_path_bfs
 from game.ui.bottom_bar import _RESOURCE_BUTTONS
 from game.world import World
@@ -55,3 +56,16 @@ def test_registry_places_field_and_keeps_tile_walkable_for_pathing() -> None:
     path = find_path_bfs(world, (7, 8), (9, 8), blocked)
     assert path is not None
     assert tile in path
+
+
+def test_field_can_be_placed_adjacent_to_other_buildings() -> None:
+    field_cls = _require_field_class()
+    world = World(world_seed=0)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, (20, 20))
+    registry.place(LumberCamp, (10, 10))
+
+    # Edge-adjacent to the 2x2 LumberCamp footprint should be allowed for FIELD.
+    assert registry.can_place(field_cls, (12, 10))

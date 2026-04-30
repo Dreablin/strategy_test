@@ -1636,8 +1636,8 @@ class WorkerManager:
         if pos is not None:
             state = getattr(self, "_field_state", None)
             if state is not None:
-                return str(state.get((int(pos[0]), int(pos[1])), WHEAT_PHASE_1)).upper()
-        return WHEAT_PHASE_1
+                return str(state.get((int(pos[0]), int(pos[1])), WHEAT_EMPTY)).upper()
+        return WHEAT_EMPTY
 
     def _write_field_phase(self, field: Building, phase: str) -> None:
         if not hasattr(self, "_field_state"):

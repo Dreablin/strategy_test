@@ -7,6 +7,7 @@ from game.buildings.registry import BuildingRegistry
 from game.buildings.school import School
 from game.buildings.sawmill import Sawmill
 from game.buildings.town_hall import TownHall
+from game.buildings.field import Field
 from game.camera import Camera
 from game.input import TOP_BAR_HEIGHT, GameInput, screen_to_grid
 from game.render import Renderer
@@ -57,6 +58,28 @@ def test_map_click_opens_panel_for_building() -> None:
     inp.handle(surface, pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=pos))
     assert inp.panel_building is not None
     assert inp.panel_building.type_tag == "LUMBER_CAMP"
+
+
+def test_map_click_on_field_does_not_open_panel() -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World(world_seed=0)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, (20, 20))
+    field = registry.place(Field, (12, 10))
+    field.construction_site = None
+    camera = Camera()
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(), camera)
+    pos = _tile_center(surface, world, 12, 10)
+
+    inp.handle(
+        surface,
+        pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=pos),
+    )
+
+    assert inp.panel_building is None
 
 
 def test_outside_panel_click_closes() -> None:

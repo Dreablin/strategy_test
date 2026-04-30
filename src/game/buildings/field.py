@@ -11,6 +11,7 @@ WHEAT_PHASE_1 = "PHASE_1"
 WHEAT_PHASE_2 = "PHASE_2"
 WHEAT_PHASE_3 = "PHASE_3"
 WHEAT_PHASE_4 = "PHASE_4"
+WHEAT_GROWTH_STEP_MS = 45_000
 
 _WHEAT_PHASE_ORDER: tuple[str, ...] = (
     WHEAT_EMPTY,
@@ -41,6 +42,26 @@ def reset_after_harvest(current_phase: str) -> str:
     if phase != WHEAT_PHASE_4:
         raise ValueError("harvest reset requires PHASE_4")
     return WHEAT_EMPTY
+
+
+def advance_wheat_growth(
+    current_phase: str,
+    last_change_ms: int,
+    *,
+    now_ms: int,
+    growth_step_ms: int = WHEAT_GROWTH_STEP_MS,
+) -> tuple[str, int]:
+    phase = str(current_phase).upper()
+    if phase not in _WHEAT_PHASE_ORDER:
+        raise ValueError(f"unknown wheat phase: {current_phase!r}")
+    if phase in {WHEAT_EMPTY, WHEAT_PHASE_4}:
+        return phase, int(last_change_ms)
+
+    if int(now_ms) - int(last_change_ms) < int(growth_step_ms):
+        return phase, int(last_change_ms)
+
+    next_phase = next_wheat_phase(phase)
+    return next_phase, int(now_ms)
 
 
 class Field(Building):

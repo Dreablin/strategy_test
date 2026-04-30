@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 21 — Wheat fields + farmer field cycle
-- **Next Task:** T233 — Farmer sow action loop implementation
-- **Last Completed:** T232 — Farmer harvest action loop implementation
-- **Total Progress:** 232 / 245 (Phase 19: 25 / 25 done; Phase 20: 11 / 11 done; Phase 21: 12 / 25 done)
+- **Next Task:** T234 — Farmer rest gating integration
+- **Last Completed:** T233 — Farmer sow action loop implementation
+- **Total Progress:** 233 / 245 (Phase 19: 25 / 25 done; Phase 20: 11 / 11 done; Phase 21: 13 / 25 done)
 
 > **Archive:** Full history and completed phases are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -45,7 +45,7 @@
   2) if none, pick empty field (`EMPTY`) for sowing;  
   3) if neither exists, stay/rest and retry later.
 - [x] **T232**: Implement farmer navigation + action loop for **harvest** action: move to target field tile, perform `5_000 ms` action with progress bar, then carry wheat back to farm local storage.
-- [ ] **T233**: Implement farmer navigation + action loop for **sow** action: move to empty field tile, perform `5_000 ms` action with progress bar, set field to `PHASE_1`, return to farm.
+- [x] **T233**: Implement farmer navigation + action loop for **sow** action: move to empty field tile, perform `5_000 ms` action with progress bar, set field to `PHASE_1`, return to farm.
 - [ ] **T234**: Integrate standard post-action rest cycle (same rest semantics as other producer workers) between farmer work actions; add tests for rest gating before next dispatch.
 
 ### 21.5 Farm storage and capacities
@@ -107,3 +107,4 @@
 - T230 RED check: `pytest -q` fails because farmer stays generic `working` and does not enter farm rest/field-cycle states.
 - T231 RED check: `pytest -q` fails on missing farmer target selector (`select_farmer_field_target`) and no runtime priority dispatch yet.
 - T232 GREEN check: `pytest -q` passes with farmer rest->target->harvest->return loop and priority selector wired in runtime; full suite green.
+- T233 GREEN check: `pytest -q` passes with farmer empty-field sow action (`5_000 ms`) setting `PHASE_1` and returning to farm; full suite green.

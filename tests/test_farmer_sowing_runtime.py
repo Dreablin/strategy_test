@@ -1,0 +1,43 @@
+"""Runtime tests for farmer sow action loop (T233)."""
+
+from __future__ import annotations
+
+from game.buildings.farm import Farm
+from game.buildings.field import WHEAT_EMPTY, WHEAT_PHASE_1
+from game.buildings.field import Field
+from game.buildings.registry import BuildingRegistry
+from game.buildings.town_hall import TownHall
+from game.config import near_town_hall_tile, town_hall_origin_tile
+from game.world import World
+from game.workers import WorkerManager
+
+
+def _advance(workers: WorkerManager, now_ms: dict[str, int], *, steps: int = 2000, step_ms: int = 500) -> None:
+    for _ in range(steps):
+        now_ms["t"] += step_ms
+        workers.reassign_all()
+        workers.update(now_ms["t"])
+
+
+def test_farmer_sows_empty_field_to_phase_1_after_action_time() -> None:
+    now_ms = {"t": 0}
+    world = World(world_seed=1)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    farm = registry.place(Farm, near_town_hall_tile(10, 8))
+    farm.construction_site = None
+    field = registry.place(Field, near_town_hall_tile(7, 8))
+    field.construction_site = None
+
+    workers = WorkerManager(registry, now_ms_fn=lambda: now_ms["t"])
+    workers._write_field_phase(field, WHEAT_EMPTY)  # noqa: SLF001
+    farmer = workers.hire("FARMER")
+    assert farmer is not None
+
+    _advance(workers, now_ms)
+
+    assert workers._read_field_phase(field) == WHEAT_PHASE_1  # noqa: SLF001
+    assert farmer.state in {"resting", "working_field"}
+

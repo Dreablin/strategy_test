@@ -12,6 +12,7 @@ from game.buildings.field import (
     WHEAT_EMPTY,
     WHEAT_PHASE_1,
     WHEAT_PHASE_4,
+    is_ready_for_sowing,
     on_field_harvest,
 )
 from game.buildings.school import School
@@ -273,7 +274,7 @@ class Worker:
         self.idle = False
 
     def update(self, now_ms: int) -> None:
-        if self.state not in {"moving", "going_to_tree", "going_to_stone", "going_to_plant_tile", "returning"} or self.target_tile is None:
+        if self.state not in {"moving", "going_to_tree", "going_to_stone", "going_to_plant_tile", "going_to_field", "returning"} or self.target_tile is None:
             return
         travel_ms = self._effective_travel_ms()
         elapsed = max(0, int(now_ms) - self.segment_started_ms)
@@ -295,6 +296,8 @@ class Worker:
                 self.state = "arrived_stone"
             elif self.state == "going_to_plant_tile":
                 self.state = "arrived_plant_tile"
+            elif self.state == "going_to_field":
+                self.state = "arrived_field"
             elif self.state == "returning":
                 self.state = "arrived_camp"
             else:
@@ -314,7 +317,7 @@ class Worker:
 class WorkerManager:
     """Tracks workers; notifies assignments when a staffed building is demolished (PRD F-WORK)."""
 
-    __slots__ = ("_now_ms_fn", "_registry", "_workers", "_transport_queue", "_updaters")
+    __slots__ = ("_now_ms_fn", "_registry", "_workers", "_transport_queue", "_updaters", "_field_state")
     _WORKER_TO_BUILDING: dict[str, str] = {
         "LUMBERJACK": "LUMBER_CAMP",
         "STONECUTTER": "STONE_MINE",
@@ -334,6 +337,7 @@ class WorkerManager:
         self._registry = registry
         self._workers: list[Worker] = []
         self._transport_queue: list[TransportTask] = []
+        self._field_state: dict[tuple[int, int], str] = {}
         self._now_ms_fn = now_ms_fn or (lambda: 0)
         self._updaters: dict[str, Callable[[Worker, int, Any], None]] = {
             "FORESTER": self._update_forester,
@@ -1437,11 +1441,25 @@ class WorkerManager:
             worker.camp_wait_until_ms = now_ms
             return
 
-        if worker.state == "going_to_field":
-            if worker.target_tile == worker.current_tile:
-                worker.state = "harvesting"
-                worker.chop_started_ms = now_ms
-                worker.chop_duration_ms = FARMER_ACTION_MS
+        if worker.state == "arrived_field":
+            field = self._field_at(tuple(worker.current_tile))
+            phase = self._read_field_phase(field) if field is not None else WHEAT_PHASE_1
+            worker.state = "sowing" if is_ready_for_sowing(phase) else "harvesting"
+            worker.chop_started_ms = now_ms
+            worker.chop_duration_ms = FARMER_ACTION_MS
+            return
+
+        if worker.state == "sowing":
+            if now_ms - worker.chop_started_ms < worker.chop_duration_ms:
+                return
+            target_tile = worker.target_tree
+            if target_tile is not None:
+                field = self._field_at(target_tile)
+                if field is not None:
+                    self._write_field_phase(field, WHEAT_PHASE_1)
+            if self._start_return_to_camp(worker, now_ms):
+                return
+            worker.state = "arrived_camp"
             return
 
         if worker.state == "harvesting":
@@ -1495,7 +1513,7 @@ class WorkerManager:
                 continue
             tile = (int(building.grid_pos[0]), int(building.grid_pos[1]))
             tile_to_field[tile] = building
-            phases[tile] = self._read_field_phase(building)
+            phases[tile] = self._read_field_phase(building, tile=tile)
         selected_tile = select_farmer_field_target(
             farm_home=farm_home,
             field_phases=phases,
@@ -1505,17 +1523,21 @@ class WorkerManager:
             return None
         return tile_to_field.get(selected_tile)
 
-    @staticmethod
-    def _read_field_phase(field: Building) -> str:
-        return str(getattr(field, "wheat_phase", WHEAT_PHASE_1)).upper()
+    def _read_field_phase(self, field: Building, *, tile: tuple[int, int] | None = None) -> str:
+        pos = tile if tile is not None else field.grid_pos
+        if pos is not None:
+            state = getattr(self, "_field_state", None)
+            if state is not None:
+                return str(state.get((int(pos[0]), int(pos[1])), WHEAT_PHASE_1)).upper()
+        return WHEAT_PHASE_1
 
-    @staticmethod
-    def _write_field_phase(field: Building, phase: str) -> None:
-        # Field currently uses slots; keep state in this helper once expanded.
-        try:
-            setattr(field, "wheat_phase", str(phase).upper())
-        except AttributeError:
-            pass
+    def _write_field_phase(self, field: Building, phase: str) -> None:
+        if not hasattr(self, "_field_state"):
+            setattr(self, "_field_state", {})
+        state = getattr(self, "_field_state")
+        if field.grid_pos is None:
+            return
+        state[(int(field.grid_pos[0]), int(field.grid_pos[1]))] = str(phase).upper()
 
     def _field_at(self, tile: tuple[int, int]) -> Building | None:
         if self._registry is None:

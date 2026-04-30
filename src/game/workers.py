@@ -840,9 +840,13 @@ class WorkerManager:
         for idx, task in enumerate(self._transport_queue):
             if task.source not in known or task.target not in known:
                 continue
-            has_storage_source = hasattr(task.source, "stored") and int(
-                getattr(task.source, "stored", 0)
-            ) > 0
+            has_storage_source = False
+            if hasattr(task.source, "stored") and int(getattr(task.source, "stored", 0)) > 0:
+                has_storage_source = True
+            elif task.resource == "wood" and hasattr(task.source, "input_amount"):
+                has_storage_source = int(task.source.input_amount()) > 0  # type: ignore[attr-defined]
+            elif task.resource == "boards" and hasattr(task.source, "output_amount"):
+                has_storage_source = int(task.source.output_amount()) > 0  # type: ignore[attr-defined]
             has_warehouse_source = hasattr(task.source, "warehouse_amount") and int(
                 task.source.warehouse_amount(task.resource)  # type: ignore[attr-defined]
             ) > 0
@@ -911,28 +915,65 @@ class WorkerManager:
                 worker.idle = True
                 return
             if not hasattr(task.source, "take_from_storage"):
-                if not hasattr(task.source, "take_from_warehouse"):
+                if task.resource == "wood" and hasattr(task.source, "take_wood_in"):
+                    try:
+                        task.source.take_wood_in(1)  # type: ignore[attr-defined]
+                    except ValueError:
+                        self._transport_queue.append(task)
+                        worker.transport_task = None
+                        worker.state = "idle"
+                        worker.idle = True
+                        next_task = self._next_transport_task()
+                        if next_task is not None:
+                            worker.transport_task = next_task
+                            worker.carrying = None
+                            if not self._start_move_to_building(worker, next_task.source, now_ms):
+                                self._transport_queue.insert(0, next_task)
+                                worker.transport_task = None
+                                worker.state = "idle"
+                                worker.idle = True
+                        return
+                elif task.resource == "boards" and hasattr(task.source, "take_boards_out"):
+                    try:
+                        task.source.take_boards_out(1)  # type: ignore[attr-defined]
+                    except ValueError:
+                        self._transport_queue.append(task)
+                        worker.transport_task = None
+                        worker.state = "idle"
+                        worker.idle = True
+                        next_task = self._next_transport_task()
+                        if next_task is not None:
+                            worker.transport_task = next_task
+                            worker.carrying = None
+                            if not self._start_move_to_building(worker, next_task.source, now_ms):
+                                self._transport_queue.insert(0, next_task)
+                                worker.transport_task = None
+                                worker.state = "idle"
+                                worker.idle = True
+                        return
+                elif not hasattr(task.source, "take_from_warehouse"):
                     worker.transport_task = None
                     worker.state = "idle"
                     worker.idle = True
                     return
-                try:
-                    task.source.take_from_warehouse(task.resource, 1)  # type: ignore[attr-defined]
-                except ValueError:
-                    self._transport_queue.append(task)
-                    worker.transport_task = None
-                    worker.state = "idle"
-                    worker.idle = True
-                    next_task = self._next_transport_task()
-                    if next_task is not None:
-                        worker.transport_task = next_task
-                        worker.carrying = None
-                        if not self._start_move_to_building(worker, next_task.source, now_ms):
-                            self._transport_queue.insert(0, next_task)
-                            worker.transport_task = None
-                            worker.state = "idle"
-                            worker.idle = True
-                    return
+                else:
+                    try:
+                        task.source.take_from_warehouse(task.resource, 1)  # type: ignore[attr-defined]
+                    except ValueError:
+                        self._transport_queue.append(task)
+                        worker.transport_task = None
+                        worker.state = "idle"
+                        worker.idle = True
+                        next_task = self._next_transport_task()
+                        if next_task is not None:
+                            worker.transport_task = next_task
+                            worker.carrying = None
+                            if not self._start_move_to_building(worker, next_task.source, now_ms):
+                                self._transport_queue.insert(0, next_task)
+                                worker.transport_task = None
+                                worker.state = "idle"
+                                worker.idle = True
+                        return
             else:
                 try:
                     task.source.take_from_storage(1)  # type: ignore[attr-defined]
@@ -956,7 +997,11 @@ class WorkerManager:
                 # Town Hall center can trap pathfinding because it is fully enclosed by occupied tiles.
                 self._move_worker_to_building_approach(worker, task.source)
             if not self._start_move_to_building(worker, task.target, now_ms):
-                if hasattr(task.source, "add_to_storage"):
+                if task.resource == "wood" and hasattr(task.source, "add_wood_in"):
+                    task.source.add_wood_in(1)  # type: ignore[attr-defined]
+                elif task.resource == "boards" and hasattr(task.source, "add_boards_out"):
+                    task.source.add_boards_out(1)  # type: ignore[attr-defined]
+                elif hasattr(task.source, "add_to_storage"):
                     task.source.add_to_storage(1)  # type: ignore[attr-defined]
                 elif hasattr(task.source, "add_to_warehouse"):
                     task.source.add_to_warehouse(task.resource, 1)  # type: ignore[attr-defined]
@@ -987,6 +1032,18 @@ class WorkerManager:
                     delivered_target = town_hall
                 elif hasattr(task.target, "add_to_warehouse"):
                     task.target.add_to_warehouse(task.resource, 1)  # type: ignore[attr-defined]
+        elif task.resource == "wood" and hasattr(task.target, "add_wood_in"):
+            if int(task.target.input_amount()) < int(task.target.input_capacity()):  # type: ignore[attr-defined]
+                task.target.add_wood_in(1)  # type: ignore[attr-defined]
+            else:
+                town_hall = self._primary_town_hall()
+                if town_hall is not None:
+                    town_hall.add_to_warehouse(task.resource, 1)
+                    delivered_target = town_hall
+                elif hasattr(task.target, "add_to_warehouse"):
+                    task.target.add_to_warehouse(task.resource, 1)  # type: ignore[attr-defined]
+        elif task.resource == "boards" and hasattr(task.target, "add_to_warehouse"):
+            task.target.add_to_warehouse(task.resource, 1)  # type: ignore[attr-defined]
         elif hasattr(task.target, "add_to_warehouse"):
             task.target.add_to_warehouse(task.resource, 1)  # type: ignore[attr-defined]
         self._move_worker_to_building_approach(worker, delivered_target)

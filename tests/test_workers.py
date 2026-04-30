@@ -1176,6 +1176,87 @@ def test_update_sawmill_output_enqueue_is_deduped_across_ticks() -> None:
     assert all(t.source is sawmill for t in queued)
 
 
+def test_carrier_refills_sawmill_wood_input_from_town_hall() -> None:
+    world = World(world_seed=2)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    sawmill = registry.place(Sawmill, near_town_hall_tile(16, 8))
+    sawmill.construction_site = None
+    town_hall.add_to_warehouse("wood", 1)
+    wm = WorkerManager(registry, now_ms_fn=lambda: 0)
+    carrier = wm.hire("CARRIER")
+    assert carrier is not None
+    wm.enqueue_transport_task(resource="wood", source=town_hall, target=sawmill, amount=1)
+
+    for now_ms in range(0, 120_000, 500):
+        wm.update(now_ms)
+        if sawmill.input_amount() >= 1:
+            break
+
+    assert sawmill.input_amount() == 1
+    assert town_hall.warehouse_amount("wood") == 0
+
+
+def test_carrier_exports_boards_from_sawmill_to_town_hall() -> None:
+    world = World(world_seed=2)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    sawmill = registry.place(Sawmill, near_town_hall_tile(18, 8))
+    sawmill.construction_site = None
+    sawmill.add_boards_out(1)
+    wm = WorkerManager(registry, now_ms_fn=lambda: 0)
+    carrier = wm.hire("CARRIER")
+    assert carrier is not None
+    wm.enqueue_transport_task(resource="boards", source=sawmill, target=town_hall, amount=1)
+
+    for now_ms in range(0, 300_000, 500):
+        wm.update(now_ms)
+        if town_hall.warehouse_amount("boards") >= 1:
+            break
+
+    assert town_hall.warehouse_amount("boards") == 1
+    assert sawmill.output_amount() == 0
+
+
+def test_carrier_redirects_wood_to_town_hall_if_sawmill_input_becomes_full_mid_route() -> None:
+    world = World(world_seed=2)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    sawmill = registry.place(Sawmill, near_town_hall_tile(20, 8))
+    sawmill.construction_site = None
+    town_hall.add_to_warehouse("wood", 1)
+    wm = WorkerManager(registry, now_ms_fn=lambda: 0)
+    carrier = wm.hire("CARRIER")
+    assert carrier is not None
+    wm.enqueue_transport_task(resource="wood", source=town_hall, target=sawmill, amount=1)
+
+    loading_ms = None
+    for now_ms in range(0, 120_000, 500):
+        wm.update(now_ms)
+        if carrier.state == "carrier_loading":
+            loading_ms = now_ms
+            break
+    assert loading_ms is not None
+    wm.update(loading_ms + 2_100)
+    assert carrier.carrying == "wood"
+
+    sawmill.add_wood_in(sawmill.input_capacity())
+
+    for now_ms in range(loading_ms + 2_200, loading_ms + 120_000, 500):
+        wm.update(now_ms)
+        if carrier.transport_task is None and carrier.carrying is None:
+            break
+
+    assert sawmill.input_amount() == sawmill.input_capacity()
+    assert town_hall.warehouse_amount("wood") == 1
+
+
 def test_next_transport_task_picks_highest_priority_available_task_first() -> None:
     world = World(world_seed=0)
     registry = BuildingRegistry(world)

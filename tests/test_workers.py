@@ -744,6 +744,28 @@ def test_production_status_for_building_resting_and_gathering_states() -> None:
     assert wm.production_status_for_building(camp) == "On the way"
 
 
+def test_production_status_for_sawmill_blocked_reason_states() -> None:
+    sawmill = Sawmill(level=1, grid_pos=(10, 10))
+    wm = WorkerManager()
+    assert wm.production_status_for_building(sawmill) == "No worker"
+
+    worker = Worker("SAWYER")
+    wm.add_worker(worker)
+    wm.assign_to_building(worker, sawmill)
+    sawmill.set_active(False)
+    assert wm.production_status_for_building(sawmill) == "Inactive"
+
+    sawmill.set_active(True)
+    assert wm.production_status_for_building(sawmill) == "No wood"
+    sawmill.add_wood_in(1)
+    sawmill.add_boards_out(sawmill.output_capacity())
+    assert wm.production_status_for_building(sawmill) == "Output full"
+
+    sawmill.take_boards_out(sawmill.output_capacity())
+    worker.state = "resting"
+    assert wm.production_status_for_building(sawmill) == "Resting"
+
+
 def test_worker_status_for_under_construction_reports_resting_or_empty() -> None:
     camp = LumberCamp(level=1, grid_pos=(10, 10))
     camp.construction_site = ConstructionSite(

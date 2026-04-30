@@ -417,6 +417,16 @@ class WorkerManager:
 
         if hasattr(building, "active") and not bool(getattr(building, "active")):
             return "Inactive"
+        if building.type_tag == "SAWMILL":
+            if worker.state == "resting":
+                return "Resting"
+            if int(getattr(building, "output_amount", lambda: 0)()) >= int(getattr(building, "output_capacity", lambda: 0)()):
+                return "Output full"
+            if int(getattr(building, "input_amount", lambda: 0)()) <= 0:
+                return "No wood"
+            if worker.state == "processing":
+                return "Processing"
+            return "Ready"
         if hasattr(building, "is_storage_full") and building.is_storage_full():
             return "Storage full"
 
@@ -438,6 +448,8 @@ class WorkerManager:
             return "Ready"
         if worker.state == "idle":
             return "Waiting target"
+        if worker.state == "resting":
+            return "Resting"
         return "Unknown"
 
     def staffed_buildings(self) -> set[Building]:

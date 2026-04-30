@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 20 — Sawmill processing chain (boards)
-- **Next Task:** T220 — implement SawmillPanel UI and end-to-end smoke
-- **Last Completed:** T219 — sawmill level milestone storage expansion
-- **Total Progress:** 219 / 220 (Phase 19: 25 / 25 tasks done; Phase 20: 10 / 11 tasks done)
+- **Next Task:** None
+- **Last Completed:** T220 — SawmillPanel UI and phase-20 end-to-end smoke
+- **Total Progress:** 220 / 220 (Phase 19: 25 / 25 tasks done; Phase 20: 11 / 11 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -207,7 +207,7 @@
 ### 20.5 Level bonuses and UI
 
 - [x] **T219**: Add level milestone storage expansion tests and implementation: on levels **5** and **10**, increase both sawmill storages (`wood_in` and `boards_out`) per agreed step function; expose capacities in building panel/status methods.
-- [ ] **T220**: Implement/extend `SawmillPanel` UI: show active toggle, worker status, input/output counts, production progress bar, and blocked reason hints (`inactive`, `no wood`, `output full`, `no worker`, `resting`). Add headless panel interaction tests and one end-to-end smoke test: train SAWYER -> deliver wood -> produce boards -> rest -> export boards.
+- [x] **T220**: Implement/extend `SawmillPanel` UI: show active toggle, worker status, input/output counts, production progress bar, and blocked reason hints (`inactive`, `no wood`, `output full`, `no worker`, `resting`). Add headless panel interaction tests and one end-to-end smoke test: train SAWYER -> deliver wood -> produce boards -> rest -> export boards.
 
 ---
 
@@ -268,6 +268,7 @@
 | 2026-04-30 | T217 | Added `sawmill_output_transport_tasks(registry)` plus `_enqueue_sawmill_output_tasks()` in `WorkerManager.update()` to emit deduped low-priority `boards` export tasks from non-construction sawmills with `boards_out > 0` to Town Hall. Added tests for export task generation shape and cross-tick dedupe/throttle behavior to prevent queue spam. | Prepares carrier-side boards export flow while keeping task generation bounded and stable before source/target storage hook integration in T218. |
 | 2026-04-30 | T218 | Integrated carrier source/target hooks for sawmill storages in `WorkerManager._update_carrier`: source pickup now supports `take_wood_in` / `take_boards_out`; target unload supports sawmill `add_wood_in` and boards delivery to Town Hall warehouse; input-full-at-unload redirects carried wood back to Town Hall using existing redirect convention. Added carrier integration tests for refill, boards export, and mid-route/full redirect behavior. | Completes sawmill transport execution path so generated refill/export tasks now mutate sawmill/Town Hall storages correctly under dynamic state changes. |
 | 2026-04-30 | T219 | Added milestone-capacity coverage in `tests/test_sawmill.py` and implemented sawmill storage step function in `Sawmill.input_capacity` / `output_capacity`: base `3` at L1-4, `4` at L5-9, `5` at L10+. Capacities remain exposed via existing panel-facing helper methods and storage add/take bounds continue enforcing the updated capacities. | Introduces explicit milestone growth behavior for sawmill storages while keeping runtime/UI callers on the same capacity API surface. |
+| 2026-04-30 | T220 | Added `ui/sawmill_panel.py` with active toggle, input/output counters, progress bar, and blocked reason hints (`inactive`, `no wood`, `output full`, `no worker`, `resting`) and wired it into `GameInput` draw/click routing. Extended worker production status for sawmill-specific states and added targeted panel/input/worker tests plus `tests/test_smoke_phase20.py` validating train SAWYER -> refill wood -> produce boards -> rest -> export boards end-to-end. | Completes Phase 20 UI and smoke validation so sawmill runtime behavior is visible/actionable in-panel and guarded by deterministic high-level integration coverage. |
 
 ## Issues & Blockers
 

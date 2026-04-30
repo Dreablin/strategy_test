@@ -5,6 +5,7 @@ import pygame
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.registry import BuildingRegistry
 from game.buildings.school import School
+from game.buildings.sawmill import Sawmill
 from game.buildings.town_hall import TownHall
 from game.camera import Camera
 from game.input import TOP_BAR_HEIGHT, GameInput, screen_to_grid
@@ -15,6 +16,7 @@ from game.ui.construction_panel import ConstructionPanel
 from game.ui.lumber_camp_panel import LumberCampPanel
 from game.ui.placement import PlacementController
 from game.ui.school_panel import SchoolPanel
+from game.ui.sawmill_panel import SawmillPanel
 from game.world import World
 from game.workers import Worker, WorkerManager
 from game.construction import ConstructionSite
@@ -212,6 +214,44 @@ def test_under_construction_panel_close_click_closes_without_demolish() -> None:
 
     assert inp.panel_building is None
     assert camp in registry.all()
+
+
+def test_sawmill_panel_draw_routing(monkeypatch) -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    sawmill = registry.place(Sawmill, near_town_hall_tile(16, 8))
+    sawmill.construction_site = None
+    camera = Camera()
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(registry), camera)
+    inp._panel = sawmill  # noqa: SLF001
+    called = {"sawmill": 0}
+
+    def _draw_sawmill(*args, **kwargs):
+        called["sawmill"] += 1
+
+    monkeypatch.setattr(SawmillPanel, "draw", staticmethod(_draw_sawmill))
+    inp.draw_panel(surface)
+    assert called["sawmill"] == 1
+
+
+def test_sawmill_panel_toggle_click_toggles_active() -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    sawmill = registry.place(Sawmill, near_town_hall_tile(18, 8))
+    sawmill.construction_site = None
+    camera = Camera()
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(registry), camera)
+    inp._panel = sawmill  # noqa: SLF001
+    layout = SawmillPanel.layout(surface, sawmill, worker_assigned=False, production_status="No worker")
+    inp.handle(
+        surface,
+        pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=layout.toggle.center),
+    )
+    assert sawmill.active is False
 
 
 def test_place_calls_reassign_all_and_assigns_idle_worker() -> None:

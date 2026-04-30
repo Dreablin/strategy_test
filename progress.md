@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 21 — Wheat fields + farmer field cycle
-- **Next Task:** T227 — Wheat growth timing RED tests
-- **Last Completed:** T226 — FIELD construction progress bar render support
-- **Total Progress:** 226 / 245 (Phase 19: 25 / 25 done; Phase 20: 11 / 11 done; Phase 21: 6 / 25 done)
+- **Next Task:** T228 — Implement wheat growth runtime updater
+- **Last Completed:** T227 — Wheat growth timing RED tests
+- **Total Progress:** 227 / 245 (Phase 19: 25 / 25 done; Phase 20: 11 / 11 done; Phase 21: 7 / 25 done)
 
 > **Archive:** Full history and completed phases are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -33,7 +33,7 @@
 
 ### 21.3 Wheat growth runtime
 
-- [ ] **T227**: Add failing tests for wheat autonomous growth timing on built fields: `PHASE_1 -> PHASE_2 -> PHASE_3 -> PHASE_4`, each step every `45_000 ms`, growth pauses only if field is not sown.
+- [x] **T227**: Add failing tests for wheat autonomous growth timing on built fields: `PHASE_1 -> PHASE_2 -> PHASE_3 -> PHASE_4`, each step every `45_000 ms`, growth pauses only if field is not sown.
 - [ ] **T228**: Implement runtime growth updater (world/worker manager tick path): deterministic timestamp-based progression using existing `now_ms` flow; no per-frame floating accumulation drift.
 - [ ] **T229**: Add tests + implementation for harvest reset: when farmer harvests `PHASE_4`, field becomes `EMPTY` immediately and can be selected for sowing in the same/next farmer cycle.
 
@@ -101,3 +101,4 @@
 - T224 RED check: `pytest -q` fails because builder targets non-field tiles and never begins FIELD build (`construction_site.builder` remains `None`).
 - T225 GREEN check: `pytest -q` passes with FIELD builder destination targeting the field tile itself; full suite green.
 - T226 GREEN check: `pytest -q` passes with world-space FIELD build progress bar rendered only during active field construction.
+- T227 RED check: `pytest -q` fails on missing `game.buildings.field.advance_wheat_growth` timing helper (45_000 ms steps).

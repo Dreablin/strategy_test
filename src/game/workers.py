@@ -213,6 +213,7 @@ class WorkerManager:
         "MINER": "IRON_MINE",
         "FARMER": "FARM",
         "FORESTER": "FORESTER_HUT",
+        "SAWYER": "SAWMILL",
     }
     _HIRABLE_WORKERS: set[str] = set(_WORKER_TO_BUILDING) | {"CARRIER", "BUILDER"}
 
@@ -232,6 +233,7 @@ class WorkerManager:
             "LUMBERJACK": self._update_gatherer,
             "STONECUTTER": self._update_gatherer,
             "BUILDER": self._update_builder,
+            "SAWYER": self._update_sawyer,
         }
         if registry is not None and hasattr(registry, "bind_worker_manager"):
             registry.bind_worker_manager(self)
@@ -1128,6 +1130,29 @@ class WorkerManager:
             worker.start_move(best_path, started_ms=now_ms)
             return
         return True
+
+    @staticmethod
+    def _update_sawyer(worker: Worker, now_ms: int, world: Any) -> None:
+        _ = world
+        sawmill = worker.assigned_building
+        if sawmill is None or sawmill.type_tag != "SAWMILL":
+            return
+        if sawmill.is_under_construction or not getattr(sawmill, "active", False):
+            return
+        if worker.state == "resting":
+            return
+        if getattr(sawmill, "input_amount", lambda: 0)() <= 0:
+            return
+        if getattr(sawmill, "output_amount", lambda: 0)() >= getattr(sawmill, "output_capacity", lambda: 0)():
+            return
+        if worker.state == "processing":
+            return
+        if worker.state != "working":
+            return
+        if int(getattr(sawmill, "processing_started_ms", 0)) <= 0:
+            sawmill.processing_started_ms = int(now_ms)
+        worker.state = "processing"
+        worker.idle = False
 
     @staticmethod
     def _select_forester_target(

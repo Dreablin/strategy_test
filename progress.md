@@ -2,10 +2,10 @@
 
 ## Current Status
 
-- **Phase:** 19 — Construction System (complete)
-- **Next Task:** T212 — add SAWYER worker type and school integration
-- **Last Completed:** T211 — implement Sawmill split storages and panel-facing helpers
-- **Total Progress:** 211 / 220 (Phase 19: 25 / 25 tasks done; Phase 20: 2 / 11 tasks done)
+- **Phase:** 20 — Sawmill processing chain (boards)
+- **Next Task:** T214 — implement sawmill cycle duration scaling and completion effects
+- **Last Completed:** T213 — core SAWYER production-cycle start updater
+- **Total Progress:** 213 / 220 (Phase 19: 25 / 25 tasks done; Phase 20: 4 / 11 tasks done)
 
 > **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
 
@@ -190,11 +190,11 @@
 
 ### 20.2 New worker type (School-trained)
 
-- [ ] **T212**: Introduce new worker type **`SAWYER`** (name chosen for sawmill operator) across domain/constants/UI icons/panels. Add School queue/train integration so `SAWYER` can be produced like other workers, spawns at School, and is assignable only to `SAWMILL`.
+- [x] **T212**: Introduce new worker type **`SAWYER`** (name chosen for sawmill operator) across domain/constants/UI icons/panels. Add School queue/train integration so `SAWYER` can be produced like other workers, spawns at School, and is assignable only to `SAWMILL`.
 
 ### 20.3 Sawmill runtime production cycle
 
-- [ ] **T213**: Add failing cycle tests and implement core sawmill worker updater: if assigned `SAWYER`, sawmill active, `wood_in > 0`, `boards_out` not full, and worker not resting, start processing cycle with progress timer.
+- [x] **T213**: Add failing cycle tests and implement core sawmill worker updater: if assigned `SAWYER`, sawmill active, `wood_in > 0`, `boards_out` not full, and worker not resting, start processing cycle with progress timer.
 - [ ] **T214**: Implement processing duration math: base cycle `30_000 ms`, reduced by `2%` per level above 1 (`effective = 30_000 * (1 - 0.02*(L-1))`, clamped to sensible minimum). On completion: `wood_in -= 1`, `boards_out += 1`, then worker enters mandatory rest `10_000 ms`.
 - [ ] **T215**: Enforce pause/stop rules with tests: no new cycle starts when sawmill inactive, input empty, output full, worker absent, or building under construction/upgrading. If inactive mid-cycle, current cycle behavior should follow existing production convention (finish current cycle, block next) and be tested explicitly.
 
@@ -260,6 +260,8 @@
 | 2026-04-29 | T209 | Final closeout gate passed with full `pytest -q` and `ruff check src tests` green (434 tests). Marked all Phase 19 tasks complete and created `.cursor/ralph/done` termination flag. | Concludes Phase 19 with deterministic loop stop signal and final verification snapshot. |
 | 2026-04-30 | T210 | Added SAWMILL scaffold: new `Sawmill` building class shell, placement mapping, processing menu entry/event in `BottomBar`, construction settings in `src/game/settings/buildings/sawmill.json` and `game_settings.json`, plus registry/input/bottom-bar/config tests for SAWMILL construction place+upgrade paths. Updated legacy assignment tests to clear `construction_site` for non-construction staffing scenarios. | Establishes Phase 20 entry-point wiring so SAWMILL is selectable/placeable and participates in construction flow before detailed storage/runtime behavior in T211+. |
 | 2026-04-30 | T211 | Implemented `Sawmill` split storage scaffold (`wood_in`, `boards_out`) with level-scaled capacities, active toggle, bounded add/take APIs, and panel-facing helper methods (`input_amount`, `output_amount`, capacities, progress state/progress ratio). Added `tests/test_sawmill.py` and created `assets/buildings/sawmill/.gitkeep` asset hook folder for disk-first sprite path fallback. | Provides concrete sawmill domain shape for upcoming SAWYER runtime cycle and carrier transport tasks while preserving fallback rendering behavior. |
+| 2026-04-30 | T212 | Added `SAWYER` as a first-class worker type across domain/UI constants: `WorkerManager` now maps `SAWYER -> SAWMILL` for assignment and hiring, School panel shows a Sawyer hire row/button, and worker icon mapping includes sawyer fallback assets. Added coverage for sawyer school spawn, sawyer-only sawmill reassignment, and school-panel sawyer hire action. | Unlocks School-trained sawmill staffing and guarantees SAWYER assignment is constrained to SAWMILL before implementing runtime production cycle behavior in T213+. |
+| 2026-04-30 | T213 | Added RED/green worker tests for sawmill cycle start and implemented `WorkerManager._update_sawyer` dispatch: when assigned SAWYER is in a ready SAWMILL (`active`, not under construction, `wood_in > 0`, `boards_out < capacity`, worker not resting), update starts processing by setting `processing_started_ms` and worker state `processing`. | Establishes the first runtime production state transition for SAWMILL so T214 can safely add cycle-completion math and rest behavior on top. |
 
 ## Issues & Blockers
 

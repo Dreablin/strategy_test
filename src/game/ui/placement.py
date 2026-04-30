@@ -8,6 +8,7 @@ from typing import Type
 import pygame
 
 from game.buildings.base import Building
+from game.buildings.field import Field
 from game.buildings.farm import Farm
 from game.buildings.forester_hut import ForesterHut
 from game.buildings.house import House
@@ -29,6 +30,7 @@ _TAG_TO_CLASS: dict[str, Type[Building]] = {
     "STONE_MINE": StoneMine,
     "IRON_MINE": IronMine,
     "FARM": Farm,
+    "FIELD": Field,
     "FORESTER_HUT": ForesterHut,
     "SCHOOL": School,
     "HOUSE": House,

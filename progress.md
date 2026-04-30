@@ -2,273 +2,89 @@
 
 ## Current Status
 
-- **Phase:** 20 — Sawmill processing chain (boards)
-- **Next Task:** None
-- **Last Completed:** T220 — SawmillPanel UI and phase-20 end-to-end smoke
-- **Total Progress:** 220 / 220 (Phase 19: 25 / 25 tasks done; Phase 20: 11 / 11 tasks done)
+- **Phase:** 21 — Wheat fields + farmer field cycle
+- **Next Task:** T223 — Wheat lifecycle domain model + RED tests
+- **Last Completed:** T222 — Implement `Field` class + registration wiring
+- **Total Progress:** 222 / 245 (Phase 19: 25 / 25 done; Phase 20: 11 / 11 done; Phase 21: 2 / 25 done)
 
-> **Archive:** Phases **T01–T160** are recorded in **`progress_archive.md`**. Do **not** re-run completed tasks. Long-form phase write-ups were removed from this file to keep Ralph context small; use the archive for history.
-
----
-
-## Hot-fix index (historic)
-
-| ID | Summary |
-|----|---------|
-| HF12-A | LumberCamp Upgrade vs Demolish hit-test — fixed in `lumber_camp_panel.py`. |
-| HF13–HF14 | Stable tests: `world_seed` pins; ring-20 stone vs map-centre clearing. |
-| HF15–HF16 | Tree grove counts / priority TH-ring groves (`world.py`). |
-| HF17 | Hiring only from School; spawn at hiring school; Town Hall hire UI removed. |
+> **Archive:** Full history and completed phases are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
 ---
 
-## Phase 15 — Housing, School queue, population HUD (active Ralph queue)
+## Task Log
 
-**Goal.** Schools train workers in a **7-slot FIFO queue** (**30 s** per trainee, **no resource cost**), gated by **housing**: **Town Hall** `8 + 2×(L−1)` + each **House** `2 + 2×(L−1)`. **Top bar** shows **current (max cap)** with a **population icon**; the **four resource + income strip is removed** from the HUD.
+## Phase 21 — Wheat fields + farmer field cycle
 
-**PRD:** **F-HOUSING**, **F-SCHOOL-Q**, **F-HOUSE**, **F-POP-UI**, **F-UI-TOP** (Phase 15), **F-WORK-02**.
+**Goal.** Add new buildable **FIELD** (1x1, built by Builder, no resource delivery), wheat growth on fields (4 phases, 45s each), farmer work loop (harvest priority, then sow), farm local storage integration, and carrier transport through the existing shared transport queue.
 
-### 15.1 Domain — housing & caps
+**PRD refs (to add/align):** F-BLD/F-CONSTRUCT extensions for FIELD, F-WORK farmer cycle, crop growth lifecycle, transport queue integration.
 
-- [x] **T161**: Failing tests + module (e.g. `src/game/housing.py`): `housing_town_hall(L)`, `housing_house(L)`, `max_population(registry, worker_manager_or_count)`; pure functions, no hidden globals.
-- [x] **T162**: Enforce **housing gate** on enqueue / train completion: training **cannot** start or finish into `current_population > max_population` (disabled UI + safe no-op; tests for both).
+### 21.1 Domain scaffold — field entity and wheat phases
 
-### 15.2 School — training queue core
+- [x] **T221**: Add failing tests for new `FIELD` building type: footprint **1x1**, placeable from **Resource/Production** menu, cannot be upgraded (or level fixed at 1), and walkability semantics: field tile is always walkable for all workers. Include placement/registry/pathfinding assertions.
+- [x] **T222**: Implement `Field` domain model/building class + registration wiring (`config`, placement mapping, bottom bar entry under production/resource group). Keep construction resource cost empty (`{}`) and construction time `10_000 ms`.
+- [ ] **T223**: Add wheat lifecycle domain model in a dedicated module (or field module): states `PHASE_1..PHASE_4` plus `EMPTY` (ready-to-sow). Add pure helpers for transitions and timestamps. Write RED tests for state progression and reset-after-harvest.
 
-- [x] **T163**: Failing tests for per-`SCHOOL` queue: **7** slots, fill **leftmost empty**, **only slot 0** trains, **30_000 ms** per unit, **shift left** on complete; multiple schools **independent**.
-- [x] **T164**: Wire queue to game time (`now_ms`): completion spawns worker using **existing school spawn** rules; then `reassign_all`; **remove food / hire costs** from school training (config + `WorkerManager` / panel).
+### 21.2 Construction flow — builder-on-tile build for FIELD
 
-### 15.3 UI — School row + Top bar
+- [ ] **T224**: Add failing tests for FIELD-specific construction behavior: builder path target is the field tile itself (not approach tile), builder stands on tile, build progress runs for `10_000 ms`, then construction completes into built field.
+- [ ] **T225**: Implement FIELD construction specialization in builder/construction runtime while keeping generic construction behavior unchanged for other buildings. Ensure no carrier resource delivery tasks are generated for FIELD construction sites.
+- [ ] **T226**: Add rendering/UI support for FIELD construction progress bar under builder while building (on-map world progress bar). Include headless render test that verifies bar appears only during FIELD build.
 
-- [x] **T165**: `SchoolPanel`: **7** squares in a row — worker icon + **yellow** progress bar at bottom of active training cell; enqueue buttons respect cap + full queue.
-- [x] **T166**: Replace top-bar **resource** strip with **population** display: icon + `current (max N)` (see PRD **F-UI-TOP**); headless layout / surface test.
+### 21.3 Wheat growth runtime
 
-### 15.4 House building
+- [ ] **T227**: Add failing tests for wheat autonomous growth timing on built fields: `PHASE_1 -> PHASE_2 -> PHASE_3 -> PHASE_4`, each step every `45_000 ms`, growth pauses only if field is not sown.
+- [ ] **T228**: Implement runtime growth updater (world/worker manager tick path): deterministic timestamp-based progression using existing `now_ms` flow; no per-frame floating accumulation drift.
+- [ ] **T229**: Add tests + implementation for harvest reset: when farmer harvests `PHASE_4`, field becomes `EMPTY` immediately and can be selected for sowing in the same/next farmer cycle.
 
-- [x] **T167**: Failing tests: `HOUSE` type, **2×2**, levels **1..10**, housing contribution per level, registry placement rules.
-- [x] **T168**: Implement `House`, costs/unlocks in `config.py` + `game_settings.json`, **Social** menu entry, assets folder + procedural sprite path.
-- [x] **T169**: **Demolish vs over-cap** policy with tests (choose one consistent behaviour per **F-HOUSE-03** — e.g. block demolish if it would drop max below current pop).
+### 21.4 Farmer behavior cycle (Farm worker AI)
 
-### 15.5 Assets
+- [ ] **T230**: Add RED tests for farmer assignment lifecycle: after hire farmer enters farm, rests, then starts field work cycles from farm home base.
+- [ ] **T231**: Add RED tests for farmer target selection priority within radius **10** (Chebyshev) from assigned farm:  
+  1) pick ripe field (`PHASE_4`) first;  
+  2) if none, pick empty field (`EMPTY`) for sowing;  
+  3) if neither exists, stay/rest and retry later.
+- [ ] **T232**: Implement farmer navigation + action loop for **harvest** action: move to target field tile, perform `5_000 ms` action with progress bar, then carry wheat back to farm local storage.
+- [ ] **T233**: Implement farmer navigation + action loop for **sow** action: move to empty field tile, perform `5_000 ms` action with progress bar, set field to `PHASE_1`, return to farm.
+- [ ] **T234**: Integrate standard post-action rest cycle (same rest semantics as other producer workers) between farmer work actions; add tests for rest gating before next dispatch.
 
-- [x] **T170**: `assets/ui/population/default.png` (or agreed name) + `assets.py` disk-first load and procedural fallback (**F-POP-UI**).
+### 21.5 Farm storage and capacities
 
-### 15.6 Regression & phase close
+- [ ] **T235**: Add failing tests for farm local storage capacity formula: L1=`3`, then `+1` slot every 2 levels (expected: L1-2=3, L3-4=4, L5-6=5, L7-8=6, L9-10=7).
+- [ ] **T236**: Implement/adjust farm storage capacity helpers and deposit guards so harvest deposit respects local capacity; when full, farmer cannot start new harvest cycle and reports blocked reason.
 
-- [x] **T171**: Sweep tests and smoke paths: remove expectations for **instant** school hire, **food** cost on hire, **top-bar resources**; keep `world_seed` pins where procedural terrain matters.
-- [x] **T172**: New headless smoke: queue two trainees, housing blocks third, second `SCHOOL` has separate queue (minimal scenario).
-- [x] **T173**: Full `pytest -q` + `ruff check src tests`; update **Decisions Log**; mark all Phase 15 `[x]`; emit `<promise>ALL_TASKS_COMPLETE</promise>`; create **empty** `.cursor/ralph/done`.
+### 21.6 Transport queue integration (carrier)
 
----
+- [ ] **T237**: Add RED tests for transport task generation from farm local wheat storage into shared transport queue using existing priority rules (construction highest, then normal production logistics).
+- [ ] **T238**: Implement task emission for wheat export/import through current generic `TransportTask` pipeline; avoid per-frame duplicate spam (dedupe/throttle consistent with sawmill logic).
+- [ ] **T239**: Add edge-case tests for mid-route state changes (target full/no longer needs resource): carrier redirects/fallbacks using existing conventions, no task loss/deadlock.
 
-## Phase 16 — Carrier transport queue foundation
+### 21.7 UI, statuses, and player feedback
 
-**Goal.** Introduce baseline transport execution for `CARRIER`: producers drop resources into local storage, carriers pull transport jobs from a queue, pick up from source building, and deliver to target building (currently Town Hall warehouse).
+- [ ] **T240**: Add/extend farm panel lines: local wheat storage `stored/capacity`, farmer status, blocked hints (no fields in radius, storage full, resting, moving, sowing, harvesting).
+- [ ] **T241**: Add field visual states for wheat phases (`PHASE_1..PHASE_4`) with disk-first assets + procedural fallback. Include render tests ensuring phase-specific sprite selection.
+- [ ] **T242**: Add action progress bars for farmer on field tile (sow/harvest) and verify draw order does not hide bar behind building sprites in common camera positions.
 
-**PRD:** F-WORK (carrier), F-BLD (warehouse behavior baseline).
+### 21.8 Regression, integration, and phase close
 
-- [x] **T174**: Implement worker-level transport queue and carrier runtime loop: `source -> target` tasks, pickup from `StorageMixin`, delivery to Town Hall warehouse, and compatibility fallback to legacy direct deposit when no carriers exist.
-
----
-
-## Phase 17 — Remove abstract spend-cost economy
-
-**Goal.** Remove legacy “wallet” economy for building placement, upgrades, and hiring. These actions become free; UI no longer shows build/upgrade/hire prices tied to non-physical resource counters.
-
-**PRD:** cleanup task for current carrier/warehouse direction.
-
-- [x] **T175**: Remove build/upgrade/hire spend checks and cost labels; keep physical storage/warehouse counters only; update regression tests and run full suite.
-- [x] **T176**: Remove leftover compatibility layer (`game.buildings.costs`, `ResourceManager.has/try_spend`) and rewrite tests to stop using wallet-spend helpers.
-
----
-
-## Phase 18 — Remove ResourceManager globally
-
-**Goal.** Fully remove `ResourceManager` and all global resource counters. Single source of truth for physical resources is warehouse/local storages.
-
-- [x] **T177**: Runtime migration — route producer deposits and carrier deliveries to `TownHall.warehouse` only; remove fallback paths and direct global `resources.add(...)` writes.
-- [x] **T178**: API migration — remove `ResourceManager` dependencies from `main/input/ui panels/placement/registry/workers` signatures and wiring.
-- [x] **T179**: Test migration — replace `ResourceManager` fixtures/usages with warehouse-centric setup and assertions; delete `tests/test_resources.py`.
-- [x] **T180**: Cleanup + verification — delete `src/game/resources.py`, scrub PRD references, run full `pytest -q` + `ruff check src tests`.
-- [x] **T181**: Food/Wheat normalization cleanup — remove legacy alias flow (`food` ↔ `wheat`) from assets/panels/warehouse APIs; converge on one canonical key and update labels/tests.
-- [x] **T182**: Remove per-cycle remnants — delete dead `per_cycle` / `sync_resources_per_cycle` logic and related tests/docs that describe legacy cycle totals.
-- [x] **T183**: Remove runtime fallback branches that still read from global resources (e.g., TownHallPanel `warehouse_amount` fallback path) once warehouse is the only source of truth.
-- [x] **T184**: Config/domain final cleanup — remove `economy.initial_resources` from settings/config (or relocate to warehouse bootstrap config), and update all tests/docs expecting `INITIAL_RESOURCES`.
+- [ ] **T243**: Regression sweep for existing worker/building/pathfinding behavior (especially construction, sawmill, carriers, forester). Fix any breakages; run targeted tests while iterating.
+- [ ] **T244**: Add end-to-end smoke `tests/test_smoke_phase21.py`: place farm + several fields, build fields via builder, sow to `PHASE_4`, harvest to farm storage, carrier exports wheat via shared queue, ensure loop repeats.
+- [ ] **T245**: Final verification gate: full `pytest -q` + `ruff check src tests`; update Current Status and Notes; mark Phase 21 tasks; emit completion marker only when all tasks are `[x]`.
 
 ---
 
-## Phase 19 — Construction System
+## Rules For Next Phase
 
-**Goal.** Buildings no longer appear instantly. When placed, a **construction site** appears (unfinished asset). It has a local **resource request** (from `game_settings.json`). **Carriers** deliver required materials with **highest priority**. Once all resources are delivered a **Builder** enters the site and spends a configured **build duration** there; a **progress bar** is shown in the building panel. On completion the site becomes a fully functional building and the builder exits. **Upgrades** follow the same flow: the building turns into a "level N+1 under construction" site, production stops, existing worker idles inside, resources + builder needed again. Produced resources are now routed to construction sites first, warehouse second.
-
-**PRD refs:** F-BLD extension, F-WORK (BUILDER / CARRIER), new F-CONSTRUCT (to be added to PRD after Phase 19).
-
-### 19.1 Settings — construction costs & build times
-
-- [x] **T185**: Add `construction` section to `game_settings.json` and `config.py`. Structure: `construction.<BUILDING_TYPE>.levels.<N>` with `cost: {resource: amount, ...}` and `build_time_ms: int` for each building type + each level (1 = initial build, 2..10 = upgrade). Load into `CONSTRUCTION_REQUIREMENTS: dict[str, dict[int, ConstructionSpec]]` in `config.py`. Add reasonable defaults for all current building types (LUMBER_CAMP, STONE_MINE, IRON_MINE, FARM, FORESTER_HUT, SCHOOL, HOUSE). Write failing tests in `tests/test_construction_config.py` that assert structure, all types covered, costs non-negative, build_time_ms > 0. Then implement so tests pass.
-
-### 19.2 Domain — ConstructionSite state on Building
-
-- [x] **T186**: Add `ConstructionSite` dataclass in a new module `src/game/construction.py`. Fields: `required_resources: dict[str, int]`, `delivered_resources: dict[str, int]`, `build_time_ms: int`, `build_started_ms: int | None`, `builder: Worker | None (reference)`, `target_level: int`. Pure methods: `is_fully_supplied() -> bool`, `is_building() -> bool`, `build_progress(now_ms) -> float` (0.0–1.0), `is_complete(now_ms) -> bool`, `remaining_resources() -> dict[str, int]`, `deliver_resource(resource, amount)`. Write failing tests in `tests/test_construction.py`. Then implement.
-
-- [x] **T187**: Add optional `construction_site: ConstructionSite | None` slot to `Building` base class. When `construction_site is not None`, the building is considered **under construction** and non-functional. Add property `is_under_construction -> bool`. Ensure all existing `Building.__init__` subclasses remain compatible (default `None`). Write tests that existing buildings still work unchanged; new building with a `construction_site` set returns `is_under_construction == True`.
-
-### 19.3 Registry — place as construction site
-
-- [x] **T188**: Modify `BuildingRegistry.place()` to look up `CONSTRUCTION_REQUIREMENTS` for the building type at level 1. If an entry exists, set `building.construction_site = ConstructionSite(...)` on the newly placed instance. Existing behaviour (place → functional) must still work for types without construction config (currently TOWN_HALL has no construction cost). Write tests: place a LUMBER_CAMP → verify `is_under_construction`, verify `construction_site.required_resources` matches config. Place TOWN_HALL → verify NOT under construction.
-
-- [x] **T189**: Modify `BuildingRegistry.upgrade_building()` to initiate a construction site for the **next level** instead of instantly incrementing level. Store `target_level = building.level + 1` in the `ConstructionSite`. The building keeps its current level until construction completes; `is_under_construction` becomes True. If the building has a worker assigned (e.g. LUMBERJACK), that worker transitions to state `"resting"` inside the building (idle but not unassigned). Return `True` to indicate upgrade process started. Write tests: upgrade a level-1 building → verify `is_under_construction`, `target_level == 2`, worker state if assigned.
-
-### 19.4 Construction completion logic
-
-- [x] **T190**: Add `complete_construction(building, now_ms)` function in `construction.py`. When `construction_site.is_complete(now_ms)`: set `building.level = target_level`, clear `construction_site = None`, release the builder (set idle state, unassign from site), if there was a resting worker inside the building → restore to `"working"` state. Write tests for level-1 initial build completion (building becomes functional) and level-N upgrade completion (level increments, worker resumes). Ensure building bonuses are refreshed after level change.
-
-- [x] **T191**: Wire `complete_construction` into `WorkerManager.update()` loop: each frame, iterate buildings with `is_under_construction and construction_site.is_building()`, check `is_complete(now_ms)`, call completion. After any completion, call `reassign_all()`. Write test: building + builder inside → advance time past build_time_ms → building is no longer under construction, builder is idle.
-
-### 19.5 Builder worker — construction state machine
-
-- [x] **T192**: Add BUILDER updater to `WorkerManager._updaters` dispatch (currently BUILDER has no updater). States: `"idle"` → look for a building with `is_under_construction and construction_site.is_fully_supplied() and construction_site.builder is None` → walk to approach tile → `"entering_site"` (park inside) → set `construction_site.builder = worker`, `construction_site.build_started_ms = now_ms` → state `"building"` → waits inside until `is_complete(now_ms)` (completion handled by T191). Write tests: idle builder + fully supplied site → builder walks to site and starts building.
-
-- [x] **T193**: Handle builder leaving after construction complete: when `complete_construction` clears the builder reference, the builder should move to an approach tile of the completed building, then become `idle`. If no approach tile is available, stand at building center. Write tests: after completion, builder is idle and positioned at approach tile.
-
-- [x] **T194**: Handle edge case: builder is walking to a construction site that gets demolished mid-way. Builder should abort, become idle at current tile. Add to `notify_demolished` logic. Similarly, if the builder is inside and the building is demolished, builder becomes idle. Write tests.
-
-### 19.6 Transport priority — construction site delivery
-
-- [x] **T195**: Add `construction_transport_tasks(registry) -> list[TransportTask]` function in `construction.py` (or `workers.py`). Scan all buildings with `is_under_construction`, compute `remaining_resources()`, generate transport tasks from **Town Hall warehouse** to the construction site. These tasks should be distinguishable as **high priority**. Add `priority: int` field to `TransportTask` (default 0, construction = 10). Write tests.
-
-- [x] **T196**: Modify `WorkerManager._next_transport_task()` to sort by priority descending before picking the next task. High-priority construction tasks are served before normal warehouse-delivery tasks. Write tests: when both normal and construction tasks exist, carriers pick construction tasks first.
-
-- [x] **T197**: Generate construction transport tasks automatically: when a building becomes `is_under_construction` (place or upgrade), enqueue the needed resources as high-priority transport tasks sourced from Town Hall warehouse. When a resource is delivered (carrier unloads at construction site), call `construction_site.deliver_resource(resource, 1)`. Write tests: place building → transport tasks created → carrier delivers → `delivered_resources` incremented → `is_fully_supplied()` eventually becomes True.
-
-- [x] **T198**: Handle "resource not available" scenario. Modify carrier logic: when a carrier picks up a construction transport task but the Town Hall warehouse has no stock of the required resource, skip it (don't discard — leave in queue) and try the next task. The task stays in the queue until the resource becomes available. Write tests: construction needs `stone: 5`, warehouse has 0 → carrier does not pick up stone task → stone is produced → carrier picks up.
-
-### 19.7 Smart resource routing — produce → need → warehouse
-
-- [x] **T199**: Refactor the resource deposit path in `_update_gatherer` (depositing state). Currently, after depositing into local building storage, a transport task is created targeting Town Hall. New logic: **first** check if any construction site needs this resource type (`remaining_resources()[resource] > 0`). If yes, create a high-priority transport task to that construction site instead of Town Hall. If no site needs the resource, fall back to Town Hall delivery as before. Write tests: construction site needs wood → lumberjack deposits wood → transport task targets the construction site, not Town Hall.
-
-- [x] **T200**: Handle the case where a construction site is satisfied mid-delivery. If a carrier is en route to a construction site with a resource it no longer needs (another carrier already delivered the last unit), the carrier should deliver to Town Hall warehouse instead. Adjust carrier unloading logic to check `remaining_resources()` before calling `deliver_resource`. If site doesn't need it, redirect to warehouse. Write tests.
-
-### 19.8 UI — Construction panel
-
-- [x] **T201**: Create `src/game/ui/construction_panel.py` with `ConstructionPanel` class. When a building with `is_under_construction` is clicked, show a **construction-specific panel** instead of the normal building panel. Panel contents: building name + "Under Construction" (or "Upgrading to Lv N"), resource requirements list (icon + delivered/required for each resource), builder status ("Waiting for resources" / "Waiting for builder" / "Building..."), progress bar (yellow, 0–100%) during active building, Close [×] button, **no** Upgrade/Demolish buttons while under construction. Write headless layout/draw tests.
-
-- [x] **T202**: Wire `ConstructionPanel` into `GameInput.draw_panel()` and `_handle_map_left_click()`. When `self._panel.is_under_construction`, delegate to `ConstructionPanel` instead of the normal panel dispatcher. The construction panel only supports `close` click action. Write tests: click on under-construction building → construction panel shown; click close → panel closes.
-
-### 19.9 Assets & rendering for construction sites
-
-- [x] **T203**: Add `building_sprite_construction(b_type, target_level)` to `assets.py`. Disk-first load from `assets/buildings/<folder>/construction.png` (or `construction_<level>.png`); procedural fallback: semi-transparent version of the building sprite with a scaffold overlay (wooden beams). Write tests: function returns a surface; fallback is used when no disk asset.
-
-- [x] **T204**: Modify `Renderer.draw_buildings()` to check `building.is_under_construction`. If true, use `building_sprite_construction(type_tag, construction_site.target_level)` instead of `building_sprite(type_tag, level)`. Write tests: under-construction building renders with construction sprite, completed building renders normally.
-
-### 19.10 Upgrade flow — production halt & worker rest
-
-- [x] **T205**: When a building enters upgrade-construction (`T189`), stop all production for that building: if building has `active` attribute, set `active = False` (will be restored on completion). The assigned worker (if any) should be parked inside the building with state `"resting"` — they stay assigned but do not gather/produce. On construction completion, restore `active = True` and set worker back to `"working"` state. Write tests: lumberjack is gathering → upgrade starts → lumberjack stops, state = "resting" → construction completes → lumberjack resumes.
-
-- [x] **T206**: Ensure `worker_status_for_building` and `production_status_for_building` report construction states correctly. During construction: worker status = "resting" (if worker present) or "empty"; production status = "Under construction". Add the `"resting"` worker state handling in the status methods. Write tests.
-
-### 19.11 Regression, integration & phase close
-
-- [x] **T207**: Regression sweep: ensure all existing tests still pass with the new `construction_site` slot on `Building`. Buildings that skip construction (TOWN_HALL) must continue to work instantly. Existing placement/demolish/upgrade tests must not break. Fix any failures. Run full `pytest -q` + `ruff check src tests`.
-
-- [x] **T208**: Integration smoke test (`tests/test_smoke_phase19.py`): end-to-end scenario — place a LUMBER_CAMP (enters construction) → carrier delivers wood+stone from warehouse → builder walks to site → building completes → lumberjack auto-assigns → chops tree → deposits → upgrade lumber camp to level 2 → construction starts → carrier delivers → builder builds → upgrade completes → lumberjack resumes. Minimal time-advancing headless test.
-
-- [x] **T209**: Full `pytest -q` + `ruff check src tests`; update Decisions Log; mark all Phase 19 tasks `[x]`; emit `<promise>ALL_TASKS_COMPLETE</promise>`; create `.cursor/ralph/done`.
-
----
-
-## Phase 20 — Sawmill processing chain (boards)
-
-**Goal.** Add a **SAWMILL** processing building that consumes local `wood` and produces local `boards`, integrated with carriers and School hiring. Sawmill follows normal construction/upgrade flows and can be toggled active/inactive. Carriers should refill wood input while not full and export produced boards to Town Hall warehouse. Builder transport remains highest priority.
-
-**PRD refs (to add/align):** processing building flow, worker training via School, carrier transport priorities, construction compatibility.
-
-### 20.1 Domain and config scaffold
-
-- [x] **T210**: Add failing tests + config wiring for new building type `SAWMILL`: level/cost/build-time config in `game_settings.json` + `src/game/settings/buildings/sawmill.json`, registry visibility, bottom bar category placement (`Processing`), and construction-stage compatibility (site on place/upgrade).
-- [x] **T211**: Implement `Sawmill` building class (2x2 unless explicitly changed) with `StorageMixin`-style split storages: `wood_in` capacity 3 at L1 and `boards_out` capacity 3 at L1, `active` toggle, panel-facing helpers (`input_amount`, `output_amount`, capacities, progress state). Add assets folder hooks under `assets/buildings/sawmill/` with normal construction sprite fallback.
-
-### 20.2 New worker type (School-trained)
-
-- [x] **T212**: Introduce new worker type **`SAWYER`** (name chosen for sawmill operator) across domain/constants/UI icons/panels. Add School queue/train integration so `SAWYER` can be produced like other workers, spawns at School, and is assignable only to `SAWMILL`.
-
-### 20.3 Sawmill runtime production cycle
-
-- [x] **T213**: Add failing cycle tests and implement core sawmill worker updater: if assigned `SAWYER`, sawmill active, `wood_in > 0`, `boards_out` not full, and worker not resting, start processing cycle with progress timer.
-- [x] **T214**: Implement processing duration math: base cycle `30_000 ms`, reduced by `2%` per level above 1 (`effective = 30_000 * (1 - 0.02*(L-1))`, clamped to sensible minimum). On completion: `wood_in -= 1`, `boards_out += 1`, then worker enters mandatory rest `10_000 ms`.
-- [x] **T215**: Enforce pause/stop rules with tests: no new cycle starts when sawmill inactive, input empty, output full, worker absent, or building under construction/upgrading. If inactive mid-cycle, current cycle behavior should follow existing production convention (finish current cycle, block next) and be tested explicitly.
-
-### 20.4 Carrier task generation and priorities
-
-- [x] **T216**: Add transport-task generation for sawmill input refill: while sawmill active and `wood_in` below capacity, enqueue carrier tasks `TownHall warehouse wood -> Sawmill` (or producer source abstraction if already available). Ensure these tasks are lower priority than construction transport.
-- [x] **T217**: Add export tasks for sawmill output: whenever `boards_out > 0`, enqueue carrier tasks `Sawmill boards -> TownHall warehouse`. Ensure tasks are deduplicated/throttled so queue does not spam duplicates each frame.
-- [x] **T218**: Integrate carrier load/unload hooks for sawmill storages (`take wood_in`, `put wood_in`, `take boards_out`, `deliver boards`) with edge-case handling when state changes mid-route (inactive/full/empty) using existing redirect/cancel conventions.
-
-### 20.5 Level bonuses and UI
-
-- [x] **T219**: Add level milestone storage expansion tests and implementation: on levels **5** and **10**, increase both sawmill storages (`wood_in` and `boards_out`) per agreed step function; expose capacities in building panel/status methods.
-- [x] **T220**: Implement/extend `SawmillPanel` UI: show active toggle, worker status, input/output counts, production progress bar, and blocked reason hints (`inactive`, `no wood`, `output full`, `no worker`, `resting`). Add headless panel interaction tests and one end-to-end smoke test: train SAWYER -> deliver wood -> produce boards -> rest -> export boards.
-
----
+- Keep exactly one active task marked `[~]` at a time.
+- Start new work from the first unchecked `[ ]` task in the active phase.
+- Mark `[x]` only after verification (`pytest -q`, and `ruff check src tests` when relevant).
+- If blocked after repeated attempts, mark `[!]` and add a row in **Issues & Blockers**.
 
 ## Decisions Log
 
 | Date | Task | Decision | Rationale |
 |------|------|----------|-----------|
-| 2026-04-27 | HF12-A | Hit-resolve LumberCamp panel against `extra_bottom_px=72` only (drop legacy fallback). | Legacy fallback returned `"demolish"` for clicks on the visible Upgrade button (28 px overlap). |
-| 2026-04-27 | T96+ | Movement & gather speed bonuses are additive (per PRD F-CHAR-02), not multiplicative. | Easier to reason about cumulative debuffs; user explicitly requested additive stacking. |
-| 2026-04-27 | T103 | Storage capacity formula `3 + 2 × (L − 1)` = 3, 5, 7 … 21 over levels 1..10. | User specified +2 per level on top of base 3. |
-| 2026-04-27 | T111 | Stone generation obsolete count in old PRD line; see `world.py` / F-STONE for **6** clusters + ring-20. | Spec evolved; trust code + F-STONE block. |
-| 2026-04-27 | T132 | BFS uses 4 neighbours only (N/E/S/W), no diagonal moves and no corner-cut handling. | User asked workers to walk only horizontally/vertically. |
-| 2026-04-27 | T160 | Runtime growth scheduler source-of-truth is `WorkerManager.update` → `world.update_tree_growth(now_ms)`. | Ensures planted-tree maturation advances in gameplay and tests without extra wiring. |
-| 2026-04-28 | HF17 | Worker hire spawn is anchored to the hiring `School` building; Town Hall hire UI removed. | All hiring centralized at School. |
-| 2026-04-28 | Prep | Phase 15 queued: school **7×30s** queue, **housing** from TH+House, **HUD** population only (see PRD). | User request; Ralph tasks T161–T173. |
-| 2026-04-28 | T162 | Housing cap gate enforced in School hire flow: UI disabled via `can_hire`, backend `hire` returns no-op when over cap. | Prevents over-cap worker creation at both interaction and domain layers. |
-| 2026-04-28 | T163 | Queue API contract tests define 7-slot FIFO, 30s front-only training, left-shift on completion, independent per-school timers. | Locks expected behavior before implementation (T164). |
-| 2026-04-28 | T164 | School clicks enqueue free training; `WorkerManager.update` advances per-school queues and spawns completed trainees before `reassign_all`. | Aligns runtime with Phase 15 queue semantics and removes food-cost dependency from School training flow. |
-| 2026-04-28 | T165 | School panel now renders a 7-slot queue row with worker icons and active yellow progress bar; enqueue controls disable when queue is full/cap blocked. | Matches F-SCHOOL-Q visual contract and keeps button affordances in sync with queue/housing gates. |
-| 2026-04-28 | T166 | Top bar now renders population icon + `current (max N)` using worker count and housing cap instead of resource strip. | Aligns HUD with Phase 15 population-first UX and adds headless layout/draw coverage. |
-| 2026-04-28 | T167 | Added RED coverage for `House` class contract, housing contribution, and registry placement/overlap semantics. | Defines expected behavior before implementing `House` and Social wiring in T168. |
-| 2026-04-28 | T168 | Added `House` building class, wired placement/bottom-bar Social entry/config gates, and created `assets/buildings/house/` disk path with procedural fallback. | Completes House core integration so placement, costs, and rendering paths are available for Phase 15 follow-ups. |
-| 2026-04-28 | T169 | Chosen policy: block `HOUSE` demolition if removal would make `current_population > max_population`; allow otherwise. | Prevents creating invalid over-cap state while keeping demolition deterministic and testable. |
-| 2026-04-28 | T170 | Added disk asset `assets/ui/population/default.png` and `assets.population_icon()` disk-first loader with procedural fallback; TopBar now uses asset helper. | Establishes swap-friendly icon pipeline while keeping UI resilient when asset files are missing. |
-| 2026-04-28 | T171 | Added explicit regression coverage that School enqueue is non-instant and free (no food spend), while top-bar tests remain population-focused. | Guards Phase-15 behavior changes against accidental rollback to legacy instant/food-based hiring and resource-strip HUD assumptions. |
-| 2026-04-28 | T172 | Added Phase-15 headless smoke with two-school queue progression and housing-cap blocked enqueue at cap. | Provides minimal end-to-end guard that queue timing, school independence, and cap gating work together. |
-| 2026-04-28 | T173 | Final verification gate passed: full `pytest -q` and `ruff check src tests` are green; completion marker file created. | Closes Phase 15 with reproducible validation and deterministic Ralph loop termination flag. |
-| 2026-04-28 | T174 | Added generic `TransportTask` queue in `WorkerManager`; `CARRIER` now walks to source, takes 1 unit, walks to target, and delivers to Town Hall warehouse + spendable resource pool. | Establishes extensible building-to-building transport pipeline while preserving old no-carrier economy path. |
-| 2026-04-28 | T175 | Removed wallet cost gates for placement/upgrade/hiring and switched UI labels to “Free”; deleted cost tables from settings/config and updated tests. | Aligns economy with physical-storage direction and removes legacy abstract spend model. |
-| 2026-04-28 | T176 | Deleted legacy `game.buildings.costs`, removed `ResourceManager.has/try_spend`, and migrated tests to explicit add/get semantics. | Completes cost-economy removal so no dead compatibility APIs remain in runtime code. |
-| 2026-04-28 | T177 | Removed runtime `resources.add(...)` writes from gather and carrier delivery; producer output now enters local storage then warehouse via transport pipeline only. | Establishes Town Hall warehouse as the sole runtime accumulation sink before API-level ResourceManager removal in T178+. |
-| 2026-04-28 | T178 | Removed `ResourceManager` imports/type-coupling from runtime wiring (`main/input/ui panels/placement/registry/workers`) while keeping compatibility arguments where still used by tests. | Decouples runtime API surfaces from global resource manager before the dedicated test-side migration in T179. |
-| 2026-04-28 | T179 | Removed `tests/test_resources.py` and migrated multiple runtime-smoke/regression tests from wallet assertions (`resources.get`/`per_cycle`) to warehouse-centric checks (`TownHall.warehouse_amount`, delivered counters, storage paths). | Aligns test expectations with warehouse-as-source-of-truth before deleting `resources.py` in T180. |
-| 2026-04-28 | T180 | Removed `src/game/resources.py`; `WorkerManager` no longer takes `ResourceManager`; `main` wires `WorkerManager(registry, now_ms_fn=...)`; fixed `test_workers` `now_ms_fn` call to use `registry=None` keyword. **`PRD.md` not edited** (contract read-only). | Completes module deletion and verification; PRD text may still mention legacy resources until a future docs pass outside Ralph contract edits. |
-| 2026-04-28 | T181 | Canonical crop key is **`wheat`**: dropped TownHall `food`→`wheat` normalization; `assets._resource_colors` uses `wheat`; `economy.initial_resources` and defaults use `wheat` instead of `food`; UI copy and tests updated. **`PRD.md` not edited** (still lists legacy `food` in F-RES). | Single warehouse/settings vocabulary; PRD resource names are stale until allowed to be revised. |
-| 2026-04-28 | T182 | Deleted `BuildingRegistry.sync_resources_per_cycle` (no-op), its `upgrade_building` tail call, and `GameInput._sync_assignments` hook; production/building tests renamed to assert staffing, upgrades, and no passive ticks without the stub API. **`PRD.md` not edited** (still mentions `.per_cycle` in type sketch). | Removes dead cycle-sync surface; PRD type lines remain historical. |
-| 2026-04-28 | T183 | Removed legacy **`resources`** parameter/`GameInput` slot and `PlacementController` storage; all building panels + `BottomBar` + `upgrade_building` no longer accept a wallet; warehouse display was already `TownHall.warehouse_amount` only. | Eliminates dead global-resource API surface; `INITIAL_RESOURCES` in config remains for T184. |
-| 2026-04-28 | T184 | Replaced `economy.initial_resources` / `INITIAL_RESOURCES` with **`warehouse_bootstrap.town_hall`** in JSON + `TOWN_HALL_STARTING_WAREHOUSE`; **`bootstrap_starting_warehouse`** seeds the placed Town Hall in **`main` only** so tests keep empty warehouses by default. | Aligns config with warehouse source-of-truth; gameplay start matches prior 200/200 wheat/wood. **`PRD.md` not edited**. |
-| 2026-04-29 | T185 | Added `ConstructionSpec` + `CONSTRUCTION_REQUIREMENTS` parsing in `config.py`; introduced `construction.<TYPE>.levels.<N>.{cost,build_time_ms}` for all Phase-19 building types with levels 1..10 in `game_settings.json`; added `tests/test_construction_config.py`. | Locks construction settings contract before runtime integration tasks (T186+). |
-| 2026-04-29 | T186 | Added `src/game/construction.py` with `ConstructionSite` dataclass and pure methods (`is_fully_supplied`, `is_building`, `build_progress`, `is_complete`, `remaining_resources`, `deliver_resource`); added `tests/test_construction.py`. | Establishes core construction state model before wiring into `Building`/registry/workers in T187+. |
-| 2026-04-29 | T187 | Added `construction_site` to `Building.__slots__` with default `None` and new `is_under_construction` property; extended `tests/test_buildings.py` to verify default compatibility and explicit construction-site state. | Prepares all building subclasses for construction flow without breaking existing behavior. |
-| 2026-04-29 | T188 | `BuildingRegistry.place()` now attaches level-1 `ConstructionSite` from `CONSTRUCTION_REQUIREMENTS` for configured building types; Town Hall remains instant (no construction config). Added registry tests for both paths. | Enables place-as-construction behavior needed before upgrade/runtime construction flow. |
-| 2026-04-29 | T202 | Routed `GameInput.draw_panel()` and click handling to `ConstructionPanel` whenever `panel.is_under_construction`; only close action is processed for construction panels. Added input tests for construction draw dispatch and close behavior; updated school input tests to clear default construction sites where hire-flow coverage expects normal school panel actions. | Enforces construction-only UI controls while preserving existing school hiring interaction tests via explicit setup. |
-| 2026-04-29 | T203 | Added `building_sprite_construction(b_type, target_level)` to `assets.py` with disk-first lookup (`construction_<level>.png`, `construction.png`) and procedural scaffold fallback based on a semi-transparent normal building sprite. Added `tests/test_assets.py` coverage for level-specific disk preference and fallback behavior. | Provides deterministic construction-state art pipeline for upcoming renderer integration (T204). |
-| 2026-04-29 | T204 | Updated `Renderer.draw_buildings()` to choose `building_sprite_construction(type_tag, construction_site.target_level)` when `building.is_under_construction`, while completed buildings keep normal sprites; anchor selection uses the same effective level. Added renderer tests to assert construction-vs-normal sprite path selection. | Completes visual construction-state differentiation in world rendering and keeps existing render ordering/placement behavior intact. |
-| 2026-04-29 | T205 | Upgrade construction now pauses production by forcing `active=False` for toggle-capable buildings and parks assigned workers at building center in `"resting"` state. `complete_construction` restores `active=True` after completion and resumes parked workers as `"working"`. Added regression tests in `tests/test_registry.py` and `tests/test_construction.py`. | Enforces non-productive upgrade state machine and proper worker/building reactivation on completion. |
-| 2026-04-29 | T206 | Updated status helpers so construction panels show deterministic state: `worker_status_for_building` returns `"resting"` when a worker is assigned to an under-construction building, else `"empty"`; `production_status_for_building` returns `"Under construction"` whenever `building.is_under_construction`. Added tests in `tests/test_workers.py` and adjusted non-construction status tests to clear default construction sites in setup. | Aligns panel status text with Phase-19 construction flow without regressing legacy non-construction worker-state assertions. |
-| 2026-04-29 | T207 | Ran full regression sweep (`pytest -q`, `ruff check src tests`) after construction-site integration updates; fixed legacy status tests by explicitly clearing default `construction_site` in non-construction scenarios (workers/forester fixtures). | Confirms backward compatibility of placement/demolish/upgrade/status behavior while preserving new construction defaults. |
-| 2026-04-29 | T208 | Added `tests/test_smoke_phase19.py` integration smoke covering full construction lifecycle: initial LumberCamp construction (carrier+builder), post-build lumberjack assignment and chop/deposit activity, upgrade-to-level-2 construction, and post-upgrade worker resume. Verified with full `pytest -q` + `ruff check src tests`. | Provides end-to-end guardrail for Phase-19 runtime interactions across registry, worker AI, transport, construction completion, and upgrade flow. |
-| 2026-04-29 | T209 | Final closeout gate passed with full `pytest -q` and `ruff check src tests` green (434 tests). Marked all Phase 19 tasks complete and created `.cursor/ralph/done` termination flag. | Concludes Phase 19 with deterministic loop stop signal and final verification snapshot. |
-| 2026-04-30 | T210 | Added SAWMILL scaffold: new `Sawmill` building class shell, placement mapping, processing menu entry/event in `BottomBar`, construction settings in `src/game/settings/buildings/sawmill.json` and `game_settings.json`, plus registry/input/bottom-bar/config tests for SAWMILL construction place+upgrade paths. Updated legacy assignment tests to clear `construction_site` for non-construction staffing scenarios. | Establishes Phase 20 entry-point wiring so SAWMILL is selectable/placeable and participates in construction flow before detailed storage/runtime behavior in T211+. |
-| 2026-04-30 | T211 | Implemented `Sawmill` split storage scaffold (`wood_in`, `boards_out`) with level-scaled capacities, active toggle, bounded add/take APIs, and panel-facing helper methods (`input_amount`, `output_amount`, capacities, progress state/progress ratio). Added `tests/test_sawmill.py` and created `assets/buildings/sawmill/.gitkeep` asset hook folder for disk-first sprite path fallback. | Provides concrete sawmill domain shape for upcoming SAWYER runtime cycle and carrier transport tasks while preserving fallback rendering behavior. |
-| 2026-04-30 | T212 | Added `SAWYER` as a first-class worker type across domain/UI constants: `WorkerManager` now maps `SAWYER -> SAWMILL` for assignment and hiring, School panel shows a Sawyer hire row/button, and worker icon mapping includes sawyer fallback assets. Added coverage for sawyer school spawn, sawyer-only sawmill reassignment, and school-panel sawyer hire action. | Unlocks School-trained sawmill staffing and guarantees SAWYER assignment is constrained to SAWMILL before implementing runtime production cycle behavior in T213+. |
-| 2026-04-30 | T213 | Added RED/green worker tests for sawmill cycle start and implemented `WorkerManager._update_sawyer` dispatch: when assigned SAWYER is in a ready SAWMILL (`active`, not under construction, `wood_in > 0`, `boards_out < capacity`, worker not resting), update starts processing by setting `processing_started_ms` and worker state `processing`. | Establishes the first runtime production state transition for SAWMILL so T214 can safely add cycle-completion math and rest behavior on top. |
-| 2026-04-30 | T214 | Implemented SAWMILL cycle completion behavior in `WorkerManager._update_sawyer`: per-cycle duration scales by level (`30_000 * (1 - 0.02*(L-1))`, clamped), completion consumes one `wood_in`, produces one `boards_out`, resets processing timer, and enforces mandatory `SAWYER` rest (`10_000ms`) before next cycle. Added tests for completion/rest + level timing. Stabilized one existing stone smoke placement check to search any valid adjacent tile under current stone cluster patterns so full-suite regression remains deterministic. | Completes runtime cycle timing/effects foundation for sawmill production and preserves global test reliability needed for Ralph full-suite gating. |
-| 2026-04-30 | T215 | Added gating tests for sawmill cycle start/continuation (`inactive`, `no wood`, `output full`, `worker absent`, `under construction`) and explicit inactive-mid-cycle convention coverage. Updated `WorkerManager._update_sawyer` so active-state gate blocks only new cycle starts while allowing an already running cycle to finish, then applies normal rest cooldown and blocks subsequent starts while inactive. | Matches existing production convention (“finish current cycle, block next”) and hardens pause/stop edge cases before adding carrier transport layers in T216+. |
-| 2026-04-30 | T216 | Added `sawmill_input_transport_tasks(registry)` and `_enqueue_sawmill_refill_tasks()` in `WorkerManager.update()` to generate low-priority TownHall→Sawmill wood refill tasks for active, non-construction sawmills below input capacity, bounded by Town Hall warehouse wood. Added task-generation and enqueue/priority interaction coverage in `tests/test_workers.py`, and restored construction-task enqueue dedupe logic after integrating the new refill enqueue pass. | Enables carrier-side sawmill input replenishment while preserving construction delivery precedence and existing construction transport behavior. |
-| 2026-04-30 | T217 | Added `sawmill_output_transport_tasks(registry)` plus `_enqueue_sawmill_output_tasks()` in `WorkerManager.update()` to emit deduped low-priority `boards` export tasks from non-construction sawmills with `boards_out > 0` to Town Hall. Added tests for export task generation shape and cross-tick dedupe/throttle behavior to prevent queue spam. | Prepares carrier-side boards export flow while keeping task generation bounded and stable before source/target storage hook integration in T218. |
-| 2026-04-30 | T218 | Integrated carrier source/target hooks for sawmill storages in `WorkerManager._update_carrier`: source pickup now supports `take_wood_in` / `take_boards_out`; target unload supports sawmill `add_wood_in` and boards delivery to Town Hall warehouse; input-full-at-unload redirects carried wood back to Town Hall using existing redirect convention. Added carrier integration tests for refill, boards export, and mid-route/full redirect behavior. | Completes sawmill transport execution path so generated refill/export tasks now mutate sawmill/Town Hall storages correctly under dynamic state changes. |
-| 2026-04-30 | T219 | Added milestone-capacity coverage in `tests/test_sawmill.py` and implemented sawmill storage step function in `Sawmill.input_capacity` / `output_capacity`: base `3` at L1-4, `4` at L5-9, `5` at L10+. Capacities remain exposed via existing panel-facing helper methods and storage add/take bounds continue enforcing the updated capacities. | Introduces explicit milestone growth behavior for sawmill storages while keeping runtime/UI callers on the same capacity API surface. |
-| 2026-04-30 | T220 | Added `ui/sawmill_panel.py` with active toggle, input/output counters, progress bar, and blocked reason hints (`inactive`, `no wood`, `output full`, `no worker`, `resting`) and wired it into `GameInput` draw/click routing. Extended worker production status for sawmill-specific states and added targeted panel/input/worker tests plus `tests/test_smoke_phase20.py` validating train SAWYER -> refill wood -> produce boards -> rest -> export boards end-to-end. | Completes Phase 20 UI and smoke validation so sawmill runtime behavior is visible/actionable in-panel and guarded by deterministic high-level integration coverage. |
+| | | | |
 
 ## Issues & Blockers
 
@@ -279,5 +95,5 @@
 ## Notes
 
 - Tests run headless via `SDL_VIDEODRIVER=dummy` in `tests/conftest.py`.
-- Extended history and completed phase checklists: **`progress_archive.md`**.
-- After Phase 13, orthogonal paths are longer than diagonal-allowing BFS; **F-PATH** / **F-WORK-07** in PRD match **4-dir** `find_path_bfs`.
+- Extended history, completed phase checklists, and decisions log: **`progress_archive.md`**.
+- Pathfinding contract: **4-dir** `find_path_bfs` (no diagonals), aligned with PRD.

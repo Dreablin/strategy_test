@@ -24,6 +24,7 @@ _BUILDING_FOLDER: dict[str, str] = {
     "STONE_MINE": "stone_mine",
     "IRON_MINE": "iron_mine",
     "FARM": "farm",
+    "FIELD": "field",
     "FORESTER_HUT": "forester_hut",
     "SCHOOL": "school",
     "HOUSE": "house",

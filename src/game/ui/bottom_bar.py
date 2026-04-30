@@ -15,6 +15,7 @@ _RESOURCE_BUTTONS: tuple[tuple[str, str, str], ...] = (
     ("stone_mine", "Stone", "STONE_MINE"),
     ("iron_mine", "Iron", "IRON_MINE"),
     ("farm", "Farm", "FARM"),
+    ("field", "Field", "FIELD"),
     ("forester_hut", "Forester", "FORESTER_HUT"),
 )
 # Backward-compat for tests importing previous flat menu tuple.

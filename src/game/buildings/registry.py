@@ -100,6 +100,15 @@ class BuildingRegistry:
             for tx in range(gx, gx + w):
                 self._world.remove_tree(tx, ty)
         inst = cls(level=1, grid_pos=grid_pos)
+        if cls.type_tag == "FIELD":
+            inst.construction_site = ConstructionSite(
+                required_resources={},
+                delivered_resources={},
+                build_time_ms=10_000,
+                build_started_ms=None,
+                builder=None,
+                target_level=1,
+            )
         req_by_level = CONSTRUCTION_REQUIREMENTS.get(cls.type_tag)
         if req_by_level is not None:
             level1 = req_by_level.get(1)
@@ -112,7 +121,8 @@ class BuildingRegistry:
                     builder=None,
                     target_level=1,
                 )
-        self._world.mark_occupied(gx, gy, w, h)
+        if cls.type_tag != "FIELD":
+            self._world.mark_occupied(gx, gy, w, h)
         self._buildings.append(inst)
         return inst
 
@@ -133,7 +143,8 @@ class BuildingRegistry:
             raise ValueError("building has no grid position")
         gx, gy = pos
         w, h = type(building).footprint
-        self._world.free(gx, gy, w, h)
+        if building.type_tag != "FIELD":
+            self._world.free(gx, gy, w, h)
         self._buildings.remove(building)
 
     def upgrade_building(self, building: Building) -> bool:

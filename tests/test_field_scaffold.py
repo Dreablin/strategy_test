@@ -69,3 +69,16 @@ def test_field_can_be_placed_adjacent_to_other_buildings() -> None:
 
     # Edge-adjacent to the 2x2 LumberCamp footprint should be allowed for FIELD.
     assert registry.can_place(field_cls, (12, 10))
+
+
+def test_building_can_be_placed_adjacent_to_existing_field() -> None:
+    field_cls = _require_field_class()
+    world = World(world_seed=0)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, (20, 20))
+    registry.place(field_cls, (12, 10))
+
+    assert registry.can_place(LumberCamp, (10, 10))
+    assert not registry.can_place(LumberCamp, (11, 10))

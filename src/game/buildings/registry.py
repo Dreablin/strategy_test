@@ -74,14 +74,14 @@ class BuildingRegistry:
             return False
         # Spacing rule:
         # - regular buildings require one empty tile gap (min chebyshev distance 2),
-        # - FIELD tiles may be placed directly adjacent to buildings.
-        min_allowed = 1 if cls.type_tag == "FIELD" else 2
+        # - FIELD tiles may touch buildings but may not overlap their footprint.
         for b in self._buildings:
             pos = b.grid_pos
             if pos is None:
                 continue
             bx, by = pos
             bw, bh = type(b).footprint
+            min_allowed = 1 if cls.type_tag == "FIELD" or b.type_tag == "FIELD" else 2
             if _min_chebyshev_between_footprints(gx, gy, w, h, bx, by, bw, bh) < min_allowed:
                 return False
         return True

@@ -181,6 +181,18 @@ def test_building_sprite_prefers_level_file_over_default(tmp_path, monkeypatch) 
     clear_asset_caches()
 
 
+def test_field_empty_sprite_can_use_level_zero_file(tmp_path, monkeypatch) -> None:
+    root = tmp_path / "buildings"
+    field_dir = root / "field"
+    _write_png(field_dir / "default.png", (20, 20), (200, 10, 10))
+    _write_png(field_dir / "level_00.png", (31, 29), (10, 200, 10))
+    monkeypatch.setattr(assets_mod, "_BUILDINGS_ROOT", root)
+    clear_asset_caches()
+    spr = building_sprite("FIELD", 0)
+    assert spr.get_size() == (31, 29)
+    clear_asset_caches()
+
+
 def test_building_sprite_applies_scale_and_anchor_norm(tmp_path, monkeypatch) -> None:
     root = tmp_path / "buildings"
     farm_dir = root / "farm"

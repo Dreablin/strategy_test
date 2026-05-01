@@ -482,7 +482,11 @@ def _apply_building_meta(src: pygame.Surface, meta: dict) -> tuple[pygame.Surfac
 def _building_render_spec(b_type: str, level: int) -> tuple[pygame.Surface, tuple[int, int]]:
     """Return (surface, anchor_px) where anchor sits on footprint bottom-center."""
     folder = _building_folder_name(b_type)
-    lvl = max(1, min(level, 10))
+    requested_level = int(level)
+    is_field_empty_level = (
+        b_type.upper().replace(" ", "_") == "FIELD" and requested_level == 0
+    )
+    lvl = 0 if is_field_empty_level else max(1, min(requested_level, 10))
     src: pygame.Surface | None = None
     for candidate in _building_level_candidates(folder, lvl):
         src = _load_png(str(candidate))

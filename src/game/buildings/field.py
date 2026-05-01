@@ -70,14 +70,46 @@ def advance_wheat_growth(
     if int(now_ms) - int(last_change_ms) < int(growth_step_ms):
         return phase, int(last_change_ms)
 
-    next_phase = next_wheat_phase(phase)
-    return next_phase, int(now_ms)
+    updated_at = int(last_change_ms)
+    while phase not in {WHEAT_EMPTY, WHEAT_PHASE_4} and int(now_ms) - updated_at >= int(growth_step_ms):
+        phase = next_wheat_phase(phase)
+        updated_at += int(growth_step_ms)
+    return phase, updated_at
 
 
 class Field(Building):
     type_tag: ClassVar[str] = "FIELD"
     footprint: ClassVar[tuple[int, int]] = (1, 1)
+    __slots__ = ("wheat_phase", "wheat_last_change_ms")
+
+    def __init__(self, level: int = 1, grid_pos: tuple[int, int] | None = None) -> None:
+        super().__init__(level=level, grid_pos=grid_pos)
+        self.wheat_phase = WHEAT_EMPTY
+        self.wheat_last_change_ms = 0
 
     @classmethod
     def max_level(cls) -> int:
         return 1
+
+    def set_wheat_phase(self, phase: str, *, now_ms: int | None = None) -> None:
+        normalized = str(phase).upper()
+        if normalized not in _WHEAT_PHASE_ORDER:
+            raise ValueError(f"unknown wheat phase: {phase!r}")
+        self.wheat_phase = normalized
+        if now_ms is not None:
+            self.wheat_last_change_ms = int(now_ms)
+
+    def sow(self, *, now_ms: int) -> None:
+        self.set_wheat_phase(WHEAT_PHASE_1, now_ms=now_ms)
+
+    def harvest(self, *, now_ms: int) -> None:
+        self.set_wheat_phase(reset_after_harvest(self.wheat_phase), now_ms=now_ms)
+
+    def update_wheat_growth(self, now_ms: int) -> None:
+        phase, changed_at = advance_wheat_growth(
+            self.wheat_phase,
+            self.wheat_last_change_ms,
+            now_ms=int(now_ms),
+        )
+        self.wheat_phase = phase
+        self.wheat_last_change_ms = changed_at

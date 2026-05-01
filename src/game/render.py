@@ -15,7 +15,7 @@ from game.assets import (
     tree_sprite_anchor,
     tree_sprite_offset,
 )
-from game.buildings.field import WHEAT_PHASE_1, WHEAT_PHASE_2, WHEAT_PHASE_3, WHEAT_PHASE_4
+from game.buildings.field import WHEAT_EMPTY, WHEAT_PHASE_1, WHEAT_PHASE_2, WHEAT_PHASE_3, WHEAT_PHASE_4
 from game.buildings.registry import BuildingRegistry
 from game.config import TILE_H, TILE_W
 from game.iso import screen_to_world, world_to_screen
@@ -134,11 +134,14 @@ class Renderer:
             sprite_level = int(b.level)
             if b.type_tag == "FIELD" and not b.is_under_construction:
                 phase_lookup = getattr(worker_manager, "_read_field_phase", None)
-                if callable(phase_lookup):
+                if hasattr(b, "wheat_phase"):
+                    phase = str(getattr(b, "wheat_phase")).upper()
+                elif callable(phase_lookup):
                     phase = str(phase_lookup(b)).upper()
                 else:
-                    phase = WHEAT_PHASE_1
+                    phase = WHEAT_EMPTY
                 sprite_level = {
+                    WHEAT_EMPTY: 0,
                     WHEAT_PHASE_1: 1,
                     WHEAT_PHASE_2: 2,
                     WHEAT_PHASE_3: 3,
@@ -186,7 +189,14 @@ class Renderer:
         gx_min, gy_min, gx_max, gy_max = Renderer.visible_tile_range(surface, world, camera)
         if gx_max < gx_min or gy_max < gy_min:
             return
-        moving_states = {"moving", "going_to_tree", "going_to_stone", "going_to_plant_tile", "returning"}
+        moving_states = {
+            "moving",
+            "going_to_tree",
+            "going_to_stone",
+            "going_to_plant_tile",
+            "going_to_field",
+            "returning",
+        }
         entries: list[tuple[str, bool, float, float]] = []
         for worker in worker_manager.workers():
             carrying = (

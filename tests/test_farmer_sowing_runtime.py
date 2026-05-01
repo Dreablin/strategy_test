@@ -140,3 +140,46 @@ def test_farmer_does_not_start_new_harvest_when_farm_storage_is_full() -> None:
     assert workers._read_field_phase(field) == WHEAT_PHASE_4  # noqa: SLF001
     assert farmer.state in {"resting", "working_field"}
 
+
+def test_two_farmers_do_not_target_same_field() -> None:
+    now_ms = {"t": 0}
+    world = World(world_seed=5)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    farm_a = registry.place(Farm, (20, 20))
+    farm_b = registry.place(Farm, (25, 20))
+    farm_a.construction_site = None
+    farm_b.construction_site = None
+    field = registry.place(Field, (23, 23))
+    field.construction_site = None
+    workers = WorkerManager(registry, now_ms_fn=lambda: now_ms["t"])
+    workers._write_field_phase(field, WHEAT_EMPTY)  # noqa: SLF001
+    farmer_a = workers.hire("FARMER")
+    farmer_b = workers.hire("FARMER")
+    assert farmer_a is not None
+    assert farmer_b is not None
+
+    for _ in range(500):
+        now_ms["t"] += 500
+        workers.reassign_all()
+        workers.update(now_ms["t"])
+        if any(
+            farmer.target_tree == field.grid_pos and farmer.state in {"going_to_field", "sowing"}
+            for farmer in (farmer_a, farmer_b)
+        ):
+            break
+
+    targeted = [
+        farmer
+        for farmer in (farmer_a, farmer_b)
+        if farmer.target_tree == field.grid_pos and farmer.state in {"going_to_field", "sowing"}
+    ]
+    assert len(targeted) == 1
+    assert all(
+        farmer.target_tree != field.grid_pos
+        for farmer in (farmer_a, farmer_b)
+        if farmer not in targeted
+    )
+

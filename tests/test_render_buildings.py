@@ -7,7 +7,7 @@ import pygame
 from game.construction import ConstructionSite
 from game.assets import grass_tile
 from game.config import near_town_hall_tile, town_hall_origin_tile
-from game.buildings.field import Field, WHEAT_PHASE_3
+from game.buildings.field import Field, WHEAT_EMPTY, WHEAT_PHASE_3
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
@@ -205,3 +205,26 @@ def test_draw_buildings_uses_phase_specific_field_sprite_level(monkeypatch) -> N
     Renderer.draw_buildings(surface, world, registry, worker_manager)
 
     assert ("FIELD", 3) in normal_calls
+
+
+def test_draw_buildings_uses_empty_field_sprite_level(monkeypatch) -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    field = registry.place(Field, near_town_hall_tile(8, 8))
+    field.construction_site = None
+    worker_manager = WorkerManager(registry, now_ms_fn=lambda: 0)
+    worker_manager._write_field_phase(field, WHEAT_EMPTY)  # noqa: SLF001
+    surface = pygame.Surface((1280, 720))
+    normal_calls: list[tuple[str, int]] = []
+
+    def _normal_sprite(b_type: str, level: int) -> pygame.Surface:
+        normal_calls.append((b_type, level))
+        return pygame.Surface((16, 16), pygame.SRCALPHA)
+
+    monkeypatch.setattr(render_mod, "building_sprite", _normal_sprite)
+    monkeypatch.setattr(render_mod, "building_sprite_anchor", lambda _t, _l: (8, 16))
+
+    Renderer.draw_buildings(surface, world, registry, worker_manager)
+
+    assert ("FIELD", 0) in normal_calls

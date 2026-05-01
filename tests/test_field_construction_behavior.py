@@ -86,3 +86,5 @@ def test_field_builder_stands_on_field_tile_while_building_and_finishes_in_10s()
 
     workers.update(field.construction_site.build_started_ms + 10_000)
     assert not field.is_under_construction
+    assert builder.current_tile == (10, 10)
+    assert builder.stand_tile == (10, 10)

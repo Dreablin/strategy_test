@@ -494,6 +494,9 @@ def test_update_completes_construction_and_reassigns_with_idle_builder() -> None
     assert builder.idle is True
     assert builder.state == "idle"
     assert builder.assigned_building is None
+    gx, gy = camp.grid_pos  # type: ignore[assignment]
+    w, h = type(camp).footprint
+    assert builder.current_tile == (gx + w // 2, gy + h)
     assert not world.is_occupied(*builder.current_tile)
 
 

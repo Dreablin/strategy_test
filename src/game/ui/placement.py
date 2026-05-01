@@ -19,11 +19,12 @@ from game.buildings.school import School
 from game.buildings.sawmill import Sawmill
 from game.camera import Camera
 from game.buildings.stone_mine import StoneMine
-from game.config import TILE_H, TILE_W
+from game.config import GATHER_RESOURCE_SEARCH_RADIUS, TILE_H, TILE_W
 from game.iso import screen_to_world, world_to_screen
 from game.render import Renderer
 from game.stones import Stone
 from game.world import World
+from game.workers import FARMER_FIELD_RADIUS, building_center_tile
 
 _TAG_TO_CLASS: dict[str, Type[Building]] = {
     "LUMBER_CAMP": LumberCamp,
@@ -50,6 +51,59 @@ def _diamond_screen_points(
         (px + hw, py + TILE_H - 1),
         (px, py + hh),
     ]
+
+
+def _building_search_anchor_tile(building: Building) -> tuple[int, int] | None:
+    if building.grid_pos is None:
+        return None
+    return building_center_tile(building)
+
+
+def _building_range_border_tiles(building: Building, radius: int) -> set[tuple[int, int]]:
+    center = _building_search_anchor_tile(building)
+    if center is None:
+        return set()
+    return _range_border_tiles(center, radius)
+
+
+def _pending_building_range_border_tiles(
+    cls: Type[Building],
+    grid_pos: tuple[int, int],
+    radius: int,
+) -> set[tuple[int, int]]:
+    gx, gy = grid_pos
+    w, h = cls.footprint
+    return _range_border_tiles((gx + w // 2, gy + h // 2), radius)
+
+
+def _range_border_tiles(center: tuple[int, int], radius: int) -> set[tuple[int, int]]:
+    cx, cy = center
+    border: set[tuple[int, int]] = set()
+    for dx in range(-radius, radius + 1):
+        for dy in range(-radius, radius + 1):
+            if max(abs(dx), abs(dy)) != radius:
+                continue
+            border.add((cx + dx, cy + dy))
+    return border
+
+
+def _placement_zones_follow_existing_buildings(cls: Type[Building] | None) -> bool:
+    return cls is Field
+
+
+def _placement_zone_specs(cls: Type[Building] | None) -> list[tuple[str, int]]:
+    if cls is Farm:
+        return [("FARM", FARMER_FIELD_RADIUS)]
+    if cls is Field:
+        return [("FARM", FARMER_FIELD_RADIUS)]
+    if cls is LumberCamp:
+        return [("LUMBER_CAMP", GATHER_RESOURCE_SEARCH_RADIUS)]
+    if cls is StoneMine:
+        return [("STONE_MINE", GATHER_RESOURCE_SEARCH_RADIUS)]
+    if cls is ForesterHut:
+        # Matches current forester target search window in WorkerManager.
+        return [("FORESTER_HUT", 15)]
+    return []
 
 
 class PlacementController:
@@ -176,6 +230,27 @@ class PlacementController:
         oy += cam_y
         color = (40, 220, 80, 100) if valid else (220, 50, 50, 100)
         overlay = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
+        zone_specs = _placement_zone_specs(cls)
+        if zone_specs:
+            zone_color = (120, 190, 255, 110)
+            if _placement_zones_follow_existing_buildings(cls):
+                type_to_radius = {tag: radius for tag, radius in zone_specs}
+                for building in self._registry.all():
+                    radius = type_to_radius.get(building.type_tag)
+                    if radius is None or building.grid_pos is None:
+                        continue
+                    for tx, ty in _building_range_border_tiles(building, radius=radius):
+                        if not self._world.is_in_grass(tx, ty):
+                            continue
+                        pts = _diamond_screen_points(ox, oy, tx, ty)
+                        pygame.draw.polygon(overlay, zone_color, pts, width=1)
+            elif cls is not None:
+                for _tag, radius in zone_specs:
+                    for tx, ty in _pending_building_range_border_tiles(cls, (gx, gy), radius=radius):
+                        if not self._world.is_in_grass(tx, ty):
+                            continue
+                        pts = _diamond_screen_points(ox, oy, tx, ty)
+                        pygame.draw.polygon(overlay, zone_color, pts, width=1)
         for ty in range(gy, gy + h):
             for tx in range(gx, gx + w):
                 pts = _diamond_screen_points(ox, oy, tx, ty)

@@ -9,6 +9,7 @@ from typing import Any
 
 from game.buildings.base import Building
 from game.buildings.field import (
+    Field,
     WHEAT_EMPTY,
     WHEAT_PHASE_1,
     WHEAT_PHASE_4,
@@ -339,7 +340,14 @@ class Worker:
 class WorkerManager:
     """Tracks workers; notifies assignments when a staffed building is demolished (PRD F-WORK)."""
 
-    __slots__ = ("_now_ms_fn", "_registry", "_workers", "_transport_queue", "_updaters", "_field_state")
+    __slots__ = (
+        "_field_reservations",
+        "_now_ms_fn",
+        "_registry",
+        "_transport_queue",
+        "_updaters",
+        "_workers",
+    )
     _WORKER_TO_BUILDING: dict[str, str] = {
         "LUMBERJACK": "LUMBER_CAMP",
         "STONECUTTER": "STONE_MINE",
@@ -359,7 +367,7 @@ class WorkerManager:
         self._registry = registry
         self._workers: list[Worker] = []
         self._transport_queue: list[TransportTask] = []
-        self._field_state: dict[tuple[int, int], str] = {}
+        self._field_reservations: dict[tuple[int, int], Worker] = {}
         self._now_ms_fn = now_ms_fn or (lambda: 0)
         self._updaters: dict[str, Callable[[Worker, int, Any], None]] = {
             "FORESTER": self._update_forester,
@@ -664,6 +672,7 @@ class WorkerManager:
             if w.assigned_building is building:
                 if world is not None:
                     world.release_reservations_for(w)
+                self._release_field_reservations_for(w)
                 self._clear_building_bonus(w)
                 w.assigned_building = None
                 w.idle = True
@@ -683,6 +692,8 @@ class WorkerManager:
                     site.builder = None
                 if site.resting_worker is w:
                     site.resting_worker = None
+        if building.type_tag == "FIELD" and building.grid_pos is not None:
+            self._field_reservations.pop(tuple(building.grid_pos), None)
 
     def reassign_all(self) -> None:
         """Assign one idle worker per free matching building with path-to-approach."""
@@ -793,6 +804,7 @@ class WorkerManager:
     def update(self, now_ms: int) -> None:
         """Advance worker movement interpolation/state for this frame."""
         world = getattr(self._registry, "_world", None) if self._registry is not None else None
+        self._update_field_growth(int(now_ms))
         self._enqueue_construction_transport_tasks()
         self._enqueue_sawmill_refill_tasks()
         self._enqueue_sawmill_output_tasks()
@@ -1491,8 +1503,10 @@ class WorkerManager:
             return
         farm = worker.assigned_building
         if farm is None or farm.type_tag != "FARM":
+            self._release_field_reservations_for(worker)
             return
         if farm.is_under_construction:
+            self._release_field_reservations_for(worker)
             return
 
         # Enter the farm home base first and begin a rest window.
@@ -1512,7 +1526,12 @@ class WorkerManager:
                 worker.state = "working_field" if now_ms >= FARMER_NO_TARGET_WORKING_STATE_MS else "resting"
                 worker.camp_wait_until_ms = now_ms + 1_000
                 return
+            if not self._reserve_field(target_field, worker):
+                worker.state = "working_field" if now_ms >= FARMER_NO_TARGET_WORKING_STATE_MS else "resting"
+                worker.camp_wait_until_ms = now_ms + 1_000
+                return
             if not self._start_farmer_move_to_field(worker, target_field, now_ms, world):
+                self._release_field_reservations_for(worker)
                 worker.state = "working_field" if now_ms >= FARMER_NO_TARGET_WORKING_STATE_MS else "resting"
                 worker.camp_wait_until_ms = now_ms + 1_000
                 return
@@ -1544,7 +1563,8 @@ class WorkerManager:
             if target_tile is not None:
                 field = self._field_at(target_tile)
                 if field is not None:
-                    self._write_field_phase(field, WHEAT_PHASE_1)
+                    field.sow(now_ms=now_ms)
+                self._release_field_reservations_for(worker)
             if self._start_return_to_camp(worker, now_ms):
                 return
             worker.state = "arrived_camp"
@@ -1558,11 +1578,12 @@ class WorkerManager:
                 field = self._field_at(target_tile)
                 if field is not None:
                     try:
-                        on_field_harvest(self._read_field_phase(field))
-                        self._write_field_phase(field, WHEAT_EMPTY)
+                        on_field_harvest(field.wheat_phase)
+                        field.harvest(now_ms=now_ms)
                         worker.carrying = "wheat"
                     except ValueError:
                         worker.carrying = None
+                self._release_field_reservations_for(worker)
             if self._start_return_to_camp(worker, now_ms):
                 return
             worker.state = "arrived_camp"
@@ -1601,6 +1622,8 @@ class WorkerManager:
             if building.is_under_construction or building.grid_pos is None:
                 continue
             tile = (int(building.grid_pos[0]), int(building.grid_pos[1]))
+            if self._is_field_reserved_by_other(tile, None):
+                continue
             tile_to_field[tile] = building
             phase = self._read_field_phase(building, tile=tile)
             if storage_full and phase == WHEAT_PHASE_4:
@@ -1624,6 +1647,8 @@ class WorkerManager:
             if building.type_tag != "FIELD" or building.is_under_construction or building.grid_pos is None:
                 continue
             tile = (int(building.grid_pos[0]), int(building.grid_pos[1]))
+            if self._is_field_reserved_by_other(tile, None):
+                continue
             if max(abs(tile[0] - farm_home[0]), abs(tile[1] - farm_home[1])) > FARMER_FIELD_RADIUS:
                 continue
             phase = self._read_field_phase(building, tile=tile)
@@ -1632,20 +1657,42 @@ class WorkerManager:
         return False
 
     def _read_field_phase(self, field: Building, *, tile: tuple[int, int] | None = None) -> str:
+        if isinstance(field, Field):
+            return str(field.wheat_phase).upper()
         pos = tile if tile is not None else field.grid_pos
         if pos is not None:
-            state = getattr(self, "_field_state", None)
-            if state is not None:
-                return str(state.get((int(pos[0]), int(pos[1])), WHEAT_EMPTY)).upper()
+            return WHEAT_EMPTY
         return WHEAT_EMPTY
 
     def _write_field_phase(self, field: Building, phase: str) -> None:
-        if not hasattr(self, "_field_state"):
-            setattr(self, "_field_state", {})
-        state = getattr(self, "_field_state")
+        if isinstance(field, Field):
+            field.set_wheat_phase(phase, now_ms=int(self._now_ms_fn()))
+
+    def _reserve_field(self, field: Building, worker: Worker) -> bool:
         if field.grid_pos is None:
+            return False
+        tile = (int(field.grid_pos[0]), int(field.grid_pos[1]))
+        owner = self._field_reservations.get(tile)
+        if owner is None or owner is worker:
+            self._field_reservations[tile] = worker
+            return True
+        return False
+
+    def _release_field_reservations_for(self, worker: Worker) -> None:
+        reserved = [tile for tile, owner in self._field_reservations.items() if owner is worker]
+        for tile in reserved:
+            self._field_reservations.pop(tile, None)
+
+    def _is_field_reserved_by_other(self, tile: tuple[int, int], worker: Worker | None) -> bool:
+        owner = self._field_reservations.get((int(tile[0]), int(tile[1])))
+        return owner is not None and owner is not worker
+
+    def _update_field_growth(self, now_ms: int) -> None:
+        if self._registry is None:
             return
-        state[(int(field.grid_pos[0]), int(field.grid_pos[1]))] = str(phase).upper()
+        for building in self._registry.all():
+            if isinstance(building, Field) and not building.is_under_construction:
+                building.update_wheat_growth(now_ms)
 
     def _field_at(self, tile: tuple[int, int]) -> Building | None:
         if self._registry is None:
@@ -1978,16 +2025,21 @@ class WorkerManager:
         worker.idle = False
 
     def _move_worker_to_building_approach(self, worker: Worker, building: Building) -> None:
+        if building.type_tag == "FIELD":
+            worker.target_tile = worker.current_tile
+            worker.path = []
+            worker.segment_progress = 0.0
+            return
         approach_tiles = self._approach_tiles(building)
-        preferred_tile: tuple[int, int] | None = None
-        if isinstance(building, TownHall) and building.grid_pos is not None:
+        target = approach_tiles[0] if approach_tiles else None
+        if building.grid_pos is not None:
             gx, gy = building.grid_pos
             w, h = type(building).footprint
-            preferred_tile = (gx + w // 2, gy + h)  # always below Town Hall
-        if approach_tiles:
-            target = approach_tiles[0]
-            if preferred_tile is not None and preferred_tile in approach_tiles:
-                target = preferred_tile
+            preferred_x = gx + w // 2
+            bottom_tiles = [tile for tile in approach_tiles if tile[1] == gy + h]
+            if bottom_tiles:
+                target = min(bottom_tiles, key=lambda tile: (abs(tile[0] - preferred_x), tile[0]))
+        if target is not None:
             worker.current_tile = target
             worker.stand_tile = target
         else:

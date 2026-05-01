@@ -15,6 +15,7 @@ from game.assets import (
     tree_sprite_anchor,
     tree_sprite_offset,
 )
+from game.buildings.field import WHEAT_EMPTY, WHEAT_PHASE_1, WHEAT_PHASE_2, WHEAT_PHASE_3, WHEAT_PHASE_4
 from game.buildings.registry import BuildingRegistry
 from game.config import TILE_H, TILE_W
 from game.iso import screen_to_world, world_to_screen
@@ -84,6 +85,7 @@ class Renderer:
         surface: pygame.Surface,
         world: World,
         registry: BuildingRegistry,
+        worker_manager: WorkerManager | None = None,
         camera=None,
     ) -> None:
         """Draw building sprites in painter order, anchored to footprint bottom-center."""
@@ -130,6 +132,21 @@ class Renderer:
             foot_cx = (min_x + max_x) // 2
             foot_by = max_y
             sprite_level = int(b.level)
+            if b.type_tag == "FIELD" and not b.is_under_construction:
+                phase_lookup = getattr(worker_manager, "_read_field_phase", None)
+                if hasattr(b, "wheat_phase"):
+                    phase = str(getattr(b, "wheat_phase")).upper()
+                elif callable(phase_lookup):
+                    phase = str(phase_lookup(b)).upper()
+                else:
+                    phase = WHEAT_EMPTY
+                sprite_level = {
+                    WHEAT_EMPTY: 0,
+                    WHEAT_PHASE_1: 1,
+                    WHEAT_PHASE_2: 2,
+                    WHEAT_PHASE_3: 3,
+                    WHEAT_PHASE_4: 4,
+                }.get(phase, 1)
             if b.is_under_construction and b.construction_site is not None:
                 sprite_level = int(b.construction_site.target_level)
                 spr = building_sprite_construction(b.type_tag, sprite_level)
@@ -167,10 +184,19 @@ class Renderer:
 
         ox, oy = Renderer.map_origin(surface, world)
         cam_x, cam_y = (0, 0) if camera is None else camera.offset
+        now_ms_fn = getattr(worker_manager, "_now_ms_fn", None)
+        now_ms = int(now_ms_fn()) if callable(now_ms_fn) else 0
         gx_min, gy_min, gx_max, gy_max = Renderer.visible_tile_range(surface, world, camera)
         if gx_max < gx_min or gy_max < gy_min:
             return
-        moving_states = {"moving", "going_to_tree", "going_to_stone", "going_to_plant_tile", "returning"}
+        moving_states = {
+            "moving",
+            "going_to_tree",
+            "going_to_stone",
+            "going_to_plant_tile",
+            "going_to_field",
+            "returning",
+        }
         entries: list[tuple[str, bool, float, float]] = []
         for worker in worker_manager.workers():
             carrying = (
@@ -205,6 +231,51 @@ class Renderer:
             px = ox + cam_x + sx + TILE_W // 2 - dot.get_width() // 2
             py = oy + cam_y + sy + TILE_H // 2 - dot.get_height() // 2
             surface.blit(dot, (px, py))
+
+        for worker in worker_manager.workers():
+            building = worker.assigned_building
+            if building is None or building.type_tag != "FIELD" or not building.is_under_construction:
+                continue
+            site = building.construction_site
+            if site is None or site.builder is not worker or not site.is_building():
+                continue
+            wx, wy = worker.current_tile
+            if not (gx_min <= wx <= gx_max and gy_min <= wy <= gy_max):
+                continue
+            progress = site.build_progress(now_ms)
+            sx, sy = world_to_screen(wx, wy)
+            center_x = ox + cam_x + sx + TILE_W // 2
+            bar_w = 22
+            bar_h = 4
+            bar_x = center_x - bar_w // 2
+            bar_y = oy + cam_y + sy + TILE_H // 2 + 8
+            pygame.draw.rect(surface, (40, 40, 48), (bar_x, bar_y, bar_w, bar_h), border_radius=2)
+            fill_w = max(0, min(bar_w, int(round(bar_w * progress))))
+            if fill_w > 0:
+                pygame.draw.rect(surface, (240, 210, 80), (bar_x, bar_y, fill_w, bar_h), border_radius=2)
+
+        for worker in worker_manager.workers():
+            if worker.type_tag != "FARMER":
+                continue
+            if worker.state not in {"sowing", "harvesting"}:
+                continue
+            wx, wy = worker.current_tile
+            if not (gx_min <= wx <= gx_max and gy_min <= wy <= gy_max):
+                continue
+            duration = max(1, int(getattr(worker, "chop_duration_ms", 1)))
+            started = int(getattr(worker, "chop_started_ms", now_ms))
+            progress = max(0.0, min(1.0, float(now_ms - started) / float(duration)))
+            sx, sy = world_to_screen(wx, wy)
+            center_x = ox + cam_x + sx + TILE_W // 2
+            bar_w = 24
+            bar_h = 4
+            bar_x = center_x - bar_w // 2
+            bar_y = oy + cam_y + sy + TILE_H // 2 + 8
+            pygame.draw.rect(surface, (40, 40, 48), (bar_x, bar_y, bar_w, bar_h), border_radius=2)
+            fill_w = max(0, min(bar_w, int(round(bar_w * progress))))
+            if fill_w > 0:
+                fill = (110, 220, 120) if worker.state == "sowing" else (240, 210, 80)
+                pygame.draw.rect(surface, fill, (bar_x, bar_y, fill_w, bar_h), border_radius=2)
 
     @staticmethod
     def draw_trees(surface: pygame.Surface, world: World, camera=None) -> None:

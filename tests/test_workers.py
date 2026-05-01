@@ -1,6 +1,7 @@
 """Worker manager: hire, reassign, demolition (PRD F-WORK / F-DEMO)."""
 
 from game.buildings.farm import Farm
+from game.buildings.field import Field
 from game.buildings.iron_mine import IronMine
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.registry import BuildingRegistry
@@ -493,6 +494,9 @@ def test_update_completes_construction_and_reassigns_with_idle_builder() -> None
     assert builder.idle is True
     assert builder.state == "idle"
     assert builder.assigned_building is None
+    gx, gy = camp.grid_pos  # type: ignore[assignment]
+    w, h = type(camp).footprint
+    assert builder.current_tile == (gx + w // 2, gy + h)
     assert not world.is_occupied(*builder.current_tile)
 
 
@@ -790,6 +794,61 @@ def test_production_status_for_building_resting_and_gathering_states() -> None:
 
     w.state = "returning"
     assert wm.production_status_for_building(camp) == "On the way"
+
+
+def test_farm_production_status_reports_worker_action_states_and_hints() -> None:
+    world = World(world_seed=0)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    farm = registry.place(Farm, near_town_hall_tile(10, 8))
+    farm.construction_site = None
+    field = registry.place(Field, near_town_hall_tile(7, 8))
+    field.construction_site = None
+    wm = WorkerManager(registry, now_ms_fn=lambda: 0)
+    farmer = Worker("FARMER")
+    wm.add_worker(farmer)
+    wm.assign_to_building(farmer, farm)
+
+    farmer.state = "moving"
+    assert wm.production_status_for_building(farm) == "Moving"
+    farmer.state = "sowing"
+    assert wm.production_status_for_building(farm) == "Sowing"
+    farmer.state = "harvesting"
+    assert wm.production_status_for_building(farm) == "Harvesting"
+
+    farm.stored = farm.storage_capacity()
+    assert wm.production_status_for_building(farm) == "Storage full"
+
+    farm.stored = 0
+    farmer.state = "working_field"
+    assert wm.production_status_for_building(farm) == "No fields in radius"
+    wm._write_field_phase(field, "EMPTY")  # noqa: SLF001
+    assert wm.production_status_for_building(farm) == "Resting"
+
+
+def test_farm_worker_status_reports_farm_specific_states() -> None:
+    world = World(world_seed=0)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    farm = registry.place(Farm, near_town_hall_tile(10, 8))
+    farm.construction_site = None
+    wm = WorkerManager(registry)
+    farmer = Worker("FARMER")
+    wm.add_worker(farmer)
+    wm.assign_to_building(farmer, farm)
+
+    farmer.state = "going_to_field"
+    assert wm.worker_status_for_building(farm) == "moving"
+    farmer.state = "sowing"
+    assert wm.worker_status_for_building(farm) == "sowing"
+    farmer.state = "harvesting"
+    assert wm.worker_status_for_building(farm) == "harvesting"
+    farmer.state = "working_field"
+    assert wm.worker_status_for_building(farm) == "resting"
 
 
 def test_production_status_for_sawmill_blocked_reason_states() -> None:

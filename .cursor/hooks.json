@@ -3,12 +3,12 @@
   "hooks": {
     "afterAgentResponse": [
       {
-        "command": "python \"C:/Users/Dmitry/.cursor/plugins/marketplaces/github.com/cursor/plugins/7ec1de4230b1f5086daec529363cadb9108df55d/ralph-loop/hooks/capture-response.py\""
+        "command": "python \"D:/projects/game/.cursor/capture-response.py\""
       }
     ],
     "stop": [
       {
-        "command": "python \"C:/Users/Dmitry/.cursor/plugins/marketplaces/github.com/cursor/plugins/7ec1de4230b1f5086daec529363cadb9108df55d/ralph-loop/hooks/stop-hook.py\"",
+        "command": "python \"D:/projects/game/.cursor/stop-hook.py\"",
         "loop_limit": null
       }
     ]

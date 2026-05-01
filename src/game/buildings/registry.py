@@ -72,14 +72,16 @@ class BuildingRegistry:
             return False
         if self._world_footprint_overlaps_stones(gx, gy, w, h):
             return False
-        # Require at least one empty tile between any two footprints.
-        min_allowed = 2
+        # Spacing rule:
+        # - regular buildings require one empty tile gap (min chebyshev distance 2),
+        # - FIELD tiles may touch buildings but may not overlap their footprint.
         for b in self._buildings:
             pos = b.grid_pos
             if pos is None:
                 continue
             bx, by = pos
             bw, bh = type(b).footprint
+            min_allowed = 1 if cls.type_tag == "FIELD" or b.type_tag == "FIELD" else 2
             if _min_chebyshev_between_footprints(gx, gy, w, h, bx, by, bw, bh) < min_allowed:
                 return False
         return True
@@ -100,6 +102,15 @@ class BuildingRegistry:
             for tx in range(gx, gx + w):
                 self._world.remove_tree(tx, ty)
         inst = cls(level=1, grid_pos=grid_pos)
+        if cls.type_tag == "FIELD":
+            inst.construction_site = ConstructionSite(
+                required_resources={},
+                delivered_resources={},
+                build_time_ms=10_000,
+                build_started_ms=None,
+                builder=None,
+                target_level=1,
+            )
         req_by_level = CONSTRUCTION_REQUIREMENTS.get(cls.type_tag)
         if req_by_level is not None:
             level1 = req_by_level.get(1)
@@ -112,7 +123,8 @@ class BuildingRegistry:
                     builder=None,
                     target_level=1,
                 )
-        self._world.mark_occupied(gx, gy, w, h)
+        if cls.type_tag != "FIELD":
+            self._world.mark_occupied(gx, gy, w, h)
         self._buildings.append(inst)
         return inst
 
@@ -133,7 +145,8 @@ class BuildingRegistry:
             raise ValueError("building has no grid position")
         gx, gy = pos
         w, h = type(building).footprint
-        self._world.free(gx, gy, w, h)
+        if building.type_tag != "FIELD":
+            self._world.free(gx, gy, w, h)
         self._buildings.remove(building)
 
     def upgrade_building(self, building: Building) -> bool:

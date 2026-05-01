@@ -491,4 +491,6 @@ class GameInput:
 
         hit = self._registry.at(gx, gy)
         if hit is not None:
-            self._panel = hit
+            # FIELD acts as a terrain/work tile; it does not open a building panel.
+            if hit.type_tag != "FIELD":
+                self._panel = hit

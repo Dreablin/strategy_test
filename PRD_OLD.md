@@ -30,9 +30,64 @@ session (5–30 minutes) with no installation friction.
 | Lint / Format (optional) | ruff                    | Single tool, fast                                         |
 | Assets                   | Disk-first PNG + procedural fallback | Small placeholders in-repo; swap without code changes |
 
-### Project structure
+### Project directory tree
 
-Source code lives in `src/game/` (world, buildings, workers, UI, rendering, input), tests in `tests/`, and execution/build/task docs in repository root (`README.md`, `progress.md`, `requirements.txt`, build scripts/spec).
+```
+game/
+├── PRD.md                       # product contract (update only via explicit progress tasks)
+├── prompt.md                    # ralph turn prompt
+├── progress.md                  # task tracker (agent's persistent memory)
+├── README.md                    # how to run / build
+├── requirements.txt             # runtime + dev dependencies
+├── pyproject.toml               # pytest + ruff config
+├── build_exe.bat                # PyInstaller one-shot script
+├── game.spec                    # PyInstaller spec (generated/edited)
+├── .gitignore
+├── .cursor/
+│   └── rules/
+│       ├── ralph-loop.mdc
+│       └── python.mdc
+├── src/
+│   └── game/
+│       ├── __init__.py
+│       ├── main.py              # entry point: pygame window, game loop
+│       ├── config.py            # all constants
+│       ├── iso.py               # world ↔ screen isometric transforms
+│       ├── assets.py            # procedural sprite/icon factory
+│       ├── world.py             # grid, occupancy, grass/tree zones
+│       ├── tick.py              # 10-second cycle scheduler
+│       ├── buildings/
+│       │   ├── __init__.py
+│       │   ├── base.py          # Building base class
+│       │   ├── town_hall.py
+│       │   ├── lumber_camp.py
+│       │   ├── stone_mine.py
+│       │   ├── iron_mine.py
+│       │   ├── farm.py
+│       │   └── registry.py      # BuildingRegistry, placement validation
+│       ├── workers.py           # Worker, WorkerManager, assignment
+│       ├── ui/
+│       │   ├── __init__.py
+│       │   ├── top_bar.py       # population / housing HUD
+│       │   ├── bottom_bar.py    # building selection menu
+│       │   ├── placement.py     # mouse-follow contour, click to place
+│       │   ├── building_panel.py# modal: info / demolish / upgrade
+│       │   └── town_hall_panel.py # Town Hall-specific panel actions
+│       ├── render.py            # main scene renderer
+│       └── input.py             # mouse/keyboard event router
+└── tests/
+    ├── __init__.py
+    ├── conftest.py              # SDL_VIDEODRIVER=dummy, fixtures
+    ├── test_config.py
+    ├── test_iso.py
+    ├── test_resources.py
+    ├── test_world.py
+    ├── test_buildings.py
+    ├── test_registry.py
+    ├── test_workers.py
+    ├── test_tick.py
+    └── test_production.py
+```
 
 ---
 
@@ -120,7 +175,7 @@ Source code lives in `src/game/` (world, buildings, workers, UI, rendering, inpu
 - **F-BLD-03 (MUST):** Maximum level is **10** for upgradable producer/social buildings. **Town Hall** is unique (exactly one), cannot be demolished, cannot be built from the menu, **can upgrade** levels 1..10 for tech gates. **`FORESTER_HUT`** is capped at level 1 where implemented.
 - **F-BLD-04 (MUST):** Building placement is **free** (no wallet spend gate).
 - **F-BLD-05 (MUST):** Upgrades are **free** (no wallet spend gate).
-- **F-BLD-06 (MUST):** Production model is defined by **F-PROD** (worker-cycle driven, storage-constrained).
+- **F-BLD-06 (MUST, revised):** Production model is defined by **F-PROD**: mixed tick-based and active-cycle production depending on building type.
 - **F-BLD-07 (MUST):** Each new building starts with **no worker**.
 
 ### F-RENDER — Building Rendering
@@ -137,6 +192,7 @@ class Building:
     grid_pos: tuple[int, int]           # top-left tile
     footprint: tuple[int, int]          # (w, h) in tiles
     worker: Optional["Worker"]          # None when empty
+    def income(self) -> dict[str, int]: ...
     def upgrade_cost(self) -> dict[str, int]: ...
     def can_upgrade(self) -> bool: ...
 ```
@@ -260,7 +316,7 @@ Panel example is illustrative only; exact lines depend on building type
 - **F-WORK-02 (Phase 15, MUST):** **Acquiring** workers is done only through **School** training queue (**F-SCHOOL-Q**), not the Town Hall panel. Worker acquisition is free. Spawning still respects **F-HOUSING**.
 - **F-WORK-03 (MUST):** Assignment rule: at every state change (worker finished training, building built, demolished, upgrade, etc.), WorkerManager runs `reassign_all` (see implementation) to match idle workers to unstaffed compatible buildings.
 - **F-WORK-04 (MUST):** Workers move smoothly on grid paths (**F-PATH**). Base travel time **WORKER_TILE_TRAVEL_MS** is modulated by characteristics.
-- **F-WORK-05 (MUST):** Workers cannot step onto building footprint tiles; pathfinding uses **`World.blocked_tiles()`** and **4-direction BFS**.
+- **F-WORK-05 (MUST):** Workers cannot step onto building footprint tiles; pathfinding uses **`World.blocked_tiles()`** and **4-direction BFS** (**F-PATH** obsolete / superseded: ~~8-direction worker movement~~ removed).
 - **F-WORK-06 (MUST):** For a target production building, approach tiles are orthogonally adjacent (Chebyshev-1) walkable grass tiles outside the footprint (see implementation).
 - **F-WORK-07 (MUST):** Pathfinding for workers is **exactly** `find_path_bfs` with **four** neighbours **N, E, S, W** — see **F-PATH-01**. (Earlier PRD drafts describing 8-neighbour BFS are void.)
 - **F-WORK-08 (MUST):** A worker contributes production only when its state machine allows (active gather buildings).
@@ -311,16 +367,21 @@ Panel example is illustrative only; exact lines depend on building type
 
 - `tests/conftest.py` sets `os.environ["SDL_VIDEODRIVER"] = "dummy"` before importing pygame, allowing UI/asset tests to run headless on CI / in ralph-loop.
 - pytest discovers `tests/test_*.py`. Run with `pytest -q`.
-- Coverage target: keep strong coverage on core non-UI modules (`config`, `iso`, `world`, `buildings`, `workers`, pathfinding/production logic).
+- Coverage target: ≥ 85 % on non-UI modules (`config`, `iso`, `resources`, `world`, `buildings/*`, `workers`, `tick`).
 
-### Required test categories
+### Test → coverage map
 
-- Config/constants sanity checks.
-- Isometric transform round-trip checks.
-- World generation / occupancy / blocking behavior.
-- Placement and registry constraints.
-- Worker assignment and cycle transitions.
-- End-to-end production + storage + transport flow.
+| Test file              | Covers                                                                |
+|------------------------|-----------------------------------------------------------------------|
+| `test_config.py`       | constants present, sane ranges                                        |
+| `test_iso.py`          | `world_to_screen`/`screen_to_world` round-trip                        |
+| `test_resources.py`    | add/get/normalize-name/initial values                                 |
+| `test_world.py`        | grid bounds, grass/tree zones, occupancy                              |
+| `test_buildings.py`    | each subclass: type, footprint, income, level cap                     |
+| `test_registry.py`     | placement valid/invalid, distance rule, second-town-hall rejected     |
+| `test_workers.py`      | assignment/state transitions, staffing rules, queue/spawn interactions |
+| `test_tick.py`         | 10-second tick boundary, callback called once per cycle               |
+| `test_production.py`   | end-to-end: building + worker → resource added per cycle              |
 
 ---
 
@@ -410,9 +471,18 @@ Renderer.visible_tile_range(surface, world, camera) -> tuple[int, int, int, int]
 
 ---
 
-## 7. Implementation Tracking
+## 7. Implementation Tasks
 
-The executable task backlog and status live in `progress.md`. Historical task batches are archived in `progress_archive.md`.
+The full ordered task list is the source of truth in `progress.md`. Summary:
+
+| Phase                                      | Tasks        | Status   |
+|--------------------------------------------|--------------|----------|
+| 1–12 (foundation through stone/bonuses)  | T01–T125     | done     |
+| 13. Performance & 4-dir pathfinding      | T126–T148    | done     |
+| 14. Forestry (Forester, species, trees)    | T149–T160    | done     |
+| **15. Housing, House, School queue, HUD**  | **T161–T173** | queued  |
+
+Historical per-phase numbering is archived in **`progress_archive.md`**. **`progress.md`** holds the runnable checklist for Ralph.
 
 ---
 
@@ -442,7 +512,11 @@ into the final `.exe`, so the end user needs nothing preinstalled.
 - Camera zoom / rotation (panning is supported via RMB drag).
 - Mac / Linux builds.
 
+### Out of scope (current)
+
+- Off-site resource transport from production buildings (storage fills locally for now).
 - Stone respawn / regrowth — depleted stone tiles remain plain grass.
+- Audio/combat/network/save systems remain out of scope (see section above).
 
 ---
 

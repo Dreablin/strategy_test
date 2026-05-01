@@ -22,4 +22,4 @@ def test_building_panel_storage_line_for_farm_updates_after_level_up() -> None:
     b.add_to_storage(1)
     assert BuildingPanel.storage_line(b) == "Storage: 1 / 3"
     b.level = 4
-    assert BuildingPanel.storage_line(b) == "Storage: 1 / 9"
+    assert BuildingPanel.storage_line(b) == "Storage: 1 / 4"

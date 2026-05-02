@@ -29,6 +29,7 @@ _DESCRIPTION: dict[str, str] = {
     "IRON_MINE": "Miner digs for iron.",
     "FARM": "Farmer grows wheat.",
     "FORESTER_HUT": "Forester plants new trees around the hut.",
+    "MILL": "Processes wheat into flour.",
 }
 
 def _upgrade_label(building: Building) -> str:

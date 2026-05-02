@@ -41,13 +41,20 @@ FORESTER_RETURN_RETRY_MS = 3_000
 CARRIER_INTERACT_MS = 2_000
 SAWMILL_BASE_CYCLE_MS = 30_000
 SAWMILL_MIN_CYCLE_MS = 5_000
+MILL_BASE_CYCLE_MS = SAWMILL_BASE_CYCLE_MS
+MILL_MIN_CYCLE_MS = SAWMILL_MIN_CYCLE_MS
 SAWYER_REST_MS = 10_000
+MILLER_REST_MS = SAWYER_REST_MS
 FARMER_REST_MS = 5_000
 FARMER_ACTION_MS = 5_000
 FARMER_FIELD_RADIUS = 10
 FARMER_NO_TARGET_WORKING_STATE_MS = 900_000
 MOVE_SPEED_PER_LEVEL = 0.05
 GATHER_SPEED_PER_LEVEL = 0.05
+PROCESSOR_INPUT_BY_RESOURCE: dict[str, str] = {
+    "wheat": "MILL",
+    "wood": "SAWMILL",
+}
 
 
 @dataclass(slots=True)
@@ -139,6 +146,64 @@ def sawmill_output_transport_tasks(registry: Any) -> list[TransportTask]:
             continue
         for _ in range(amount):
             tasks.append(TransportTask(resource="boards", source=building, target=town_hall, priority=0))
+    return tasks
+
+
+def mill_input_transport_tasks(registry: Any) -> list[TransportTask]:
+    """Build low-priority refill tasks from Town Hall to active mills."""
+    if registry is None:
+        return []
+    buildings = list(registry.all())
+    town_hall = next((b for b in buildings if b.type_tag == "TOWN_HALL"), None)
+    if town_hall is None or not hasattr(town_hall, "warehouse_amount"):
+        return []
+    available = int(town_hall.warehouse_amount("wheat"))
+    if available <= 0:
+        return []
+    tasks: list[TransportTask] = []
+    remaining_wheat = available
+    for building in buildings:
+        if building.type_tag != "MILL":
+            continue
+        if getattr(building, "is_under_construction", False):
+            continue
+        if not getattr(building, "active", False):
+            continue
+        want = max(
+            0,
+            int(getattr(building, "input_capacity", lambda: 0)())
+            - int(getattr(building, "input_amount", lambda: 0)()),
+        )
+        if want <= 0:
+            continue
+        count = min(want, remaining_wheat)
+        for _ in range(count):
+            tasks.append(TransportTask(resource="wheat", source=town_hall, target=building, priority=0))
+        remaining_wheat -= count
+        if remaining_wheat <= 0:
+            break
+    return tasks
+
+
+def mill_output_transport_tasks(registry: Any) -> list[TransportTask]:
+    """Build low-priority export tasks from mills to Town Hall warehouse."""
+    if registry is None:
+        return []
+    buildings = list(registry.all())
+    town_hall = next((b for b in buildings if b.type_tag == "TOWN_HALL"), None)
+    if town_hall is None:
+        return []
+    tasks: list[TransportTask] = []
+    for building in buildings:
+        if building.type_tag != "MILL":
+            continue
+        if getattr(building, "is_under_construction", False):
+            continue
+        amount = int(getattr(building, "output_amount", lambda: 0)())
+        if amount <= 0:
+            continue
+        for _ in range(amount):
+            tasks.append(TransportTask(resource="flour", source=building, target=town_hall, priority=0))
     return tasks
 
 
@@ -355,6 +420,7 @@ class WorkerManager:
         "FARMER": "FARM",
         "FORESTER": "FORESTER_HUT",
         "SAWYER": "SAWMILL",
+        "MILLER": "MILL",
     }
     _HIRABLE_WORKERS: set[str] = set(_WORKER_TO_BUILDING) | {"CARRIER", "BUILDER"}
 
@@ -376,6 +442,7 @@ class WorkerManager:
             "STONECUTTER": self._update_gatherer,
             "BUILDER": self._update_builder,
             "SAWYER": self._update_sawyer,
+            "MILLER": self._update_miller,
             "FARMER": self._update_farmer,
         }
         if registry is not None and hasattr(registry, "bind_worker_manager"):
@@ -540,6 +607,18 @@ class WorkerManager:
                 return "Output full"
             if int(getattr(building, "input_amount", lambda: 0)()) <= 0:
                 return "No wood"
+            if worker.state == "processing":
+                return "Processing"
+            return "Ready"
+        if building.type_tag == "MILL":
+            if worker.state == "resting":
+                return "Resting"
+            if int(getattr(building, "output_amount", lambda: 0)()) >= int(
+                getattr(building, "output_capacity", lambda: 0)()
+            ):
+                return "Output full"
+            if int(getattr(building, "input_amount", lambda: 0)()) <= 0:
+                return "No wheat"
             if worker.state == "processing":
                 return "Processing"
             return "Ready"
@@ -808,6 +887,8 @@ class WorkerManager:
         self._enqueue_construction_transport_tasks()
         self._enqueue_sawmill_refill_tasks()
         self._enqueue_sawmill_output_tasks()
+        self._enqueue_mill_refill_tasks()
+        self._enqueue_mill_output_tasks()
         self._enqueue_farm_wheat_output_tasks()
         completed_buildings: list[Building] = []
         completed_site_builders: dict[int, Worker] = {}
@@ -922,8 +1003,10 @@ class WorkerManager:
                 target = self._construction_target_for_resource(resource)
                 priority = 10
                 if target is None:
-                    target = self._primary_town_hall()
+                    target = self._processor_input_target_for_resource(resource, source=camp)
                     priority = 0
+                if target is None:
+                    target = self._primary_town_hall()
                 if target is not None:
                     self.enqueue_transport_task(
                         resource=resource,
@@ -950,6 +1033,78 @@ class WorkerManager:
             if isinstance(building, TownHall):
                 return building
         return None
+
+    def _inbound_resource_count(
+        self,
+        target: Building,
+        resource: str,
+        planned_counts: dict[tuple[int, str], int] | None = None,
+    ) -> int:
+        key = str(resource)
+        total = 0
+        for task in self._transport_queue:
+            if task.target is target and task.resource == key:
+                total += 1
+        for worker in self._workers:
+            task = worker.transport_task
+            if task is not None and task.target is target and task.resource == key:
+                total += 1
+        if planned_counts is not None:
+            total += int(planned_counts.get((id(target), key), 0))
+        return total
+
+    def _processor_input_space_after_inbound(
+        self,
+        building: Building,
+        resource: str,
+        planned_counts: dict[tuple[int, str], int] | None = None,
+    ) -> int:
+        input_capacity = getattr(building, "input_capacity", None)
+        input_amount = getattr(building, "input_amount", None)
+        if not callable(input_capacity) or not callable(input_amount):
+            return 0
+        capacity = int(input_capacity())
+        actual = int(input_amount())
+        inbound = self._inbound_resource_count(building, resource, planned_counts)
+        return max(0, capacity - actual - inbound)
+
+    def _processor_input_target_for_resource(
+        self,
+        resource: str,
+        *,
+        source: Building | None = None,
+        planned_counts: dict[tuple[int, str], int] | None = None,
+    ) -> Building | None:
+        if self._registry is None:
+            return None
+        resource_key = str(resource)
+        processor_type = PROCESSOR_INPUT_BY_RESOURCE.get(resource_key)
+        if processor_type is None:
+            return None
+        source_center: tuple[int, int] | None = None
+        if source is not None and source.grid_pos is not None:
+            source_center = building_center_tile(source)
+
+        candidates: list[tuple[int, int, int, Building]] = []
+        for idx, building in enumerate(self._registry.all()):
+            if building.type_tag != processor_type:
+                continue
+            if getattr(building, "is_under_construction", False):
+                continue
+            if not getattr(building, "active", False):
+                continue
+            space = self._processor_input_space_after_inbound(building, resource_key, planned_counts)
+            if space <= 0:
+                continue
+            distance = 0
+            if source_center is not None and building.grid_pos is not None:
+                target_center = building_center_tile(building)
+                distance = abs(target_center[0] - source_center[0]) + abs(target_center[1] - source_center[1])
+            candidates.append((distance, -space, idx, building))
+        if not candidates:
+            return None
+        candidates.sort(key=lambda item: (item[0], item[1], item[2]))
+        return candidates[0][3]
 
     def _construction_target_for_resource(self, resource: str) -> Building | None:
         if self._registry is None:
@@ -991,6 +1146,8 @@ class WorkerManager:
             elif task.resource == "wood" and hasattr(task.source, "input_amount"):
                 has_storage_source = int(task.source.input_amount()) > 0  # type: ignore[attr-defined]
             elif task.resource == "boards" and hasattr(task.source, "output_amount"):
+                has_storage_source = int(task.source.output_amount()) > 0  # type: ignore[attr-defined]
+            elif task.resource == "flour" and hasattr(task.source, "output_amount"):
                 has_storage_source = int(task.source.output_amount()) > 0  # type: ignore[attr-defined]
             has_warehouse_source = hasattr(task.source, "warehouse_amount") and int(
                 task.source.warehouse_amount(task.resource)  # type: ignore[attr-defined]
@@ -1103,6 +1260,24 @@ class WorkerManager:
                                 worker.state = "idle"
                                 worker.idle = True
                         return
+                elif task.resource == "flour" and hasattr(task.source, "take_flour_out"):
+                    try:
+                        task.source.take_flour_out(1)  # type: ignore[attr-defined]
+                    except ValueError:
+                        self._transport_queue.append(task)
+                        worker.transport_task = None
+                        worker.state = "idle"
+                        worker.idle = True
+                        next_task = self._next_transport_task()
+                        if next_task is not None:
+                            worker.transport_task = next_task
+                            worker.carrying = None
+                            if not self._start_move_to_building(worker, next_task.source, now_ms):
+                                self._transport_queue.insert(0, next_task)
+                                worker.transport_task = None
+                                worker.state = "idle"
+                                worker.idle = True
+                        return
                 elif not hasattr(task.source, "take_from_warehouse"):
                     worker.transport_task = None
                     worker.state = "idle"
@@ -1153,6 +1328,8 @@ class WorkerManager:
                     task.source.add_wood_in(1)  # type: ignore[attr-defined]
                 elif task.resource == "boards" and hasattr(task.source, "add_boards_out"):
                     task.source.add_boards_out(1)  # type: ignore[attr-defined]
+                elif task.resource == "flour" and hasattr(task.source, "add_flour_out"):
+                    task.source.add_flour_out(1)  # type: ignore[attr-defined]
                 elif hasattr(task.source, "add_to_storage"):
                     task.source.add_to_storage(1)  # type: ignore[attr-defined]
                 elif hasattr(task.source, "add_to_warehouse"):
@@ -1187,6 +1364,16 @@ class WorkerManager:
         elif task.resource == "wood" and hasattr(task.target, "add_wood_in"):
             if int(task.target.input_amount()) < int(task.target.input_capacity()):  # type: ignore[attr-defined]
                 task.target.add_wood_in(1)  # type: ignore[attr-defined]
+            else:
+                town_hall = self._primary_town_hall()
+                if town_hall is not None:
+                    town_hall.add_to_warehouse(task.resource, 1)
+                    delivered_target = town_hall
+                elif hasattr(task.target, "add_to_warehouse"):
+                    task.target.add_to_warehouse(task.resource, 1)  # type: ignore[attr-defined]
+        elif task.resource == "wheat" and hasattr(task.target, "add_wheat_in"):
+            if int(task.target.input_amount()) < int(task.target.input_capacity()):  # type: ignore[attr-defined]
+                task.target.add_wheat_in(1)  # type: ignore[attr-defined]
             else:
                 town_hall = self._primary_town_hall()
                 if town_hall is not None:
@@ -1303,10 +1490,99 @@ class WorkerManager:
             )
             existing_counts[key] = existing_counts.get(key, 0) + 1
 
+    def _enqueue_mill_refill_tasks(self) -> None:
+        if self._registry is None:
+            return
+        desired = mill_input_transport_tasks(self._registry)
+        desired_counts: dict[tuple[int, int, str, int], int] = {}
+        for task in desired:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            desired_counts[key] = desired_counts.get(key, 0) + 1
+
+        existing_counts: dict[tuple[int, int, str, int], int] = {}
+        for task in self._transport_queue:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+        for worker in self._workers:
+            task = worker.transport_task
+            if task is None:
+                continue
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+
+        for task in desired:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            if existing_counts.get(key, 0) >= desired_counts.get(key, 0):
+                continue
+            self.enqueue_transport_task(
+                resource=task.resource,
+                source=task.source,
+                target=task.target,
+                amount=1,
+                priority=task.priority,
+            )
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+
+    def _enqueue_mill_output_tasks(self) -> None:
+        if self._registry is None:
+            return
+        desired = mill_output_transport_tasks(self._registry)
+        desired_counts: dict[tuple[int, int, str, int], int] = {}
+        for task in desired:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            desired_counts[key] = desired_counts.get(key, 0) + 1
+
+        existing_counts: dict[tuple[int, int, str, int], int] = {}
+        for task in self._transport_queue:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+        for worker in self._workers:
+            task = worker.transport_task
+            if task is None:
+                continue
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+
+        for task in desired:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            if existing_counts.get(key, 0) >= desired_counts.get(key, 0):
+                continue
+            self.enqueue_transport_task(
+                resource=task.resource,
+                source=task.source,
+                target=task.target,
+                amount=1,
+                priority=task.priority,
+            )
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+
     def _enqueue_farm_wheat_output_tasks(self) -> None:
         if self._registry is None:
             return
-        desired = farm_wheat_output_transport_tasks(self._registry)
+        desired: list[TransportTask] = []
+        planned_counts: dict[tuple[int, str], int] = {}
+        town_hall = self._primary_town_hall()
+        for task in farm_wheat_output_transport_tasks(self._registry):
+            target = self._processor_input_target_for_resource(
+                task.resource,
+                source=task.source,
+                planned_counts=planned_counts,
+            )
+            if target is None:
+                target = town_hall
+            if target is None:
+                continue
+            desired.append(
+                TransportTask(
+                    resource=task.resource,
+                    source=task.source,
+                    target=target,
+                    priority=task.priority,
+                )
+            )
+            if target.type_tag == PROCESSOR_INPUT_BY_RESOURCE.get(task.resource):
+                key = (id(target), task.resource)
+                planned_counts[key] = planned_counts.get(key, 0) + 1
         desired_counts: dict[tuple[int, int, str, int], int] = {}
         for task in desired:
             key = (id(task.source), id(task.target), task.resource, int(task.priority))
@@ -1726,6 +2002,13 @@ class WorkerManager:
         return max(SAWMILL_MIN_CYCLE_MS, effective)
 
     @staticmethod
+    def _mill_cycle_duration_ms(mill: Any) -> int:
+        level = max(1, int(getattr(mill, "level", 1)))
+        mult = 1.0 - 0.02 * float(level - 1)
+        effective = int(round(MILL_BASE_CYCLE_MS * mult))
+        return max(MILL_MIN_CYCLE_MS, effective)
+
+    @staticmethod
     def _update_sawyer(worker: Worker, now_ms: int, world: Any) -> None:
         _ = world
         sawmill = worker.assigned_building
@@ -1787,6 +2070,69 @@ class WorkerManager:
         if int(getattr(sawmill, "processing_started_ms", 0)) <= 0:
             sawmill.processing_started_ms = int(now_ms)
         sawmill.processing_duration_ms = WorkerManager._sawmill_cycle_duration_ms(sawmill)
+        worker.state = "processing"
+        worker.idle = False
+
+    @staticmethod
+    def _update_miller(worker: Worker, now_ms: int, world: Any) -> None:
+        _ = world
+        mill = worker.assigned_building
+        if mill is None or mill.type_tag != "MILL":
+            return
+        if mill.is_under_construction:
+            return
+        center_tile = building_center_tile(mill)
+        if worker.state in {"working", "resting", "processing"} and worker.current_tile != center_tile:
+            worker.current_tile = center_tile
+            if worker.state == "processing":
+                worker.state = "working"
+                mill.processing_started_ms = 0
+            return
+        active = bool(getattr(mill, "active", False))
+        if worker.state == "resting":
+            if now_ms < worker.camp_wait_until_ms:
+                return
+            if not active:
+                worker.current_tile = center_tile
+                return
+            worker.state = "working"
+            worker.camp_wait_until_ms = 0
+            worker.idle = False
+        if worker.state == "resting":
+            return
+        if worker.state == "processing":
+            started = int(getattr(mill, "processing_started_ms", 0))
+            if started <= 0:
+                worker.state = "working"
+                return
+            duration = WorkerManager._mill_cycle_duration_ms(mill)
+            mill.processing_duration_ms = duration
+            if now_ms - started < duration:
+                return
+            if getattr(mill, "input_amount", lambda: 0)() > 0 and getattr(
+                mill, "output_amount", lambda: 0
+            )() < getattr(mill, "output_capacity", lambda: 0)():
+                mill.take_wheat_in(1)
+                mill.add_flour_out(1)
+            mill.processing_started_ms = 0
+            worker.state = "resting"
+            worker.camp_wait_until_ms = int(now_ms) + MILLER_REST_MS
+            worker.current_tile = center_tile
+            worker.idle = False
+            return
+        if not active:
+            worker.state = "resting"
+            worker.current_tile = center_tile
+            return
+        if getattr(mill, "input_amount", lambda: 0)() <= 0:
+            return
+        if getattr(mill, "output_amount", lambda: 0)() >= getattr(mill, "output_capacity", lambda: 0)():
+            return
+        if worker.state != "working":
+            return
+        if int(getattr(mill, "processing_started_ms", 0)) <= 0:
+            mill.processing_started_ms = int(now_ms)
+        mill.processing_duration_ms = WorkerManager._mill_cycle_duration_ms(mill)
         worker.state = "processing"
         worker.idle = False
 

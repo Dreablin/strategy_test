@@ -1,9 +1,10 @@
 """Worker manager: hire, reassign, demolition (PRD F-WORK / F-DEMO)."""
 
 from game.buildings.farm import Farm
-from game.buildings.field import Field
+from game.buildings.field import WHEAT_PHASE_2, Field
 from game.buildings.iron_mine import IronMine
 from game.buildings.lumber_camp import LumberCamp
+from game.buildings.mill import Mill
 from game.buildings.registry import BuildingRegistry
 from game.buildings.school import School
 from game.buildings.sawmill import Sawmill
@@ -18,6 +19,7 @@ from game.workers import (
     CHOP_DURATION_MS,
     Worker,
     WorkerManager,
+    TransportTask,
     building_center_tile,
     construction_transport_tasks,
     sawmill_input_transport_tasks,
@@ -822,6 +824,7 @@ def test_farm_production_status_reports_worker_action_states_and_hints() -> None
     assert wm.production_status_for_building(farm) == "Storage full"
 
     farm.stored = 0
+    wm._write_field_phase(field, WHEAT_PHASE_2)  # noqa: SLF001
     farmer.state = "working_field"
     assert wm.production_status_for_building(farm) == "No fields in radius"
     wm._write_field_phase(field, "EMPTY")  # noqa: SLF001
@@ -1326,6 +1329,57 @@ def test_update_sawmill_output_enqueue_is_deduped_across_ticks() -> None:
     queued = [t for t in wm._transport_queue if t.resource == "boards"]  # noqa: SLF001
     assert len(queued) == 2
     assert all(t.source is sawmill for t in queued)
+
+
+def test_farm_wheat_output_prefers_mill_space_after_inbound_reservations() -> None:
+    world = World(world_seed=0)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    farm = registry.place(Farm, near_town_hall_tile(8, 8))
+    mill = registry.place(Mill, near_town_hall_tile(16, 8))
+    farm.construction_site = None
+    mill.construction_site = None
+    farm.stored = 3
+
+    wm = WorkerManager(registry)
+    wm.enqueue_transport_task(resource="wheat", source=town_hall, target=mill, amount=1)
+    carrier = Worker("CARRIER")
+    carrier.transport_task = TransportTask(resource="wheat", source=town_hall, target=mill)
+    wm.add_worker(carrier)
+
+    wm.update(1_000)
+
+    wheat_from_farm = [t for t in wm._transport_queue if t.source is farm and t.resource == "wheat"]  # noqa: SLF001
+    assert sum(1 for t in wheat_from_farm if t.target is mill) == 1
+    assert sum(1 for t in wheat_from_farm if t.target is town_hall) == 2
+    assert mill.input_amount() == 0
+
+
+def test_lumberjack_output_prefers_sawmill_before_town_hall() -> None:
+    world = World(world_seed=0)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    camp = registry.place(LumberCamp, near_town_hall_tile(8, 8))
+    sawmill = registry.place(Sawmill, near_town_hall_tile(16, 8))
+    camp.construction_site = None
+    sawmill.construction_site = None
+    wm = WorkerManager(registry)
+    lumberjack = Worker("LUMBERJACK")
+    wm.add_worker(lumberjack)
+    wm.assign_to_building(lumberjack, camp)
+    lumberjack.state = "depositing"
+    lumberjack.carrying = "wood"
+
+    wm.update(1_000)
+
+    wood_tasks = [t for t in wm._transport_queue if t.source is camp and t.resource == "wood"]  # noqa: SLF001
+    assert len(wood_tasks) == 1
+    assert wood_tasks[0].target is sawmill
+    assert camp.stored == 1
 
 
 def test_carrier_refills_sawmill_wood_input_from_town_hall() -> None:

@@ -77,8 +77,9 @@ class BottomBar:
             return
 
         if menu == "processing":
-            entries = (("back", "Back"), ("sawmill", "Sawmill"))
-            for rect, (_key, label) in zip(_button_rects(surface, len(entries)), entries):
+            entries = (("back", "Back"), ("sawmill", "Sawmill"), ("mill", "Mill"))
+            rects = _button_rects(surface, len(entries))
+            for rect, (_key, label) in zip(rects, entries):
                 btn = rect.inflate(-6, -10)
                 pygame.draw.rect(surface, (36, 40, 48), btn, border_radius=6)
                 text = font.render(label, True, (220, 222, 230))
@@ -86,9 +87,10 @@ class BottomBar:
                     text,
                     (btn.centerx - text.get_width() // 2, btn.centery - text.get_height() // 2),
                 )
-            saw = pygame.transform.smoothscale(building_sprite("sawmill", 1), (40, 32))
-            saw_btn = _button_rects(surface, len(entries))[1].inflate(-6, -10)
-            surface.blit(saw, (saw_btn.centerx - saw.get_width() // 2, saw_btn.bottom - 40))
+            for idx, asset_key in ((1, "sawmill"), (2, "mill")):
+                spr = pygame.transform.smoothscale(building_sprite(asset_key, 1), (40, 32))
+                btn = rects[idx].inflate(-6, -10)
+                surface.blit(spr, (btn.centerx - spr.get_width() // 2, btn.bottom - 40))
             msg = small_font.render("Processing", True, (150, 156, 170))
             surface.blit(msg, (w // 2 - msg.get_width() // 2, y0 + 8))
             return
@@ -161,7 +163,7 @@ class BottomBar:
             return
 
         if menu == "processing":
-            entries = ("back", "sawmill")
+            entries = ("back", "sawmill", "mill")
             for rect, key in zip(_button_rects(surface, len(entries)), entries):
                 if not rect.collidepoint(pos):
                     continue
@@ -169,6 +171,8 @@ class BottomBar:
                     BottomBar._menu = "main"
                 elif key == "sawmill":
                     pygame.event.post(pygame.event.Event(BUILD_MENU_SELECT, building_type="SAWMILL"))
+                elif key == "mill":
+                    pygame.event.post(pygame.event.Event(BUILD_MENU_SELECT, building_type="MILL"))
                 return
             return
 

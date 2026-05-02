@@ -25,6 +25,7 @@ def test_construction_panel_close_click_action() -> None:
     layout = ConstructionPanel.layout(surface, camp)
 
     assert ConstructionPanel.click_action(surface, layout.close.center, camp) == "close"
+    assert ConstructionPanel.click_action(surface, layout.demolish.center, camp) == "demolish"
     assert ConstructionPanel.click_action(surface, layout.frame.center, camp) is None
 
 

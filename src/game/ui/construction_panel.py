@@ -14,6 +14,7 @@ _PANEL_PAD = 16
 _ROW = 26
 _CLOSE = 28
 _BAR_H = 16
+_BTN_H = 36
 
 _DISPLAY_NAME: dict[str, str] = {
     "TOWN_HALL": "Town Hall",
@@ -31,6 +32,7 @@ _DISPLAY_NAME: dict[str, str] = {
 class ConstructionPanelLayout:
     frame: pygame.Rect
     close: pygame.Rect
+    demolish: pygame.Rect
 
 
 class ConstructionPanel:
@@ -41,7 +43,7 @@ class ConstructionPanel:
             raise ValueError("construction panel requires building.construction_site")
         rows = max(1, len(site.required_resources))
         progress_rows = 2 if site.is_building() else 0
-        h = _PANEL_PAD * 2 + _ROW + (3 + rows + progress_rows) * _ROW + 10
+        h = _PANEL_PAD * 2 + _ROW + (3 + rows + progress_rows) * _ROW + _BTN_H + 18
         sw, sh = surface.get_size()
         frame = pygame.Rect(sw // 2 - _PANEL_W // 2, sh // 2 - h // 2, _PANEL_W, h)
         close = pygame.Rect(
@@ -50,7 +52,13 @@ class ConstructionPanel:
             _CLOSE,
             _CLOSE,
         )
-        return ConstructionPanelLayout(frame=frame, close=close)
+        demolish = pygame.Rect(
+            frame.left + _PANEL_PAD,
+            frame.bottom - _PANEL_PAD - _BTN_H,
+            frame.width - _PANEL_PAD * 2,
+            _BTN_H,
+        )
+        return ConstructionPanelLayout(frame=frame, close=close, demolish=demolish)
 
     @staticmethod
     def title_line(building: Building) -> str:
@@ -139,9 +147,22 @@ class ConstructionPanel:
             pygame.draw.rect(surface, (224, 194, 80), fill, border_radius=6)
             pygame.draw.rect(surface, (92, 98, 112), bar, width=1, border_radius=6)
 
+        btn_font = pygame.font.Font(None, 24)
+        pygame.draw.rect(surface, (140, 48, 52), layout.demolish, border_radius=6)
+        dl = btn_font.render("Demolish", True, (255, 240, 240))
+        surface.blit(
+            dl,
+            (
+                layout.demolish.centerx - dl.get_width() // 2,
+                layout.demolish.centery - dl.get_height() // 2,
+            ),
+        )
+
     @staticmethod
     def click_action(surface: pygame.Surface, pos: tuple[int, int], building: Building) -> str | None:
         layout = ConstructionPanel.layout(surface, building)
         if layout.close.collidepoint(pos):
             return "close"
+        if layout.demolish.collidepoint(pos):
+            return "demolish"
         return None

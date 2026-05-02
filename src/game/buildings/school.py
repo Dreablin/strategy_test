@@ -86,6 +86,3 @@ class School(Building):
             self._progress_ms = 0
         return completed
 
-    @classmethod
-    def max_level(cls) -> int:
-        return 1

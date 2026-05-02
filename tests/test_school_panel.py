@@ -25,6 +25,41 @@ def test_school_panel_demolish_click_returns_demolish() -> None:
     assert SchoolPanel.click_action(surface, layout.demolish.center, school, worker_assigned=False) == "demolish"
 
 
+def test_school_panel_upgrade_click_returns_upgrade() -> None:
+    surface = pygame.Surface((900, 700))
+    school = School(level=1, grid_pos=(10, 10))
+    layout = SchoolPanel.layout(surface, school, worker_assigned=False)
+    assert layout.upgrade is not None
+    assert SchoolPanel.click_action(surface, layout.upgrade.center, school, worker_assigned=False) == "upgrade"
+
+
+def test_school_panel_upgrade_disabled_while_training_queue_not_empty() -> None:
+    surface = pygame.Surface((900, 700))
+    school = School(level=1, grid_pos=(10, 10))
+    assert school.enqueue_training("LUMBERJACK")
+
+    layout = SchoolPanel.layout(surface, school, worker_assigned=False)
+
+    assert layout.upgrade is not None
+    assert layout.upgrade_enabled is False
+    assert SchoolPanel.click_action(surface, layout.upgrade.center, school, worker_assigned=False) is None
+
+
+def test_school_panel_upgrade_reenabled_after_training_completes_or_is_cancelled() -> None:
+    surface = pygame.Surface((900, 700))
+    school = School(level=1, grid_pos=(10, 10))
+    assert school.enqueue_training("LUMBERJACK")
+    assert school.update_training(SCHOOL_TRAINING_MS) == "LUMBERJACK"
+
+    completed_layout = SchoolPanel.layout(surface, school, worker_assigned=False)
+    assert completed_layout.upgrade_enabled is True
+
+    assert school.enqueue_training("FARMER")
+    assert school.cancel_training_at(0)
+    cancelled_layout = SchoolPanel.layout(surface, school, worker_assigned=False)
+    assert cancelled_layout.upgrade_enabled is True
+
+
 def test_school_panel_layout_contains_seven_training_slots() -> None:
     surface = pygame.Surface((900, 700))
     school = School(level=1, grid_pos=(10, 10))
@@ -33,8 +68,10 @@ def test_school_panel_layout_contains_seven_training_slots() -> None:
     assert any(worker_type == "CARRIER" for worker_type, _ in layout.hire_buttons)
     assert any(worker_type == "BUILDER" for worker_type, _ in layout.hire_buttons)
     assert any(worker_type == "SAWYER" for worker_type, _ in layout.hire_buttons)
+    assert any(worker_type == "MILLER" for worker_type, _ in layout.hire_buttons)
     assert layout.hire_buttons[0][0] == "CARRIER"
     assert layout.hire_buttons[1][0] == "BUILDER"
+    assert len(layout.hire_buttons) == 9
 
 
 def test_school_panel_sawyer_hire_click_returns_worker_action() -> None:
@@ -43,6 +80,14 @@ def test_school_panel_sawyer_hire_click_returns_worker_action() -> None:
     layout = SchoolPanel.layout(surface, school, worker_assigned=False)
     sawyer_button = next(rect for worker_type, rect in layout.hire_buttons if worker_type == "SAWYER")
     assert SchoolPanel.click_action(surface, sawyer_button.center, school, worker_assigned=False) == "hire:SAWYER"
+
+
+def test_school_panel_miller_hire_click_returns_worker_action() -> None:
+    surface = pygame.Surface((900, 700))
+    school = School(level=1, grid_pos=(10, 10))
+    layout = SchoolPanel.layout(surface, school, worker_assigned=False)
+    miller_button = next(rect for worker_type, rect in layout.hire_buttons if worker_type == "MILLER")
+    assert SchoolPanel.click_action(surface, miller_button.center, school, worker_assigned=False) == "hire:MILLER"
 
 
 def test_school_panel_draws_yellow_progress_for_active_training_slot() -> None:

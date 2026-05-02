@@ -15,6 +15,7 @@ def test_config_constants_match_spec() -> None:
         "stone": 10,
         "iron": 5,
         "boards": 10,
+        "flour": 0,
     }
     assert config.TOWN_HALL_MIN_LEVEL_FOR_BUILDING["STONE_MINE"] == 1
     assert config.TOWN_HALL_MIN_LEVEL_FOR_HIRE["MINER"] == 5

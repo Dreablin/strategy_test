@@ -8,18 +8,23 @@ import pygame
 
 from game.assets import hire_ui_icon, worker_ui_icon
 from game.buildings.school import SCHOOL_TRAINING_MS, School
-from game.ui.building_panel import BuildingPanel
 from game.workers import WorkerManager
 
+_PANEL_W = 420
 _PANEL_PAD = 16
 _BTN_H = 32
 _GAP = 8
 _QUEUE_SLOT = 30
 _SECTION_TITLE_GAP = 24
+_TILE_COLS = 3
+_TILE_W = 124
+_TILE_H = 82
+_TILE_GAP = 8
 _HIRE_ROWS: tuple[str, ...] = (
     "CARRIER",
     "BUILDER",
     "SAWYER",
+    "MILLER",
     "LUMBERJACK",
     "STONECUTTER",
     "MINER",
@@ -30,20 +35,23 @@ _WORKER_LABEL: dict[str, str] = {
     "CARRIER": "Carrier",
     "BUILDER": "Builder",
     "SAWYER": "Sawyer",
+    "MILLER": "Miller",
     "LUMBERJACK": "Lumberjack",
     "STONECUTTER": "Stonecutter",
     "MINER": "Miner",
     "FARMER": "Farmer",
     "FORESTER": "Forester",
 }
-_QUEUE_ROW_H = _QUEUE_SLOT + _SECTION_TITLE_GAP
-_EXTRA_BOTTOM = _QUEUE_ROW_H + (_BTN_H + _GAP) * len(_HIRE_ROWS) + (_BTN_H + _GAP)
+_GRID_ROWS = (len(_HIRE_ROWS) + _TILE_COLS - 1) // _TILE_COLS
+_GRID_H = _GRID_ROWS * _TILE_H + (_GRID_ROWS - 1) * _TILE_GAP
 
 
 @dataclass(frozen=True, slots=True)
 class SchoolPanelLayout:
     frame: pygame.Rect
     close: pygame.Rect
+    upgrade: pygame.Rect | None
+    upgrade_enabled: bool
     demolish: pygame.Rect
     queue_slots: tuple[pygame.Rect, ...]
     hire_buttons: tuple[tuple[str, pygame.Rect], ...]
@@ -63,31 +71,44 @@ class SchoolPanel:
         worker_assigned: bool,
         worker_manager: WorkerManager | None = None,
     ) -> SchoolPanelLayout:
-        base = BuildingPanel.layout(
-            surface,
-            school,
-            worker_assigned=worker_assigned,
-            show_upgrade=False,
-            show_demolish=False,
-            extra_bottom_px=_EXTRA_BOTTOM,
+        sw, sh = surface.get_size()
+        content_h = 26 + 34 + _SECTION_TITLE_GAP + _QUEUE_SLOT + _GAP + _BTN_H + 14 + _GRID_H
+        frame_h = _PANEL_PAD * 2 + content_h
+        frame = pygame.Rect(sw // 2 - _PANEL_W // 2, sh // 2 - frame_h // 2, _PANEL_W, frame_h)
+        close = pygame.Rect(
+            frame.right - _PANEL_PAD - 28,
+            frame.top + _PANEL_PAD,
+            28,
+            28,
         )
-        demolish = pygame.Rect(
-            base.frame.left + _PANEL_PAD,
-            base.frame.bottom - _PANEL_PAD - (_BTN_H + _GAP) - (_BTN_H + _GAP) * len(_HIRE_ROWS),
-            base.frame.width - _PANEL_PAD * 2,
-            _BTN_H,
-        )
-        queue_y = demolish.top - _GAP - _QUEUE_SLOT
+        queue_y = frame.top + _PANEL_PAD + 26 + 34 + _SECTION_TITLE_GAP
         queue_slots: list[pygame.Rect] = []
-        qx = base.frame.left + _PANEL_PAD
+        qx = frame.left + _PANEL_PAD
         for _ in range(7):
             queue_slots.append(pygame.Rect(qx, queue_y, _QUEUE_SLOT, _QUEUE_SLOT))
             qx += _QUEUE_SLOT + _GAP
+        action_y = queue_y + _QUEUE_SLOT + _GAP
+        action_w = (frame.width - _PANEL_PAD * 2 - _GAP) // 2
+        upgrade = None
+        upgrade_enabled = school.level < school.max_level() and not school.training_queue()
+        if school.level < school.max_level():
+            upgrade = pygame.Rect(frame.left + _PANEL_PAD, action_y, action_w, _BTN_H)
         hire_enabled: dict[str, bool] = {}
-        y = demolish.bottom + _GAP
+        demolish_x = frame.left + _PANEL_PAD if upgrade is None else upgrade.right + _GAP
+        demolish_w = frame.width - _PANEL_PAD * 2 if upgrade is None else action_w
+        demolish = pygame.Rect(demolish_x, action_y, demolish_w, _BTN_H)
+        grid_y = action_y + _BTN_H + 14
+        grid_x = frame.left + _PANEL_PAD
         buttons: list[tuple[str, pygame.Rect]] = []
-        for worker_type in _HIRE_ROWS:
-            rect = pygame.Rect(base.frame.left + _PANEL_PAD, y, base.frame.width - _PANEL_PAD * 2, _BTN_H)
+        for idx, worker_type in enumerate(_HIRE_ROWS):
+            col = idx % _TILE_COLS
+            row = idx // _TILE_COLS
+            rect = pygame.Rect(
+                grid_x + col * (_TILE_W + _TILE_GAP),
+                grid_y + row * (_TILE_H + _TILE_GAP),
+                _TILE_W,
+                _TILE_H,
+            )
             buttons.append((worker_type, rect))
             if worker_manager is not None:
                 hire_enabled[worker_type] = worker_manager.can_hire(
@@ -96,10 +117,11 @@ class SchoolPanel:
                 ) and school.can_enqueue_training()
             else:
                 hire_enabled[worker_type] = school.can_enqueue_training()
-            y += _BTN_H + _GAP
         return SchoolPanelLayout(
-            frame=base.frame,
-            close=base.close,
+            frame=frame,
+            close=close,
+            upgrade=upgrade,
+            upgrade_enabled=upgrade_enabled,
             demolish=demolish,
             queue_slots=tuple(queue_slots),
             hire_buttons=tuple(buttons),
@@ -114,21 +136,42 @@ class SchoolPanel:
         worker_assigned: bool,
         worker_manager: WorkerManager | None = None,
     ) -> None:
-        BuildingPanel.draw(
-            surface,
-            school,
-            worker_assigned=worker_assigned,
-            show_upgrade=False,
-            show_demolish=False,
-            extra_bottom_px=_EXTRA_BOTTOM,
-        )
         layout = SchoolPanel.layout(
             surface,
             school,
             worker_assigned=worker_assigned,
             worker_manager=worker_manager,
         )
+        dim = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
+        dim.fill((10, 12, 16, 170))
+        surface.blit(dim, (0, 0))
+
+        pygame.draw.rect(surface, (36, 40, 52), layout.frame, border_radius=10)
+        pygame.draw.rect(surface, (72, 78, 92), layout.frame, width=2, border_radius=10)
+        title_font = pygame.font.Font(None, 28)
         font = pygame.font.Font(None, 22)
+        small_font = pygame.font.Font(None, 18)
+        title = title_font.render(f"School — Lv {school.level}", True, (238, 240, 248))
+        surface.blit(title, (layout.frame.left + _PANEL_PAD, layout.frame.top + _PANEL_PAD))
+        pygame.draw.line(
+            surface,
+            (200, 82, 82),
+            (layout.close.left + 6, layout.close.top + 6),
+            (layout.close.right - 7, layout.close.bottom - 7),
+            2,
+        )
+        pygame.draw.line(
+            surface,
+            (200, 82, 82),
+            (layout.close.right - 7, layout.close.top + 6),
+            (layout.close.left + 6, layout.close.bottom - 7),
+            2,
+        )
+        worker_text = "assigned" if worker_assigned else "empty"
+        surface.blit(
+            font.render(f"Worker: {worker_text}", True, (200, 204, 214)),
+            (layout.frame.left + _PANEL_PAD, layout.frame.top + _PANEL_PAD + 52),
+        )
         queue_title = font.render("Queue", True, (220, 228, 236))
         surface.blit(queue_title, (layout.queue_slots[0].left, layout.queue_slots[0].top - _SECTION_TITLE_GAP + 6))
         queue = school.training_queue()
@@ -146,6 +189,18 @@ class SchoolPanel:
                     fill_w = max(1, int(round((slot.width - 4) * progress)))
                     bar = pygame.Rect(slot.left + 2, slot.bottom - 5, fill_w, 3)
                     pygame.draw.rect(surface, (230, 210, 64), bar, border_radius=2)
+        if layout.upgrade is not None:
+            bg = (64, 110, 168) if layout.upgrade_enabled else (52, 56, 64)
+            fg = (240, 242, 250) if layout.upgrade_enabled else (130, 134, 142)
+            pygame.draw.rect(surface, bg, layout.upgrade, border_radius=6)
+            label = font.render("Upgrade", True, fg)
+            surface.blit(
+                label,
+                (
+                    layout.upgrade.centerx - label.get_width() // 2,
+                    layout.upgrade.centery - label.get_height() // 2,
+                ),
+            )
         pygame.draw.rect(surface, (140, 48, 52), layout.demolish, border_radius=6)
         d = font.render("Demolish", True, (255, 240, 240))
         surface.blit(d, (layout.demolish.centerx - d.get_width() // 2, layout.demolish.centery - d.get_height() // 2))
@@ -154,21 +209,19 @@ class SchoolPanel:
             bg = (84, 112, 84) if enabled else (56, 60, 66)
             fg = (236, 244, 236) if enabled else (134, 138, 146)
             pygame.draw.rect(surface, bg, rect, border_radius=6)
-            worker_icon = worker_ui_icon(worker_type, size=22)
+            pygame.draw.rect(surface, (86, 94, 106), rect, width=1, border_radius=6)
+            worker_icon = worker_ui_icon(worker_type, size=34)
             hire_icon = hire_ui_icon(worker_type, size=18)
-            lx = rect.left + 10
-            ly = rect.centery - worker_icon.get_height() // 2
-            surface.blit(worker_icon, (lx, ly))
-            rx = rect.right - 10
-            rx -= 8 + hire_icon.get_width()
-            surface.blit(hire_icon, (rx, rect.centery - hire_icon.get_height() // 2))
+            icon_x = rect.centerx - worker_icon.get_width() // 2
+            icon_y = rect.top + 10
+            surface.blit(worker_icon, (icon_x, icon_y))
+            hire_x = rect.right - hire_icon.get_width() - 8
+            hire_y = rect.top + 8
+            surface.blit(hire_icon, (hire_x, hire_y))
             label = _WORKER_LABEL.get(worker_type, worker_type.title())
-            label_text = font.render(label, True, fg)
-            label_left = lx + worker_icon.get_width() + 10
-            label_right = rx - 8
-            if label_right > label_left:
-                label_x = label_left + max(0, (label_right - label_left - label_text.get_width()) // 2)
-                surface.blit(label_text, (label_x, rect.centery - label_text.get_height() // 2))
+            label_text = small_font.render(label, True, fg)
+            label_x = rect.centerx - label_text.get_width() // 2
+            surface.blit(label_text, (label_x, rect.bottom - label_text.get_height() - 8))
 
     @staticmethod
     def click_action(
@@ -179,23 +232,16 @@ class SchoolPanel:
         worker_assigned: bool,
         worker_manager: WorkerManager | None = None,
     ) -> str | None:
-        base_action = BuildingPanel.click_action(
-            surface,
-            pos,
-            school,
-            worker_assigned=worker_assigned,
-            show_upgrade=False,
-            show_demolish=False,
-            extra_bottom_px=_EXTRA_BOTTOM,
-        )
-        if base_action is not None:
-            return base_action
         layout = SchoolPanel.layout(
             surface,
             school,
             worker_assigned=worker_assigned,
             worker_manager=worker_manager,
         )
+        if layout.close.collidepoint(pos):
+            return "close"
+        if layout.upgrade is not None and layout.upgrade.collidepoint(pos):
+            return "upgrade" if layout.upgrade_enabled else None
         if layout.demolish.collidepoint(pos):
             return "demolish"
         queue = school.training_queue()

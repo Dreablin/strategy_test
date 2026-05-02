@@ -21,7 +21,8 @@
       "wood": 15,
       "stone": 10,
       "iron": 5,
-      "boards": 10
+      "boards": 10,
+      "flour": 0
     }
   },
   "gates": {
@@ -40,7 +41,8 @@
       "FORESTER": 1,
       "CARRIER": 1,
       "BUILDER": 1,
-      "SAWYER": 1
+      "SAWYER": 1,
+      "MILLER": 1
     }
   },
   "levels": {

@@ -7,6 +7,7 @@ from game.buildings.farm import Farm
 from game.config import town_hall_origin_tile
 from game.buildings.iron_mine import IronMine
 from game.buildings.lumber_camp import LumberCamp
+from game.buildings.mill import Mill
 from game.buildings.registry import BuildingRegistry
 from game.buildings.stone_mine import StoneMine
 from game.buildings.town_hall import TownHall
@@ -21,6 +22,7 @@ from game.world import World
         (StoneMine, "STONE_MINE"),
         (IronMine, "IRON_MINE"),
         (Farm, "FARM"),
+        (Mill, "MILL"),
     ],
 )
 def test_building_type_tag(cls: type, expected_type: str) -> None:
@@ -35,6 +37,7 @@ def test_building_type_tag(cls: type, expected_type: str) -> None:
         (StoneMine, (2, 2)),
         (IronMine, (2, 2)),
         (Farm, (2, 2)),
+        (Mill, (2, 2)),
     ],
 )
 def test_building_footprint(cls: type, expected_footprint: tuple[int, int]) -> None:
@@ -47,6 +50,7 @@ def test_all_production_buildings_have_no_passive_income() -> None:
     assert StoneMine.income(3) == {}
     assert IronMine.income(2) == {}
     assert Farm.income(5) == {}
+    assert Mill.income(5) == {}
 
 
 def test_town_hall_income_always_empty() -> None:
@@ -160,12 +164,15 @@ def test_town_hall_exposes_warehouse_api() -> None:
     assert th.warehouse_amount("wood") == 0
     assert th.warehouse_amount("wheat") == 0
     assert th.warehouse_amount("boards") == 0
+    assert th.warehouse_amount("flour") == 0
     th.add_to_warehouse("wood", 2)
     th.add_to_warehouse("wheat", 1)
     th.add_to_warehouse("boards", 3)
+    th.add_to_warehouse("flour", 4)
     assert th.warehouse_amount("wood") == 2
     assert th.warehouse_amount("wheat") == 1
     assert th.warehouse_amount("boards") == 3
+    assert th.warehouse_amount("flour") == 4
     th.take_from_warehouse("wood", 1)
     assert th.warehouse_amount("wood") == 1
 

@@ -14,6 +14,7 @@ from game.buildings.forester_hut import ForesterHut
 from game.buildings.house import House
 from game.buildings.iron_mine import IronMine
 from game.buildings.lumber_camp import LumberCamp
+from game.buildings.mill import Mill
 from game.buildings.registry import BuildingRegistry
 from game.buildings.school import School
 from game.buildings.sawmill import Sawmill
@@ -36,6 +37,7 @@ _TAG_TO_CLASS: dict[str, Type[Building]] = {
     "SCHOOL": School,
     "HOUSE": House,
     "SAWMILL": Sawmill,
+    "MILL": Mill,
 }
 
 

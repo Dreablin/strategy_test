@@ -1,0 +1,38 @@
+{
+  "ready": {
+    "default": {
+      "scale": 0.28,
+      "anchor_norm": [0.50, 0.87]
+    },
+    "levels": {
+      "1": {"scale": 0.28, "anchor_norm": [0.50, 0.87]},
+      "2": {"scale": 0.35, "anchor_norm": [0.50, 0.91]},
+      "3": {"scale": 0.36, "anchor_norm": [0.50, 0.92]},
+      "4": {"scale": 0.39, "anchor_norm": [0.50, 0.92]},
+      "5": {"scale": 0.39, "anchor_norm": [0.50, 0.91]},
+      "6": {"scale": 0.39, "anchor_norm": [0.50, 0.92]},
+      "7": {"scale": 0.42, "anchor_norm": [0.50, 0.92]},
+      "8": {"scale": 0.42, "anchor_norm": [0.50, 0.92]},
+      "9": {"scale": 0.42, "anchor_norm": [0.50, 0.92]},
+      "10": {"scale": 0.42, "anchor_norm": [0.50, 0.92]}
+    }
+  },
+  "construction": {
+    "default": {
+      "scale": 0.28,
+      "anchor_norm": [0.50, 0.88]
+    },
+    "levels": {
+      "1": {"scale": 0.29, "anchor_norm": [0.50, 0.75]},
+      "2": {"scale": 0.29, "anchor_norm": [0.50, 0.84]},
+      "3": {"scale": 0.30, "anchor_norm": [0.50, 0.91]},
+      "4": {"scale": 0.30, "anchor_norm": [0.50, 0.91]},
+      "5": {"scale": 0.37, "anchor_norm": [0.50, 0.91]},
+      "6": {"scale": 0.39, "anchor_norm": [0.50, 0.91]},
+      "7": {"scale": 0.39, "anchor_norm": [0.50, 0.91]},
+      "8": {"scale": 0.42, "anchor_norm": [0.50, 0.92]},
+      "9": {"scale": 0.44, "anchor_norm": [0.50, 0.92]},
+      "10": {"scale": 0.44, "anchor_norm": [0.50, 0.92]}
+    }
+  }
+}

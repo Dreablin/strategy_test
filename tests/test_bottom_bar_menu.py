@@ -57,7 +57,17 @@ def test_bottom_bar_processing_sawmill_posts_build_event() -> None:
     surface = pygame.Surface((1200, 720))
     BottomBar._menu = "processing"  # noqa: SLF001
     pygame.event.clear()
-    BottomBar.handle_click(surface, (1000, 700))
+    BottomBar.handle_click(surface, (600, 700))
     events = [e for e in pygame.event.get() if e.type == BUILD_MENU_SELECT]
     assert events
     assert events[-1].building_type == "SAWMILL"
+
+
+def test_bottom_bar_processing_mill_posts_build_event() -> None:
+    surface = pygame.Surface((1200, 720))
+    BottomBar._menu = "processing"  # noqa: SLF001
+    pygame.event.clear()
+    BottomBar.handle_click(surface, (1000, 700))
+    events = [e for e in pygame.event.get() if e.type == BUILD_MENU_SELECT]
+    assert events
+    assert events[-1].building_type == "MILL"

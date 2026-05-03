@@ -19,6 +19,7 @@ def test_reassign_all_prefers_closest_target_and_bounded_path_calls(monkeypatch)
     world._trees.clear()  # noqa: SLF001
     world._stones.clear()  # noqa: SLF001
     world._iron.clear()  # noqa: SLF001
+    world._gold.clear()  # noqa: SLF001
     registry = BuildingRegistry(world)
     registry.place(TownHall, (26, 26))
 

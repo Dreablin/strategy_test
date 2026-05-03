@@ -45,6 +45,10 @@ def test_field_owns_wheat_phase_and_growth_timestamp() -> None:
     assert crop.wheat_phase == field.WHEAT_PHASE_2
     assert crop.wheat_last_change_ms == 46_000
 
+    crop.update_wheat_growth(136_000)
+    assert crop.wheat_phase == field.WHEAT_PHASE_4
+    assert crop.wheat_last_change_ms == 136_000
+
     crop.harvest(now_ms=200_000)
     assert crop.wheat_phase == field.WHEAT_EMPTY
     assert crop.wheat_last_change_ms == 200_000

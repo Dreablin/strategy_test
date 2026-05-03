@@ -69,6 +69,7 @@ class TransportTask:
     source: Building
     target: Building
     priority: int = 0
+    returning_to_town_hall: bool = False
 
 
 def construction_transport_tasks(registry: Any) -> list[TransportTask]:
@@ -1403,6 +1404,63 @@ class WorkerManager:
         worker.start_move(best_path, started_ms=now_ms)
         return True
 
+    def _clear_carrier_transport(self, worker: Worker) -> None:
+        worker.transport_task = None
+        worker.carrying = None
+        worker.path = []
+        worker.target_tile = None
+        worker.segment_progress = 0.0
+        worker.segment_started_ms = 0
+        worker.camp_wait_until_ms = 0
+        worker.state = "idle"
+        worker.idle = True
+        worker.stand_tile = worker.current_tile
+
+    def _transport_task_invalid(self, task: TransportTask) -> bool:
+        if self._registry is None:
+            return True
+        known = set(self._registry.all())
+        if task.returning_to_town_hall:
+            return task.target not in known
+        if task.source not in known or task.target not in known:
+            return True
+        if isinstance(task.source, TownHall) and int(task.priority) >= 10:
+            if not bool(getattr(task.target, "is_under_construction", False)):
+                return True
+            site = getattr(task.target, "construction_site", None)
+            if site is None:
+                return True
+            return int(site.remaining_resources().get(str(task.resource).lower(), 0)) <= 0
+        return False
+
+    def _reroute_or_cancel_invalid_transport(self, worker: Worker, task: TransportTask, now_ms: int) -> bool:
+        if not self._transport_task_invalid(task):
+            return True
+        if task.resource == "water" and task.source.type_tag == "WELL" and worker.carrying is None:
+            task.source.release()  # type: ignore[attr-defined]
+        if worker.carrying is None:
+            self._clear_carrier_transport(worker)
+            return False
+        if worker.carrying == "water":
+            self._clear_carrier_transport(worker)
+            return False
+
+        town_hall = self._primary_town_hall()
+        if town_hall is None:
+            self._clear_carrier_transport(worker)
+            return False
+
+        task.source = town_hall
+        task.target = town_hall
+        task.priority = 10
+        task.returning_to_town_hall = True
+        worker.transport_task = task
+        if not self._start_move_to_building(worker, town_hall, now_ms):
+            town_hall.add_to_warehouse(worker.carrying, 1)
+            self._clear_carrier_transport(worker)
+            return False
+        return True
+
     def _update_carrier(self, worker: Worker, now_ms: int, world: Any) -> None:
         if self._registry is None or world is None:
             return
@@ -1423,6 +1481,12 @@ class WorkerManager:
                 worker.transport_task = None
                 worker.state = "idle"
                 worker.idle = True
+            return
+
+        if not self._reroute_or_cancel_invalid_transport(worker, task, now_ms):
+            return
+        task = worker.transport_task
+        if task is None:
             return
 
         if worker.state in {"moving", "returning"}:
@@ -1597,7 +1661,10 @@ class WorkerManager:
             return
         delivered_target = task.target
         site = task.target.construction_site if task.target.is_under_construction else None
-        if site is not None:
+        if task.returning_to_town_hall:
+            if hasattr(task.target, "add_to_warehouse"):
+                task.target.add_to_warehouse(task.resource, 1)  # type: ignore[attr-defined]
+        elif site is not None:
             remaining = int(site.remaining_resources().get(str(task.resource).lower(), 0))
             if remaining > 0:
                 site.deliver_resource(task.resource, 1)

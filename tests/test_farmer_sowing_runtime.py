@@ -19,6 +19,24 @@ def _advance(workers: WorkerManager, now_ms: dict[str, int], *, steps: int = 200
         workers.update(now_ms["t"])
 
 
+def _advance_until_phase(
+    workers: WorkerManager,
+    now_ms: dict[str, int],
+    field: Field,
+    phase: str,
+    *,
+    max_steps: int = 300,
+    step_ms: int = 500,
+) -> None:
+    for _ in range(max_steps):
+        now_ms["t"] += step_ms
+        workers.reassign_all()
+        workers.update(now_ms["t"])
+        if workers._read_field_phase(field) == phase:  # noqa: SLF001
+            return
+    raise AssertionError(f"field never reached {phase}")
+
+
 def test_farmer_sows_empty_field_to_phase_1_after_action_time() -> None:
     now_ms = {"t": 0}
     world = World(world_seed=1)
@@ -36,10 +54,10 @@ def test_farmer_sows_empty_field_to_phase_1_after_action_time() -> None:
     farmer = workers.hire("FARMER")
     assert farmer is not None
 
-    _advance(workers, now_ms)
+    _advance_until_phase(workers, now_ms, field, WHEAT_PHASE_1)
 
     assert workers._read_field_phase(field) == WHEAT_PHASE_1  # noqa: SLF001
-    assert farmer.state in {"resting", "working_field"}
+    assert farmer.state in {"returning", "resting", "working_field"}
 
 
 def test_farmer_treats_newly_built_field_as_empty_and_can_sow() -> None:

@@ -1,5 +1,6 @@
 """Worker manager: hire, reassign, demolition (PRD F-WORK / F-DEMO)."""
 
+from game.buildings.base import Building
 from game.buildings.farm import Farm
 from game.buildings.field import WHEAT_PHASE_2, Field
 from game.buildings.iron_mine import IronMine
@@ -27,6 +28,25 @@ from game.workers import (
     sawmill_output_transport_tasks,
     town_hall_spawn_tile,
 )
+
+
+class WheatConsumer(Building):
+    type_tag = "WHEAT_CONSUMER"
+    __slots__ = ("active", "wheat_in")
+
+    def __init__(self, level: int = 1, grid_pos: tuple[int, int] | None = None) -> None:
+        super().__init__(level, grid_pos)
+        self.active = True
+        self.wheat_in = 0
+
+    def input_capacity(self) -> int:
+        return 2
+
+    def input_amount(self) -> int:
+        return self.wheat_in
+
+    def add_wheat_in(self, amount: int) -> None:
+        self.wheat_in += int(amount)
 
 
 def test_building_center_tile_for_2x2() -> None:
@@ -126,6 +146,25 @@ def test_hire_sawyer_from_school_spawns_near_school() -> None:
     sx, sy = school.grid_pos
     sw, sh = school.footprint
     assert hired.current_tile == (sx + sw // 2, sy + sh)
+
+
+def test_hire_baker_from_school_spawns_near_school_and_stays_unassigned() -> None:
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    school = registry.place(School, near_town_hall_tile(8, 8))
+    school.construction_site = None
+    wm = WorkerManager(registry)
+
+    hired = wm.hire("BAKER", source_building=school)
+
+    assert hired is not None
+    assert hired.type_tag == "BAKER"
+    sx, sy = school.grid_pos
+    sw, sh = school.footprint
+    assert hired.current_tile == (sx + sw // 2, sy + sh)
+    assert hired.assigned_building is None
+    assert hired.idle is True
 
 
 def test_reassign_all_assigns_sawyer_only_to_sawmill() -> None:
@@ -1365,6 +1404,25 @@ def test_farm_wheat_output_prefers_mill_space_after_inbound_reservations() -> No
     assert sum(1 for t in wheat_from_farm if t.target is mill) == 1
     assert sum(1 for t in wheat_from_farm if t.target is town_hall) == 2
     assert mill.input_amount() == 0
+
+
+def test_farm_wheat_output_can_target_non_mill_wheat_consumer() -> None:
+    world = World(world_seed=0)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    farm = registry.place(Farm, near_town_hall_tile(8, 8))
+    consumer = registry.place(WheatConsumer, near_town_hall_tile(16, 8))
+    farm.construction_site = None
+    farm.stored = 1
+
+    wm = WorkerManager(registry)
+    wm.update(1_000)
+
+    wheat_from_farm = [t for t in wm._transport_queue if t.source is farm and t.resource == "wheat"]  # noqa: SLF001
+    assert len(wheat_from_farm) == 1
+    assert wheat_from_farm[0].target is consumer
 
 
 def test_lumberjack_output_prefers_sawmill_before_town_hall() -> None:

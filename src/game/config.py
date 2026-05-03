@@ -7,7 +7,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 
-_RESOURCE_KEYS: tuple[str, ...] = ("wheat", "wood", "stone", "iron", "boards", "flour")
+_RESOURCE_KEYS: tuple[str, ...] = ("wheat", "wood", "stone", "iron", "boards", "flour", "bread", "water")
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,6 +35,8 @@ def _construction_fallback_defaults() -> dict[str, dict]:
         "SCHOOL": {"levels": _scaled_levels({"wood": 14, "stone": 8, "boards": 4}, 40_000)},
         "HOUSE": {"levels": _scaled_levels({"wood": 12, "stone": 6, "boards": 2}, 36_000)},
         "MILL": {"levels": _scaled_levels({"wood": 2}, 30_000)},
+        "BAKERY": {"levels": _scaled_levels({"wood": 8, "stone": 4, "boards": 2}, 36_000)},
+        "WELL": {"levels": {"1": {"cost": {"wood": 1, "boards": 2}, "build_time_ms": 12_000}}},
     }
 
 
@@ -71,7 +73,7 @@ _DEFAULT_SETTINGS: dict = {
     },
     "window": {"size": [1280, 720]},
     "warehouse_bootstrap": {
-        "town_hall": {"wheat": 200, "wood": 200, "stone": 0, "iron": 0, "boards": 0, "flour": 0},
+        "town_hall": {"wheat": 200, "wood": 200, "stone": 0, "iron": 0, "boards": 0, "flour": 0, "bread": 0},
     },
     "construction": _default_construction_from_files(),
     "gates": {
@@ -81,6 +83,8 @@ _DEFAULT_SETTINGS: dict = {
             "FORESTER_HUT": 1,
             "SCHOOL": 1,
             "HOUSE": 1,
+            "BAKERY": 1,
+            "WELL": 1,
         },
         "hire_min_town_hall_level": {
             "LUMBERJACK": 1,
@@ -91,6 +95,7 @@ _DEFAULT_SETTINGS: dict = {
             "BUILDER": 1,
             "SAWYER": 1,
             "MILLER": 1,
+            "BAKER": 1,
         },
     },
     "levels": {"max_level": 10},

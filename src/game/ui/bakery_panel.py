@@ -1,0 +1,179 @@
+"""Bakery panel with active toggle and production details."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+import pygame
+
+from game.buildings.bakery import Bakery
+from game.ui.building_panel import BuildingPanel
+
+_PANEL_PAD = 16
+_BTN_H = 32
+_EXTRA_BOTTOM = 152
+
+
+@dataclass(frozen=True, slots=True)
+class BakeryPanelLayout:
+    frame: pygame.Rect
+    close: pygame.Rect
+    upgrade: pygame.Rect | None
+    upgrade_enabled: bool
+    demolish: pygame.Rect | None
+    toggle: pygame.Rect
+
+
+class BakeryPanel:
+    @staticmethod
+    def supports_building(building) -> bool:
+        return isinstance(building, Bakery)
+
+    @staticmethod
+    def toggle_label(bakery: Bakery) -> str:
+        return "Active" if bakery.active else "Inactive"
+
+    @staticmethod
+    def blocked_reason(bakery: Bakery, *, worker_status: str, production_status: str | None) -> str:
+        status = (production_status or "").strip().lower()
+        if not bakery.active:
+            return "inactive"
+        if worker_status == "empty" or status == "no worker":
+            return "no worker"
+        if status == "resting":
+            return "resting"
+        if bakery.output_amount() >= bakery.output_capacity():
+            return "output full"
+        if bakery.input_amount() <= 0:
+            return "no flour"
+        if bakery.water_amount() <= 0:
+            return "no water"
+        return "running"
+
+    @staticmethod
+    def layout(
+        surface: pygame.Surface,
+        bakery: Bakery,
+        *,
+        worker_assigned: bool,
+        production_status: str | None = None,
+    ) -> BakeryPanelLayout:
+        base = BuildingPanel.layout(
+            surface,
+            bakery,
+            worker_assigned=worker_assigned,
+            production_status=production_status,
+            extra_bottom_px=_EXTRA_BOTTOM,
+        )
+        toggle = pygame.Rect(
+            base.frame.left + _PANEL_PAD,
+            base.frame.bottom - _PANEL_PAD - _BTN_H,
+            base.frame.width - _PANEL_PAD * 2,
+            _BTN_H,
+        )
+        return BakeryPanelLayout(
+            frame=base.frame,
+            close=base.close,
+            upgrade=base.upgrade,
+            upgrade_enabled=base.upgrade_enabled,
+            demolish=base.demolish,
+            toggle=toggle,
+        )
+
+    @staticmethod
+    def draw(
+        surface: pygame.Surface,
+        bakery: Bakery,
+        *,
+        worker_assigned: bool,
+        worker_status: str = "empty",
+        production_status: str | None = None,
+        now_ms: int,
+    ) -> None:
+        BuildingPanel.draw(
+            surface,
+            bakery,
+            worker_assigned=worker_assigned,
+            worker_status=worker_status,
+            production_status=production_status,
+            worker_working=worker_status == "assigned",
+            extra_bottom_px=_EXTRA_BOTTOM,
+        )
+        layout = BakeryPanel.layout(
+            surface,
+            bakery,
+            worker_assigned=worker_assigned,
+            production_status=production_status,
+        )
+        font = pygame.font.Font(None, 22)
+        body = pygame.font.Font(None, 20)
+
+        details_y = layout.frame.top + _PANEL_PAD + 4 * 26 + 32
+        flour = body.render(
+            f"Input flour: {bakery.input_amount()} / {bakery.input_capacity()}",
+            True,
+            (200, 204, 214),
+        )
+        surface.blit(flour, (layout.frame.left + _PANEL_PAD, details_y))
+        water = body.render(
+            f"Input water: {bakery.water_amount()} / {bakery.water_capacity()}",
+            True,
+            (200, 204, 214),
+        )
+        surface.blit(water, (layout.frame.left + _PANEL_PAD, details_y + 22))
+        bread = body.render(
+            f"Output bread: {bakery.output_amount()} / {bakery.output_capacity()}",
+            True,
+            (200, 204, 214),
+        )
+        surface.blit(bread, (layout.frame.left + _PANEL_PAD, details_y + 44))
+        reason = BakeryPanel.blocked_reason(
+            bakery,
+            worker_status=worker_status,
+            production_status=production_status,
+        )
+        reason_text = body.render(f"Blocked: {reason}", True, (200, 204, 214))
+        surface.blit(reason_text, (layout.frame.left + _PANEL_PAD, details_y + 66))
+
+        bar_y = details_y + 90
+        bar_bg = pygame.Rect(layout.frame.left + _PANEL_PAD, bar_y, layout.frame.width - _PANEL_PAD * 2, 12)
+        pygame.draw.rect(surface, (52, 58, 66), bar_bg, border_radius=4)
+        progress = max(0.0, min(1.0, bakery.processing_progress(now_ms)))
+        if progress > 0.0:
+            fill = pygame.Rect(bar_bg.left, bar_bg.top, max(1, int(round(bar_bg.width * progress))), bar_bg.height)
+            pygame.draw.rect(surface, (214, 154, 118), fill, border_radius=4)
+        pygame.draw.rect(surface, (116, 124, 136), bar_bg, width=1, border_radius=4)
+
+        active_bg = (84, 112, 84) if bakery.active else (92, 64, 64)
+        pygame.draw.rect(surface, active_bg, layout.toggle, border_radius=6)
+        label = font.render(BakeryPanel.toggle_label(bakery), True, (240, 242, 250))
+        surface.blit(label, (layout.toggle.centerx - label.get_width() // 2, layout.toggle.centery - label.get_height() // 2))
+
+    @staticmethod
+    def click_action(
+        surface: pygame.Surface,
+        pos: tuple[int, int],
+        bakery: Bakery,
+        *,
+        worker_assigned: bool,
+        production_status: str | None = None,
+    ) -> str | None:
+        base_action = BuildingPanel.click_action(
+            surface,
+            pos,
+            bakery,
+            worker_assigned=worker_assigned,
+            production_status=production_status,
+            extra_bottom_px=_EXTRA_BOTTOM,
+        )
+        if base_action is not None:
+            return base_action
+        layout = BakeryPanel.layout(
+            surface,
+            bakery,
+            worker_assigned=worker_assigned,
+            production_status=production_status,
+        )
+        if layout.toggle.collidepoint(pos):
+            return "toggle_active"
+        return None

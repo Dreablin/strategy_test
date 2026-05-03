@@ -39,23 +39,27 @@ FORESTER_TARGET_RANDOM_TRIES = 3
 FORESTER_TARGET_RETRY_MS = 1_000
 FORESTER_RETURN_RETRY_MS = 3_000
 CARRIER_INTERACT_MS = 2_000
+WELL_DRAW_WATER_MS = 10_000
 IRON_MINE_CYCLE_MS = 45_000
 MINER_REST_MS = 10_000
 SAWMILL_BASE_CYCLE_MS = 30_000
 SAWMILL_MIN_CYCLE_MS = 5_000
 MILL_BASE_CYCLE_MS = SAWMILL_BASE_CYCLE_MS
 MILL_MIN_CYCLE_MS = SAWMILL_MIN_CYCLE_MS
+BAKERY_CYCLE_MS = 45_000
 SAWYER_REST_MS = 10_000
 MILLER_REST_MS = SAWYER_REST_MS
+BAKER_REST_MS = 10_000
 FARMER_REST_MS = 5_000
 FARMER_ACTION_MS = 5_000
 FARMER_FIELD_RADIUS = 10
 FARMER_NO_TARGET_WORKING_STATE_MS = 900_000
 MOVE_SPEED_PER_LEVEL = 0.05
 GATHER_SPEED_PER_LEVEL = 0.05
-PROCESSOR_INPUT_BY_RESOURCE: dict[str, str] = {
-    "wheat": "MILL",
-    "wood": "SAWMILL",
+PROCESSOR_INPUT_ADD_METHOD_BY_RESOURCE: dict[str, str] = {
+    "wheat": "add_wheat_in",
+    "wood": "add_wood_in",
+    "flour": "add_flour_in",
 }
 
 
@@ -151,21 +155,33 @@ def sawmill_output_transport_tasks(registry: Any) -> list[TransportTask]:
     return tasks
 
 
-def mill_input_transport_tasks(registry: Any) -> list[TransportTask]:
-    """Build low-priority refill tasks from Town Hall to active mills."""
+def _processor_accepts_resource(building: Building, resource: str) -> bool:
+    add_method_name = PROCESSOR_INPUT_ADD_METHOD_BY_RESOURCE.get(str(resource))
+    if add_method_name is None:
+        return False
+    if not callable(getattr(building, add_method_name, None)):
+        return False
+    if not callable(getattr(building, "input_capacity", None)):
+        return False
+    return callable(getattr(building, "input_amount", None))
+
+
+def processor_input_transport_tasks(registry: Any, resource: str) -> list[TransportTask]:
+    """Build low-priority refill tasks from Town Hall to active resource consumers."""
     if registry is None:
         return []
+    resource_key = str(resource)
     buildings = list(registry.all())
     town_hall = next((b for b in buildings if b.type_tag == "TOWN_HALL"), None)
     if town_hall is None or not hasattr(town_hall, "warehouse_amount"):
         return []
-    available = int(town_hall.warehouse_amount("wheat"))
+    available = int(town_hall.warehouse_amount(resource_key))
     if available <= 0:
         return []
     tasks: list[TransportTask] = []
-    remaining_wheat = available
+    remaining = available
     for building in buildings:
-        if building.type_tag != "MILL":
+        if not _processor_accepts_resource(building, resource_key):
             continue
         if getattr(building, "is_under_construction", False):
             continue
@@ -173,18 +189,23 @@ def mill_input_transport_tasks(registry: Any) -> list[TransportTask]:
             continue
         want = max(
             0,
-            int(getattr(building, "input_capacity", lambda: 0)())
-            - int(getattr(building, "input_amount", lambda: 0)()),
+            int(getattr(building, "input_capacity")())
+            - int(getattr(building, "input_amount")()),
         )
         if want <= 0:
             continue
-        count = min(want, remaining_wheat)
+        count = min(want, remaining)
         for _ in range(count):
-            tasks.append(TransportTask(resource="wheat", source=town_hall, target=building, priority=0))
-        remaining_wheat -= count
-        if remaining_wheat <= 0:
+            tasks.append(TransportTask(resource=resource_key, source=town_hall, target=building, priority=0))
+        remaining -= count
+        if remaining <= 0:
             break
     return tasks
+
+
+def mill_input_transport_tasks(registry: Any) -> list[TransportTask]:
+    """Build low-priority refill tasks from Town Hall to active mills."""
+    return processor_input_transport_tasks(registry, "wheat")
 
 
 def mill_output_transport_tasks(registry: Any) -> list[TransportTask]:
@@ -206,6 +227,89 @@ def mill_output_transport_tasks(registry: Any) -> list[TransportTask]:
             continue
         for _ in range(amount):
             tasks.append(TransportTask(resource="flour", source=building, target=town_hall, priority=0))
+    return tasks
+
+
+def bakery_input_transport_tasks(registry: Any) -> list[TransportTask]:
+    """Build low-priority flour refill tasks from Town Hall to active bakeries."""
+    return processor_input_transport_tasks(registry, "flour")
+
+
+def bakery_output_transport_tasks(registry: Any) -> list[TransportTask]:
+    """Build low-priority bread export tasks from bakeries to Town Hall warehouse."""
+    if registry is None:
+        return []
+    buildings = list(registry.all())
+    town_hall = next((b for b in buildings if b.type_tag == "TOWN_HALL"), None)
+    if town_hall is None:
+        return []
+    tasks: list[TransportTask] = []
+    for building in buildings:
+        if building.type_tag != "BAKERY":
+            continue
+        if getattr(building, "is_under_construction", False):
+            continue
+        amount = int(getattr(building, "output_amount", lambda: 0)())
+        if amount <= 0:
+            continue
+        for _ in range(amount):
+            tasks.append(TransportTask(resource="bread", source=building, target=town_hall, priority=0))
+    return tasks
+
+
+def _water_capacity(building: Building) -> int:
+    water_capacity = getattr(building, "water_capacity", None)
+    if callable(water_capacity):
+        return int(water_capacity())
+    return 0
+
+
+def _water_amount(building: Building) -> int:
+    water_amount = getattr(building, "water_amount", None)
+    if callable(water_amount):
+        return int(water_amount())
+    return 0
+
+
+def _accepts_water_input(building: Building) -> bool:
+    return (
+        callable(getattr(building, "water_amount", None))
+        and callable(getattr(building, "water_capacity", None))
+        and callable(getattr(building, "add_water_in", None))
+    )
+
+
+def water_input_transport_tasks(registry: Any) -> list[TransportTask]:
+    """Build direct water tasks from free wells to any active water consumer."""
+    if registry is None:
+        return []
+    buildings = list(registry.all())
+    wells = [
+        b
+        for b in buildings
+        if b.type_tag == "WELL"
+        and not getattr(b, "is_under_construction", False)
+        and not bool(getattr(b, "busy", False))
+    ]
+    if not wells:
+        return []
+    tasks: list[TransportTask] = []
+    well_idx = 0
+    for building in buildings:
+        if not _accepts_water_input(building):
+            continue
+        if getattr(building, "is_under_construction", False):
+            continue
+        if not getattr(building, "active", False):
+            continue
+        capacity = _water_capacity(building)
+        water = _water_amount(building)
+        want = max(0, capacity - water)
+        for _ in range(want):
+            if well_idx >= len(wells):
+                return tasks
+            tasks.append(TransportTask(resource="water", source=wells[well_idx], target=building, priority=0))
+            well_idx += 1
     return tasks
 
 
@@ -445,8 +549,9 @@ class WorkerManager:
         "FORESTER": "FORESTER_HUT",
         "SAWYER": "SAWMILL",
         "MILLER": "MILL",
+        "BAKER": "BAKERY",
     }
-    _HIRABLE_WORKERS: set[str] = set(_WORKER_TO_BUILDING) | {"CARRIER", "BUILDER"}
+    _HIRABLE_WORKERS: set[str] = set(_WORKER_TO_BUILDING) | {"CARRIER", "BUILDER", "BAKER"}
 
     def __init__(
         self,
@@ -468,6 +573,7 @@ class WorkerManager:
             "BUILDER": self._update_builder,
             "SAWYER": self._update_sawyer,
             "MILLER": self._update_miller,
+            "BAKER": self._update_baker,
             "FARMER": self._update_farmer,
         }
         if registry is not None and hasattr(registry, "bind_worker_manager"):
@@ -554,6 +660,15 @@ class WorkerManager:
                 if worker.assigned_building is building:
                     return "resting"
             return "empty"
+        if building.type_tag == "WELL":
+            worker = self._water_worker_for_well(building)
+            if worker is None:
+                return "empty"
+            if worker.state == "carrier_loading":
+                return "drawing water"
+            if worker.state in {"moving", "carrier_moving_to_source"}:
+                return "on the way"
+            return "assigned"
         for worker in self._workers:
             if worker.assigned_building is not building:
                 continue
@@ -599,6 +714,15 @@ class WorkerManager:
         """Human-readable production status for building panels."""
         if building.is_under_construction:
             return "Under construction"
+        if building.type_tag == "WELL":
+            worker = self._water_worker_for_well(building)
+            if worker is None:
+                return "Ready"
+            if worker.state == "carrier_loading":
+                return "Drawing water"
+            if worker.state in {"moving", "carrier_moving_to_source"}:
+                return "Carrier on the way"
+            return "Busy"
         worker: Worker | None = None
         for candidate in self._workers:
             if candidate.assigned_building is building:
@@ -647,6 +771,20 @@ class WorkerManager:
             if worker.state == "processing":
                 return "Processing"
             return "Ready"
+        if building.type_tag == "BAKERY":
+            if worker.state == "resting":
+                return "Resting"
+            if int(getattr(building, "output_amount", lambda: 0)()) >= int(
+                getattr(building, "output_capacity", lambda: 0)()
+            ):
+                return "Output full"
+            if int(getattr(building, "input_amount", lambda: 0)()) <= 0:
+                return "No flour"
+            if int(getattr(building, "water_amount", lambda: 0)()) <= 0:
+                return "No water"
+            if worker.state == "processing":
+                return "Processing"
+            return "Ready"
         if building.type_tag == "IRON_MINE":
             if worker.state == "resting":
                 return "Resting"
@@ -679,6 +817,31 @@ class WorkerManager:
         if worker.state == "resting":
             return "Resting"
         return "Unknown"
+
+    def _water_worker_for_well(self, well: Building) -> Worker | None:
+        for worker in self._workers:
+            task = worker.transport_task
+            if task is None:
+                continue
+            if task.resource == "water" and task.source is well:
+                if worker.carrying is not None:
+                    continue
+                return worker
+        return None
+
+    def water_draw_progress_for_building(self, building: Building, now_ms: int | None = None) -> float:
+        if building.type_tag != "WELL":
+            return 0.0
+        worker = self._water_worker_for_well(building)
+        if worker is None or worker.state != "carrier_loading":
+            return 0.0
+        end_ms = int(worker.camp_wait_until_ms)
+        start_ms = end_ms - WELL_DRAW_WATER_MS
+        if now_ms is None:
+            now_ms = int(self._now_ms_fn())
+        if end_ms <= start_ms:
+            return 0.0
+        return max(0.0, min(1.0, (int(now_ms) - start_ms) / float(end_ms - start_ms)))
 
     def staffed_buildings(self) -> set[Building]:
         return {w.assigned_building for w in self._workers if w.assigned_building is not None}
@@ -922,6 +1085,9 @@ class WorkerManager:
         self._enqueue_sawmill_output_tasks()
         self._enqueue_mill_refill_tasks()
         self._enqueue_mill_output_tasks()
+        self._enqueue_bakery_refill_tasks()
+        self._enqueue_water_input_tasks()
+        self._enqueue_bakery_output_tasks()
         self._enqueue_iron_mine_output_tasks()
         self._enqueue_farm_wheat_output_tasks()
         completed_buildings: list[Building] = []
@@ -1102,6 +1268,9 @@ class WorkerManager:
         inbound = self._inbound_resource_count(building, resource, planned_counts)
         return max(0, capacity - actual - inbound)
 
+    def _building_accepts_processor_input(self, building: Building, resource: str) -> bool:
+        return _processor_accepts_resource(building, resource)
+
     def _processor_input_target_for_resource(
         self,
         resource: str,
@@ -1112,16 +1281,13 @@ class WorkerManager:
         if self._registry is None:
             return None
         resource_key = str(resource)
-        processor_type = PROCESSOR_INPUT_BY_RESOURCE.get(resource_key)
-        if processor_type is None:
-            return None
         source_center: tuple[int, int] | None = None
         if source is not None and source.grid_pos is not None:
             source_center = building_center_tile(source)
 
         candidates: list[tuple[int, int, int, Building]] = []
         for idx, building in enumerate(self._registry.all()):
-            if building.type_tag != processor_type:
+            if not self._building_accepts_processor_input(building, resource_key):
                 continue
             if getattr(building, "is_under_construction", False):
                 continue
@@ -1183,9 +1349,19 @@ class WorkerManager:
                 has_storage_source = int(task.source.output_amount()) > 0  # type: ignore[attr-defined]
             elif task.resource == "flour" and hasattr(task.source, "output_amount"):
                 has_storage_source = int(task.source.output_amount()) > 0  # type: ignore[attr-defined]
+            elif task.resource == "bread" and hasattr(task.source, "output_amount"):
+                has_storage_source = int(task.source.output_amount()) > 0  # type: ignore[attr-defined]
+            elif task.resource == "water" and task.source.type_tag == "WELL":
+                has_storage_source = not bool(getattr(task.source, "busy", False))
             has_warehouse_source = hasattr(task.source, "warehouse_amount") and int(
                 task.source.warehouse_amount(task.resource)  # type: ignore[attr-defined]
             ) > 0
+            if task.resource == "water":
+                water_capacity = _water_capacity(task.target)
+                water_amount = _water_amount(task.target)
+                if water_amount >= water_capacity:
+                    stale_indices.append(idx)
+                    continue
             if not has_storage_source and not has_warehouse_source:
                 if task.resource == "wheat" and task.source.type_tag == "FARM":
                     stale_indices.append(idx)
@@ -1198,6 +1374,12 @@ class WorkerManager:
         _best_idx, best_task = max(eligible, key=lambda item: (int(item[1].priority), -item[0]))
         if best_task in self._transport_queue:
             self._transport_queue.remove(best_task)
+            if best_task.resource == "water" and best_task.source.type_tag == "WELL":
+                try:
+                    best_task.source.reserve()  # type: ignore[attr-defined]
+                except ValueError:
+                    self._transport_queue.append(best_task)
+                    return self._next_transport_task()
             return best_task
         return None
 
@@ -1235,6 +1417,8 @@ class WorkerManager:
             worker.transport_task = task
             worker.carrying = None
             if not self._start_move_to_building(worker, task.source, now_ms):
+                if task.resource == "water" and task.source.type_tag == "WELL":
+                    task.source.release()  # type: ignore[attr-defined]
                 self._transport_queue.insert(0, task)
                 worker.transport_task = None
                 worker.state = "idle"
@@ -1248,17 +1432,22 @@ class WorkerManager:
             if worker.state != "carrier_loading":
                 self._park_worker_inside_building(worker, task.source)
                 worker.state = "carrier_loading"
-                worker.camp_wait_until_ms = now_ms + CARRIER_INTERACT_MS
+                wait_ms = WELL_DRAW_WATER_MS if task.resource == "water" and task.source.type_tag == "WELL" else CARRIER_INTERACT_MS
+                worker.camp_wait_until_ms = now_ms + wait_ms
                 return
             if now_ms < worker.camp_wait_until_ms:
                 return
             if task.source not in self._registry.all() or task.target not in self._registry.all():
+                if task.resource == "water" and task.source.type_tag == "WELL":
+                    task.source.release()  # type: ignore[attr-defined]
                 worker.transport_task = None
                 worker.state = "idle"
                 worker.idle = True
                 return
             if not hasattr(task.source, "take_from_storage"):
-                if task.resource == "wood" and hasattr(task.source, "take_wood_in"):
+                if task.resource == "water" and task.source.type_tag == "WELL":
+                    pass
+                elif task.resource == "wood" and hasattr(task.source, "take_wood_in"):
                     try:
                         task.source.take_wood_in(1)  # type: ignore[attr-defined]
                     except ValueError:
@@ -1297,6 +1486,24 @@ class WorkerManager:
                 elif task.resource == "flour" and hasattr(task.source, "take_flour_out"):
                     try:
                         task.source.take_flour_out(1)  # type: ignore[attr-defined]
+                    except ValueError:
+                        self._transport_queue.append(task)
+                        worker.transport_task = None
+                        worker.state = "idle"
+                        worker.idle = True
+                        next_task = self._next_transport_task()
+                        if next_task is not None:
+                            worker.transport_task = next_task
+                            worker.carrying = None
+                            if not self._start_move_to_building(worker, next_task.source, now_ms):
+                                self._transport_queue.insert(0, next_task)
+                                worker.transport_task = None
+                                worker.state = "idle"
+                                worker.idle = True
+                        return
+                elif task.resource == "bread" and hasattr(task.source, "take_bread_out"):
+                    try:
+                        task.source.take_bread_out(1)  # type: ignore[attr-defined]
                     except ValueError:
                         self._transport_queue.append(task)
                         worker.transport_task = None
@@ -1354,16 +1561,22 @@ class WorkerManager:
                             worker.idle = True
                     return
             worker.carrying = task.resource
+            if task.resource == "water" and task.source.type_tag == "WELL":
+                task.source.release()  # type: ignore[attr-defined]
             if isinstance(task.source, TownHall):
                 # Town Hall center can trap pathfinding because it is fully enclosed by occupied tiles.
                 self._move_worker_to_building_approach(worker, task.source)
             if not self._start_move_to_building(worker, task.target, now_ms):
-                if task.resource == "wood" and hasattr(task.source, "add_wood_in"):
+                if task.resource == "water" and task.source.type_tag == "WELL":
+                    pass
+                elif task.resource == "wood" and hasattr(task.source, "add_wood_in"):
                     task.source.add_wood_in(1)  # type: ignore[attr-defined]
                 elif task.resource == "boards" and hasattr(task.source, "add_boards_out"):
                     task.source.add_boards_out(1)  # type: ignore[attr-defined]
                 elif task.resource == "flour" and hasattr(task.source, "add_flour_out"):
                     task.source.add_flour_out(1)  # type: ignore[attr-defined]
+                elif task.resource == "bread" and hasattr(task.source, "add_bread_out"):
+                    task.source.add_bread_out(1)  # type: ignore[attr-defined]
                 elif hasattr(task.source, "add_to_storage"):
                     task.source.add_to_storage(1)  # type: ignore[attr-defined]
                 elif hasattr(task.source, "add_to_warehouse"):
@@ -1415,6 +1628,19 @@ class WorkerManager:
                     delivered_target = town_hall
                 elif hasattr(task.target, "add_to_warehouse"):
                     task.target.add_to_warehouse(task.resource, 1)  # type: ignore[attr-defined]
+        elif task.resource == "flour" and hasattr(task.target, "add_flour_in"):
+            if int(task.target.input_amount()) < int(task.target.input_capacity()):  # type: ignore[attr-defined]
+                task.target.add_flour_in(1)  # type: ignore[attr-defined]
+            else:
+                town_hall = self._primary_town_hall()
+                if town_hall is not None:
+                    town_hall.add_to_warehouse(task.resource, 1)
+                    delivered_target = town_hall
+                elif hasattr(task.target, "add_to_warehouse"):
+                    task.target.add_to_warehouse(task.resource, 1)  # type: ignore[attr-defined]
+        elif task.resource == "water" and hasattr(task.target, "add_water_in"):
+            if _water_amount(task.target) < _water_capacity(task.target):
+                task.target.add_water_in(1)  # type: ignore[attr-defined]
         elif task.resource == "boards" and hasattr(task.target, "add_to_warehouse"):
             task.target.add_to_warehouse(task.resource, 1)  # type: ignore[attr-defined]
         elif hasattr(task.target, "add_to_warehouse"):
@@ -1560,7 +1786,142 @@ class WorkerManager:
     def _enqueue_mill_output_tasks(self) -> None:
         if self._registry is None:
             return
-        desired = mill_output_transport_tasks(self._registry)
+        desired: list[TransportTask] = []
+        planned_counts: dict[tuple[int, str], int] = {}
+        town_hall = self._primary_town_hall()
+        for task in mill_output_transport_tasks(self._registry):
+            target = self._processor_input_target_for_resource(
+                task.resource,
+                source=task.source,
+                planned_counts=planned_counts,
+            )
+            if target is None:
+                target = town_hall
+            if target is None:
+                continue
+            desired.append(
+                TransportTask(
+                    resource=task.resource,
+                    source=task.source,
+                    target=target,
+                    priority=task.priority,
+                )
+            )
+            if self._building_accepts_processor_input(target, task.resource):
+                key = (id(target), task.resource)
+                planned_counts[key] = planned_counts.get(key, 0) + 1
+        desired_counts: dict[tuple[int, int, str, int], int] = {}
+        for task in desired:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            desired_counts[key] = desired_counts.get(key, 0) + 1
+
+        existing_counts: dict[tuple[int, int, str, int], int] = {}
+        for task in self._transport_queue:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+        for worker in self._workers:
+            task = worker.transport_task
+            if task is None:
+                continue
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+
+        for task in desired:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            if existing_counts.get(key, 0) >= desired_counts.get(key, 0):
+                continue
+            self.enqueue_transport_task(
+                resource=task.resource,
+                source=task.source,
+                target=task.target,
+                amount=1,
+                priority=task.priority,
+            )
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+
+    def _enqueue_bakery_refill_tasks(self) -> None:
+        if self._registry is None:
+            return
+        desired = bakery_input_transport_tasks(self._registry)
+        desired_counts: dict[tuple[int, int, str, int], int] = {}
+        for task in desired:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            desired_counts[key] = desired_counts.get(key, 0) + 1
+
+        existing_counts: dict[tuple[int, int, str, int], int] = {}
+        for task in self._transport_queue:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+        for worker in self._workers:
+            task = worker.transport_task
+            if task is None:
+                continue
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+
+        for task in desired:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            if existing_counts.get(key, 0) >= desired_counts.get(key, 0):
+                continue
+            self.enqueue_transport_task(
+                resource=task.resource,
+                source=task.source,
+                target=task.target,
+                amount=1,
+                priority=task.priority,
+            )
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+
+    def _enqueue_water_input_tasks(self) -> None:
+        if self._registry is None:
+            return
+        desired: list[TransportTask] = []
+        planned_counts: dict[tuple[int, str], int] = {}
+        for task in water_input_transport_tasks(self._registry):
+            target = task.target
+            water_capacity = _water_capacity(target)
+            water_amount = _water_amount(target)
+            inbound = self._inbound_resource_count(target, "water", planned_counts)
+            if water_amount + inbound >= water_capacity:
+                continue
+            desired.append(task)
+            key = (id(target), "water")
+            planned_counts[key] = planned_counts.get(key, 0) + 1
+        desired_counts: dict[tuple[int, int, str, int], int] = {}
+        for task in desired:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            desired_counts[key] = desired_counts.get(key, 0) + 1
+
+        existing_counts: dict[tuple[int, int, str, int], int] = {}
+        for task in self._transport_queue:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+        for worker in self._workers:
+            task = worker.transport_task
+            if task is None:
+                continue
+            if task.source.type_tag == "WELL" and worker.carrying is not None:
+                continue
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+
+        for task in desired:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            if existing_counts.get(key, 0) >= desired_counts.get(key, 0):
+                continue
+            self.enqueue_transport_task(
+                resource=task.resource,
+                source=task.source,
+                target=task.target,
+                amount=1,
+                priority=task.priority,
+            )
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+
+    def _enqueue_bakery_output_tasks(self) -> None:
+        if self._registry is None:
+            return
+        desired = bakery_output_transport_tasks(self._registry)
         desired_counts: dict[tuple[int, int, str, int], int] = {}
         for task in desired:
             key = (id(task.source), id(task.target), task.resource, int(task.priority))
@@ -1647,7 +2008,7 @@ class WorkerManager:
                     priority=task.priority,
                 )
             )
-            if target.type_tag == PROCESSOR_INPUT_BY_RESOURCE.get(task.resource):
+            if self._building_accepts_processor_input(target, task.resource):
                 key = (id(target), task.resource)
                 planned_counts[key] = planned_counts.get(key, 0) + 1
         desired_counts: dict[tuple[int, int, str, int], int] = {}
@@ -2200,6 +2561,71 @@ class WorkerManager:
         if int(getattr(mill, "processing_started_ms", 0)) <= 0:
             mill.processing_started_ms = int(now_ms)
         mill.processing_duration_ms = WorkerManager._mill_cycle_duration_ms(mill)
+        worker.state = "processing"
+        worker.idle = False
+
+    @staticmethod
+    def _update_baker(worker: Worker, now_ms: int, world: Any) -> None:
+        _ = world
+        bakery = worker.assigned_building
+        if bakery is None or bakery.type_tag != "BAKERY":
+            return
+        if bakery.is_under_construction:
+            return
+        center_tile = building_center_tile(bakery)
+        if worker.state in {"working", "resting", "processing"} and worker.current_tile != center_tile:
+            worker.current_tile = center_tile
+            if worker.state == "processing":
+                worker.state = "working"
+                bakery.processing_started_ms = 0
+            return
+        active = bool(getattr(bakery, "active", False))
+        if worker.state == "resting":
+            if now_ms < worker.camp_wait_until_ms:
+                return
+            if not active:
+                worker.current_tile = center_tile
+                return
+            worker.state = "working"
+            worker.camp_wait_until_ms = 0
+            worker.idle = False
+        if worker.state == "resting":
+            return
+        if worker.state == "processing":
+            started = int(getattr(bakery, "processing_started_ms", 0))
+            if started <= 0:
+                worker.state = "working"
+                return
+            bakery.processing_duration_ms = BAKERY_CYCLE_MS
+            if now_ms - started < BAKERY_CYCLE_MS:
+                return
+            if (
+                getattr(bakery, "has_recipe_inputs", lambda: False)()
+                and getattr(bakery, "output_amount", lambda: 0)()
+                < getattr(bakery, "output_capacity", lambda: 0)()
+            ):
+                bakery.take_flour_in(1)
+                bakery.take_water_in(1)
+                bakery.add_bread_out(1)
+            bakery.processing_started_ms = 0
+            worker.state = "resting"
+            worker.camp_wait_until_ms = int(now_ms) + BAKER_REST_MS
+            worker.current_tile = center_tile
+            worker.idle = False
+            return
+        if not active:
+            worker.state = "resting"
+            worker.current_tile = center_tile
+            return
+        if not getattr(bakery, "has_recipe_inputs", lambda: False)():
+            return
+        if getattr(bakery, "output_amount", lambda: 0)() >= getattr(bakery, "output_capacity", lambda: 0)():
+            return
+        if worker.state != "working":
+            return
+        if int(getattr(bakery, "processing_started_ms", 0)) <= 0:
+            bakery.processing_started_ms = int(now_ms)
+        bakery.processing_duration_ms = BAKERY_CYCLE_MS
         worker.state = "processing"
         worker.idle = False
 

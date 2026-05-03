@@ -11,6 +11,7 @@ from game.buildings.mill import Mill
 from game.buildings.registry import BuildingRegistry
 from game.buildings.stone_mine import StoneMine
 from game.buildings.town_hall import TownHall
+from game.buildings.well import Well
 from game.world import World
 
 
@@ -23,6 +24,7 @@ from game.world import World
         (IronMine, "IRON_MINE"),
         (Farm, "FARM"),
         (Mill, "MILL"),
+        (Well, "WELL"),
     ],
 )
 def test_building_type_tag(cls: type, expected_type: str) -> None:
@@ -38,6 +40,7 @@ def test_building_type_tag(cls: type, expected_type: str) -> None:
         (IronMine, (2, 2)),
         (Farm, (2, 2)),
         (Mill, (2, 2)),
+        (Well, (1, 1)),
     ],
 )
 def test_building_footprint(cls: type, expected_footprint: tuple[int, int]) -> None:
@@ -51,6 +54,7 @@ def test_all_production_buildings_have_no_passive_income() -> None:
     assert IronMine.income(2) == {}
     assert Farm.income(5) == {}
     assert Mill.income(5) == {}
+    assert Well.income(1) == {}
 
 
 def test_town_hall_income_always_empty() -> None:
@@ -67,6 +71,12 @@ def test_town_hall_max_level_10() -> None:
     TownHall(level=10)
     with pytest.raises(ValueError):
         TownHall(level=11)
+
+
+def test_well_max_level_1() -> None:
+    Well(level=1)
+    with pytest.raises(ValueError):
+        Well(level=2)
 
 
 def test_upgrade_lumber_camp_starts_construction_to_level_2() -> None:

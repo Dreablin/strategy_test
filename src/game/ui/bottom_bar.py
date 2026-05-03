@@ -17,6 +17,7 @@ _RESOURCE_BUTTONS: tuple[tuple[str, str, str], ...] = (
     ("farm", "Farm", "FARM"),
     ("field", "Field", "FIELD"),
     ("forester_hut", "Forester", "FORESTER_HUT"),
+    ("well", "Well", "WELL"),
 )
 # Backward-compat for tests importing previous flat menu tuple.
 _BUTTONS = _RESOURCE_BUTTONS
@@ -77,7 +78,7 @@ class BottomBar:
             return
 
         if menu == "processing":
-            entries = (("back", "Back"), ("sawmill", "Sawmill"), ("mill", "Mill"))
+            entries = (("back", "Back"), ("sawmill", "Sawmill"), ("mill", "Mill"), ("bakery", "Bakery"))
             rects = _button_rects(surface, len(entries))
             for rect, (_key, label) in zip(rects, entries):
                 btn = rect.inflate(-6, -10)
@@ -87,7 +88,7 @@ class BottomBar:
                     text,
                     (btn.centerx - text.get_width() // 2, btn.centery - text.get_height() // 2),
                 )
-            for idx, asset_key in ((1, "sawmill"), (2, "mill")):
+            for idx, asset_key in ((1, "sawmill"), (2, "mill"), (3, "bakery")):
                 spr = pygame.transform.smoothscale(building_sprite(asset_key, 1), (40, 32))
                 btn = rects[idx].inflate(-6, -10)
                 surface.blit(spr, (btn.centerx - spr.get_width() // 2, btn.bottom - 40))
@@ -164,7 +165,7 @@ class BottomBar:
             return
 
         if menu == "processing":
-            entries = ("back", "sawmill", "mill")
+            entries = ("back", "sawmill", "mill", "bakery")
             for rect, key in zip(_button_rects(surface, len(entries)), entries):
                 if not rect.collidepoint(pos):
                     continue
@@ -174,6 +175,8 @@ class BottomBar:
                     pygame.event.post(pygame.event.Event(BUILD_MENU_SELECT, building_type="SAWMILL"))
                 elif key == "mill":
                     pygame.event.post(pygame.event.Event(BUILD_MENU_SELECT, building_type="MILL"))
+                elif key == "bakery":
+                    pygame.event.post(pygame.event.Event(BUILD_MENU_SELECT, building_type="BAKERY"))
                 return
             return
 

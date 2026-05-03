@@ -1,0 +1,16 @@
+{
+  "ready": {
+    "default": {
+      "scale": 0.18,
+      "anchor_norm": [0.50, 0.93]
+    },
+    "levels": {}
+  },
+  "construction": {
+    "default": {
+      "scale": 0.14,
+      "anchor_norm": [0.50, 0.93]
+    },
+    "levels": {}
+  }
+}

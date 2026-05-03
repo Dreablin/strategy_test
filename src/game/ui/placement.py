@@ -8,6 +8,7 @@ from typing import Type
 import pygame
 
 from game.buildings.base import Building
+from game.buildings.bakery import Bakery
 from game.buildings.field import Field
 from game.buildings.farm import Farm
 from game.buildings.forester_hut import ForesterHut
@@ -18,6 +19,7 @@ from game.buildings.mill import Mill
 from game.buildings.registry import BuildingRegistry
 from game.buildings.school import School
 from game.buildings.sawmill import Sawmill
+from game.buildings.well import Well
 from game.camera import Camera
 from game.buildings.stone_mine import StoneMine
 from game.config import GATHER_RESOURCE_SEARCH_RADIUS, TILE_H, TILE_W
@@ -39,6 +41,8 @@ _TAG_TO_CLASS: dict[str, Type[Building]] = {
     "HOUSE": House,
     "SAWMILL": Sawmill,
     "MILL": Mill,
+    "BAKERY": Bakery,
+    "WELL": Well,
 }
 
 

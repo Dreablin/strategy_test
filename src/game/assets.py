@@ -15,6 +15,7 @@ _TREES_ROOT = _ASSETS_ROOT / "trees"
 _WORLD_ROOT = _ASSETS_ROOT / "world"
 _STONE_ROOT = _WORLD_ROOT / "stone"
 _IRON_ROOT = _WORLD_ROOT / "iron"
+_GOLD_ROOT = _WORLD_ROOT / "gold"
 _NPC_ROOT = _ASSETS_ROOT / "npc"
 _ICONS_ROOT = _ASSETS_ROOT / "icons"
 _UI_ROOT = _ASSETS_ROOT / "ui"
@@ -174,6 +175,34 @@ def _procedural_iron_sprite(variant: int = 0, *, blocking: bool) -> pygame.Surfa
     return surf
 
 
+def _procedural_gold_sprite(variant: int = 0, *, blocking: bool) -> pygame.Surface:
+    w, h = (54, 34) if blocking else (36, 22)
+    surf = pygame.Surface((w, h), pygame.SRCALPHA)
+    mid = w // 2
+    base = [(mid, 1), (w - 3, h // 2), (mid, h - 3), (3, h // 2)]
+    if blocking:
+        palettes = [
+            ((70, 58, 38), (226, 174, 74)),
+            ((76, 62, 42), (238, 188, 86)),
+            ((62, 58, 46), (210, 164, 88)),
+            ((82, 66, 38), (246, 198, 82)),
+            ((68, 54, 42), (220, 152, 66)),
+        ]
+    else:
+        palettes = [
+            ((112, 88, 52), (245, 196, 82)),
+            ((104, 90, 58), (230, 182, 92)),
+            ((98, 84, 62), (218, 176, 104)),
+            ((122, 88, 46), (252, 210, 88)),
+            ((108, 78, 52), (232, 164, 72)),
+        ]
+    dark, bright = palettes[max(0, min(4, int(variant)))]
+    pygame.draw.polygon(surf, dark, base)
+    pygame.draw.polygon(surf, bright, [(mid, 4), (w - 10, h // 2), (mid + 2, h - 8), (9, h // 2)])
+    pygame.draw.line(surf, (255, 232, 142), (mid - 8, h // 2), (mid + 8, h // 2 - 2), 2)
+    return surf
+
+
 def stone_sprite(variant: int = 0) -> pygame.Surface:
     """Load stone world sprite by variant, fallback to procedural."""
     return _stone_render_spec(variant)[0]
@@ -201,6 +230,18 @@ def iron_sprite_offset(variant: int = 0, *, blocking: bool = False) -> tuple[int
     return _iron_render_spec(variant, blocking)[2]
 
 
+def gold_sprite(variant: int = 0, *, blocking: bool = False) -> pygame.Surface:
+    return _gold_render_spec(variant, blocking)[0]
+
+
+def gold_sprite_anchor(variant: int = 0, *, blocking: bool = False) -> tuple[int, int]:
+    return _gold_render_spec(variant, blocking)[1]
+
+
+def gold_sprite_offset(variant: int = 0, *, blocking: bool = False) -> tuple[int, int]:
+    return _gold_render_spec(variant, blocking)[2]
+
+
 @functools.lru_cache(maxsize=16)
 def _stone_render_spec(variant: int = 0) -> tuple[pygame.Surface, tuple[int, int], tuple[int, int]]:
     variant_key = max(0, min(4, int(variant)))
@@ -221,6 +262,18 @@ def _iron_render_spec(variant: int = 0, blocking: bool = False) -> tuple[pygame.
         loaded = _load_png(str(_IRON_ROOT / folder / "default.png"))
     src = loaded if loaded is not None else _procedural_iron_sprite(variant_key, blocking=blocking)
     meta = _iron_meta_for(variant_key, blocking=blocking)
+    return _apply_stone_meta(src, meta)
+
+
+@functools.lru_cache(maxsize=32)
+def _gold_render_spec(variant: int = 0, blocking: bool = False) -> tuple[pygame.Surface, tuple[int, int], tuple[int, int]]:
+    variant_key = max(0, min(4, int(variant)))
+    folder = "blocking" if blocking else "buildable"
+    loaded = _load_png(str(_GOLD_ROOT / folder / f"species_{variant_key}" / "default.png"))
+    if loaded is None:
+        loaded = _load_png(str(_GOLD_ROOT / folder / "default.png"))
+    src = loaded if loaded is not None else _procedural_gold_sprite(variant_key, blocking=blocking)
+    meta = _gold_meta_for(variant_key, blocking=blocking)
     return _apply_stone_meta(src, meta)
 
 
@@ -305,6 +358,18 @@ def _load_iron_meta() -> dict:
     return parsed if isinstance(parsed, dict) else {}
 
 
+@functools.lru_cache(maxsize=1)
+def _load_gold_meta() -> dict:
+    path = _GOLD_ROOT / "asset_meta.json"
+    if not path.exists():
+        return {}
+    try:
+        parsed = json.loads(path.read_text(encoding="utf-8-sig"))
+    except (json.JSONDecodeError, OSError):
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
+
+
 def _stone_meta_for(variant: int) -> dict:
     meta = _load_stone_meta()
     out: dict = {}
@@ -321,6 +386,24 @@ def _stone_meta_for(variant: int) -> dict:
 
 def _iron_meta_for(variant: int, *, blocking: bool) -> dict:
     meta = _load_iron_meta()
+    group_key = "blocking" if blocking else "buildable"
+    group = meta.get(group_key)
+    if not isinstance(group, dict):
+        group = {}
+    out: dict = {}
+    default = group.get("default") or meta.get("default")
+    if isinstance(default, dict):
+        out.update(default)
+    variants = group.get("variants")
+    if isinstance(variants, dict):
+        cfg = variants.get(str(variant))
+        if isinstance(cfg, dict):
+            out.update(cfg)
+    return out
+
+
+def _gold_meta_for(variant: int, *, blocking: bool) -> dict:
+    meta = _load_gold_meta()
     group_key = "blocking" if blocking else "buildable"
     group = meta.get(group_key)
     if not isinstance(group, dict):
@@ -810,9 +893,11 @@ def clear_asset_caches() -> None:
     _load_tree_meta.cache_clear()
     _load_stone_meta.cache_clear()
     _load_iron_meta.cache_clear()
+    _load_gold_meta.cache_clear()
     _tree_render_spec.cache_clear()
     _stone_render_spec.cache_clear()
     _iron_render_spec.cache_clear()
+    _gold_render_spec.cache_clear()
     _load_building_meta_by_mtime.cache_clear()
     _load_fixed_icon.cache_clear()
     _worker_dot_by_mtime.cache_clear()

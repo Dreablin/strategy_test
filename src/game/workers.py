@@ -39,6 +39,8 @@ FORESTER_TARGET_RANDOM_TRIES = 3
 FORESTER_TARGET_RETRY_MS = 1_000
 FORESTER_RETURN_RETRY_MS = 3_000
 CARRIER_INTERACT_MS = 2_000
+IRON_MINE_CYCLE_MS = 45_000
+MINER_REST_MS = 10_000
 SAWMILL_BASE_CYCLE_MS = 30_000
 SAWMILL_MIN_CYCLE_MS = 5_000
 MILL_BASE_CYCLE_MS = SAWMILL_BASE_CYCLE_MS
@@ -204,6 +206,28 @@ def mill_output_transport_tasks(registry: Any) -> list[TransportTask]:
             continue
         for _ in range(amount):
             tasks.append(TransportTask(resource="flour", source=building, target=town_hall, priority=0))
+    return tasks
+
+
+def iron_mine_output_transport_tasks(registry: Any) -> list[TransportTask]:
+    """Build low-priority export tasks from iron mines to Town Hall warehouse."""
+    if registry is None:
+        return []
+    buildings = list(registry.all())
+    town_hall = next((b for b in buildings if b.type_tag == "TOWN_HALL"), None)
+    if town_hall is None:
+        return []
+    tasks: list[TransportTask] = []
+    for building in buildings:
+        if building.type_tag != "IRON_MINE":
+            continue
+        if getattr(building, "is_under_construction", False):
+            continue
+        amount = int(getattr(building, "stored", 0))
+        if amount <= 0:
+            continue
+        for _ in range(amount):
+            tasks.append(TransportTask(resource="iron", source=building, target=town_hall, priority=0))
     return tasks
 
 
@@ -440,6 +464,7 @@ class WorkerManager:
             "CARRIER": self._update_carrier,
             "LUMBERJACK": self._update_gatherer,
             "STONECUTTER": self._update_gatherer,
+            "MINER": self._update_miner,
             "BUILDER": self._update_builder,
             "SAWYER": self._update_sawyer,
             "MILLER": self._update_miller,
@@ -621,6 +646,14 @@ class WorkerManager:
                 return "No wheat"
             if worker.state == "processing":
                 return "Processing"
+            return "Ready"
+        if building.type_tag == "IRON_MINE":
+            if worker.state == "resting":
+                return "Resting"
+            if hasattr(building, "is_storage_full") and building.is_storage_full():
+                return "Storage full"
+            if worker.state == "mining":
+                return "Mining"
             return "Ready"
         if hasattr(building, "is_storage_full") and building.is_storage_full():
             return "Storage full"
@@ -889,6 +922,7 @@ class WorkerManager:
         self._enqueue_sawmill_output_tasks()
         self._enqueue_mill_refill_tasks()
         self._enqueue_mill_output_tasks()
+        self._enqueue_iron_mine_output_tasks()
         self._enqueue_farm_wheat_output_tasks()
         completed_buildings: list[Building] = []
         completed_site_builders: dict[int, Worker] = {}
@@ -1556,6 +1590,39 @@ class WorkerManager:
             )
             existing_counts[key] = existing_counts.get(key, 0) + 1
 
+    def _enqueue_iron_mine_output_tasks(self) -> None:
+        if self._registry is None:
+            return
+        desired = iron_mine_output_transport_tasks(self._registry)
+        desired_counts: dict[tuple[int, int, str, int], int] = {}
+        for task in desired:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            desired_counts[key] = desired_counts.get(key, 0) + 1
+
+        existing_counts: dict[tuple[int, int, str, int], int] = {}
+        for task in self._transport_queue:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+        for worker in self._workers:
+            task = worker.transport_task
+            if task is None:
+                continue
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+
+        for task in desired:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            if existing_counts.get(key, 0) >= desired_counts.get(key, 0):
+                continue
+            self.enqueue_transport_task(
+                resource=task.resource,
+                source=task.source,
+                target=task.target,
+                amount=1,
+                priority=task.priority,
+            )
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+
     def _enqueue_farm_wheat_output_tasks(self) -> None:
         if self._registry is None:
             return
@@ -2134,6 +2201,59 @@ class WorkerManager:
             mill.processing_started_ms = int(now_ms)
         mill.processing_duration_ms = WorkerManager._mill_cycle_duration_ms(mill)
         worker.state = "processing"
+        worker.idle = False
+
+    @staticmethod
+    def _update_miner(worker: Worker, now_ms: int, world: Any) -> None:
+        _ = world
+        mine = worker.assigned_building
+        if mine is None or mine.type_tag != "IRON_MINE":
+            return
+        if mine.is_under_construction:
+            return
+        center_tile = building_center_tile(mine)
+        if worker.state in {"working", "resting", "mining"} and worker.current_tile != center_tile:
+            worker.current_tile = center_tile
+            if worker.state == "mining":
+                worker.state = "working"
+                mine.mining_started_ms = 0
+            return
+        if worker.state == "resting":
+            if now_ms < worker.camp_wait_until_ms:
+                return
+            worker.state = "working"
+            worker.camp_wait_until_ms = 0
+            worker.idle = False
+        if worker.state == "resting":
+            return
+        if worker.state == "mining":
+            started = int(getattr(mine, "mining_started_ms", 0))
+            if started <= 0:
+                worker.state = "working"
+                return
+            mine.mining_duration_ms = IRON_MINE_CYCLE_MS
+            if now_ms - started < IRON_MINE_CYCLE_MS:
+                return
+            if hasattr(mine, "is_storage_full") and not mine.is_storage_full():
+                mine.add_to_storage(1)
+            mine.mining_started_ms = 0
+            worker.state = "resting"
+            worker.camp_wait_until_ms = int(now_ms) + MINER_REST_MS
+            worker.current_tile = center_tile
+            worker.idle = False
+            return
+        if hasattr(mine, "is_storage_full") and mine.is_storage_full():
+            worker.state = "working"
+            worker.current_tile = center_tile
+            worker.idle = False
+            return
+        if worker.state != "working":
+            return
+        if int(getattr(mine, "mining_started_ms", 0)) <= 0:
+            mine.mining_started_ms = int(now_ms)
+        mine.mining_duration_ms = IRON_MINE_CYCLE_MS
+        worker.state = "mining"
+        worker.current_tile = center_tile
         worker.idle = False
 
     @staticmethod

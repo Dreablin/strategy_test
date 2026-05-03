@@ -72,6 +72,8 @@ class BuildingRegistry:
             return False
         if self._world_footprint_overlaps_stones(gx, gy, w, h):
             return False
+        if self._world_footprint_overlaps_gold(gx, gy, w, h):
+            return False
         if self._world_footprint_overlaps_blocking_iron(gx, gy, w, h):
             return False
         if cls.type_tag == "IRON_MINE":
@@ -224,6 +226,13 @@ class BuildingRegistry:
         for ty in range(gy, gy + h):
             for tx in range(gx, gx + w):
                 if self._world.is_stone_blocking(tx, ty):
+                    return True
+        return False
+
+    def _world_footprint_overlaps_gold(self, gx: int, gy: int, w: int, h: int) -> bool:
+        for ty in range(gy, gy + h):
+            for tx in range(gx, gx + w):
+                if self._world.gold_deposit_at(tx, ty) is not None:
                     return True
         return False
 

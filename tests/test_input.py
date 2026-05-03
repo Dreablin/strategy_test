@@ -598,6 +598,7 @@ def test_dev_tools_place_entities_via_input_click() -> None:
                     or world.is_tree_blocking(tx, ty)
                     or world.is_stone_blocking(tx, ty)
                     or world.iron_deposit_at(tx, ty) is not None
+                    or world.gold_deposit_at(tx, ty) is not None
                 ):
                     continue
                 return tx, ty

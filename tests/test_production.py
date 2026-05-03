@@ -7,7 +7,7 @@ from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
 from game.iron import IronDeposit
 from game.world import World
-from game.workers import WorkerManager
+from game.workers import IRON_MINE_CYCLE_MS, MINER_REST_MS, Worker, WorkerManager, building_center_tile
 
 
 def test_stone_mine_is_staffed_after_hire_and_reassign() -> None:
@@ -115,7 +115,7 @@ def test_farm_has_no_passive_income_even_when_staffed() -> None:
     assert town_hall.warehouse_amount("wheat") == wheat_before
 
 
-def test_iron_mine_has_no_passive_income_even_when_staffed() -> None:
+def test_staffed_iron_mine_produces_iron_into_local_storage() -> None:
     world = World(world_seed=2)
     world._iron.clear()  # noqa: SLF001
     registry = BuildingRegistry(world)
@@ -123,12 +123,43 @@ def test_iron_mine_has_no_passive_income_even_when_staffed() -> None:
     th.level = 5
     mine_pos = (10, 10)
     world._iron[mine_pos] = IronDeposit(blocking=False)  # noqa: SLF001
-    _mine = registry.place(IronMine, mine_pos)
-    _mine.construction_site = None
+    mine = registry.place(IronMine, mine_pos)
+    mine.construction_site = None
     workers = WorkerManager(registry)
-    assert workers.hire("MINER") is not None
-    workers.reassign_all()
-    workers.update(120_000)
-    iron_before = th.warehouse_amount("iron")
-    # No passive tick production path exists anymore.
-    assert th.warehouse_amount("iron") == iron_before
+    miner = Worker("MINER", stand_tile=building_center_tile(mine))
+    workers.add_worker(miner)
+    workers.assign_to_building(miner, mine)
+    miner.state = "working"
+    miner.current_tile = building_center_tile(mine)
+    miner.idle = False
+
+    workers.update(1_000)
+    assert miner.state == "mining"
+    assert mine.stored == 0
+
+    workers.update(1_000 + IRON_MINE_CYCLE_MS)
+    assert mine.stored == 1
+    assert miner.state == "resting"
+    assert miner.camp_wait_until_ms == 1_000 + IRON_MINE_CYCLE_MS + MINER_REST_MS
+
+
+def test_iron_mine_output_transport_task_exports_to_town_hall() -> None:
+    world = World(world_seed=2)
+    world._iron.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    th = registry.place(TownHall, town_hall_origin_tile())
+    th.level = 5
+    mine_pos = (10, 10)
+    world._iron[mine_pos] = IronDeposit(blocking=False)  # noqa: SLF001
+    mine = registry.place(IronMine, mine_pos)
+    mine.construction_site = None
+    mine.add_to_storage(1)
+    workers = WorkerManager(registry, now_ms_fn=lambda: 0)
+    carrier = workers.hire("CARRIER")
+    assert carrier is not None
+
+    workers.update(0)
+    assert carrier.transport_task is not None
+    assert carrier.transport_task.resource == "iron"
+    assert carrier.transport_task.source is mine
+    assert carrier.transport_task.target is th

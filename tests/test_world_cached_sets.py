@@ -10,6 +10,9 @@ def test_world_exposes_cached_set_getters_with_expected_types() -> None:
     assert isinstance(world.occupied_tiles(), set)
     assert isinstance(world.tree_tiles(), set)
     assert isinstance(world.stone_tiles(), set)
+    assert isinstance(world.gold_tiles(), set)
+    assert isinstance(world.gold_blocking_tiles(), set)
+    assert isinstance(world.gold_buildable_tiles(), set)
     assert isinstance(world.iron_tiles(), set)
     assert isinstance(world.iron_blocking_tiles(), set)
     assert isinstance(world.iron_buildable_tiles(), set)
@@ -52,14 +55,22 @@ def test_blocked_tiles_equals_union_after_mutations() -> None:
     world._stones[(4, 4)] = Stone(units=2)  # noqa: SLF001
     world.mark_occupied(5, 5, 1, 1)
     assert world.blocked_tiles() == (
-        world.occupied_tiles() | world.tree_tiles() | world.stone_tiles() | world.iron_blocking_tiles()
+        world.occupied_tiles()
+        | world.tree_tiles()
+        | world.stone_tiles()
+        | world.iron_blocking_tiles()
+        | world.gold_blocking_tiles()
     )
     world.remove_tree(3, 3)
     world.harvest_stone(4, 4)
     world.harvest_stone(4, 4)
     world.free(5, 5, 1, 1)
     assert world.blocked_tiles() == (
-        world.occupied_tiles() | world.tree_tiles() | world.stone_tiles() | world.iron_blocking_tiles()
+        world.occupied_tiles()
+        | world.tree_tiles()
+        | world.stone_tiles()
+        | world.iron_blocking_tiles()
+        | world.gold_blocking_tiles()
     )
 
 

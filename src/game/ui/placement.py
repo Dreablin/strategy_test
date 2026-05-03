@@ -204,6 +204,7 @@ class PlacementController:
                 or self._world.is_tree_blocking(gx, gy)
                 or self._world.is_stone_blocking(gx, gy)
                 or self._world.iron_deposit_at(gx, gy) is not None
+                or self._world.gold_deposit_at(gx, gy) is not None
             ):
                 return False
             return self._world.plant_tree(gx, gy, now_ms=0) is not None
@@ -215,6 +216,7 @@ class PlacementController:
                 or self._world.is_tree_blocking(gx, gy)
                 or self._world.is_stone_blocking(gx, gy)
                 or self._world.iron_deposit_at(gx, gy) is not None
+                or self._world.gold_deposit_at(gx, gy) is not None
             ):
                 return False
             self._world._stones[(gx, gy)] = Stone(variant=random.randint(0, 4))  # noqa: SLF001
@@ -227,6 +229,7 @@ class PlacementController:
                 or self._world.is_tree_blocking(gx, gy)
                 or self._world.is_stone_blocking(gx, gy)
                 or self._world.iron_deposit_at(gx, gy) is not None
+                or self._world.gold_deposit_at(gx, gy) is not None
             ):
                 return False
             self._world._iron[(gx, gy)] = IronDeposit(blocking=False, variant=random.randint(0, 4))  # noqa: SLF001
@@ -249,6 +252,7 @@ class PlacementController:
                 and not self._world.is_tree_blocking(gx, gy)
                 and not self._world.is_stone_blocking(gx, gy)
                 and self._world.iron_deposit_at(gx, gy) is None
+                and self._world.gold_deposit_at(gx, gy) is None
             )
         ox, oy = Renderer.map_origin(surface, self._world)
         cam_x, cam_y = (0, 0) if camera is None else camera.offset

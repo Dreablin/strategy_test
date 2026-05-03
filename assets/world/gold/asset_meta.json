@@ -1,0 +1,30 @@
+{
+  "blocking": {
+    "default": {
+      "scale": 0.15,
+      "anchor_norm": [0.5, 0.9],
+      "offset_px": [0, 0]
+    },
+    "variants": {
+      "0": {},
+      "1": {},
+      "2": {},
+      "3": {},
+      "4": {}
+    }
+  },
+  "buildable": {
+    "default": {
+      "scale": 0.11,
+      "anchor_norm": [0.5, 0.75],
+      "offset_px": [0, 0]
+    },
+    "variants": {
+      "0": {},
+      "1": {},
+      "2": {},
+      "3": {},
+      "4": {}
+    }
+  }
+}

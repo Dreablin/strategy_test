@@ -32,6 +32,7 @@ def test_phase13_perf_gate_regression(monkeypatch) -> None:
         world = world_mod.World()
         world._trees.clear()  # noqa: SLF001
         world._stones.clear()  # noqa: SLF001
+        world._iron.clear()  # noqa: SLF001
 
         registry = BuildingRegistry(world)
         town_hall = registry.place(TownHall, (48, 48))

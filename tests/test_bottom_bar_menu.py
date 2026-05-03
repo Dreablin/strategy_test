@@ -32,6 +32,17 @@ def test_bottom_bar_dev_tree_posts_build_event() -> None:
     assert events[-1].building_type == "DEV_TREE"
 
 
+def test_bottom_bar_dev_iron_posts_build_event() -> None:
+    surface = pygame.Surface((1200, 720))
+    BottomBar._menu = "dev"  # noqa: SLF001
+    pygame.event.clear()
+
+    BottomBar.handle_click(surface, (1050, 700))
+    events = [e for e in pygame.event.get() if e.type == BUILD_MENU_SELECT]
+    assert events
+    assert events[-1].building_type == "DEV_IRON"
+
+
 def test_bottom_bar_social_school_posts_build_event() -> None:
     surface = pygame.Surface((1200, 720))
     BottomBar._menu = "social"  # noqa: SLF001

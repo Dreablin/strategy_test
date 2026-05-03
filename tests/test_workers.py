@@ -13,6 +13,7 @@ from game.buildings.town_hall import TownHall
 from game.characteristics import Characteristics
 from game.config import near_town_hall_tile, town_hall_origin_tile
 from game.construction import ConstructionSite
+from game.iron import IronDeposit
 from game.trees import Tree, TreeStage
 from game.world import World
 from game.workers import (
@@ -455,6 +456,7 @@ def test_reassign_all_assigns_one_idle_lumberjack_to_empty_lumber_camp() -> None
     world = World(world_seed=0)
     world._trees.clear()  # noqa: SLF001
     world._stones.clear()  # noqa: SLF001
+    world._iron.clear()  # noqa: SLF001
     registry = BuildingRegistry(world)
     registry.place(TownHall, town_hall_origin_tile())
     camp = registry.place(LumberCamp, (10, 10))
@@ -613,7 +615,9 @@ def test_reassign_all_assigns_farmer_to_empty_farm() -> None:
     town_hall.level = 5
     registry.place(LumberCamp, (4, 4))
     farm = registry.place(Farm, near_town_hall_tile(12, 4))
-    mine = registry.place(IronMine, (10, 20))
+    mine_pos = (10, 20)
+    world._iron[mine_pos] = IronDeposit(blocking=False)  # noqa: SLF001
+    mine = registry.place(IronMine, mine_pos)
     farm.construction_site = None
     mine.construction_site = None
     wm = WorkerManager(registry)
@@ -627,11 +631,14 @@ def test_reassign_all_assigns_miner_to_empty_iron_mine() -> None:
     world = World(world_seed=0)
     world._trees.clear()  # noqa: SLF001
     world._stones.clear()  # noqa: SLF001
+    world._iron.clear()  # noqa: SLF001
     registry = BuildingRegistry(world)
     town_hall = registry.place(TownHall, town_hall_origin_tile())
     town_hall.level = 5
     registry.place(Farm, (4, 4))
-    mine = registry.place(IronMine, near_town_hall_tile(12, 4))
+    mine_pos = near_town_hall_tile(12, 4)
+    world._iron[mine_pos] = IronDeposit(blocking=False)  # noqa: SLF001
+    mine = registry.place(IronMine, mine_pos)
     mine.construction_site = None
     wm = WorkerManager(registry)
     wm.add_worker(Worker("MINER"))
@@ -669,10 +676,13 @@ def test_reassign_all_uses_current_time_for_move_start_no_first_frame_teleport()
     world = World(world_seed=0)
     world._trees.clear()  # noqa: SLF001
     world._stones.clear()  # noqa: SLF001
+    world._iron.clear()  # noqa: SLF001
     registry = BuildingRegistry(world)
     town_hall = registry.place(TownHall, town_hall_origin_tile())
     town_hall.level = 5
-    mine = registry.place(IronMine, (26, 26))
+    mine_pos = (26, 26)
+    world._iron[mine_pos] = IronDeposit(blocking=False)  # noqa: SLF001
+    mine = registry.place(IronMine, mine_pos)
     mine.construction_site = None
     now_holder = {"t": 100_000}
     wm = WorkerManager(registry, now_ms_fn=lambda: now_holder["t"])

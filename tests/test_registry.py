@@ -12,6 +12,7 @@ from game.buildings.mill import Mill
 from game.buildings.town_hall import TownHall
 from game.buildings.registry import BuildingRegistry
 from game.config import CONSTRUCTION_REQUIREMENTS, GRID_SIZE, near_town_hall_tile, town_hall_origin_tile
+from game.iron import IronDeposit
 from game.world import World
 from game.workers import Worker, WorkerManager
 
@@ -152,6 +153,8 @@ def test_stone_mine_does_not_require_town_hall_upgrade_level(registry: BuildingR
 def test_iron_mine_does_not_require_town_hall_upgrade_level(registry: BuildingRegistry) -> None:
     th = registry.place(TownHall, town_hall_origin_tile())
     assert th.level == 1
+    registry._world._iron.clear()  # noqa: SLF001
+    registry._world._iron[(8, 8)] = IronDeposit(blocking=False)  # noqa: SLF001
     assert registry.can_place(IronMine, (8, 8))
 
 

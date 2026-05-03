@@ -119,7 +119,7 @@ class GameInput:
         self._sync_panel_stale()
         if event.type == BUILD_MENU_SELECT:
             self._panel = None
-            if event.building_type in {"DEV_TREE", "DEV_STONE"}:
+            if event.building_type in {"DEV_TREE", "DEV_STONE", "DEV_IRON"}:
                 self._placement.select_dev(event.building_type)
             else:
                 self._placement.select(event.building_type)

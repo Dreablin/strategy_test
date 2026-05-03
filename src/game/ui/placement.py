@@ -22,6 +22,7 @@ from game.camera import Camera
 from game.buildings.stone_mine import StoneMine
 from game.config import GATHER_RESOURCE_SEARCH_RADIUS, TILE_H, TILE_W
 from game.iso import screen_to_world, world_to_screen
+from game.iron import IronDeposit
 from game.render import Renderer
 from game.stones import Stone
 from game.world import World
@@ -123,7 +124,7 @@ class PlacementController:
         self._registry = registry
         self._camera = camera if camera is not None else Camera()
         self._pending: Type[Building] | None = None
-        self._pending_dev: str | None = None  # DEV_TREE | DEV_STONE
+        self._pending_dev: str | None = None  # DEV_TREE | DEV_STONE | DEV_IRON
         self._hover: tuple[int, int] | None = None
 
     @property
@@ -154,7 +155,7 @@ class PlacementController:
         self._hover = None
 
     def select_dev(self, tool_type: str) -> None:
-        if tool_type not in {"DEV_TREE", "DEV_STONE"}:
+        if tool_type not in {"DEV_TREE", "DEV_STONE", "DEV_IRON"}:
             return
         self._pending = None
         self._pending_dev = tool_type
@@ -198,15 +199,37 @@ class PlacementController:
         if self._pending_dev == "DEV_TREE":
             if not self._world.is_in_grass(gx, gy):
                 return False
-            if self._world.is_occupied(gx, gy) or self._world.is_tree_blocking(gx, gy) or self._world.is_stone_blocking(gx, gy):
+            if (
+                self._world.is_occupied(gx, gy)
+                or self._world.is_tree_blocking(gx, gy)
+                or self._world.is_stone_blocking(gx, gy)
+                or self._world.iron_deposit_at(gx, gy) is not None
+            ):
                 return False
             return self._world.plant_tree(gx, gy, now_ms=0) is not None
         if self._pending_dev == "DEV_STONE":
             if not self._world.is_in_grass(gx, gy):
                 return False
-            if self._world.is_occupied(gx, gy) or self._world.is_tree_blocking(gx, gy) or self._world.is_stone_blocking(gx, gy):
+            if (
+                self._world.is_occupied(gx, gy)
+                or self._world.is_tree_blocking(gx, gy)
+                or self._world.is_stone_blocking(gx, gy)
+                or self._world.iron_deposit_at(gx, gy) is not None
+            ):
                 return False
             self._world._stones[(gx, gy)] = Stone(variant=random.randint(0, 4))  # noqa: SLF001
+            return True
+        if self._pending_dev == "DEV_IRON":
+            if not self._world.is_in_grass(gx, gy):
+                return False
+            if (
+                self._world.is_occupied(gx, gy)
+                or self._world.is_tree_blocking(gx, gy)
+                or self._world.is_stone_blocking(gx, gy)
+                or self._world.iron_deposit_at(gx, gy) is not None
+            ):
+                return False
+            self._world._iron[(gx, gy)] = IronDeposit(blocking=False, variant=random.randint(0, 4))  # noqa: SLF001
             return True
         return False
 
@@ -225,6 +248,7 @@ class PlacementController:
                 and not self._world.is_occupied(gx, gy)
                 and not self._world.is_tree_blocking(gx, gy)
                 and not self._world.is_stone_blocking(gx, gy)
+                and self._world.iron_deposit_at(gx, gy) is None
             )
         ox, oy = Renderer.map_origin(surface, self._world)
         cam_x, cam_y = (0, 0) if camera is None else camera.offset

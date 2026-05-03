@@ -14,6 +14,7 @@ _BUILDINGS_ROOT = _ASSETS_ROOT / "buildings"
 _TREES_ROOT = _ASSETS_ROOT / "trees"
 _WORLD_ROOT = _ASSETS_ROOT / "world"
 _STONE_ROOT = _WORLD_ROOT / "stone"
+_IRON_ROOT = _WORLD_ROOT / "iron"
 _NPC_ROOT = _ASSETS_ROOT / "npc"
 _ICONS_ROOT = _ASSETS_ROOT / "icons"
 _UI_ROOT = _ASSETS_ROOT / "ui"
@@ -145,6 +146,34 @@ def _procedural_stone_sprite(variant: int = 0) -> pygame.Surface:
     return surf
 
 
+def _procedural_iron_sprite(variant: int = 0, *, blocking: bool) -> pygame.Surface:
+    w, h = (54, 34) if blocking else (36, 22)
+    surf = pygame.Surface((w, h), pygame.SRCALPHA)
+    mid = w // 2
+    base = [(mid, 1), (w - 3, h // 2), (mid, h - 3), (3, h // 2)]
+    if blocking:
+        palettes = [
+            ((58, 48, 52), (170, 92, 74)),
+            ((64, 54, 56), (185, 110, 82)),
+            ((48, 52, 58), (150, 100, 96)),
+            ((70, 48, 44), (200, 120, 80)),
+            ((52, 44, 50), (160, 82, 92)),
+        ]
+    else:
+        palettes = [
+            ((92, 78, 72), (205, 132, 92)),
+            ((86, 82, 84), (190, 116, 104)),
+            ((76, 76, 82), (178, 122, 116)),
+            ((96, 70, 62), (214, 142, 88)),
+            ((80, 70, 76), (184, 98, 110)),
+        ]
+    dark, bright = palettes[max(0, min(4, int(variant)))]
+    pygame.draw.polygon(surf, dark, base)
+    pygame.draw.polygon(surf, bright, [(mid, 4), (w - 10, h // 2), (mid + 2, h - 8), (9, h // 2)])
+    pygame.draw.line(surf, (238, 178, 122), (mid - 8, h // 2), (mid + 8, h // 2 - 2), 2)
+    return surf
+
+
 def stone_sprite(variant: int = 0) -> pygame.Surface:
     """Load stone world sprite by variant, fallback to procedural."""
     return _stone_render_spec(variant)[0]
@@ -160,6 +189,18 @@ def stone_sprite_offset(variant: int = 0) -> tuple[int, int]:
     return _stone_render_spec(variant)[2]
 
 
+def iron_sprite(variant: int = 0, *, blocking: bool = False) -> pygame.Surface:
+    return _iron_render_spec(variant, blocking)[0]
+
+
+def iron_sprite_anchor(variant: int = 0, *, blocking: bool = False) -> tuple[int, int]:
+    return _iron_render_spec(variant, blocking)[1]
+
+
+def iron_sprite_offset(variant: int = 0, *, blocking: bool = False) -> tuple[int, int]:
+    return _iron_render_spec(variant, blocking)[2]
+
+
 @functools.lru_cache(maxsize=16)
 def _stone_render_spec(variant: int = 0) -> tuple[pygame.Surface, tuple[int, int], tuple[int, int]]:
     variant_key = max(0, min(4, int(variant)))
@@ -168,6 +209,18 @@ def _stone_render_spec(variant: int = 0) -> tuple[pygame.Surface, tuple[int, int
         loaded = _load_png(str(_STONE_ROOT / "default.png"))
     src = loaded if loaded is not None else _procedural_stone_sprite(variant_key)
     meta = _stone_meta_for(variant_key)
+    return _apply_stone_meta(src, meta)
+
+
+@functools.lru_cache(maxsize=32)
+def _iron_render_spec(variant: int = 0, blocking: bool = False) -> tuple[pygame.Surface, tuple[int, int], tuple[int, int]]:
+    variant_key = max(0, min(4, int(variant)))
+    folder = "blocking" if blocking else "buildable"
+    loaded = _load_png(str(_IRON_ROOT / folder / f"species_{variant_key}" / "default.png"))
+    if loaded is None:
+        loaded = _load_png(str(_IRON_ROOT / folder / "default.png"))
+    src = loaded if loaded is not None else _procedural_iron_sprite(variant_key, blocking=blocking)
+    meta = _iron_meta_for(variant_key, blocking=blocking)
     return _apply_stone_meta(src, meta)
 
 
@@ -240,6 +293,18 @@ def _load_stone_meta() -> dict:
     return parsed if isinstance(parsed, dict) else {}
 
 
+@functools.lru_cache(maxsize=1)
+def _load_iron_meta() -> dict:
+    path = _IRON_ROOT / "asset_meta.json"
+    if not path.exists():
+        return {}
+    try:
+        parsed = json.loads(path.read_text(encoding="utf-8-sig"))
+    except (json.JSONDecodeError, OSError):
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
+
+
 def _stone_meta_for(variant: int) -> dict:
     meta = _load_stone_meta()
     out: dict = {}
@@ -247,6 +312,24 @@ def _stone_meta_for(variant: int) -> dict:
     if isinstance(default, dict):
         out.update(default)
     variants = meta.get("variants")
+    if isinstance(variants, dict):
+        cfg = variants.get(str(variant))
+        if isinstance(cfg, dict):
+            out.update(cfg)
+    return out
+
+
+def _iron_meta_for(variant: int, *, blocking: bool) -> dict:
+    meta = _load_iron_meta()
+    group_key = "blocking" if blocking else "buildable"
+    group = meta.get(group_key)
+    if not isinstance(group, dict):
+        group = {}
+    out: dict = {}
+    default = group.get("default") or meta.get("default")
+    if isinstance(default, dict):
+        out.update(default)
+    variants = group.get("variants")
     if isinstance(variants, dict):
         cfg = variants.get(str(variant))
         if isinstance(cfg, dict):
@@ -726,8 +809,10 @@ def clear_asset_caches() -> None:
     _load_png_by_mtime.cache_clear()
     _load_tree_meta.cache_clear()
     _load_stone_meta.cache_clear()
+    _load_iron_meta.cache_clear()
     _tree_render_spec.cache_clear()
     _stone_render_spec.cache_clear()
+    _iron_render_spec.cache_clear()
     _load_building_meta_by_mtime.cache_clear()
     _load_fixed_icon.cache_clear()
     _worker_dot_by_mtime.cache_clear()

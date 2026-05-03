@@ -578,7 +578,7 @@ def test_school_panel_disabled_upgrade_click_does_not_start_construction() -> No
     assert school.construction_site is None
 
 
-def test_dev_tree_and_stone_tools_place_entities_via_input_click() -> None:
+def test_dev_tools_place_entities_via_input_click() -> None:
     surface = pygame.Surface((1280, 720))
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
@@ -593,7 +593,12 @@ def test_dev_tree_and_stone_tools_place_entities_via_input_click() -> None:
                 tx, ty = start_x + dx, start_y + dy
                 if not world.is_in_grass(tx, ty):
                     continue
-                if world.is_occupied(tx, ty) or world.is_tree_blocking(tx, ty) or world.is_stone_blocking(tx, ty):
+                if (
+                    world.is_occupied(tx, ty)
+                    or world.is_tree_blocking(tx, ty)
+                    or world.is_stone_blocking(tx, ty)
+                    or world.iron_deposit_at(tx, ty) is not None
+                ):
                     continue
                 return tx, ty
         raise AssertionError("No free tile found for dev tool placement")
@@ -612,6 +617,17 @@ def test_dev_tree_and_stone_tools_place_entities_via_input_click() -> None:
     inp.handle(surface, pygame.event.Event(BUILD_MENU_SELECT, building_type="DEV_STONE"))
     inp.handle(surface, pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=pos2))
     assert len(world.iter_stones()) == stones_before + 1
+
+    gx3, gy3 = _find_free_tile(*near_town_hall_tile(8, 2))
+    pos3 = _tile_center(surface, world, gx3, gy3)
+    iron_before = len(world.iter_iron_deposits())
+    inp.handle(surface, pygame.event.Event(BUILD_MENU_SELECT, building_type="DEV_IRON"))
+    inp.handle(surface, pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=pos3))
+    assert len(world.iter_iron_deposits()) == iron_before + 1
+    placed_x, placed_y = placement.hover_grid  # type: ignore[misc]
+    iron = world.iron_deposit_at(placed_x, placed_y)
+    assert iron is not None
+    assert iron.buildable
 
 
 def test_top_bar_boundary_click_is_treated_as_map() -> None:

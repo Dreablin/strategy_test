@@ -20,7 +20,7 @@ def _legacy_blocked(world: World) -> set[tuple[int, int]]:
     }
     trees = {tile for tile, _tree in world.iter_alive_trees()}
     stones = {tile for tile, _stone in world.iter_stones()}
-    return occupied | trees | stones
+    return occupied | trees | stones | world.iron_blocking_tiles()
 
 
 def test_blocked_tiles_matches_legacy_scan_across_world_mutations() -> None:

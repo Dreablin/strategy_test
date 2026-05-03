@@ -96,15 +96,16 @@ class BottomBar:
             return
 
         if menu == "dev":
-            entries = (("back", "Back"), ("tree", "Tree"), ("stone", "Stone"))
+            entries = (("back", "Back"), ("tree", "Tree"), ("stone", "Stone"), ("iron", "Iron"))
             rects = _button_rects(surface, len(entries))
             for rect, (key, label) in zip(rects, entries):
                 btn = rect.inflate(-6, -10)
                 pygame.draw.rect(surface, (36, 40, 48), btn, border_radius=6)
                 text = font.render(label, True, (220, 222, 230))
                 surface.blit(text, (btn.centerx - text.get_width() // 2, btn.top + 10))
-                if key in {"tree", "stone"}:
-                    icon = pygame.transform.smoothscale(resource_icon("wood" if key == "tree" else "stone"), (20, 20))
+                if key in {"tree", "stone", "iron"}:
+                    resource_key = {"tree": "wood", "stone": "stone", "iron": "iron"}[key]
+                    icon = pygame.transform.smoothscale(resource_icon(resource_key), (20, 20))
                     surface.blit(icon, (btn.centerx - 10, btn.bottom - 28))
             return
 
@@ -177,7 +178,7 @@ class BottomBar:
             return
 
         if menu == "dev":
-            entries = ("back", "tree", "stone")
+            entries = ("back", "tree", "stone", "iron")
             for rect, key in zip(_button_rects(surface, len(entries)), entries):
                 if not rect.collidepoint(pos):
                     continue
@@ -187,6 +188,8 @@ class BottomBar:
                     pygame.event.post(pygame.event.Event(BUILD_MENU_SELECT, building_type="DEV_TREE"))
                 elif key == "stone":
                     pygame.event.post(pygame.event.Event(BUILD_MENU_SELECT, building_type="DEV_STONE"))
+                elif key == "iron":
+                    pygame.event.post(pygame.event.Event(BUILD_MENU_SELECT, building_type="DEV_IRON"))
                 return
             return
 

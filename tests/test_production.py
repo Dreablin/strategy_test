@@ -5,6 +5,7 @@ from game.buildings.iron_mine import IronMine
 from game.buildings.stone_mine import StoneMine
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
+from game.iron import IronDeposit
 from game.world import World
 from game.workers import WorkerManager
 
@@ -116,10 +117,13 @@ def test_farm_has_no_passive_income_even_when_staffed() -> None:
 
 def test_iron_mine_has_no_passive_income_even_when_staffed() -> None:
     world = World(world_seed=2)
+    world._iron.clear()  # noqa: SLF001
     registry = BuildingRegistry(world)
     th = registry.place(TownHall, town_hall_origin_tile())
     th.level = 5
-    _mine = registry.place(IronMine, (10, 10))
+    mine_pos = (10, 10)
+    world._iron[mine_pos] = IronDeposit(blocking=False)  # noqa: SLF001
+    _mine = registry.place(IronMine, mine_pos)
     _mine.construction_site = None
     workers = WorkerManager(registry)
     assert workers.hire("MINER") is not None

@@ -16,7 +16,7 @@ def test_blocked_tiles_matches_union_after_registry_placement() -> None:
     registry.place(LumberCamp, near_town_hall_tile())
 
     blocked = world.blocked_tiles()
-    expected = world.occupied_tiles() | world.tree_tiles() | world.stone_tiles()
+    expected = world.occupied_tiles() | world.tree_tiles() | world.stone_tiles() | world.iron_blocking_tiles()
     assert blocked == expected
 
 
@@ -29,4 +29,4 @@ def test_blocked_tiles_does_not_call_is_occupied(monkeypatch: pytest.MonkeyPatch
     monkeypatch.setattr(World, "is_occupied", _fail)
     blocked = world.blocked_tiles()
 
-    assert blocked == (world.occupied_tiles() | world.tree_tiles() | world.stone_tiles())
+    assert blocked == (world.occupied_tiles() | world.tree_tiles() | world.stone_tiles() | world.iron_blocking_tiles())

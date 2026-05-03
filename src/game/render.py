@@ -8,6 +8,9 @@ from game.assets import (
     building_sprite,
     building_sprite_anchor,
     grass_tile,
+    iron_sprite,
+    iron_sprite_anchor,
+    iron_sprite_offset,
     stone_sprite,
     stone_sprite_anchor,
     stone_sprite_offset,
@@ -344,6 +347,38 @@ class Renderer:
             except TypeError:
                 # Backward compatibility for tests monkeypatching legacy 0-arg stone_sprite.
                 spr = stone_sprite()
+                anchor_x, anchor_y = spr.get_width() // 2, spr.get_height()
+                off_x, off_y = 0, 0
+            px = ox + cam_x + sx + TILE_W // 2 - anchor_x + off_x
+            py = oy + cam_y + sy + TILE_H - anchor_y + off_y
+            surface.blit(spr, (px, py))
+
+    @staticmethod
+    def draw_iron(surface: pygame.Surface, world: World, camera=None) -> None:
+        """Draw world-owned iron rifts and buildable ore fragments."""
+        ox, oy = Renderer.map_origin(surface, world)
+        cam_x, cam_y = (0, 0) if camera is None else camera.offset
+        gx_min, gy_min, gx_max, gy_max = Renderer.visible_tile_range(surface, world, camera)
+        if gx_max < gx_min or gy_max < gy_min:
+            return
+        entries = sorted(
+            [
+                item
+                for item in world.iter_iron_deposits()
+                if gx_min <= item[0][0] <= gx_max and gy_min <= item[0][1] <= gy_max
+            ],
+            key=lambda item: (item[0][0] + item[0][1], item[0][0]),
+        )
+        for (gx, gy), iron in entries:
+            sx, sy = world_to_screen(gx, gy)
+            variant = int(getattr(iron, "variant", 0))
+            blocking = bool(getattr(iron, "blocking", False))
+            try:
+                spr = iron_sprite(variant, blocking=blocking)
+                anchor_x, anchor_y = iron_sprite_anchor(variant, blocking=blocking)
+                off_x, off_y = iron_sprite_offset(variant, blocking=blocking)
+            except TypeError:
+                spr = iron_sprite()
                 anchor_x, anchor_y = spr.get_width() // 2, spr.get_height()
                 off_x, off_y = 0, 0
             px = ox + cam_x + sx + TILE_W // 2 - anchor_x + off_x

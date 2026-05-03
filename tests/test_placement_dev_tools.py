@@ -42,6 +42,22 @@ def test_dev_stone_tool_places_stone_on_free_tile() -> None:
     assert world.stone_at(gx, gy) is not None
 
 
+def test_dev_iron_tool_places_buildable_iron_on_free_tile() -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World(world_seed=2)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    world._iron.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    placement = PlacementController(world, registry)
+    placement.select_dev("DEV_IRON")
+    assert placement.try_place(surface, _cell_center_screen(surface, world, 14, 12))
+    gx, gy = placement.hover_grid  # type: ignore[misc]
+    iron = world.iron_deposit_at(gx, gy)
+    assert iron is not None
+    assert iron.buildable
+
+
 def test_dev_stone_tool_uses_random_variant(monkeypatch) -> None:
     surface = pygame.Surface((1280, 720))
     world = World(world_seed=2)
@@ -56,3 +72,20 @@ def test_dev_stone_tool_uses_random_variant(monkeypatch) -> None:
     stone = world.stone_at(gx, gy)
     assert stone is not None
     assert stone.variant == 3
+
+
+def test_dev_iron_tool_uses_random_variant(monkeypatch) -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World(world_seed=2)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    world._iron.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    placement = PlacementController(world, registry)
+    placement.select_dev("DEV_IRON")
+    monkeypatch.setattr("game.ui.placement.random.randint", lambda _a, _b: 4)
+    assert placement.try_place(surface, _cell_center_screen(surface, world, 16, 12))
+    gx, gy = placement.hover_grid  # type: ignore[misc]
+    iron = world.iron_deposit_at(gx, gy)
+    assert iron is not None
+    assert iron.variant == 4

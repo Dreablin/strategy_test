@@ -9,9 +9,18 @@ import secrets
 from typing import Any, cast
 
 from game.config import GRID_SIZE, town_hall_footprint_tiles
+from game.iron import IronDeposit
 from game.stones import Stone
 from game.trees import Tree, TreeStage
 
+_IRON_ZONE_COUNT = 2
+_IRON_NEAR_TH_RING_CHEB = 30
+_IRON_FAR_MIN_DISTANCE_FROM_TOWN_HALL = 31
+_IRON_CORE_RADIUS_MIN = 3
+_IRON_CORE_RADIUS_MAX = 5
+_IRON_FRAGMENT_RING_MIN = 2
+_IRON_FRAGMENT_RING_MAX = 4
+_IRON_FRAGMENT_PROBABILITY = 0.52
 _STONE_CENTER_COUNT = 6
 _STONE_GUARANTEED_TH_RING_CHEB = 20  # one cluster center: min Chebyshev to TH footprint == this
 _TREE_GROVE_COUNT = 8
@@ -291,18 +300,20 @@ def _iter_compact_priority_grove_tiles(
     return out
 
 
-def _world_generation_rng_pair(world_seed: int | None) -> tuple[random.Random, random.Random]:
-    """RNG for stones vs trees. ``world_seed`` set ⇒ reproducible (tests); else OS entropy."""
+def _world_generation_rngs(world_seed: int | None) -> tuple[random.Random, random.Random, random.Random]:
+    """RNGs for iron, stones, and trees. ``world_seed`` set ⇒ reproducible."""
     if world_seed is not None:
         s = (world_seed % (2**31 - 2)) + 1
         return (
+            random.Random(s * 1_311_223 + 71),
             random.Random(s * 1_047_269 + 17),
             random.Random(s * 912_367 + 43),
         )
-    buf = secrets.token_bytes(16)
+    buf = secrets.token_bytes(24)
     return (
         random.Random(int.from_bytes(buf[:8], "big")),
-        random.Random(int.from_bytes(buf[8:], "big")),
+        random.Random(int.from_bytes(buf[8:16], "big")),
+        random.Random(int.from_bytes(buf[16:], "big")),
     )
 
 
@@ -351,7 +362,7 @@ class _TreeLayerDict(dict[tuple[int, int], Tree]):
         super().clear()
         o = self._owner
         o._tree_tiles.clear()
-        o._blocked_tiles = set(o._occupied_tiles) | o._stone_tiles
+        o._blocked_tiles = set(o._occupied_tiles) | o._stone_tiles | o._iron_blocking_tiles
 
 
 class _StoneLayerDict(dict[tuple[int, int], Stone]):
@@ -386,7 +397,52 @@ class _StoneLayerDict(dict[tuple[int, int], Stone]):
         super().clear()
         o = self._owner
         o._stone_tiles.clear()
-        o._blocked_tiles = set(o._occupied_tiles) | o._tree_tiles
+        o._blocked_tiles = set(o._occupied_tiles) | o._tree_tiles | o._iron_blocking_tiles
+
+
+class _IronLayerDict(dict[tuple[int, int], IronDeposit]):
+    """`_iron` storage that keeps iron tile caches in sync on mutation."""
+
+    __slots__ = ("_owner",)
+
+    def __init__(self, owner: World) -> None:
+        super().__init__()
+        self._owner = owner
+
+    def __setitem__(self, key: tuple[int, int], value: IronDeposit) -> None:
+        old = self.get(key)
+        if old is not None and old.blocking:
+            self._owner._iron_blocking_tiles.discard(key)
+            self._owner._blocked_tiles.discard(key)
+        super().__setitem__(key, value)
+        self._owner._iron_tiles.add(key)
+        if value.blocking:
+            self._owner._iron_blocking_tiles.add(key)
+            self._owner._blocked_tiles.add(key)
+
+    def __delitem__(self, key: tuple[int, int]) -> None:
+        old = self.get(key)
+        super().__delitem__(key)
+        self._owner._iron_tiles.discard(key)
+        if old is not None and old.blocking:
+            self._owner._iron_blocking_tiles.discard(key)
+            self._owner._blocked_tiles.discard(key)
+
+    def pop(self, key: tuple[int, int], default: Any = _POP_MISSING) -> IronDeposit:
+        if key not in self:
+            if default is _POP_MISSING:
+                raise KeyError(key)
+            return cast("IronDeposit", default)
+        value = super().__getitem__(key)
+        del self[key]
+        return value
+
+    def clear(self) -> None:
+        super().clear()
+        o = self._owner
+        o._iron_tiles.clear()
+        o._iron_blocking_tiles.clear()
+        o._blocked_tiles = set(o._occupied_tiles) | o._tree_tiles | o._stone_tiles
 
 
 class World:
@@ -399,10 +455,14 @@ class World:
         "_tree_tiles",
         "_stones",
         "_stone_tiles",
+        "_iron",
+        "_iron_tiles",
+        "_iron_blocking_tiles",
         "_blocked_tiles",
         "_tree_reservations",
         "_stone_reservations",
         "_stone_centers",
+        "_iron_centers",
         "_tree_centers",
         "_scatter_trees_placed",
     )
@@ -416,13 +476,18 @@ class World:
         self._tree_tiles: set[tuple[int, int]] = set()
         self._stones = _StoneLayerDict(self)
         self._stone_tiles: set[tuple[int, int]] = set()
+        self._iron = _IronLayerDict(self)
+        self._iron_tiles: set[tuple[int, int]] = set()
+        self._iron_blocking_tiles: set[tuple[int, int]] = set()
         self._blocked_tiles: set[tuple[int, int]] = set()
         self._tree_reservations: dict[tuple[int, int], object] = {}
         self._stone_reservations: dict[tuple[int, int], object] = {}
         self._stone_centers: list[tuple[int, int]] = []
+        self._iron_centers: list[tuple[int, int]] = []
         self._tree_centers: list[tuple[int, int]] = []
         self._scatter_trees_placed = 0
-        stone_rng, tree_rng = _world_generation_rng_pair(world_seed)
+        iron_rng, stone_rng, tree_rng = _world_generation_rngs(world_seed)
+        self._init_iron(iron_rng)
         self._init_stones(stone_rng)
         self._init_trees(tree_rng)
 
@@ -464,8 +529,20 @@ class World:
         """Stone tiles; maintained incrementally."""
         return set(self._stone_tiles)
 
+    def iron_tiles(self) -> set[tuple[int, int]]:
+        """All iron tiles, both blocking rifts and buildable ore fragments."""
+        return set(self._iron_tiles)
+
+    def iron_blocking_tiles(self) -> set[tuple[int, int]]:
+        """Blocking central iron rift tiles."""
+        return set(self._iron_blocking_tiles)
+
+    def iron_buildable_tiles(self) -> set[tuple[int, int]]:
+        """Passable iron fragment tiles where iron mines may be placed."""
+        return self._iron_tiles - self._iron_blocking_tiles
+
     def blocked_tiles(self) -> set[tuple[int, int]]:
-        """Union of building footprints, alive trees, and stones — one set copy."""
+        """Union of building footprints, alive trees, stones, and blocking iron."""
         return set(self._blocked_tiles)
 
     def refresh_passability_tile_caches(self) -> None:
@@ -478,7 +555,11 @@ class World:
         """
         self._tree_tiles = {(gx, gy) for (gx, gy), tree in self._trees.items() if tree.alive}
         self._stone_tiles = set(self._stones.keys())
-        self._blocked_tiles = set(self._occupied_tiles) | self._tree_tiles | self._stone_tiles
+        self._iron_tiles = set(self._iron.keys())
+        self._iron_blocking_tiles = {tile for tile, iron in self._iron.items() if iron.blocking}
+        self._blocked_tiles = (
+            set(self._occupied_tiles) | self._tree_tiles | self._stone_tiles | self._iron_blocking_tiles
+        )
 
     def is_tree_blocking(self, gx: int, gy: int) -> bool:
         return self.tree_at(gx, gy) is not None
@@ -502,6 +583,8 @@ class World:
         if self.is_occupied(gx, gy):
             return None
         if self.is_stone_blocking(gx, gy):
+            return None
+        if self.iron_deposit_at(gx, gy) is not None:
             return None
         if self.tree_at(gx, gy) is not None:
             return None
@@ -582,6 +665,22 @@ class World:
     def is_stone_reserved(self, gx: int, gy: int) -> bool:
         return (gx, gy) in self._stone_reservations
 
+    def iron_deposit_at(self, gx: int, gy: int) -> IronDeposit | None:
+        if not self.is_in_grass(gx, gy):
+            return None
+        return self._iron.get((gx, gy))
+
+    def is_iron_blocking(self, gx: int, gy: int) -> bool:
+        iron = self.iron_deposit_at(gx, gy)
+        return iron is not None and iron.blocking
+
+    def is_iron_buildable(self, gx: int, gy: int) -> bool:
+        iron = self.iron_deposit_at(gx, gy)
+        return iron is not None and iron.buildable
+
+    def iter_iron_deposits(self) -> list[tuple[tuple[int, int], IronDeposit]]:
+        return list(self._iron.items())
+
     def mark_occupied(self, gx: int, gy: int, w: int, h: int) -> None:
         for ty in range(gy, gy + h):
             for tx in range(gx, gx + w):
@@ -617,6 +716,7 @@ class World:
                 self.is_in_grass(cx, cy)
                 and (cx, cy) not in protected_th
                 and not self.is_stone_blocking(cx, cy)
+                and self.iron_deposit_at(cx, cy) is None
                 and (cx, cy) not in self._trees
             ):
                 self._trees[(cx, cy)] = Tree(stage=TreeStage.ADULT, species=rng.randint(0, 2))
@@ -632,6 +732,8 @@ class World:
             if (x, y) in protected_th:
                 continue
             if self.is_stone_blocking(x, y):
+                continue
+            if self.iron_deposit_at(x, y) is not None:
                 continue
             if (x, y) in self._trees:
                 continue
@@ -681,6 +783,8 @@ class World:
                     continue
                 if self.is_stone_blocking(gx, gy):
                     continue
+                if self.iron_deposit_at(gx, gy) is not None:
+                    continue
                 if (gx, gy) in self._trees:
                     continue
                 eligible.append((gx, gy))
@@ -692,6 +796,56 @@ class World:
             self._trees[(gx, gy)] = Tree(stage=TreeStage.ADULT, species=rng.randint(0, 2))
             placed += 1
         self._scatter_trees_placed = placed
+
+    def _init_iron(self, rng: random.Random) -> None:
+        self._iron_centers = _pick_iron_zone_centers(self, rng)
+        protected_th = town_hall_footprint_tiles()
+        for cx, cy in self._iron_centers:
+            core_radius = rng.randint(_IRON_CORE_RADIUS_MIN, _IRON_CORE_RADIUS_MAX)
+            core_tiles = _iter_stone_cluster_pattern_tiles(cx, cy, core_radius, rng)
+            placed_core_tiles: set[tuple[int, int]] = set()
+            for x, y in core_tiles:
+                if not self.is_in_grass(x, y):
+                    continue
+                if (x, y) in protected_th:
+                    continue
+                self._iron[(x, y)] = IronDeposit(blocking=True, variant=rng.randint(0, 4))
+                placed_core_tiles.add((x, y))
+
+            if not placed_core_tiles:
+                continue
+            fragment_depth = rng.randint(_IRON_FRAGMENT_RING_MIN, _IRON_FRAGMENT_RING_MAX)
+            min_x = min(x for x, _y in placed_core_tiles) - fragment_depth
+            max_x = max(x for x, _y in placed_core_tiles) + fragment_depth
+            min_y = min(y for _x, y in placed_core_tiles) - fragment_depth
+            max_y = max(y for _x, y in placed_core_tiles) + fragment_depth
+            for layer in range(1, fragment_depth + 1):
+                layer_candidates: list[tuple[int, int]] = []
+                for y in range(min_y, max_y + 1):
+                    for x in range(min_x, max_x + 1):
+                        if not self.is_in_grass(x, y):
+                            continue
+                        if (x, y) in protected_th or (x, y) in self._iron:
+                            continue
+                        dist_to_core = min(max(abs(x - ix), abs(y - iy)) for ix, iy in placed_core_tiles)
+                        if dist_to_core != layer:
+                            continue
+                        if layer > 1 and not any(
+                            self.iron_deposit_at(x + dx, y + dy) is not None
+                            for dx in (-1, 0, 1)
+                            for dy in (-1, 0, 1)
+                            if dx != 0 or dy != 0
+                        ):
+                            continue
+                        layer_candidates.append((x, y))
+                rng.shuffle(layer_candidates)
+                for x, y in layer_candidates:
+                    if layer == 1:
+                        probability = 1.0
+                    else:
+                        probability = _IRON_FRAGMENT_PROBABILITY * (1.15 - 0.18 * (layer - 1))
+                    if rng.random() < probability:
+                        self._iron[(x, y)] = IronDeposit(blocking=False, variant=rng.randint(0, 4))
 
     def _init_stones(self, rng: random.Random) -> None:
         self._stone_centers, ring_center = _pick_stone_cluster_centers(self, rng)
@@ -710,6 +864,8 @@ class World:
                 if not relax_center_clear and max(abs(x - mid), abs(y - mid)) <= center_clear_radius:
                     continue
                 if self.is_tree_blocking(x, y):
+                    continue
+                if self.iron_deposit_at(x, y) is not None:
                     continue
                 if (x, y) in self._stones:
                     continue
@@ -851,6 +1007,42 @@ def _pick_stone_cluster_centers(
         centers.extend(more)
         exclude.update(more)
     return centers, ring_center
+
+
+def _pick_iron_zone_centers(world: World, rng: random.Random) -> list[tuple[int, int]]:
+    protected = town_hall_footprint_tiles()
+
+    def min_th(cx: int, cy: int) -> int:
+        return _min_chebyshev_to_tiles(cx, cy, protected)
+
+    near = [
+        (cx, cy)
+        for cy in range(GRID_SIZE)
+        for cx in range(GRID_SIZE)
+        if world.is_in_grass(cx, cy) and min_th(cx, cy) == _IRON_NEAR_TH_RING_CHEB
+    ]
+    far = [
+        (cx, cy)
+        for cy in range(GRID_SIZE)
+        for cx in range(GRID_SIZE)
+        if world.is_in_grass(cx, cy) and min_th(cx, cy) >= _IRON_FAR_MIN_DISTANCE_FROM_TOWN_HALL
+    ]
+    rng.shuffle(near)
+    rng.shuffle(far)
+    centers: list[tuple[int, int]] = []
+    if near:
+        centers.append(near[0])
+    min_sep = _IRON_CORE_RADIUS_MAX * 2 + _IRON_FRAGMENT_RING_MAX + 2
+    for candidate in far:
+        if all(_chebyshev_point_distance(candidate, existing) >= min_sep for existing in centers):
+            centers.append(candidate)
+            break
+    if len(centers) < _IRON_ZONE_COUNT:
+        for candidate in far:
+            if candidate not in centers:
+                centers.append(candidate)
+                break
+    return centers[:_IRON_ZONE_COUNT]
 
 
 def _pick_far_cluster_centers(

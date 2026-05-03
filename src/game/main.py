@@ -72,6 +72,7 @@ def main() -> int:
             screen.fill((20, 24, 22))
             Renderer.draw_world(screen, world, camera)
             Renderer.draw_buildings(screen, world, registry, worker_manager, camera)
+            Renderer.draw_iron(screen, world, camera)
             Renderer.draw_stones(screen, world, camera)
             Renderer.draw_workers(screen, world, registry, worker_manager, camera)
             Renderer.draw_trees(screen, world, camera)

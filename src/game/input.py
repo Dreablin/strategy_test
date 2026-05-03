@@ -5,6 +5,7 @@ from __future__ import annotations
 import pygame
 
 from game import dev_asset_reload
+from game.buildings.bakery import Bakery
 from game.buildings.base import Building
 from game.buildings.forester_hut import ForesterHut
 from game.buildings.iron_mine import IronMine
@@ -15,10 +16,12 @@ from game.buildings.registry import BuildingRegistry
 from game.buildings.school import School
 from game.buildings.sawmill import Sawmill
 from game.buildings.town_hall import TownHall
+from game.buildings.well import Well
 from game.camera import Camera
 from game.iso import screen_to_world
 from game.render import Renderer
 from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT, BottomBar
+from game.ui.bakery_panel import BakeryPanel
 from game.ui.building_panel import BuildingPanel
 from game.ui.construction_panel import ConstructionPanel
 from game.ui.forester_hut_panel import ForesterHutPanel
@@ -30,6 +33,7 @@ from game.ui.school_panel import SchoolPanel
 from game.ui.sawmill_panel import SawmillPanel
 from game.ui.placement import PlacementController
 from game.ui.town_hall_panel import TownHallPanel
+from game.ui.well_panel import WellPanel
 from game.world import World
 from game.workers import WorkerManager
 
@@ -277,6 +281,35 @@ class GameInput:
                 worker_status=worker_status,
                 production_status=production_status,
                 now_ms=pygame.time.get_ticks(),
+            )
+            return
+        if BakeryPanel.supports_building(self._panel):
+            assert isinstance(self._panel, Bakery)
+            worker_status = self._panel_worker_status()
+            production_status = self._panel_production_status()
+            BakeryPanel.draw(
+                surface,
+                self._panel,
+                worker_assigned=worker_status != "empty",
+                worker_status=worker_status,
+                production_status=production_status,
+                now_ms=pygame.time.get_ticks(),
+            )
+            return
+        if WellPanel.supports_building(self._panel):
+            assert isinstance(self._panel, Well)
+            worker_status = self._panel_worker_status()
+            production_status = self._panel_production_status()
+            WellPanel.draw(
+                surface,
+                self._panel,
+                worker_assigned=worker_status != "empty",
+                worker_status=worker_status,
+                production_status=production_status,
+                draw_progress=self._worker_manager.water_draw_progress_for_building(
+                    self._panel,
+                    pygame.time.get_ticks(),
+                ),
             )
             return
         worker_status = self._panel_worker_status()
@@ -561,6 +594,63 @@ class GameInput:
                         self._sync_assignments()
                     elif action == "toggle_active" and self._panel is not None:
                         self._panel.set_active(not self._panel.active)
+                    return
+            if BakeryPanel.supports_building(self._panel):
+                assert isinstance(self._panel, Bakery)
+                worker_status = self._panel_worker_status()
+                production_status = self._panel_production_status()
+                layout = BakeryPanel.layout(
+                    surface,
+                    self._panel,
+                    worker_assigned=worker_status != "empty",
+                    production_status=production_status,
+                )
+                if layout.frame.collidepoint(pos):
+                    action = BakeryPanel.click_action(
+                        surface,
+                        pos,
+                        self._panel,
+                        worker_assigned=worker_status != "empty",
+                        production_status=production_status,
+                    )
+                    if action == "close":
+                        self._panel = None
+                    elif action == "upgrade" and self._panel is not None:
+                        if self._registry.upgrade_building(self._panel):
+                            self._sync_assignments()
+                    elif action == "demolish" and self._panel is not None:
+                        b = self._panel
+                        self._registry.demolish(b, self._worker_manager)
+                        self._panel = None
+                        self._sync_assignments()
+                    elif action == "toggle_active" and self._panel is not None:
+                        self._panel.set_active(not self._panel.active)
+                    return
+            if WellPanel.supports_building(self._panel):
+                assert isinstance(self._panel, Well)
+                worker_status = self._panel_worker_status()
+                production_status = self._panel_production_status()
+                layout = WellPanel.layout(
+                    surface,
+                    self._panel,
+                    worker_assigned=worker_status != "empty",
+                    production_status=production_status,
+                )
+                if layout.frame.collidepoint(pos):
+                    action = WellPanel.click_action(
+                        surface,
+                        pos,
+                        self._panel,
+                        worker_assigned=worker_status != "empty",
+                        production_status=production_status,
+                    )
+                    if action == "close":
+                        self._panel = None
+                    elif action == "demolish" and self._panel is not None:
+                        b = self._panel
+                        self._registry.demolish(b, self._worker_manager)
+                        self._panel = None
+                        self._sync_assignments()
                     return
             layout = BuildingPanel.layout(
                 surface,

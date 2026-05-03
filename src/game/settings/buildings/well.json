@@ -1,0 +1,6 @@
+{
+  "building_type": "WELL",
+  "levels": {
+    "1": {"cost": {"wood": 1, "boards": 2}, "build_time_ms": 12000}
+  }
+}

@@ -31,6 +31,8 @@ _BUILDING_FOLDER: dict[str, str] = {
     "SCHOOL": "school",
     "HOUSE": "house",
     "MILL": "windmill",
+    "BAKERY": "bakery",
+    "WELL": "well",
 }
 
 _WORKER_FOLDER: dict[str, str] = {
@@ -43,6 +45,7 @@ _WORKER_FOLDER: dict[str, str] = {
     "BUILDER": "builder",
     "SAWYER": "sawyer",
     "MILLER": "miller",
+    "BAKER": "baker",
 }
 
 
@@ -287,6 +290,8 @@ def _building_palette(b_type: str) -> tuple[tuple[int, int, int], tuple[int, int
         "farm": ((170, 150, 90), (90, 120, 60)),
         "forester_hut": ((126, 112, 78), (68, 86, 54)),
         "mill": ((210, 190, 150), (112, 88, 58)),
+        "bakery": ((214, 154, 118), (126, 72, 58)),
+        "well": ((104, 128, 152), (48, 70, 92)),
         "school": ((120, 124, 168), (62, 66, 108)),
         "house": ((172, 142, 126), (110, 86, 76)),
     }
@@ -730,6 +735,7 @@ def _worker_color(w_type: str) -> tuple[int, int, int]:
         "BUILDER": (186, 132, 96),
         "SAWYER": (200, 160, 80),
         "MILLER": (224, 210, 166),
+        "BAKER": (232, 184, 132),
     }
     return colors.get(t, (200, 200, 220))
 
@@ -852,6 +858,8 @@ def _resource_colors(name: str) -> tuple[int, int, int]:
         "iron": (190, 120, 110),
         "boards": (210, 156, 102),
         "flour": (238, 228, 192),
+        "bread": (194, 128, 72),
+        "water": (70, 150, 220),
     }
     return colors.get(key, (160, 160, 200))
 

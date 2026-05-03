@@ -22,7 +22,8 @@
       "stone": 10,
       "iron": 5,
       "boards": 10,
-      "flour": 0
+      "flour": 0,
+      "bread": 0
     }
   },
   "gates": {
@@ -31,7 +32,9 @@
       "IRON_MINE": 1,
       "FORESTER_HUT": 1,
       "SCHOOL": 1,
-      "HOUSE": 1
+      "HOUSE": 1,
+      "BAKERY": 1,
+      "WELL": 1
     },
     "hire_min_town_hall_level": {
       "LUMBERJACK": 1,
@@ -42,7 +45,8 @@
       "CARRIER": 1,
       "BUILDER": 1,
       "SAWYER": 1,
-      "MILLER": 1
+      "MILLER": 1,
+      "BAKER": 1
     }
   },
   "levels": {

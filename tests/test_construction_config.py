@@ -14,13 +14,16 @@ def test_construction_requirements_cover_all_building_types() -> None:
         "HOUSE",
         "SAWMILL",
         "MILL",
+        "BAKERY",
+        "WELL",
     }
     assert set(config.CONSTRUCTION_REQUIREMENTS) == expected
 
 
 def test_construction_requirements_have_levels_1_to_10() -> None:
     for b_type, levels in config.CONSTRUCTION_REQUIREMENTS.items():
-        assert set(levels) == set(range(1, 11)), b_type
+        expected = {1} if b_type == "WELL" else set(range(1, 11))
+        assert set(levels) == expected, b_type
 
 
 def test_construction_spec_values_are_non_negative_and_have_build_time() -> None:

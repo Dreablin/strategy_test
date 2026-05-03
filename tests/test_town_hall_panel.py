@@ -3,6 +3,7 @@
 import pygame
 
 from game.buildings.town_hall import TownHall
+from game.ui import town_hall_panel
 from game.ui.town_hall_panel import TownHallPanel
 
 
@@ -60,6 +61,11 @@ def test_town_hall_panel_has_secondary_storage_frame_and_click_is_non_closing() 
         )
         is None
     )
+
+
+def test_town_hall_storage_rows_include_bread() -> None:
+    keys = [key for key, _label in town_hall_panel._STORAGE_ROWS]  # noqa: SLF001
+    assert "bread" in keys
 
 
 def test_town_hall_upgrade_button_is_enabled_without_cost_checks() -> None:

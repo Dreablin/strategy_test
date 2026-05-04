@@ -21,6 +21,14 @@ Current building folders:
 - `assets/buildings/stone_mine/`
 - `assets/buildings/iron_mine/`
 - `assets/buildings/farm/`
+- `assets/buildings/forester_hut/`
+- `assets/buildings/sawmill/`
+- `assets/buildings/windmill/`
+- `assets/buildings/bakery/`
+- `assets/buildings/chicken_farm/`
+- `assets/buildings/school/`
+- `assets/buildings/house/`
+- `assets/buildings/well/`
 
 ## NPC
 
@@ -33,6 +41,7 @@ Current NPC folders:
 - `assets/npc/stonecutter/`
 - `assets/npc/miner/`
 - `assets/npc/farmer/`
+- `assets/npc/animal_herder/`
 
 ## Naming and mapping rules
 
@@ -43,11 +52,20 @@ Current NPC folders:
   - `STONE_MINE -> stone_mine`
   - `IRON_MINE -> iron_mine`
   - `FARM -> farm`
+  - `FORESTER_HUT -> forester_hut`
+  - `SAWMILL -> sawmill`
+  - `MILL -> windmill`
+  - `BAKERY -> bakery`
+  - `CHICKEN_FARM -> chicken_farm`
+  - `SCHOOL -> school`
+  - `HOUSE -> house`
+  - `WELL -> well`
 - NPC folder names map to worker type values:
   - `LUMBERJACK -> lumberjack`
   - `STONECUTTER -> stonecutter`
   - `MINER -> miner`
   - `FARMER -> farmer`
+  - `ANIMAL_HERDER -> animal_herder`
 
 ## Required filenames (active loader contract)
 
@@ -127,12 +145,14 @@ Load order:
     - `stonecutter.png`
     - `miner.png`
     - `farmer.png`
+    - `animal_herder.png`
 - `assets/icons/hire/`
   - `<worker_type>.png` files (hire/action icon for each worker type):
     - `lumberjack.png`
     - `stonecutter.png`
     - `miner.png`
     - `farmer.png`
+    - `animal_herder.png`
 
 Runtime behavior:
 

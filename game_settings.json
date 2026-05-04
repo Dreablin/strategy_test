@@ -23,7 +23,8 @@
       "iron": 5,
       "boards": 10,
       "flour": 0,
-      "bread": 0
+      "bread": 0,
+      "chicken": 0
     }
   },
   "gates": {
@@ -34,6 +35,7 @@
       "SCHOOL": 1,
       "HOUSE": 1,
       "BAKERY": 1,
+      "CHICKEN_FARM": 1,
       "WELL": 1
     },
     "hire_min_town_hall_level": {
@@ -41,6 +43,7 @@
       "STONECUTTER": 3,
       "MINER": 5,
       "FARMER": 1,
+      "ANIMAL_HERDER": 1,
       "FORESTER": 1,
       "CARRIER": 1,
       "BUILDER": 1,

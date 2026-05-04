@@ -50,6 +50,8 @@ BAKERY_CYCLE_MS = 45_000
 SAWYER_REST_MS = 10_000
 MILLER_REST_MS = SAWYER_REST_MS
 BAKER_REST_MS = 10_000
+CHICKEN_FARM_CYCLE_MS = BAKERY_CYCLE_MS
+ANIMAL_HERDER_REST_MS = BAKER_REST_MS
 FARMER_REST_MS = 5_000
 FARMER_ACTION_MS = 5_000
 FARMER_FIELD_RADIUS = 10
@@ -255,6 +257,28 @@ def bakery_output_transport_tasks(registry: Any) -> list[TransportTask]:
             continue
         for _ in range(amount):
             tasks.append(TransportTask(resource="bread", source=building, target=town_hall, priority=0))
+    return tasks
+
+
+def chicken_farm_output_transport_tasks(registry: Any) -> list[TransportTask]:
+    """Build low-priority chicken export tasks from chicken farms to Town Hall warehouse."""
+    if registry is None:
+        return []
+    buildings = list(registry.all())
+    town_hall = next((b for b in buildings if b.type_tag == "TOWN_HALL"), None)
+    if town_hall is None:
+        return []
+    tasks: list[TransportTask] = []
+    for building in buildings:
+        if building.type_tag != "CHICKEN_FARM":
+            continue
+        if getattr(building, "is_under_construction", False):
+            continue
+        amount = int(getattr(building, "output_amount", lambda: 0)())
+        if amount <= 0:
+            continue
+        for _ in range(amount):
+            tasks.append(TransportTask(resource="chicken", source=building, target=town_hall, priority=0))
     return tasks
 
 
@@ -547,12 +571,13 @@ class WorkerManager:
         "STONECUTTER": "STONE_MINE",
         "MINER": "IRON_MINE",
         "FARMER": "FARM",
+        "ANIMAL_HERDER": "CHICKEN_FARM",
         "FORESTER": "FORESTER_HUT",
         "SAWYER": "SAWMILL",
         "MILLER": "MILL",
         "BAKER": "BAKERY",
     }
-    _HIRABLE_WORKERS: set[str] = set(_WORKER_TO_BUILDING) | {"CARRIER", "BUILDER", "BAKER"}
+    _HIRABLE_WORKERS: set[str] = set(_WORKER_TO_BUILDING) | {"CARRIER", "BUILDER", "BAKER", "ANIMAL_HERDER"}
 
     def __init__(
         self,
@@ -575,6 +600,7 @@ class WorkerManager:
             "SAWYER": self._update_sawyer,
             "MILLER": self._update_miller,
             "BAKER": self._update_baker,
+            "ANIMAL_HERDER": self._update_animal_herder,
             "FARMER": self._update_farmer,
         }
         if registry is not None and hasattr(registry, "bind_worker_manager"):
@@ -781,6 +807,20 @@ class WorkerManager:
                 return "Output full"
             if int(getattr(building, "input_amount", lambda: 0)()) <= 0:
                 return "No flour"
+            if int(getattr(building, "water_amount", lambda: 0)()) <= 0:
+                return "No water"
+            if worker.state == "processing":
+                return "Processing"
+            return "Ready"
+        if building.type_tag == "CHICKEN_FARM":
+            if worker.state == "resting":
+                return "Resting"
+            if int(getattr(building, "output_amount", lambda: 0)()) >= int(
+                getattr(building, "output_capacity", lambda: 0)()
+            ):
+                return "Output full"
+            if int(getattr(building, "input_amount", lambda: 0)()) <= 0:
+                return "No grain"
             if int(getattr(building, "water_amount", lambda: 0)()) <= 0:
                 return "No water"
             if worker.state == "processing":
@@ -1089,6 +1129,7 @@ class WorkerManager:
         self._enqueue_bakery_refill_tasks()
         self._enqueue_water_input_tasks()
         self._enqueue_bakery_output_tasks()
+        self._enqueue_chicken_farm_output_tasks()
         self._enqueue_iron_mine_output_tasks()
         self._enqueue_farm_wheat_output_tasks()
         completed_buildings: list[Building] = []
@@ -1352,6 +1393,8 @@ class WorkerManager:
                 has_storage_source = int(task.source.output_amount()) > 0  # type: ignore[attr-defined]
             elif task.resource == "bread" and hasattr(task.source, "output_amount"):
                 has_storage_source = int(task.source.output_amount()) > 0  # type: ignore[attr-defined]
+            elif task.resource == "chicken" and hasattr(task.source, "output_amount"):
+                has_storage_source = int(task.source.output_amount()) > 0  # type: ignore[attr-defined]
             elif task.resource == "water" and task.source.type_tag == "WELL":
                 has_storage_source = not bool(getattr(task.source, "busy", False))
             has_warehouse_source = hasattr(task.source, "warehouse_amount") and int(
@@ -1583,6 +1626,24 @@ class WorkerManager:
                                 worker.state = "idle"
                                 worker.idle = True
                         return
+                elif task.resource == "chicken" and hasattr(task.source, "take_chicken_out"):
+                    try:
+                        task.source.take_chicken_out(1)  # type: ignore[attr-defined]
+                    except ValueError:
+                        self._transport_queue.append(task)
+                        worker.transport_task = None
+                        worker.state = "idle"
+                        worker.idle = True
+                        next_task = self._next_transport_task()
+                        if next_task is not None:
+                            worker.transport_task = next_task
+                            worker.carrying = None
+                            if not self._start_move_to_building(worker, next_task.source, now_ms):
+                                self._transport_queue.insert(0, next_task)
+                                worker.transport_task = None
+                                worker.state = "idle"
+                                worker.idle = True
+                        return
                 elif not hasattr(task.source, "take_from_warehouse"):
                     worker.transport_task = None
                     worker.state = "idle"
@@ -1641,6 +1702,8 @@ class WorkerManager:
                     task.source.add_flour_out(1)  # type: ignore[attr-defined]
                 elif task.resource == "bread" and hasattr(task.source, "add_bread_out"):
                     task.source.add_bread_out(1)  # type: ignore[attr-defined]
+                elif task.resource == "chicken" and hasattr(task.source, "add_chicken_out"):
+                    task.source.add_chicken_out(1)  # type: ignore[attr-defined]
                 elif hasattr(task.source, "add_to_storage"):
                     task.source.add_to_storage(1)  # type: ignore[attr-defined]
                 elif hasattr(task.source, "add_to_warehouse"):
@@ -1989,6 +2052,39 @@ class WorkerManager:
         if self._registry is None:
             return
         desired = bakery_output_transport_tasks(self._registry)
+        desired_counts: dict[tuple[int, int, str, int], int] = {}
+        for task in desired:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            desired_counts[key] = desired_counts.get(key, 0) + 1
+
+        existing_counts: dict[tuple[int, int, str, int], int] = {}
+        for task in self._transport_queue:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+        for worker in self._workers:
+            task = worker.transport_task
+            if task is None:
+                continue
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+
+        for task in desired:
+            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            if existing_counts.get(key, 0) >= desired_counts.get(key, 0):
+                continue
+            self.enqueue_transport_task(
+                resource=task.resource,
+                source=task.source,
+                target=task.target,
+                amount=1,
+                priority=task.priority,
+            )
+            existing_counts[key] = existing_counts.get(key, 0) + 1
+
+    def _enqueue_chicken_farm_output_tasks(self) -> None:
+        if self._registry is None:
+            return
+        desired = chicken_farm_output_transport_tasks(self._registry)
         desired_counts: dict[tuple[int, int, str, int], int] = {}
         for task in desired:
             key = (id(task.source), id(task.target), task.resource, int(task.priority))
@@ -2693,6 +2789,71 @@ class WorkerManager:
         if int(getattr(bakery, "processing_started_ms", 0)) <= 0:
             bakery.processing_started_ms = int(now_ms)
         bakery.processing_duration_ms = BAKERY_CYCLE_MS
+        worker.state = "processing"
+        worker.idle = False
+
+    @staticmethod
+    def _update_animal_herder(worker: Worker, now_ms: int, world: Any) -> None:
+        _ = world
+        farm = worker.assigned_building
+        if farm is None or farm.type_tag != "CHICKEN_FARM":
+            return
+        if farm.is_under_construction:
+            return
+        center_tile = building_center_tile(farm)
+        if worker.state in {"working", "resting", "processing"} and worker.current_tile != center_tile:
+            worker.current_tile = center_tile
+            if worker.state == "processing":
+                worker.state = "working"
+                farm.processing_started_ms = 0
+            return
+        active = bool(getattr(farm, "active", False))
+        if worker.state == "resting":
+            if now_ms < worker.camp_wait_until_ms:
+                return
+            if not active:
+                worker.current_tile = center_tile
+                return
+            worker.state = "working"
+            worker.camp_wait_until_ms = 0
+            worker.idle = False
+        if worker.state == "resting":
+            return
+        if worker.state == "processing":
+            started = int(getattr(farm, "processing_started_ms", 0))
+            if started <= 0:
+                worker.state = "working"
+                return
+            farm.processing_duration_ms = CHICKEN_FARM_CYCLE_MS
+            if now_ms - started < CHICKEN_FARM_CYCLE_MS:
+                return
+            if (
+                getattr(farm, "has_recipe_inputs", lambda: False)()
+                and getattr(farm, "output_amount", lambda: 0)()
+                < getattr(farm, "output_capacity", lambda: 0)()
+            ):
+                farm.take_wheat_in(1)
+                farm.take_water_in(1)
+                farm.add_chicken_out(1)
+            farm.processing_started_ms = 0
+            worker.state = "resting"
+            worker.camp_wait_until_ms = int(now_ms) + ANIMAL_HERDER_REST_MS
+            worker.current_tile = center_tile
+            worker.idle = False
+            return
+        if not active:
+            worker.state = "resting"
+            worker.current_tile = center_tile
+            return
+        if not getattr(farm, "has_recipe_inputs", lambda: False)():
+            return
+        if getattr(farm, "output_amount", lambda: 0)() >= getattr(farm, "output_capacity", lambda: 0)():
+            return
+        if worker.state != "working":
+            return
+        if int(getattr(farm, "processing_started_ms", 0)) <= 0:
+            farm.processing_started_ms = int(now_ms)
+        farm.processing_duration_ms = CHICKEN_FARM_CYCLE_MS
         worker.state = "processing"
         worker.idle = False
 

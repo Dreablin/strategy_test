@@ -20,6 +20,7 @@ class TownHall(Building):
             "boards": 0,
             "flour": 0,
             "bread": 0,
+            "chicken": 0,
         }
 
     @classmethod

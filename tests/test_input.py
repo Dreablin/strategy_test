@@ -3,6 +3,7 @@
 import pygame
 
 from game.buildings.lumber_camp import LumberCamp
+from game.buildings.chicken_farm import ChickenFarm
 from game.buildings.mill import Mill
 from game.buildings.registry import BuildingRegistry
 from game.buildings.school import School
@@ -15,6 +16,7 @@ from game.render import Renderer
 from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT
 from game.ui.building_panel import BuildingPanel
 from game.ui.construction_panel import ConstructionPanel
+from game.ui.chicken_farm_panel import ChickenFarmPanel
 from game.ui.lumber_camp_panel import LumberCampPanel
 from game.ui.mill_panel import MillPanel
 from game.ui.placement import PlacementController
@@ -190,6 +192,18 @@ def test_build_menu_select_mill_sets_pending_type() -> None:
     inp.handle(surface, pygame.event.Event(BUILD_MENU_SELECT, building_type="MILL"))
     assert placement.pending_type is not None
     assert placement.pending_type.type_tag == "MILL"
+
+
+def test_build_menu_select_chicken_farm_sets_pending_type() -> None:
+    surface = pygame.Surface((640, 480))
+    world = World()
+    registry = BuildingRegistry(world)
+    camera = Camera()
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(), camera)
+    inp.handle(surface, pygame.event.Event(BUILD_MENU_SELECT, building_type="CHICKEN_FARM"))
+    assert placement.pending_type is not None
+    assert placement.pending_type.type_tag == "CHICKEN_FARM"
 
 
 def test_under_construction_building_uses_construction_panel_draw(monkeypatch) -> None:
@@ -379,6 +393,54 @@ def test_mill_panel_toggle_click_toggles_active() -> None:
     assert mill.active is False
 
 
+def test_chicken_farm_panel_draw_routing(monkeypatch) -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World(world_seed=2)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    world._iron.clear()  # noqa: SLF001
+    world._gold.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    farm = registry.place(ChickenFarm, near_town_hall_tile(22, 8))
+    farm.construction_site = None
+    camera = Camera()
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(registry), camera)
+    inp._panel = farm  # noqa: SLF001
+    called = {"farm": 0}
+
+    def _draw_farm(*args, **kwargs):
+        called["farm"] += 1
+
+    monkeypatch.setattr(ChickenFarmPanel, "draw", staticmethod(_draw_farm))
+    inp.draw_panel(surface)
+    assert called["farm"] == 1
+
+
+def test_chicken_farm_panel_toggle_click_toggles_active() -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World(world_seed=2)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    world._iron.clear()  # noqa: SLF001
+    world._gold.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    farm = registry.place(ChickenFarm, near_town_hall_tile(22, 8))
+    farm.construction_site = None
+    camera = Camera()
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(registry), camera)
+    inp._panel = farm  # noqa: SLF001
+    layout = ChickenFarmPanel.layout(surface, farm, worker_assigned=False, production_status="No grain")
+    inp.handle(
+        surface,
+        pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=layout.toggle.center),
+    )
+    assert farm.active is False
+
+
 def test_place_calls_reassign_all_and_assigns_idle_worker() -> None:
     surface = pygame.Surface((1280, 720))
     world = World(world_seed=2)
@@ -520,6 +582,33 @@ def test_school_panel_click_in_hud_area_is_handled_by_panel() -> None:
 
     assert inp.panel_building is school
     assert school.training_queue()[-1].type_tag == "FORESTER"
+
+
+def test_school_panel_can_enqueue_animal_herder_via_input_handler() -> None:
+    surface = pygame.Surface((640, 240))
+    world = World(world_seed=2)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    school = registry.place(School, near_town_hall_tile(12, 8))
+    school.construction_site = None
+    camera = Camera()
+    placement = PlacementController(world, registry, camera)
+    workers = WorkerManager(registry)
+    inp = GameInput(world, registry, placement, workers, camera)
+    inp._panel = school  # noqa: SLF001
+    layout = SchoolPanel.layout(surface, school, worker_assigned=False, worker_manager=workers)
+    herder_button = next(rect for worker_type, rect in layout.hire_buttons if worker_type == "ANIMAL_HERDER")
+    assert herder_button.centery >= surface.get_height() - BAR_HEIGHT
+
+    inp.handle(
+        surface,
+        pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=herder_button.center),
+    )
+
+    assert inp.panel_building is school
+    assert school.training_queue()[-1].type_tag == "ANIMAL_HERDER"
 
 
 def test_school_panel_upgrade_click_starts_upgrade_construction() -> None:

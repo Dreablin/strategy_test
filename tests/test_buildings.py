@@ -4,6 +4,7 @@ import pytest
 
 from game.construction import ConstructionSite
 from game.buildings.farm import Farm
+from game.buildings.chicken_farm import ChickenFarm
 from game.config import town_hall_origin_tile
 from game.buildings.iron_mine import IronMine
 from game.buildings.lumber_camp import LumberCamp
@@ -23,6 +24,7 @@ from game.world import World
         (StoneMine, "STONE_MINE"),
         (IronMine, "IRON_MINE"),
         (Farm, "FARM"),
+        (ChickenFarm, "CHICKEN_FARM"),
         (Mill, "MILL"),
         (Well, "WELL"),
     ],
@@ -39,6 +41,7 @@ def test_building_type_tag(cls: type, expected_type: str) -> None:
         (StoneMine, (2, 2)),
         (IronMine, (2, 2)),
         (Farm, (2, 2)),
+        (ChickenFarm, (2, 2)),
         (Mill, (2, 2)),
         (Well, (1, 1)),
     ],
@@ -53,6 +56,7 @@ def test_all_production_buildings_have_no_passive_income() -> None:
     assert StoneMine.income(3) == {}
     assert IronMine.income(2) == {}
     assert Farm.income(5) == {}
+    assert ChickenFarm.income(5) == {}
     assert Mill.income(5) == {}
     assert Well.income(1) == {}
 
@@ -175,23 +179,42 @@ def test_town_hall_exposes_warehouse_api() -> None:
     assert th.warehouse_amount("wheat") == 0
     assert th.warehouse_amount("boards") == 0
     assert th.warehouse_amount("flour") == 0
+    assert th.warehouse_amount("chicken") == 0
     th.add_to_warehouse("wood", 2)
     th.add_to_warehouse("wheat", 1)
     th.add_to_warehouse("boards", 3)
     th.add_to_warehouse("flour", 4)
+    th.add_to_warehouse("chicken", 5)
     assert th.warehouse_amount("wood") == 2
     assert th.warehouse_amount("wheat") == 1
     assert th.warehouse_amount("boards") == 3
     assert th.warehouse_amount("flour") == 4
+    assert th.warehouse_amount("chicken") == 5
     th.take_from_warehouse("wood", 1)
     assert th.warehouse_amount("wood") == 1
 
 
-@pytest.mark.parametrize("cls", [LumberCamp, StoneMine, IronMine, Farm, TownHall])
+@pytest.mark.parametrize("cls", [LumberCamp, StoneMine, IronMine, Farm, ChickenFarm, TownHall])
 def test_buildings_default_to_not_under_construction(cls: type) -> None:
     building = cls(level=1, grid_pos=(10, 10))
     assert building.construction_site is None
     assert building.is_under_construction is False
+
+
+def test_chicken_farm_storage_and_level_caps() -> None:
+    farm = ChickenFarm(level=1, grid_pos=(10, 10))
+    assert farm.input_capacity() == 3
+    assert farm.water_capacity() == 3
+    assert farm.output_capacity() == 3
+    assert ChickenFarm(level=2, grid_pos=(10, 10)).input_capacity() == 4
+    assert ChickenFarm(level=3, grid_pos=(10, 10)).output_capacity() == 4
+    assert ChickenFarm(level=10, grid_pos=(10, 10)).water_capacity() == 8
+
+
+def test_chicken_farm_max_level_10() -> None:
+    ChickenFarm(level=10)
+    with pytest.raises(ValueError):
+        ChickenFarm(level=11)
 
 
 def test_building_reports_under_construction_when_site_is_set() -> None:

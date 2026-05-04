@@ -30,6 +30,7 @@ _HIRE_ROWS: tuple[str, ...] = (
     "STONECUTTER",
     "MINER",
     "FARMER",
+    "ANIMAL_HERDER",
     "FORESTER",
 )
 _WORKER_LABEL: dict[str, str] = {
@@ -42,6 +43,7 @@ _WORKER_LABEL: dict[str, str] = {
     "STONECUTTER": "Stonecutter",
     "MINER": "Miner",
     "FARMER": "Farmer",
+    "ANIMAL_HERDER": "Herder",
     "FORESTER": "Forester",
 }
 _GRID_ROWS = (len(_HIRE_ROWS) + _TILE_COLS - 1) // _TILE_COLS

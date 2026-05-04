@@ -5,6 +5,12 @@
 This PRD is working context for coding agents, not a marketing spec. Prefer
 preserving these invariants over literal old phase wording:
 
+- When adding new worker types or worker-operated buildings, follow
+  `worker_extension_guide.md` so `src/game/workers.py` stays a coordinator and
+  behavior lives in focused worker modules.
+- When adding new buildings, follow `building_extension_guide.md` so building
+  class state, construction settings, assets, UI, transport, and worker runtime
+  stay in their focused modules.
 - Resources move physically through internal building storages, Town Hall
   warehouse, and carrier transport tasks. Do not reintroduce passive wallet
   production.

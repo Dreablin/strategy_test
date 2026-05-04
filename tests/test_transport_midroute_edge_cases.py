@@ -277,3 +277,61 @@ def test_water_task_releases_reserved_well_when_target_is_demolished_before_pick
     assert carrier.carrying is None
     assert carrier.state == "idle"
 
+
+def test_busy_well_water_task_does_not_block_other_available_tasks() -> None:
+    world = _empty_world()
+    registry = BuildingRegistry(world)
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    town_hall.add_to_warehouse("wood", 1)
+    well = registry.place(Well, near_town_hall_tile(6, 8))
+    well.construction_site = None
+    well.reserve()
+    bakery = registry.place(Bakery, near_town_hall_tile(10, 8))
+    bakery.construction_site = None
+    sawmill = registry.place(Sawmill, near_town_hall_tile(14, 8))
+    sawmill.construction_site = None
+
+    workers = WorkerManager(registry)
+    workers.enqueue_transport_task(resource="water", source=well, target=bakery, amount=1)
+    workers.enqueue_transport_task(resource="wood", source=town_hall, target=sawmill, amount=1)
+
+    picked = workers._next_transport_task()  # noqa: SLF001
+
+    assert picked is not None
+    assert picked.resource == "wood"
+    assert picked.target is sawmill
+    assert any(
+        task.resource == "water" and task.source is well and task.target is bakery
+        for task in workers._transport_queue  # noqa: SLF001
+    )
+
+
+def test_water_inbound_tasks_count_against_target_capacity() -> None:
+    world = _empty_world()
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    well_a = registry.place(Well, near_town_hall_tile(4, 4))
+    well_b = registry.place(Well, near_town_hall_tile(6, 4))
+    well_c = registry.place(Well, near_town_hall_tile(8, 4))
+    for well in (well_a, well_b, well_c):
+        well.construction_site = None
+    bakery = registry.place(Bakery, near_town_hall_tile(12, 8))
+    bakery.construction_site = None
+    bakery.add_water_in(bakery.water_capacity() - 2)
+
+    workers = WorkerManager(registry)
+    carrier = Worker("CARRIER")
+    carrier.transport_task = TransportTask("water", well_a, bakery)
+    carrier.carrying = "water"
+    workers.add_worker(carrier)
+
+    workers.update(0)
+
+    queued_water = [
+        task
+        for task in workers._transport_queue  # noqa: SLF001
+        if task.resource == "water" and task.target is bakery
+    ]
+    assert len(queued_water) == 1
+    assert bakery.water_amount() == bakery.water_capacity() - 2
+

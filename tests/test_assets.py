@@ -46,7 +46,18 @@ def test_grass_tile_smoke() -> None:
 
 
 def test_building_sprite_smoke() -> None:
-    for b_type in ("town_hall", "lumber_camp", "stone_mine", "iron_mine", "farm", "mill", "school", "bakery", "well"):
+    for b_type in (
+        "town_hall",
+        "lumber_camp",
+        "stone_mine",
+        "iron_mine",
+        "farm",
+        "mill",
+        "school",
+        "bakery",
+        "well",
+        "chicken_farm",
+    ):
         for level in (1, 5, 10):
             spr = building_sprite(b_type, level)
             _assert_nonempty_surface(spr)
@@ -56,7 +67,7 @@ def test_building_sprite_smoke() -> None:
 
 
 def test_worker_dot_smoke() -> None:
-    for w_type in ("LUMBERJACK", "STONECUTTER", "MINER", "FARMER", "MILLER", "BAKER"):
+    for w_type in ("LUMBERJACK", "STONECUTTER", "MINER", "FARMER", "ANIMAL_HERDER", "MILLER", "BAKER"):
         _assert_nonempty_surface(worker_dot(w_type))
 
 
@@ -155,7 +166,7 @@ def test_population_icon_falls_back_procedural_when_disk_asset_missing(tmp_path,
 
 
 def test_worker_and_hire_ui_icon_smoke() -> None:
-    for w_type in ("LUMBERJACK", "STONECUTTER", "MINER", "FARMER", "MILLER", "BAKER"):
+    for w_type in ("LUMBERJACK", "STONECUTTER", "MINER", "FARMER", "ANIMAL_HERDER", "MILLER", "BAKER"):
         _assert_nonempty_surface(worker_ui_icon(w_type, 24))
         _assert_nonempty_surface(hire_ui_icon(w_type, 20))
 

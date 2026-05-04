@@ -89,7 +89,7 @@ def test_bottom_bar_processing_mill_posts_build_event() -> None:
     surface = pygame.Surface((1200, 720))
     BottomBar._menu = "processing"  # noqa: SLF001
     pygame.event.clear()
-    BottomBar.handle_click(surface, (750, 700))
+    BottomBar.handle_click(surface, (600, 700))
     events = [e for e in pygame.event.get() if e.type == BUILD_MENU_SELECT]
     assert events
     assert events[-1].building_type == "MILL"
@@ -99,7 +99,17 @@ def test_bottom_bar_processing_bakery_posts_build_event() -> None:
     surface = pygame.Surface((1200, 720))
     BottomBar._menu = "processing"  # noqa: SLF001
     pygame.event.clear()
-    BottomBar.handle_click(surface, (1050, 700))
+    BottomBar.handle_click(surface, (840, 700))
     events = [e for e in pygame.event.get() if e.type == BUILD_MENU_SELECT]
     assert events
     assert events[-1].building_type == "BAKERY"
+
+
+def test_bottom_bar_processing_chicken_farm_posts_build_event() -> None:
+    surface = pygame.Surface((1200, 720))
+    BottomBar._menu = "processing"  # noqa: SLF001
+    pygame.event.clear()
+    BottomBar.handle_click(surface, (1080, 700))
+    events = [e for e in pygame.event.get() if e.type == BUILD_MENU_SELECT]
+    assert events
+    assert events[-1].building_type == "CHICKEN_FARM"

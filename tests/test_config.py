@@ -17,10 +17,13 @@ def test_config_constants_match_spec() -> None:
         "boards": 10,
         "flour": 0,
         "bread": 0,
+        "chicken": 0,
     }
     assert config.TOWN_HALL_MIN_LEVEL_FOR_BUILDING["STONE_MINE"] == 1
     assert config.TOWN_HALL_MIN_LEVEL_FOR_BUILDING["WELL"] == 1
+    assert config.TOWN_HALL_MIN_LEVEL_FOR_BUILDING["CHICKEN_FARM"] == 1
     assert config.TOWN_HALL_MIN_LEVEL_FOR_HIRE["MINER"] == 5
     assert config.TOWN_HALL_MIN_LEVEL_FOR_HIRE["BAKER"] == 1
+    assert config.TOWN_HALL_MIN_LEVEL_FOR_HIRE["ANIMAL_HERDER"] == 1
     assert config.MAX_LEVEL == 10
     assert config.WINDOW_SIZE == (1280, 720)

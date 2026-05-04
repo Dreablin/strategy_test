@@ -21,6 +21,8 @@ def test_smoke_phase13_paths_calls_and_render() -> None:
     world = World()
     world._trees.clear()  # noqa: SLF001
     world._stones.clear()  # noqa: SLF001
+    world._iron.clear()  # noqa: SLF001
+    world._gold.clear()  # noqa: SLF001
     world._trees[(24, 20)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
     world._trees[(25, 20)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001
     world._trees[(26, 20)] = Tree(stage=TreeStage.ADULT)  # noqa: SLF001

@@ -66,6 +66,7 @@ def test_town_hall_panel_has_secondary_storage_frame_and_click_is_non_closing() 
 def test_town_hall_storage_rows_include_bread() -> None:
     keys = [key for key, _label in town_hall_panel._STORAGE_ROWS]  # noqa: SLF001
     assert "bread" in keys
+    assert "chicken" in keys
 
 
 def test_town_hall_upgrade_button_is_enabled_without_cost_checks() -> None:

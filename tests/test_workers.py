@@ -167,6 +167,25 @@ def test_hire_baker_from_school_spawns_near_school_and_stays_unassigned() -> Non
     assert hired.idle is True
 
 
+def test_hire_animal_herder_from_school_spawns_near_school() -> None:
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    school = registry.place(School, near_town_hall_tile(8, 8))
+    school.construction_site = None
+    wm = WorkerManager(registry)
+
+    hired = wm.hire("ANIMAL_HERDER", source_building=school)
+
+    assert hired is not None
+    assert hired.type_tag == "ANIMAL_HERDER"
+    sx, sy = school.grid_pos
+    sw, sh = school.footprint
+    assert hired.current_tile == (sx + sw // 2, sy + sh)
+    assert hired.assigned_building is None
+    assert hired.idle is True
+
+
 def test_reassign_all_assigns_sawyer_only_to_sawmill() -> None:
     world = World(world_seed=0)
     registry = BuildingRegistry(world)

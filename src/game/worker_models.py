@@ -46,6 +46,10 @@ class Worker:
         "satiety",
         "satiety_last_sample_ms",
         "dining_canteen",
+        "dining_phase",
+        "dining_eating_started_ms",
+        "dining_meal_assigned",
+        "dining_target_tile",
     )
 
     def __init__(self, type_tag: str, *, stand_tile: tuple[int, int] = (17, 19)) -> None:
@@ -53,6 +57,10 @@ class Worker:
         self.satiety = MAX_WORKER_SATIETY
         self.satiety_last_sample_ms = -1
         self.dining_canteen: object | None = None
+        self.dining_phase = "none"
+        self.dining_eating_started_ms = 0
+        self.dining_meal_assigned = False
+        self.dining_target_tile: tuple[int, int] | None = None
         self.assigned_building: Building | None = None
         self.idle = True
         self.stand_tile: tuple[int, int] = stand_tile

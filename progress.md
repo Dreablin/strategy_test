@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 22 - Canteen, cook, meals, and worker satiety
-- **Next Task:** T268 - implement `game.worker_dining` dining runtime
-- **Last Completed:** T267 - RED tests `tests/test_dining_runtime_red.py`
-- **Total Progress:** 267 / 276 (Phase 22: 22 / 31 done)
+- **Next Task:** T269 - RED tests for hunger hooks on processor/gatherer workers
+- **Last Completed:** T268 - `game.worker_dining` (walk, wait, eat, release)
+- **Total Progress:** 268 / 276 (Phase 22: 23 / 31 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -63,7 +63,7 @@
 - [x] **T265**: Add RED tests for canteen selection: hungry worker below `2_000` picks the nearest reachable canteen with a free slot, reserves immediately, does not require a prepared meal to reserve, and continues working if no slot/path exists.
 - [x] **T266**: Implement canteen selection and reservation helper functions in small modules/mixins, reusing 4-dir pathfinding and existing blocked-tile rules. Run full `pytest -q`.
 - [x] **T267**: Add RED tests for dining runtime: reserved worker walks to canteen, appears in a specific tile slot, waits there if no `simple_meal` is available, starts a `20_000 ms` eating timer only after a meal is assigned, consumes `1 simple_meal` when eating starts, restores satiety to `10_000` when the timer completes, releases the slot, and returns to work.
-- [ ] **T268**: Implement shared dining runtime states, waiting/eating transitions, deterministic one-meal-per-worker assignment, and progress helpers without entangling them with carrier transport tasks or processor production tasks. Run full `pytest -q`.
+- [x] **T268**: Implement shared dining runtime states, waiting/eating transitions, deterministic one-meal-per-worker assignment, and progress helpers without entangling them with carrier transport tasks or processor production tasks. Run full `pytest -q`.
 
 ### 22.5 Hunger check integration for all worker families
 
@@ -103,6 +103,7 @@
 
 ## Notes
 
+- **2026-05-08:** T268 adds `worker_dining.py` + Worker `dining_*` fields; `tests/test_dining_runtime_red.py` green.
 - **2026-05-08:** T267 RED: `game.worker_dining` (`DINING_EAT_DURATION_MS`, `diner_stand_tile_for`, `dining_runtime_phase`, `update_dining_runtime`, `assign_diner_meals_for_canteen`); collection fails until T268.
 - **2026-05-08:** T266 adds `canteen_selection.py`: hunger threshold `2_000`, shortest 4-dir path to any approach tile, skip full/UC canteens, `try_reserve_diner_slot`; `tests/test_canteen_selection_red.py` green.
 - **2026-05-08:** T265 RED: `game.canteen_selection` (`HUNGER_SATIETY_THRESHOLD`, `reserve_nearest_reachable_canteen_if_hungry`); collection fails until T266 (add unreachable/no-path case there if needed).

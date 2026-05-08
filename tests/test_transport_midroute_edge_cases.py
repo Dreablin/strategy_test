@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from game.construction import ConstructionSite
 from game.buildings.bakery import Bakery
 from game.buildings.farm import Farm
+from game.buildings.lumber_camp import LumberCamp
 from game.buildings.mill import Mill
 from game.buildings.registry import BuildingRegistry
 from game.buildings.sawmill import Sawmill
@@ -11,7 +13,7 @@ from game.buildings.town_hall import TownHall
 from game.buildings.well import Well
 from game.config import near_town_hall_tile, town_hall_origin_tile
 from game.world import World
-from game.workers import TransportTask, Worker, WorkerManager
+from game.workers import TransportTask, Worker, WorkerManager, building_center_tile
 
 
 def _advance_until_loading(workers: WorkerManager, carrier, *, max_steps: int = 200, step_ms: int = 500) -> None:
@@ -91,7 +93,7 @@ def test_carrier_returns_resource_to_town_hall_when_construction_target_is_demol
     carrier.current_tile = near_town_hall_tile(6, 8)
     carrier.stand_tile = carrier.current_tile
     carrier.state = "moving"
-    carrier.transport_task = TransportTask("wood", town_hall, target, priority=10)
+    carrier.transport_task = TransportTask("wood", town_hall, target, priority=10, purpose="construction")
     carrier.carrying = "wood"
 
     registry.demolish(target, workers)
@@ -105,6 +107,50 @@ def test_carrier_returns_resource_to_town_hall_when_construction_target_is_demol
 
     assert town_hall.warehouse_amount("wood") == 1
     assert target not in registry.all()
+
+
+def test_carrier_returns_resource_when_construction_finishes_before_delivery_from_local_source() -> None:
+    world = _empty_world()
+    registry = BuildingRegistry(world)
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    source = registry.place(LumberCamp, near_town_hall_tile(8, 8))
+    source.construction_site = None
+    target = registry.place(Sawmill, near_town_hall_tile(14, 8))
+    target.construction_site = ConstructionSite(
+        required_resources={"wood": 1},
+        delivered_resources={},
+        build_time_ms=10_000,
+        build_started_ms=None,
+        builder=None,
+        target_level=1,
+    )
+
+    workers = WorkerManager(registry, now_ms_fn=lambda: 0)
+    carrier = workers.hire("CARRIER")
+    assert carrier is not None
+    carrier.current_tile = near_town_hall_tile(10, 8)
+    carrier.stand_tile = carrier.current_tile
+    carrier.state = "moving"
+    carrier.transport_task = TransportTask(
+        "wood",
+        source,
+        target,
+        priority=10,
+        purpose="construction",
+    )
+    carrier.carrying = "wood"
+
+    target.construction_site = None
+    workers.update(0)
+
+    assert carrier.transport_task is not None
+    assert carrier.transport_task.returning_to_town_hall
+    assert carrier.transport_task.target is town_hall
+
+    _advance_until_idle_without_task(workers, carrier, start_ms=1_000)
+
+    assert town_hall.warehouse_amount("wood") == 1
+    assert target.construction_site is None
 
 
 def test_carrier_returns_resource_to_town_hall_when_processor_target_is_demolished() -> None:
@@ -213,7 +259,7 @@ def test_active_transport_task_counts_against_construction_remaining_need() -> N
 
     workers = WorkerManager(registry)
     carrier = Worker("CARRIER")
-    carrier.transport_task = TransportTask("wood", town_hall, target, priority=10)
+    carrier.transport_task = TransportTask("wood", town_hall, target, priority=10, purpose="construction")
     workers.add_worker(carrier)
 
     workers.update(0)
@@ -225,6 +271,83 @@ def test_active_transport_task_counts_against_construction_remaining_need() -> N
         if task.resource == "wood" and task.target is target
     ]
     assert len(queued_wood) == 1
+
+
+def test_carrier_cancelled_while_loading_construction_resource_exits_town_hall() -> None:
+    world = _empty_world()
+    registry = BuildingRegistry(world)
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    target = registry.place(Sawmill, near_town_hall_tile(10, 8))
+    site = target.construction_site
+    assert site is not None
+    site.required_resources = {"wood": 1}
+    site.delivered_resources = {}
+    town_hall.add_to_warehouse("wood", 1)
+
+    workers = WorkerManager(registry, now_ms_fn=lambda: 0)
+    carrier = workers.hire("CARRIER")
+    assert carrier is not None
+
+    _advance_until_loading(workers, carrier)
+    assert carrier.transport_task is not None
+    assert carrier.current_tile == building_center_tile(town_hall)
+
+    site.delivered_resources = {"wood": 1}
+    workers.update(1_000)
+
+    assert carrier.transport_task is None
+    assert carrier.state == "idle"
+    assert carrier.current_tile in workers._approach_tiles(town_hall)  # noqa: SLF001
+
+    site.delivered_resources = {}
+    workers.update(2_000)
+
+    assert carrier.transport_task is not None
+    assert carrier.state in {"moving", "working"}
+
+    workers.update(2_500)
+
+    assert carrier.state == "carrier_loading"
+
+
+def test_carrier_exits_town_hall_when_warehouse_resource_is_unavailable_at_pickup() -> None:
+    world = _empty_world()
+    registry = BuildingRegistry(world)
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    target = registry.place(Sawmill, near_town_hall_tile(10, 8))
+    site = target.construction_site
+    assert site is not None
+    site.required_resources = {"stone": 1}
+    site.delivered_resources = {}
+
+    workers = WorkerManager(registry, now_ms_fn=lambda: 0)
+    carrier = workers.hire("CARRIER")
+    assert carrier is not None
+    carrier.current_tile = building_center_tile(town_hall)
+    carrier.stand_tile = carrier.current_tile
+    carrier.state = "carrier_loading"
+    carrier.camp_wait_until_ms = 0
+    carrier.transport_task = TransportTask("stone", town_hall, target, priority=10, purpose="construction")
+
+    workers.update(0)
+
+    assert carrier.transport_task is None
+    assert carrier.carrying is None
+    assert carrier.state == "idle"
+    assert carrier.current_tile in workers._approach_tiles(town_hall)  # noqa: SLF001
+    assert any(
+        task.resource == "stone" and task.source is town_hall and task.target is target
+        for task in workers._transport_queue  # noqa: SLF001
+    )
+
+    town_hall.add_to_warehouse("stone", 1)
+    for now_ms in range(1_000, 120_000, 500):
+        workers.update(now_ms)
+        if site.delivered_resources.get("stone", 0) >= 1:
+            break
+
+    assert site.delivered_resources.get("stone", 0) == 1
+    assert carrier.current_tile != building_center_tile(town_hall)
 
 
 def test_carrier_returns_resource_to_town_hall_when_source_is_demolished_after_pickup() -> None:

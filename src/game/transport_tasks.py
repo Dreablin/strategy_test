@@ -14,7 +14,10 @@ PROCESSOR_INPUT_ADD_METHOD_BY_RESOURCE: dict[str, str] = {
 }
 
 
-def construction_transport_tasks(registry: Any) -> list[TransportTask]:
+def construction_transport_tasks(
+    registry: Any,
+    inbound_counts: dict[tuple[int, str], int] | None = None,
+) -> list[TransportTask]:
     """Build high-priority transport tasks from Town Hall to construction sites."""
     if registry is None:
         return []
@@ -23,6 +26,7 @@ def construction_transport_tasks(registry: Any) -> list[TransportTask]:
     if town_hall is None or not hasattr(town_hall, "warehouse_amount"):
         return []
     tasks: list[TransportTask] = []
+    available_by_resource: dict[str, int] = {}
     for building in buildings:
         if not getattr(building, "is_under_construction", False):
             continue
@@ -30,15 +34,24 @@ def construction_transport_tasks(registry: Any) -> list[TransportTask]:
         if site is None:
             continue
         for resource, need in site.remaining_resources().items():
-            available = int(town_hall.warehouse_amount(resource))
-            count = min(int(need), max(0, available))
+            key = str(resource).lower()
+            inbound = int((inbound_counts or {}).get((id(building), key), 0))
+            need_after_inbound = max(0, int(need) - inbound)
+            if need_after_inbound <= 0:
+                continue
+            if key not in available_by_resource:
+                available_by_resource[key] = max(0, int(town_hall.warehouse_amount(resource)))
+            available = available_by_resource[key]
+            count = min(need_after_inbound, max(0, available))
+            available_by_resource[key] = max(0, available - count)
             for _ in range(count):
                 tasks.append(
                     TransportTask(
-                        resource=str(resource),
+                        resource=key,
                         source=town_hall,
                         target=building,
                         priority=10,
+                        purpose="construction",
                     )
                 )
     return tasks

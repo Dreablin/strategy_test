@@ -81,6 +81,8 @@ def main() -> int:
                 screen,
                 current_population=current_population(registry, worker_manager),
                 max_population=max_population(registry, worker_manager),
+                delivery_queue_size=worker_manager.transport_queue_size(),
+                active_delivery_count=worker_manager.active_transport_count(),
             )
             BottomBar.draw(screen)
             placement.draw(screen, camera)

@@ -113,15 +113,33 @@ class WorkerTransportMixin:
         if self._registry is None:
             return None
         key = str(resource).lower()
+        inbound_counts = self._construction_inbound_counts()
         for building in self._registry.all():
             if not building.is_under_construction:
                 continue
             site = building.construction_site
             if site is None:
                 continue
-            if int(site.remaining_resources().get(key, 0)) > 0:
+            remaining = int(site.remaining_resources().get(key, 0))
+            inbound = int(inbound_counts.get((id(building), key), 0))
+            if remaining - inbound > 0:
                 return building
         return None
+
+    def _construction_inbound_counts(self) -> dict[tuple[int, str], int]:
+        counts: dict[tuple[int, str], int] = {}
+        for task in self._transport_queue:
+            if task.returning_to_town_hall or task.purpose != "construction":
+                continue
+            key = (id(task.target), str(task.resource).lower())
+            counts[key] = counts.get(key, 0) + 1
+        for worker in self._workers:
+            task = worker.transport_task
+            if task is None or task.returning_to_town_hall or task.purpose != "construction":
+                continue
+            key = (id(task.target), str(task.resource).lower())
+            counts[key] = counts.get(key, 0) + 1
+        return counts
 
     def _next_transport_task(self) -> TransportTask | None:
         if self._registry is None:
@@ -134,11 +152,10 @@ class WorkerTransportMixin:
                 stale_indices.append(idx)
                 continue
             site = getattr(task.target, "construction_site", None)
-            if (
-                task.source.type_tag == "TOWN_HALL"
-                and bool(getattr(task.target, "is_under_construction", False))
-                and site is not None
-            ):
+            if task.purpose == "construction":
+                if not bool(getattr(task.target, "is_under_construction", False)) or site is None:
+                    stale_indices.append(idx)
+                    continue
                 remaining = int(site.remaining_resources().get(str(task.resource).lower(), 0))
                 if remaining <= 0:
                     stale_indices.append(idx)
@@ -208,7 +225,7 @@ class WorkerTransportMixin:
         worker.start_move(best_path, started_ms=now_ms)
         return True
 
-    def _clear_carrier_transport(self, worker: Worker) -> None:
+    def _clear_carrier_transport(self, worker: Worker, *, exit_building: Building | None = None) -> None:
         worker.transport_task = None
         worker.carrying = None
         worker.path = []
@@ -219,6 +236,19 @@ class WorkerTransportMixin:
         worker.state = "idle"
         worker.idle = True
         worker.stand_tile = worker.current_tile
+        if exit_building is not None:
+            self._move_worker_to_building_approach(worker, exit_building)  # type: ignore[attr-defined]
+
+    def _requeue_failed_pickup(self, worker: Worker, task: TransportTask) -> None:
+        self._transport_queue.append(task)
+        known = set(self._registry.all()) if self._registry is not None else set()
+        exit_building = task.source if task.source in known else None
+        self._clear_carrier_transport(worker, exit_building=exit_building)
+
+    def _drop_failed_pickup(self, worker: Worker, task: TransportTask) -> None:
+        known = set(self._registry.all()) if self._registry is not None else set()
+        exit_building = task.source if task.source in known else None
+        self._clear_carrier_transport(worker, exit_building=exit_building)
 
     def _transport_task_invalid(self, task: TransportTask) -> bool:
         if self._registry is None:
@@ -228,7 +258,7 @@ class WorkerTransportMixin:
             return task.target not in known
         if task.source not in known or task.target not in known:
             return True
-        if isinstance(task.source, TownHall) and int(task.priority) >= 10:
+        if task.purpose == "construction":
             if not bool(getattr(task.target, "is_under_construction", False)):
                 return True
             site = getattr(task.target, "construction_site", None)
@@ -243,7 +273,9 @@ class WorkerTransportMixin:
         if task.resource == "water" and task.source.type_tag == "WELL" and worker.carrying is None:
             task.source.release()  # type: ignore[attr-defined]
         if worker.carrying is None:
-            self._clear_carrier_transport(worker)
+            known = set(self._registry.all()) if self._registry is not None else set()
+            exit_building = task.source if task.source in known else None
+            self._clear_carrier_transport(worker, exit_building=exit_building)
             return False
         if worker.carrying == "water":
             self._clear_carrier_transport(worker)
@@ -258,6 +290,7 @@ class WorkerTransportMixin:
         task.target = town_hall
         task.priority = 10
         task.returning_to_town_hall = True
+        task.purpose = "return"
         worker.transport_task = task
         if not self._start_move_to_building(worker, town_hall, now_ms):
             town_hall.add_to_warehouse(worker.carrying, 1)
@@ -319,91 +352,31 @@ class WorkerTransportMixin:
                     try:
                         task.source.take_wood_in(1)  # type: ignore[attr-defined]
                     except ValueError:
-                        self._transport_queue.append(task)
-                        worker.transport_task = None
-                        worker.state = "idle"
-                        worker.idle = True
-                        next_task = self._next_transport_task()
-                        if next_task is not None:
-                            worker.transport_task = next_task
-                            worker.carrying = None
-                            if not self._start_move_to_building(worker, next_task.source, now_ms):
-                                self._transport_queue.insert(0, next_task)
-                                worker.transport_task = None
-                                worker.state = "idle"
-                                worker.idle = True
+                        self._drop_failed_pickup(worker, task)
                         return
                 elif task.resource == "boards" and hasattr(task.source, "take_boards_out"):
                     try:
                         task.source.take_boards_out(1)  # type: ignore[attr-defined]
                     except ValueError:
-                        self._transport_queue.append(task)
-                        worker.transport_task = None
-                        worker.state = "idle"
-                        worker.idle = True
-                        next_task = self._next_transport_task()
-                        if next_task is not None:
-                            worker.transport_task = next_task
-                            worker.carrying = None
-                            if not self._start_move_to_building(worker, next_task.source, now_ms):
-                                self._transport_queue.insert(0, next_task)
-                                worker.transport_task = None
-                                worker.state = "idle"
-                                worker.idle = True
+                        self._drop_failed_pickup(worker, task)
                         return
                 elif task.resource == "flour" and hasattr(task.source, "take_flour_out"):
                     try:
                         task.source.take_flour_out(1)  # type: ignore[attr-defined]
                     except ValueError:
-                        self._transport_queue.append(task)
-                        worker.transport_task = None
-                        worker.state = "idle"
-                        worker.idle = True
-                        next_task = self._next_transport_task()
-                        if next_task is not None:
-                            worker.transport_task = next_task
-                            worker.carrying = None
-                            if not self._start_move_to_building(worker, next_task.source, now_ms):
-                                self._transport_queue.insert(0, next_task)
-                                worker.transport_task = None
-                                worker.state = "idle"
-                                worker.idle = True
+                        self._drop_failed_pickup(worker, task)
                         return
                 elif task.resource == "bread" and hasattr(task.source, "take_bread_out"):
                     try:
                         task.source.take_bread_out(1)  # type: ignore[attr-defined]
                     except ValueError:
-                        self._transport_queue.append(task)
-                        worker.transport_task = None
-                        worker.state = "idle"
-                        worker.idle = True
-                        next_task = self._next_transport_task()
-                        if next_task is not None:
-                            worker.transport_task = next_task
-                            worker.carrying = None
-                            if not self._start_move_to_building(worker, next_task.source, now_ms):
-                                self._transport_queue.insert(0, next_task)
-                                worker.transport_task = None
-                                worker.state = "idle"
-                                worker.idle = True
+                        self._drop_failed_pickup(worker, task)
                         return
                 elif task.resource == "chicken" and hasattr(task.source, "take_chicken_out"):
                     try:
                         task.source.take_chicken_out(1)  # type: ignore[attr-defined]
                     except ValueError:
-                        self._transport_queue.append(task)
-                        worker.transport_task = None
-                        worker.state = "idle"
-                        worker.idle = True
-                        next_task = self._next_transport_task()
-                        if next_task is not None:
-                            worker.transport_task = next_task
-                            worker.carrying = None
-                            if not self._start_move_to_building(worker, next_task.source, now_ms):
-                                self._transport_queue.insert(0, next_task)
-                                worker.transport_task = None
-                                worker.state = "idle"
-                                worker.idle = True
+                        self._drop_failed_pickup(worker, task)
                         return
                 elif not hasattr(task.source, "take_from_warehouse"):
                     worker.transport_task = None
@@ -414,37 +387,13 @@ class WorkerTransportMixin:
                     try:
                         task.source.take_from_warehouse(task.resource, 1)  # type: ignore[attr-defined]
                     except ValueError:
-                        self._transport_queue.append(task)
-                        worker.transport_task = None
-                        worker.state = "idle"
-                        worker.idle = True
-                        next_task = self._next_transport_task()
-                        if next_task is not None:
-                            worker.transport_task = next_task
-                            worker.carrying = None
-                            if not self._start_move_to_building(worker, next_task.source, now_ms):
-                                self._transport_queue.insert(0, next_task)
-                                worker.transport_task = None
-                                worker.state = "idle"
-                                worker.idle = True
+                        self._requeue_failed_pickup(worker, task)
                         return
             else:
                 try:
                     task.source.take_from_storage(1)  # type: ignore[attr-defined]
                 except ValueError:
-                    self._transport_queue.append(task)
-                    worker.transport_task = None
-                    worker.state = "idle"
-                    worker.idle = True
-                    next_task = self._next_transport_task()
-                    if next_task is not None:
-                        worker.transport_task = next_task
-                        worker.carrying = None
-                        if not self._start_move_to_building(worker, next_task.source, now_ms):
-                            self._transport_queue.insert(0, next_task)
-                            worker.transport_task = None
-                            worker.state = "idle"
-                            worker.idle = True
+                    self._drop_failed_pickup(worker, task)
                     return
             worker.carrying = task.resource
             if task.resource == "water" and task.source.type_tag == "WELL":
@@ -499,6 +448,11 @@ class WorkerTransportMixin:
                     delivered_target = town_hall
                 elif hasattr(task.target, "add_to_warehouse"):
                     task.target.add_to_warehouse(task.resource, 1)  # type: ignore[attr-defined]
+        elif task.purpose == "construction":
+            town_hall = self._primary_town_hall()
+            if town_hall is not None:
+                town_hall.add_to_warehouse(task.resource, 1)
+                delivered_target = town_hall
         elif task.resource == "wood" and hasattr(task.target, "add_wood_in"):
             if int(task.target.input_amount()) < int(task.target.input_capacity()):  # type: ignore[attr-defined]
                 task.target.add_wood_in(1)  # type: ignore[attr-defined]
@@ -548,14 +502,14 @@ class WorkerTransportMixin:
         *,
         count_carried_well_water: bool = True,
     ) -> None:
-        desired_counts: dict[tuple[int, int, str, int], int] = {}
+        desired_counts: dict[tuple[int, int, str, int, str], int] = {}
         for task in desired:
-            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            key = (id(task.source), id(task.target), task.resource, int(task.priority), task.purpose)
             desired_counts[key] = desired_counts.get(key, 0) + 1
 
-        existing_counts: dict[tuple[int, int, str, int], int] = {}
+        existing_counts: dict[tuple[int, int, str, int, str], int] = {}
         for task in self._transport_queue:  # type: ignore[attr-defined]
-            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            key = (id(task.source), id(task.target), task.resource, int(task.priority), task.purpose)
             existing_counts[key] = existing_counts.get(key, 0) + 1
         for worker in self._workers:  # type: ignore[attr-defined]
             task = worker.transport_task
@@ -567,11 +521,11 @@ class WorkerTransportMixin:
                 and worker.carrying is not None
             ):
                 continue
-            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            key = (id(task.source), id(task.target), task.resource, int(task.priority), task.purpose)
             existing_counts[key] = existing_counts.get(key, 0) + 1
 
         for task in desired:
-            key = (id(task.source), id(task.target), task.resource, int(task.priority))
+            key = (id(task.source), id(task.target), task.resource, int(task.priority), task.purpose)
             if existing_counts.get(key, 0) >= desired_counts.get(key, 0):
                 continue
             self.enqueue_transport_task(  # type: ignore[attr-defined]
@@ -580,13 +534,25 @@ class WorkerTransportMixin:
                 target=task.target,
                 amount=1,
                 priority=task.priority,
+                purpose=task.purpose,
             )
             existing_counts[key] = existing_counts.get(key, 0) + 1
 
     def _enqueue_construction_transport_tasks(self) -> None:
         if self._registry is None:  # type: ignore[attr-defined]
             return
-        self._enqueue_desired_transport_tasks(construction_transport_tasks(self._registry))  # type: ignore[attr-defined]
+        for task in construction_transport_tasks(
+            self._registry,
+            inbound_counts=self._construction_inbound_counts(),
+        ):
+            self.enqueue_transport_task(  # type: ignore[attr-defined]
+                resource=task.resource,
+                source=task.source,
+                target=task.target,
+                amount=1,
+                priority=task.priority,
+                purpose=task.purpose,
+            )
 
     def _enqueue_sawmill_refill_tasks(self) -> None:
         if self._registry is None:  # type: ignore[attr-defined]

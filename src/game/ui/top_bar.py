@@ -16,6 +16,9 @@ _BAR_HEIGHT = 48
 class TopBarLayout:
     bar_rect: pygame.Rect
     icon_rect: pygame.Rect
+    population_button: pygame.Rect
+    delivery_label: str
+    delivery_pos: tuple[int, int]
     label: str
     label_pos: tuple[int, int]
 
@@ -24,7 +27,14 @@ class TopBar:
     """48 px strip: `[population icon] current (max N)`."""
 
     @staticmethod
-    def layout(surface: pygame.Surface, *, current_population: int, max_population: int) -> TopBarLayout:
+    def layout(
+        surface: pygame.Surface,
+        *,
+        current_population: int,
+        max_population: int,
+        delivery_queue_size: int = 0,
+        active_delivery_count: int = 0,
+    ) -> TopBarLayout:
         width = surface.get_width()
         bar_rect = pygame.Rect(0, 0, width, _BAR_HEIGHT)
         icon = population_icon()
@@ -33,19 +43,44 @@ class TopBar:
         icon_rect = pygame.Rect(icon_x, icon_y, icon.get_width(), icon.get_height())
         label = f"{current_population} (max {max_population})"
         label_pos = (icon_rect.right + 8, (_BAR_HEIGHT - 22) // 2)
+        font = pygame.font.Font(None, 22)
+        label_w, label_h = font.size(label)
+        population_button = pygame.Rect(
+            icon_rect.left - 6,
+            6,
+            icon.get_width() + 8 + label_w + 12,
+            _BAR_HEIGHT - 12,
+        )
+        delivery_label = (
+            f"Deliveries: {max(0, int(delivery_queue_size))} "
+            f"(in progress {max(0, int(active_delivery_count))})"
+        )
+        delivery_pos = (population_button.right + 18, label_pos[1])
         return TopBarLayout(
             bar_rect=bar_rect,
             icon_rect=icon_rect,
+            population_button=population_button,
+            delivery_label=delivery_label,
+            delivery_pos=delivery_pos,
             label=label,
             label_pos=label_pos,
         )
 
     @staticmethod
-    def draw(surface: pygame.Surface, *, current_population: int, max_population: int) -> None:
+    def draw(
+        surface: pygame.Surface,
+        *,
+        current_population: int,
+        max_population: int,
+        delivery_queue_size: int = 0,
+        active_delivery_count: int = 0,
+    ) -> None:
         layout = TopBar.layout(
             surface,
             current_population=current_population,
             max_population=max_population,
+            delivery_queue_size=delivery_queue_size,
+            active_delivery_count=active_delivery_count,
         )
         pygame.draw.rect(surface, (32, 36, 44), layout.bar_rect)
         pygame.draw.line(
@@ -55,10 +90,14 @@ class TopBar:
             (layout.bar_rect.width, _BAR_HEIGHT - 1),
         )
         font = pygame.font.Font(None, 22)
+        pygame.draw.rect(surface, (42, 48, 58), layout.population_button, border_radius=6)
+        pygame.draw.rect(surface, (70, 76, 88), layout.population_button, width=1, border_radius=6)
         icon = population_icon()
         surface.blit(icon, layout.icon_rect.topleft)
         text_surf = font.render(layout.label, True, (228, 230, 238))
         surface.blit(text_surf, layout.label_pos)
+        delivery_surf = font.render(layout.delivery_label, True, (205, 210, 220))
+        surface.blit(delivery_surf, layout.delivery_pos)
 
         # Temporary dev-only control: force asset cache reload.
         dev_asset_reload.draw_button(surface)

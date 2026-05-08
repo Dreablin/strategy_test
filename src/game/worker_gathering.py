@@ -114,6 +114,7 @@ class WorkerGatheringMixin:
                         target=target,
                         amount=1,
                         priority=priority,
+                        purpose="construction" if getattr(target, "is_under_construction", False) else "generic",
                     )
                 if hasattr(camp, gather_state["record_method"]):
                     record_method = getattr(camp, gather_state["record_method"])

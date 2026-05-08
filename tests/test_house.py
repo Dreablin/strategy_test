@@ -25,6 +25,7 @@ def test_house_contributes_housing_by_level_formula() -> None:
     town_hall = registry.place(TownHall, town_hall_origin_tile())
     town_hall.level = 1
     house = registry.place(House, near_town_hall_tile(8, 8))
+    house.construction_site = None
     house.level = 4  # 2 + 2*(4-1) = 8
     assert max_population(registry, 0) == 16  # TH level1 -> 8; house level4 -> 8
 
@@ -46,6 +47,7 @@ def test_house_demolish_is_blocked_when_it_would_cause_over_cap() -> None:
     registry = BuildingRegistry(world)
     registry.place(TownHall, town_hall_origin_tile())
     house = registry.place(House, near_town_hall_tile(8, 8))
+    house.construction_site = None
     workers = WorkerManager(registry=registry)
     for _ in range(10):  # TH(8) + House(2)
         workers.add_worker(Worker("LUMBERJACK"))
@@ -61,6 +63,7 @@ def test_house_demolish_is_allowed_when_population_fits_remaining_cap() -> None:
     registry = BuildingRegistry(world)
     registry.place(TownHall, town_hall_origin_tile())
     house = registry.place(House, near_town_hall_tile(8, 8))
+    house.construction_site = None
     workers = WorkerManager(registry=registry)
     for _ in range(8):
         workers.add_worker(Worker("LUMBERJACK"))

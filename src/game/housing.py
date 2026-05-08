@@ -15,6 +15,17 @@ def housing_house(level: int) -> int:
     return 2 + 2 * (lvl - 1)
 
 
+def house_contributes_housing(building: Any) -> bool:
+    """A new house contributes only after initial construction finishes.
+
+    During upgrades, the existing house keeps contributing at its current level.
+    """
+    site = getattr(building, "construction_site", None)
+    if site is None:
+        return True
+    return int(getattr(site, "target_level", building.level)) != int(building.level)
+
+
 def current_population(registry: Any, worker_manager_or_count: Any) -> int:
     """Current occupied housing: spawned workers + queued school trainees."""
     if isinstance(worker_manager_or_count, int):
@@ -40,5 +51,7 @@ def max_population(registry: Any, worker_manager_or_count: Any) -> int:
             total += housing_town_hall(building.level)
             continue
         if building.type_tag == "HOUSE":
+            if not house_contributes_housing(building):
+                continue
             total += housing_house(building.level)
     return total

@@ -3,6 +3,7 @@
 from typing import ClassVar
 
 from game.buildings.base import Building
+from game.resource_catalog import is_town_hall_warehouse_resource
 
 
 class TownHall(Building):
@@ -33,6 +34,8 @@ class TownHall(Building):
 
     def warehouse_amount(self, resource: str) -> int:
         key = self._normalize_resource(resource)
+        if not is_town_hall_warehouse_resource(key):
+            return 0
         return int(self.warehouse.get(key, 0))
 
     def add_to_warehouse(self, resource: str, amount: int) -> None:
@@ -40,6 +43,8 @@ class TownHall(Building):
         if n < 0:
             raise ValueError("amount must be non-negative")
         key = self._normalize_resource(resource)
+        if not is_town_hall_warehouse_resource(key):
+            raise ValueError("not a Town Hall warehouse resource")
         self.warehouse[key] = self.warehouse_amount(key) + n
 
     def take_from_warehouse(self, resource: str, amount: int) -> None:
@@ -47,6 +52,8 @@ class TownHall(Building):
         if n < 0:
             raise ValueError("amount must be non-negative")
         key = self._normalize_resource(resource)
+        if not is_town_hall_warehouse_resource(key):
+            raise ValueError("not a Town Hall warehouse resource")
         current = self.warehouse_amount(key)
         if n > current:
             raise ValueError("insufficient warehouse amount")

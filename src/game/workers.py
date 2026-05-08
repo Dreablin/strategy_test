@@ -91,6 +91,7 @@ from game.worker_building import WorkerBuildingMixin
 from game.worker_farming import WorkerFarmingMixin
 from game.worker_gathering import WorkerGatheringMixin
 from game.worker_processing import WorkerProcessingMixin
+from game.resource_catalog import is_simple_meal_resource
 from game.worker_transport import WorkerTransportMixin
 from game.world import find_nearest_free_stone, find_nearest_free_tree
 
@@ -176,6 +177,14 @@ class WorkerManager(
     def workers(self) -> tuple[Worker, ...]:
         return tuple(self._workers)
 
+    def transport_queue_size(self) -> int:
+        """Number of pending delivery tasks waiting for a carrier."""
+        return len(self._transport_queue)
+
+    def active_transport_count(self) -> int:
+        """Number of delivery tasks currently assigned to carriers."""
+        return sum(1 for worker in self._workers if worker.transport_task is not None)
+
     def enqueue_transport_task(
         self,
         *,
@@ -184,8 +193,19 @@ class WorkerManager(
         target: Building,
         amount: int = 1,
         priority: int = 0,
+        purpose: str = "generic",
     ) -> None:
         n = max(0, int(amount))
+        if is_simple_meal_resource(resource) and getattr(target, "type_tag", "") == "TOWN_HALL":
+            return
+        task_purpose = str(purpose)
+        if (
+            task_purpose == "generic"
+            and int(priority) >= 10
+            and bool(getattr(target, "is_under_construction", False))
+            and getattr(target, "construction_site", None) is not None
+        ):
+            task_purpose = "construction"
         for _ in range(n):
             self._transport_queue.append(
                 TransportTask(
@@ -193,6 +213,7 @@ class WorkerManager(
                     source=source,
                     target=target,
                     priority=int(priority),
+                    purpose=task_purpose,
                 )
             )
 

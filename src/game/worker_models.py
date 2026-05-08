@@ -17,6 +17,7 @@ class TransportTask:
     target: Building
     priority: int = 0
     returning_to_town_hall: bool = False
+    purpose: str = "generic"
 
 
 class Worker:

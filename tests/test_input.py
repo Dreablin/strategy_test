@@ -20,8 +20,11 @@ from game.ui.chicken_farm_panel import ChickenFarmPanel
 from game.ui.lumber_camp_panel import LumberCampPanel
 from game.ui.mill_panel import MillPanel
 from game.ui.placement import PlacementController
+from game.ui.population_panel import PopulationPanel
 from game.ui.school_panel import SchoolPanel
 from game.ui.sawmill_panel import SawmillPanel
+from game.ui.top_bar import TopBar
+from game.ui.worker_panel import WorkerPanel
 from game.world import World
 from game.workers import Worker, WorkerManager
 from game.construction import ConstructionSite
@@ -62,6 +65,71 @@ def test_map_click_opens_panel_for_building() -> None:
     inp.handle(surface, pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=pos))
     assert inp.panel_building is not None
     assert inp.panel_building.type_tag == "LUMBER_CAMP"
+
+
+def test_map_click_opens_panel_for_worker() -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World()
+    registry = BuildingRegistry(world)
+    camera = Camera()
+    workers = WorkerManager(registry)
+    worker = Worker("CARRIER", stand_tile=near_town_hall_tile())
+    workers.add_worker(worker)
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, workers, camera)
+
+    pos = _tile_center(surface, world, *near_town_hall_tile())
+    inp.handle(surface, pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=pos))
+
+    assert inp.panel_worker is worker
+    assert inp.panel_building is None
+
+
+def test_map_click_prefers_worker_over_building_panel() -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World()
+    registry = BuildingRegistry(world)
+    camp = registry.place(LumberCamp, near_town_hall_tile())
+    camera = Camera()
+    workers = WorkerManager(registry)
+    worker = Worker("LUMBERJACK", stand_tile=near_town_hall_tile())
+    workers.add_worker(worker)
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, workers, camera)
+
+    pos = _tile_center(surface, world, *camp.grid_pos)
+    inp.handle(surface, pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=pos))
+
+    assert inp.panel_worker is worker
+    assert inp.panel_building is None
+
+
+def test_close_button_closes_worker_panel() -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World()
+    registry = BuildingRegistry(world)
+    camera = Camera()
+    workers = WorkerManager(registry)
+    worker = Worker("CARRIER", stand_tile=near_town_hall_tile())
+    workers.add_worker(worker)
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, workers, camera)
+
+    inp.handle(
+        surface,
+        pygame.event.Event(
+            pygame.MOUSEBUTTONDOWN,
+            button=pygame.BUTTON_LEFT,
+            pos=_tile_center(surface, world, *near_town_hall_tile()),
+        ),
+    )
+    assert inp.panel_worker is worker
+
+    close = WorkerPanel.layout(surface, worker).close.center
+    inp.handle(surface, pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=close))
+
+    assert inp.panel_worker is None
+    assert inp.panel_building is None
 
 
 def test_map_click_on_field_does_not_open_panel() -> None:
@@ -731,6 +799,186 @@ def test_top_bar_boundary_click_is_treated_as_map() -> None:
     placement.select("LUMBER_CAMP")
     inp.handle(surface, pygame.event.Event(pygame.MOUSEMOTION, pos=(100, TOP_BAR_HEIGHT), rel=(0, 0)))
     assert placement.hover_grid is not None
+
+
+def test_population_button_opens_population_panel() -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World()
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    camera = Camera()
+    placement = PlacementController(world, registry, camera)
+    workers = WorkerManager(registry)
+    workers.add_worker(Worker("CARRIER"))
+    inp = GameInput(world, registry, placement, workers, camera)
+
+    layout = TopBar.layout(surface, current_population=1, max_population=8)
+    inp.handle(
+        surface,
+        pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=layout.population_button.center),
+    )
+
+    assert inp.population_panel_open is True
+    assert inp.panel_building is None
+    assert inp.panel_worker is None
+
+
+def test_population_panel_mousewheel_scrolls_when_many_workers() -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World()
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    camera = Camera()
+    placement = PlacementController(world, registry, camera)
+    workers = WorkerManager(registry)
+    for _ in range(20):
+        workers.add_worker(Worker("CARRIER"))
+    inp = GameInput(world, registry, placement, workers, camera)
+
+    layout = TopBar.layout(surface, current_population=20, max_population=20)
+    inp.handle(
+        surface,
+        pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=layout.population_button.center),
+    )
+    assert inp.population_scroll == 0
+
+    inp.handle(surface, pygame.event.Event(pygame.MOUSEWHEEL, y=-3))
+
+    assert inp.population_panel_open is True
+    assert inp.population_scroll > 0
+
+
+def test_population_panel_absorbs_inside_clicks() -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World()
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    camp = registry.place(LumberCamp, near_town_hall_tile())
+    camera = Camera()
+    placement = PlacementController(world, registry, camera)
+    workers = WorkerManager(registry)
+    workers.add_worker(Worker("CARRIER"))
+    inp = GameInput(world, registry, placement, workers, camera)
+
+    top_layout = TopBar.layout(surface, current_population=1, max_population=8)
+    inp.handle(
+        surface,
+        pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=top_layout.population_button.center),
+    )
+    assert inp.population_panel_open is True
+
+    inp.handle(
+        surface,
+        pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=surface.get_rect().center),
+    )
+
+    assert camp in registry.all()
+    assert inp.population_panel_open is True
+    assert inp.panel_building is None
+
+
+def test_population_panel_worker_row_centers_camera_on_worker() -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World()
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    camera = Camera()
+    placement = PlacementController(world, registry, camera)
+    workers = WorkerManager(registry)
+    worker = Worker("CARRIER", stand_tile=(4, 35))
+    workers.add_worker(worker)
+    inp = GameInput(world, registry, placement, workers, camera)
+
+    top_layout = TopBar.layout(surface, current_population=1, max_population=8)
+    inp.handle(
+        surface,
+        pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=top_layout.population_button.center),
+    )
+    panel_layout = PopulationPanel.layout(surface, workers.workers(), inp.population_scroll)
+    row_click = (panel_layout.content.left + 24, panel_layout.content.top + 16)
+    before = camera.offset
+
+    inp.handle(surface, pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=row_click))
+
+    assert camera.offset != before
+    assert inp.population_panel_open is True
+    assert inp.consume_camera_moved() is True
+    sx, sy = world_to_screen(*worker.stand_tile)
+    ox, oy = Renderer.map_origin(surface, world)
+    worker_screen = (
+        ox + camera.offset[0] + sx + TILE_W // 2,
+        oy + camera.offset[1] + sy + TILE_H // 2,
+    )
+    assert worker_screen == (surface.get_width() // 2, (TOP_BAR_HEIGHT + surface.get_height() - BAR_HEIGHT) // 2)
+
+
+def test_population_panel_filter_tile_limits_visible_workers() -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World()
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    camera = Camera()
+    placement = PlacementController(world, registry, camera)
+    workers = WorkerManager(registry)
+    carrier = Worker("CARRIER", stand_tile=(4, 35))
+    builder = Worker("BUILDER", stand_tile=(28, 35))
+    workers.add_worker(carrier)
+    workers.add_worker(builder)
+    inp = GameInput(world, registry, placement, workers, camera)
+
+    top_layout = TopBar.layout(surface, current_population=2, max_population=8)
+    inp.handle(
+        surface,
+        pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=top_layout.population_button.center),
+    )
+    panel_layout = PopulationPanel.layout(surface, workers.workers(), inp.population_scroll, inp.population_filter)
+    builder_filter = next(rect for worker_type, rect in panel_layout.filters if worker_type == "BUILDER")
+
+    inp.handle(surface, pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=builder_filter.center))
+
+    assert inp.population_filter == "BUILDER"
+    filtered_layout = PopulationPanel.layout(surface, workers.workers(), inp.population_scroll, inp.population_filter)
+    row_click = (filtered_layout.content.left + 24, filtered_layout.content.top + 16)
+    before = camera.offset
+    inp.handle(surface, pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=row_click))
+
+    assert camera.offset != before
+    sx, sy = world_to_screen(*builder.stand_tile)
+    ox, oy = Renderer.map_origin(surface, world)
+    builder_screen = (
+        ox + camera.offset[0] + sx + TILE_W // 2,
+        oy + camera.offset[1] + sy + TILE_H // 2,
+    )
+    assert builder_screen == (surface.get_width() // 2, (TOP_BAR_HEIGHT + surface.get_height() - BAR_HEIGHT) // 2)
+
+
+def test_population_panel_all_filter_restores_unfiltered_list() -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World()
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    camera = Camera()
+    placement = PlacementController(world, registry, camera)
+    workers = WorkerManager(registry)
+    workers.add_worker(Worker("CARRIER", stand_tile=(4, 35)))
+    workers.add_worker(Worker("BUILDER", stand_tile=(28, 35)))
+    inp = GameInput(world, registry, placement, workers, camera)
+
+    top_layout = TopBar.layout(surface, current_population=2, max_population=8)
+    inp.handle(
+        surface,
+        pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=top_layout.population_button.center),
+    )
+    panel_layout = PopulationPanel.layout(surface, workers.workers(), inp.population_scroll, inp.population_filter)
+    builder_filter = next(rect for worker_type, rect in panel_layout.filters if worker_type == "BUILDER")
+    inp.handle(surface, pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=builder_filter.center))
+    assert inp.population_filter == "BUILDER"
+
+    panel_layout = PopulationPanel.layout(surface, workers.workers(), inp.population_scroll, inp.population_filter)
+    all_filter = next(rect for worker_type, rect in panel_layout.filters if worker_type is None)
+    inp.handle(surface, pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=all_filter.center))
+
+    assert inp.population_filter is None
 
 
 def test_bottom_bar_boundary_click_is_not_map() -> None:

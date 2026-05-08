@@ -6,9 +6,11 @@ from dataclasses import dataclass
 
 import pygame
 
+from game.buildings.house import House
 from game.buildings.registry import BuildingRegistry
 from game.buildings.school import School
 from game.buildings.town_hall import TownHall
+from game.construction import complete_construction
 from game.config import near_town_hall_tile, town_hall_origin_tile
 from game.housing import current_population, housing_house, housing_town_hall, max_population
 from game.ui.school_panel import SchoolPanel
@@ -66,6 +68,49 @@ def test_max_population_accepts_worker_manager_or_count_without_hidden_globals()
     reg = _Registry(buildings=[_B("TOWN_HALL", 1), _B("HOUSE", 1)])
     assert max_population(reg, 2) == 10
     assert max_population(reg, _Workers(2)) == 10
+
+
+def test_house_under_initial_construction_does_not_increase_population_cap() -> None:
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+
+    house = registry.place(House, near_town_hall_tile(8, 8))
+
+    assert house.is_under_construction
+    assert max_population(registry, 0) == housing_town_hall(1)
+
+    site = house.construction_site
+    assert site is not None
+    site.delivered_resources = dict(site.required_resources)
+    site.build_started_ms = 1_000
+    assert complete_construction(house, 1_000 + site.build_time_ms)
+
+    assert max_population(registry, 0) == housing_town_hall(1) + housing_house(1)
+
+
+def test_house_upgrade_preserves_current_population_cap_until_complete() -> None:
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    house = registry.place(House, near_town_hall_tile(8, 8))
+    house.construction_site = None
+
+    assert max_population(registry, 0) == housing_town_hall(1) + housing_house(1)
+    assert registry.upgrade_building(house)
+
+    assert house.is_under_construction
+    assert house.level == 1
+    assert max_population(registry, 0) == housing_town_hall(1) + housing_house(1)
+
+    site = house.construction_site
+    assert site is not None
+    site.delivered_resources = dict(site.required_resources)
+    site.build_started_ms = 1_000
+    assert complete_construction(house, 1_000 + site.build_time_ms)
+
+    assert house.level == 2
+    assert max_population(registry, 0) == housing_town_hall(1) + housing_house(2)
 
 
 def test_current_population_counts_spawned_workers_plus_school_queue() -> None:

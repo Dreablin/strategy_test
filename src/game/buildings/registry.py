@@ -7,7 +7,7 @@ from typing import Type
 from game.buildings.base import Building
 from game.construction import ConstructionSite
 from game.config import CONSTRUCTION_REQUIREMENTS, TOWN_HALL_MIN_LEVEL_FOR_BUILDING
-from game.housing import current_population, housing_house, max_population
+from game.housing import current_population, house_contributes_housing, housing_house, max_population
 from game.world import World
 from game.workers import WorkerManager
 
@@ -142,11 +142,12 @@ class BuildingRegistry:
             raise ValueError("unknown building")
         if building.type_tag == "HOUSE":
             wm = worker_manager or self._worker_manager
-            current_pop = current_population(self, wm or 0)
-            current_cap = max_population(self, wm or current_pop)
-            next_cap = current_cap - housing_house(building.level)
-            if current_pop > next_cap:
-                return
+            if house_contributes_housing(building):
+                current_pop = current_population(self, wm or 0)
+                current_cap = max_population(self, wm or current_pop)
+                next_cap = current_cap - housing_house(building.level)
+                if current_pop > next_cap:
+                    return
         if worker_manager is not None:
             worker_manager.notify_demolished(building)
         pos = building.grid_pos

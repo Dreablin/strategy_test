@@ -10,7 +10,9 @@ from game.worker_constants import (
     ANIMAL_HERDER_REST_MS,
     BAKER_REST_MS,
     BAKERY_CYCLE_MS,
+    CANTEEN_CYCLE_MS,
     CHICKEN_FARM_CYCLE_MS,
+    COOK_REST_MS,
     MILLER_REST_MS,
     MILL_BASE_CYCLE_MS,
     MILL_MIN_CYCLE_MS,
@@ -89,42 +91,8 @@ class WorkerProcessingMixin:
 
     @staticmethod
     def _update_cook(worker: Worker, now_ms: int, world: Any) -> None:
-        """Park cook at canteen center; production cycle wiring comes in T255."""
-        _ = now_ms
-        building = worker.assigned_building
-        if building is None or building.type_tag != "CANTEEN":
-            return
-        if building.is_under_construction:
-            return
-        if world is None:
-            return
-        center_tile = building_center_tile(building)
-        active = bool(getattr(building, "active", True))
-        if worker.state == "moving":
-            return
-        if worker.state == "resting":
-            if not active:
-                worker.current_tile = center_tile
-                worker.stand_tile = center_tile
-                worker.idle = False
-                return
-            worker.state = "working"
-            worker.camp_wait_until_ms = 0
-        if worker.state in {"working", "processing"} and worker.current_tile != center_tile:
-            worker.current_tile = center_tile
-            worker.stand_tile = center_tile
-            worker.idle = False
-            return
-        if not active:
-            worker.state = "resting"
-            worker.current_tile = center_tile
-            worker.stand_tile = center_tile
-            worker.idle = False
-            return
-        worker.state = "working"
-        worker.current_tile = center_tile
-        worker.stand_tile = center_tile
-        worker.idle = False
+        _ = world
+        WorkerProcessingMixin._update_processor_worker(worker, now_ms, CANTEEN_PROCESSOR)
 
     @staticmethod
     def _update_animal_herder(worker: Worker, now_ms: int, world: Any) -> None:
@@ -224,4 +192,17 @@ CHICKEN_FARM_PROCESSOR = ProcessorSpec(
     has_inputs=_multi_input_has_recipe,
     consume_inputs=lambda farm: (farm.take_wheat_in(1), farm.take_water_in(1)),
     add_output=lambda farm: farm.add_chicken_out(1),
+)
+
+CANTEEN_PROCESSOR = ProcessorSpec(
+    building_type="CANTEEN",
+    duration_ms=_fixed_duration(CANTEEN_CYCLE_MS),
+    rest_ms=COOK_REST_MS,
+    has_inputs=_multi_input_has_recipe,
+    consume_inputs=lambda canteen: (
+        canteen.take_local_storage("chicken", 1),
+        canteen.take_local_storage("bread", 1),
+        canteen.take_local_storage("water", 1),
+    ),
+    add_output=lambda canteen: canteen.add_local_storage("simple_meal", 1),
 )

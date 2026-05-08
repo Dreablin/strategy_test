@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import ClassVar
 
 from game.buildings.base import Building
+from game.worker_constants import CANTEEN_CYCLE_MS
 
 CANTEEN_LOCAL_RESOURCES: tuple[str, ...] = ("chicken", "bread", "water", "simple_meal")
 CANTEEN_STORAGE_BASE = 5
@@ -14,12 +15,14 @@ CANTEEN_DINER_SLOTS_BASE = 3
 class Canteen(Building):
     type_tag: ClassVar[str] = "CANTEEN"
 
-    __slots__ = ("active", "_local_storage")
+    __slots__ = ("active", "_local_storage", "processing_started_ms", "processing_duration_ms")
 
     def __init__(self, level: int = 1, grid_pos: tuple[int, int] | None = None) -> None:
         super().__init__(level=level, grid_pos=grid_pos)
         self.active = True
         self._local_storage = {resource: 0 for resource in CANTEEN_LOCAL_RESOURCES}
+        self.processing_started_ms = 0
+        self.processing_duration_ms = CANTEEN_CYCLE_MS
 
     def set_active(self, value: bool) -> None:
         self.active = bool(value)
@@ -55,6 +58,33 @@ class Canteen(Building):
 
     def diner_slot_capacity(self) -> int:
         return CANTEEN_DINER_SLOTS_BASE + self.level - 1
+
+    def has_recipe_inputs(self) -> bool:
+        return (
+            self.local_storage_amount("chicken") >= 1
+            and self.local_storage_amount("bread") >= 1
+            and self.local_storage_amount("water") >= 1
+        )
+
+    def output_amount(self) -> int:
+        return self.local_storage_amount("simple_meal")
+
+    def output_capacity(self) -> int:
+        return self.local_storage_capacity("simple_meal")
+
+    def processing_progress(self, now_ms: int) -> float:
+        if self.processing_started_ms <= 0:
+            return 0.0
+        duration = max(1, int(self.processing_duration_ms))
+        elapsed = max(0, int(now_ms) - int(self.processing_started_ms))
+        return max(0.0, min(1.0, elapsed / float(duration)))
+
+    def progress_state(self, now_ms: int) -> str:
+        return (
+            "processing"
+            if self.processing_started_ms > 0 and self.processing_progress(now_ms) < 1.0
+            else "idle"
+        )
 
     def _require_local_resource(self, resource: str) -> None:
         if resource not in self._local_storage:

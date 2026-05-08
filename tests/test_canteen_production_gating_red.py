@@ -1,7 +1,7 @@
-"""RED tests for canteen cook production gating (T254).
+"""Canteen cook production gating (T254 / T255).
 
-Expect failures until T255 adds `Canteen` processor fields and wires `COOK` through
-the shared processor pattern (PRD: 30_000 ms work, 5_000 ms rest, three inputs).
+Validates gating aligned with other processors: no cook, inactive building,
+missing inputs, full `simple_meal` storage, and inactive mid-cycle completion.
 """
 
 from __future__ import annotations

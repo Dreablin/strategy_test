@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 22 - Canteen, cook, meals, and worker satiety
-- **Next Task:** T247 - Canteen domain implementation
-- **Last Completed:** T246 - Canteen domain RED tests
-- **Total Progress:** 246 / 276 (Phase 22: 1 / 31 done)
+- **Next Task:** T248 - simple_meal local-only RED tests
+- **Last Completed:** T247 - Canteen domain implementation
+- **Total Progress:** 247 / 276 (Phase 22: 2 / 31 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -33,7 +33,7 @@
 ### 22.1 Canteen domain, config, assets, and menu
 
 - [x] **T246**: Add RED tests for `CANTEEN` building domain: social/build menu entry, 10 max levels, configured construction cost/time, local storage buckets for `chicken`, `bread`, `water`, and `simple_meal`, level 1 capacities of `5`, per-level `+1` capacity, level 1 diner slots of `3`, and per-level `+1` diner slot.
-- [ ] **T247**: Implement `Canteen` building class, config/json wiring, registry/placement/bottom-bar social menu entry, local storage helpers, and capacity formulas. Run full `pytest -q`.
+- [x] **T247**: Implement `Canteen` building class, config/json wiring, registry/placement/bottom-bar social menu entry, local storage helpers, and capacity formulas. Run full `pytest -q`.
 - [ ] **T248**: Add RED tests proving `simple_meal` is not a Town Hall warehouse resource, is not displayed in Town Hall storage, and is never generated as a carrier export task.
 - [ ] **T249**: Implement the local-only `simple_meal` resource labels/helpers needed by canteen UI and tests without adding it to Town Hall warehouse. Run full `pytest -q`.
 - [ ] **T250**: Add canteen asset placeholders and `asset_meta.json` in the correct building asset folder, following existing building scale/anchor conventions. Add a render/asset smoke test for built and construction sprites.

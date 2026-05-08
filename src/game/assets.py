@@ -30,6 +30,7 @@ _BUILDING_FOLDER: dict[str, str] = {
     "FORESTER_HUT": "forester_hut",
     "SCHOOL": "school",
     "HOUSE": "house",
+    "CANTEEN": "canteen",
     "MILL": "windmill",
     "BAKERY": "bakery",
     "CHICKEN_FARM": "chicken_farm",

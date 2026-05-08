@@ -54,15 +54,18 @@ class WorkerFarmingMixin:
             if target_field is None:
                 worker.state = "working_field" if now_ms >= FARMER_NO_TARGET_WORKING_STATE_MS else "resting"
                 worker.camp_wait_until_ms = now_ms + 1_000
+                self._try_blocked_cycle_hunger(worker, now_ms)
                 return
             if not self._reserve_field(target_field, worker):
                 worker.state = "working_field" if now_ms >= FARMER_NO_TARGET_WORKING_STATE_MS else "resting"
                 worker.camp_wait_until_ms = now_ms + 1_000
+                self._try_blocked_cycle_hunger(worker, now_ms)
                 return
             if not self._start_farmer_move_to_field(worker, target_field, now_ms, world):
                 self._release_field_reservations_for(worker)
                 worker.state = "working_field" if now_ms >= FARMER_NO_TARGET_WORKING_STATE_MS else "resting"
                 worker.camp_wait_until_ms = now_ms + 1_000
+                self._try_blocked_cycle_hunger(worker, now_ms)
                 return
             worker.state = "going_to_field"
             worker.target_tree = target_field.grid_pos

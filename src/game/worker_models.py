@@ -50,6 +50,7 @@ class Worker:
         "dining_eating_started_ms",
         "dining_meal_assigned",
         "dining_target_tile",
+        "blocked_cycle_hunger_try_ms",
     )
 
     def __init__(self, type_tag: str, *, stand_tile: tuple[int, int] = (17, 19)) -> None:
@@ -61,6 +62,7 @@ class Worker:
         self.dining_eating_started_ms = 0
         self.dining_meal_assigned = False
         self.dining_target_tile: tuple[int, int] | None = None
+        self.blocked_cycle_hunger_try_ms = -1
         self.assigned_building: Building | None = None
         self.idle = True
         self.stand_tile: tuple[int, int] = stand_tile

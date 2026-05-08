@@ -149,6 +149,7 @@ class WorkerProcessingMixin:
             worker.current_tile = center_tile
             return
         if not _has_input_and_output_space(building, spec.has_inputs):
+            self._try_blocked_cycle_hunger(worker, now_ms)
             return
         if worker.state != "working":
             return

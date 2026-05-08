@@ -1,4 +1,4 @@
-"""T271 RED: throttled hunger when starting a new cycle is blocked (T272 implements API + wiring)."""
+"""Throttled hunger when starting a new cycle is blocked (T271 RED, T272 implementation)."""
 
 from __future__ import annotations
 

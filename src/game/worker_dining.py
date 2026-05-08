@@ -66,6 +66,7 @@ def assign_diner_meals_for_canteen(canteen: Canteen, *, now_ms: int = 0) -> None
 
 def _finish_eating(worker: Worker, canteen: Canteen) -> None:
     worker.satiety = MAX_WORKER_SATIETY
+    worker.blocked_cycle_hunger_try_ms = -1
     release_diner_slot_after_meal(canteen, worker)
     worker.dining_phase = "none"
     worker.dining_eating_started_ms = 0

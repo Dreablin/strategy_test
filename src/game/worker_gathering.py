@@ -53,16 +53,19 @@ class WorkerGatheringMixin:
             if now_ms < worker.camp_wait_until_ms:
                 return
             if not getattr(camp, "active", False):
+                self._try_blocked_cycle_hunger(worker, now_ms)
                 return
             if hasattr(camp, "is_storage_full") and camp.is_storage_full():
                 # Keep waiting inside the camp while storage is full.
                 worker.camp_wait_until_ms = now_ms + 1_000
+                self._try_blocked_cycle_hunger(worker, now_ms)
                 return
             depart_ms = worker.camp_wait_until_ms
             if not self._start_gather_cycle(worker, camp, depart_ms, world_query=gather_state["world_query"]):
                 # No target/path right now: stay inside camp and retry later.
                 self._park_worker_inside_camp(worker, camp)
                 worker.camp_wait_until_ms = now_ms + 1_000
+                self._try_blocked_cycle_hunger(worker, now_ms)
                 return
             worker.camp_wait_until_ms = 0
             worker.update(now_ms)
@@ -152,6 +155,7 @@ class WorkerGatheringMixin:
         if worker.state == "working":
             self._park_forester_inside_hut(worker, hut)
             if not getattr(hut, "active", False):
+                self._try_blocked_cycle_hunger(worker, now_ms)
                 return
             if worker.camp_wait_until_ms <= 0:
                 worker.camp_wait_until_ms = now_ms + FORESTER_REST_MS
@@ -161,6 +165,7 @@ class WorkerGatheringMixin:
             depart_ms = now_ms
             if not self._start_forester_cycle(worker, hut, depart_ms, world):
                 worker.camp_wait_until_ms = now_ms + FORESTER_TARGET_RETRY_MS
+                self._try_blocked_cycle_hunger(worker, now_ms)
                 return
             worker.camp_wait_until_ms = 0
             return
@@ -182,6 +187,7 @@ class WorkerGatheringMixin:
                 # stay on the current tile and retry pathing on next ticks.
                 worker.state = "return_path_blocked"
                 worker.camp_wait_until_ms = now_ms + FORESTER_RETURN_RETRY_MS
+                self._try_blocked_cycle_hunger(worker, now_ms)
             return
 
         if worker.state == "return_path_blocked":
@@ -191,6 +197,7 @@ class WorkerGatheringMixin:
                 worker.camp_wait_until_ms = 0
                 return
             worker.camp_wait_until_ms = now_ms + FORESTER_RETURN_RETRY_MS
+            self._try_blocked_cycle_hunger(worker, now_ms)
             return
 
         if worker.state == "arrived_camp":
@@ -208,6 +215,7 @@ class WorkerGatheringMixin:
                     now_ms=int(now_ms),
                 )
             return
+
     def _gather_state_for(self, worker_type: str) -> dict[str, Any] | None:
         if worker_type == "LUMBERJACK":
             return {
@@ -297,6 +305,7 @@ class WorkerGatheringMixin:
             worker.state = "working"
             worker.current_tile = center_tile
             worker.idle = False
+            self._try_blocked_cycle_hunger(worker, now_ms)
             return
         if worker.state != "working":
             return

@@ -234,6 +234,7 @@ class WorkerManager(
         worker.segment_started_ms = 0
         worker.segment_progress = 0.0
         worker.state = "working"
+        worker.blocked_cycle_hunger_try_ms = -1
         self._apply_building_bonus(worker, building)
 
     def is_staffed(self, building: Building) -> bool:
@@ -305,6 +306,7 @@ class WorkerManager(
                 w.target_tree = None
                 w.chop_started_ms = 0
                 w.chop_duration_ms = CHOP_DURATION_MS
+                w.blocked_cycle_hunger_try_ms = -1
             if site is not None:
                 if site.builder is w:
                     site.builder = None
@@ -427,6 +429,22 @@ class WorkerManager(
             return
         worker.satiety, worker.satiety_last_sample_ms = apply_satiety_game_time(
             worker.satiety, last, now_ms
+        )
+
+    def _try_blocked_cycle_hunger(self, worker: Worker, now_ms: int) -> None:
+        if self._registry is None:
+            return
+        world = getattr(self._registry, "_world", None)
+        if world is None:
+            return
+        from game.worker_hunger import try_blocked_cycle_hunger_check
+
+        try_blocked_cycle_hunger_check(
+            worker,
+            world=world,
+            registry=self._registry,
+            worker_manager=self,
+            now_ms=int(now_ms),
         )
 
     def update(self, now_ms: int) -> None:

@@ -142,6 +142,20 @@ def production_status_for_building(manager: Any, building: Building) -> str:
         if worker.state == "processing":
             return "Processing"
         return "Ready"
+    if building.type_tag == "CANTEEN":
+        if worker.state == "resting":
+            return "Resting"
+        if int(building.local_storage_amount("simple_meal")) >= int(building.local_storage_capacity("simple_meal")):
+            return "Output full"
+        if int(building.local_storage_amount("chicken")) <= 0:
+            return "No chicken"
+        if int(building.local_storage_amount("bread")) <= 0:
+            return "No bread"
+        if int(building.local_storage_amount("water")) <= 0:
+            return "No water"
+        if worker.state == "processing":
+            return "Processing"
+        return "Ready"
     if building.type_tag == "CHICKEN_FARM":
         if worker.state == "resting":
             return "Resting"

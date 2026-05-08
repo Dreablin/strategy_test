@@ -22,6 +22,7 @@ _DISPLAY_NAME: dict[str, str] = {
     "FORESTER_HUT": "Forester Hut",
     "BAKERY": "Bakery",
     "CHICKEN_FARM": "Chicken Farm",
+    "CANTEEN": "Canteen",
     "WELL": "Well",
 }
 
@@ -35,6 +36,7 @@ _DESCRIPTION: dict[str, str] = {
     "MILL": "Processes wheat into flour.",
     "BAKERY": "Bakes flour and water into bread.",
     "CHICKEN_FARM": "Raises chickens from grain and water.",
+    "CANTEEN": "Cook prepares simple meals from chicken, bread, and water.",
     "WELL": "Carriers draw water for production.",
 }
 

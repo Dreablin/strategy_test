@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 22 - Canteen, cook, meals, and worker satiety
-- **Next Task:** T276 - End-to-end canteen dining smoke + final gate
-- **Last Completed:** T275 - Canteen panel diner tiles (occupied/waiting/eating/progress)
-- **Total Progress:** 275 / 276 (Phase 22: 30 / 31 done)
+- **Next Task:** None - Phase 22 complete
+- **Last Completed:** T276 - End-to-end canteen dining smoke and final verification gate
+- **Total Progress:** 276 / 276 (Phase 22: 31 / 31 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -77,7 +77,7 @@
 ### 22.6 Canteen UI, diner tiles, smoke, and final verification
 
 - [x] **T275**: Add and implement canteen panel diner tiles: one tile per slot, occupied/reserved state, waiting-vs-eating state, worker avatar/label, and per-diner eating progress bar only while eating. Include click-panel tests and headless render assertions.
-- [ ] **T276**: Add end-to-end smoke test: build canteen, hire cook, deliver chicken/bread/water, produce `simple_meal`, drain worker satiety below threshold, reserve a dining slot, wait if no meal exists, eat for `20_000 ms` after meal assignment, restore satiety, release slot, and return to work. Final gate: full `pytest -q` plus `ruff check src tests`; update Current Status and Notes; mark Phase 22 complete only when all tasks are `[x]`.
+- [x] **T276**: Add end-to-end smoke test: build canteen, hire cook, deliver chicken/bread/water, produce `simple_meal`, drain worker satiety below threshold, reserve a dining slot, wait if no meal exists, eat for `20_000 ms` after meal assignment, restore satiety, release slot, and return to work. Final gate: full `pytest -q` plus `ruff check src tests`; update Current Status and Notes; mark Phase 22 complete only when all tasks are `[x]`.
 
 ---
 
@@ -103,6 +103,7 @@
 
 ## Notes
 
+- **2026-05-08:** T276 adds `tests/test_smoke_phase22.py` end-to-end canteen flow: canteen build/setup, cook assignment, chicken/bread/water deliveries, `simple_meal` production, hunger-triggered slot reservation, waiting with no meal, `DINING_EAT_DURATION_MS` eating completion, satiety reset, slot release, and idle return state. Final gates: full `pytest -q` (`751 passed`) and `ruff check src tests` green.
 - **2026-05-08:** T275 extends `CanteenPanel` with per-slot diner tiles (`_diner_tiles`), occupied vs empty visuals, worker avatar (`worker_dot`) + short label, waiting/eating state text, and per-diner eating progress strip only in `eating`; click inside diner tiles keeps panel open (no action). Added tests in `tests/test_canteen_panel.py`; full `pytest -q` and targeted `ruff` green.
 - **2026-05-08:** T274 adds `try_builder_hunger_after_completion_or_idle` and `try_carrier_hunger_after_delivery_or_idle` in `worker_hunger.py`; wired in `worker_building._update_builder` (post-completion + idle/no-target) and `worker_transport._update_carrier` (idle/no-task + post-delivery). Carrier hook requires `transport_task is None` and `carrying is None` to avoid abandoning items; blocked-cycle stamping keeps non-hungry workers at `-1`; `tests/test_worker_hunger_builder_carrier_red.py` and full `pytest -q` green.
 - **2026-05-08:** T273 RED: `tests/test_worker_hunger_builder_carrier_red.py` expects `game.worker_hunger.try_builder_hunger_after_completion_or_idle` and `try_carrier_hunger_after_delivery_or_idle`; collection fails with `ImportError` until T274.

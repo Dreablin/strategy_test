@@ -1,8 +1,6 @@
-"""RED tests for carrier inputs to canteen (T256).
+"""Carrier inputs to canteen (T256 / T257).
 
-Expect failures until T257 adds `canteen_input_transport_tasks`, canteen-local
-chicken/bread acceptance from Town Hall, water intake compatible with
-`water_input_transport_tasks`, and enqueue logic that respects inbound deliveries.
+Covers Town Hall chicken/bread refills, well water, and inbound-aware enqueue.
 """
 
 from __future__ import annotations
@@ -19,12 +17,9 @@ from game.workers import WorkerManager
 
 
 def _canteen_input_transport_tasks():
-    import game.transport_tasks as tt
+    from game.transport_tasks import canteen_input_transport_tasks
 
-    assert hasattr(tt, "canteen_input_transport_tasks"), (
-        "T257: define transport_tasks.canteen_input_transport_tasks(registry)"
-    )
-    return tt.canteen_input_transport_tasks
+    return canteen_input_transport_tasks
 
 
 def _empty_world_registry_canteen_th_well() -> tuple[BuildingRegistry, TownHall, Canteen, Well]:

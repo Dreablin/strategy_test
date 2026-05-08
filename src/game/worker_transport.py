@@ -13,6 +13,7 @@ from game.transport_tasks import (
     _water_capacity,
     bakery_input_transport_tasks,
     bakery_output_transport_tasks,
+    canteen_input_transport_tasks,
     chicken_farm_output_transport_tasks,
     construction_transport_tasks,
     farm_wheat_output_transport_tasks,
@@ -483,6 +484,17 @@ class WorkerTransportMixin:
                     delivered_target = town_hall
                 elif hasattr(task.target, "add_to_warehouse"):
                     task.target.add_to_warehouse(task.resource, 1)  # type: ignore[attr-defined]
+        elif task.target.type_tag == "CANTEEN" and task.resource in ("chicken", "bread"):
+            canteen = task.target
+            cap = int(canteen.local_storage_capacity(task.resource))
+            amt = int(canteen.local_storage_amount(task.resource))
+            if amt < cap:
+                canteen.add_local_storage(task.resource, 1)
+            else:
+                town_hall = self._primary_town_hall()
+                if town_hall is not None:
+                    town_hall.add_to_warehouse(task.resource, 1)
+                    delivered_target = town_hall
         elif task.resource == "water" and hasattr(task.target, "add_water_in"):
             if _water_amount(task.target) < _water_capacity(task.target):
                 task.target.add_water_in(1)  # type: ignore[attr-defined]
@@ -501,6 +513,7 @@ class WorkerTransportMixin:
         desired: list[TransportTask],
         *,
         count_carried_well_water: bool = True,
+        count_carried_town_hall_delivery: bool = True,
     ) -> None:
         desired_counts: dict[tuple[int, int, str, int, str], int] = {}
         for task in desired:
@@ -518,6 +531,12 @@ class WorkerTransportMixin:
             if (
                 not count_carried_well_water
                 and task.source.type_tag == "WELL"
+                and worker.carrying is not None
+            ):
+                continue
+            if (
+                not count_carried_town_hall_delivery
+                and task.source.type_tag == "TOWN_HALL"
                 and worker.carrying is not None
             ):
                 continue
@@ -602,6 +621,28 @@ class WorkerTransportMixin:
         if self._registry is None:  # type: ignore[attr-defined]
             return
         self._enqueue_desired_transport_tasks(bakery_input_transport_tasks(self._registry))  # type: ignore[attr-defined]
+
+    def _enqueue_canteen_input_tasks(self) -> None:
+        if self._registry is None:  # type: ignore[attr-defined]
+            return
+        desired: list[TransportTask] = []
+        planned_counts: dict[tuple[int, str], int] = {}
+        for task in canteen_input_transport_tasks(self._registry):
+            if task.resource not in {"chicken", "bread"}:
+                continue
+            target = task.target
+            cap = int(target.local_storage_capacity(task.resource))
+            amt = int(target.local_storage_amount(task.resource))
+            inbound = self._inbound_resource_count(target, task.resource, planned_counts)  # type: ignore[attr-defined]
+            if amt + inbound >= cap:
+                continue
+            desired.append(task)
+            key = (id(target), task.resource)
+            planned_counts[key] = planned_counts.get(key, 0) + 1
+        self._enqueue_desired_transport_tasks(
+            desired,
+            count_carried_town_hall_delivery=False,
+        )
 
     def _enqueue_water_input_tasks(self) -> None:
         if self._registry is None:  # type: ignore[attr-defined]

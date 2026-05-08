@@ -191,6 +191,43 @@ def bakery_input_transport_tasks(registry: Any) -> list[TransportTask]:
     return processor_input_transport_tasks(registry, "flour")
 
 
+def canteen_input_transport_tasks(registry: Any) -> list[TransportTask]:
+    """Build low-priority chicken and bread tasks from Town Hall to active canteens."""
+    if registry is None:
+        return []
+    buildings = list(registry.all())
+    town_hall = next((b for b in buildings if b.type_tag == "TOWN_HALL"), None)
+    if town_hall is None or not hasattr(town_hall, "warehouse_amount"):
+        return []
+    remaining_chicken = int(town_hall.warehouse_amount("chicken"))
+    remaining_bread = int(town_hall.warehouse_amount("bread"))
+    tasks: list[TransportTask] = []
+    for building in buildings:
+        if building.type_tag != "CANTEEN":
+            continue
+        if getattr(building, "is_under_construction", False):
+            continue
+        if not getattr(building, "active", False):
+            continue
+        if remaining_chicken > 0:
+            cap = int(building.local_storage_capacity("chicken"))
+            amt = int(building.local_storage_amount("chicken"))
+            want = max(0, cap - amt)
+            count = min(want, remaining_chicken)
+            for _ in range(count):
+                tasks.append(TransportTask(resource="chicken", source=town_hall, target=building, priority=0))
+            remaining_chicken -= count
+        if remaining_bread > 0:
+            cap = int(building.local_storage_capacity("bread"))
+            amt = int(building.local_storage_amount("bread"))
+            want = max(0, cap - amt)
+            count = min(want, remaining_bread)
+            for _ in range(count):
+                tasks.append(TransportTask(resource="bread", source=town_hall, target=building, priority=0))
+            remaining_bread -= count
+    return tasks
+
+
 def bakery_output_transport_tasks(registry: Any) -> list[TransportTask]:
     """Build low-priority bread export tasks from bakeries to Town Hall warehouse."""
     if registry is None:

@@ -428,6 +428,7 @@ class WorkerManager(
         self._enqueue_mill_refill_tasks()
         self._enqueue_mill_output_tasks()
         self._enqueue_bakery_refill_tasks()
+        self._enqueue_canteen_input_tasks()
         self._enqueue_water_input_tasks()
         self._enqueue_bakery_output_tasks()
         self._enqueue_chicken_farm_output_tasks()

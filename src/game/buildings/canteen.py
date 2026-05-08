@@ -86,6 +86,15 @@ class Canteen(Building):
             else "idle"
         )
 
+    def water_amount(self) -> int:
+        return self.local_storage_amount("water")
+
+    def water_capacity(self) -> int:
+        return self.local_storage_capacity("water")
+
+    def add_water_in(self, amount: int) -> None:
+        self.add_local_storage("water", int(amount))
+
     def _require_local_resource(self, resource: str) -> None:
         if resource not in self._local_storage:
             raise KeyError(resource)

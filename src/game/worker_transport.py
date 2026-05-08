@@ -26,6 +26,7 @@ from game.transport_tasks import (
 )
 from game.worker_constants import CARRIER_INTERACT_MS, WELL_DRAW_WATER_MS
 from game.worker_geometry import building_center_tile
+from game.worker_hunger import try_carrier_hunger_after_delivery_or_idle
 from game.worker_models import TransportTask, Worker
 
 
@@ -309,6 +310,13 @@ class WorkerTransportMixin:
                 worker.idle = True
             task = self._next_transport_task()
             if task is None:
+                try_carrier_hunger_after_delivery_or_idle(
+                    worker,
+                    world=world,
+                    registry=self._registry,
+                    worker_manager=self,
+                    now_ms=int(now_ms),
+                )
                 return
             worker.transport_task = task
             worker.carrying = None
@@ -507,6 +515,13 @@ class WorkerTransportMixin:
         worker.transport_task = None
         worker.state = "idle"
         worker.idle = True
+        try_carrier_hunger_after_delivery_or_idle(
+            worker,
+            world=world,
+            registry=self._registry,
+            worker_manager=self,
+            now_ms=int(now_ms),
+        )
 
     def _enqueue_desired_transport_tasks(
         self,

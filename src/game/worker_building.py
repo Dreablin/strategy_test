@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from game.buildings.base import Building
 from game.pathfinding import find_path_bfs
 from game.worker_geometry import building_center_tile
+from game.worker_hunger import try_builder_hunger_after_completion_or_idle
 from game.worker_models import Worker
 
 
@@ -21,6 +21,13 @@ class WorkerBuildingMixin:
                 worker.assigned_building = None
                 worker.idle = True
                 worker.state = "idle"
+                try_builder_hunger_after_completion_or_idle(
+                    worker,
+                    world=world,
+                    registry=self._registry,
+                    worker_manager=self,
+                    now_ms=int(now_ms),
+                )
                 return
             if site.builder is worker:
                 worker.idle = False
@@ -71,4 +78,11 @@ class WorkerBuildingMixin:
             worker.assigned_building = target
             worker.start_move(best_path, started_ms=now_ms)
             return
+        try_builder_hunger_after_completion_or_idle(
+            worker,
+            world=world,
+            registry=self._registry,
+            worker_manager=self,
+            now_ms=int(now_ms),
+        )
         return True

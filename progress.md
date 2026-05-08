@@ -34,7 +34,7 @@
 
 - [x] **T246**: Add RED tests for `CANTEEN` building domain: social/build menu entry, 10 max levels, configured construction cost/time, local storage buckets for `chicken`, `bread`, `water`, and `simple_meal`, level 1 capacities of `5`, per-level `+1` capacity, level 1 diner slots of `3`, and per-level `+1` diner slot.
 - [x] **T247**: Implement `Canteen` building class, config/json wiring, registry/placement/bottom-bar social menu entry, local storage helpers, and capacity formulas. Run full `pytest -q`.
-- [ ] **T248**: Add RED tests proving `simple_meal` is not a Town Hall warehouse resource, is not displayed in Town Hall storage, and is never generated as a carrier export task.
+- [~] **T248**: Add RED tests proving `simple_meal` is not a Town Hall warehouse resource, is not displayed in Town Hall storage, and is never generated as a carrier export task.
 - [ ] **T249**: Implement the local-only `simple_meal` resource labels/helpers needed by canteen UI and tests without adding it to Town Hall warehouse. Run full `pytest -q`.
 - [ ] **T250**: Add canteen asset placeholders and `asset_meta.json` in the correct building asset folder, following existing building scale/anchor conventions. Add a render/asset smoke test for built and construction sprites.
 - [ ] **T251**: Implement canteen asset loading/render wiring and make the asset smoke test green. Run full `pytest -q`.
@@ -103,6 +103,7 @@
 
 ## Notes
 
+- T248 RED check (2026-05-07): `pytest -q` fails at `tests/test_simple_meal_locality.py::test_town_hall_rejects_simple_meal_in_warehouse` because Town Hall currently accepts unknown warehouse keys.
 - Tests run headless via `SDL_VIDEODRIVER=dummy` in `tests/conftest.py`.
 - Extended history, completed phase checklists, and older decisions log: **`progress_archive.md`**.
 - Pathfinding contract: **4-dir** `find_path_bfs` (no diagonals), aligned with PRD.

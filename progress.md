@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 22 - Canteen, cook, meals, and worker satiety
-- **Next Task:** T250 - canteen asset placeholders and smoke test
-- **Last Completed:** T249 - simple_meal local-only resource catalog and Town Hall guards
-- **Total Progress:** 249 / 276 (Phase 22: 4 / 31 done)
+- **Next Task:** T251 - canteen asset loading/render wiring
+- **Last Completed:** T250 - canteen asset placeholders and smoke test
+- **Total Progress:** 250 / 276 (Phase 22: 5 / 31 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -36,7 +36,7 @@
 - [x] **T247**: Implement `Canteen` building class, config/json wiring, registry/placement/bottom-bar social menu entry, local storage helpers, and capacity formulas. Run full `pytest -q`.
 - [x] **T248**: Add RED tests proving `simple_meal` is not a Town Hall warehouse resource, is not displayed in Town Hall storage, and is never generated as a carrier export task.
 - [x] **T249**: Implement the local-only `simple_meal` resource labels/helpers needed by canteen UI and tests without adding it to Town Hall warehouse. Run full `pytest -q`.
-- [ ] **T250**: Add canteen asset placeholders and `asset_meta.json` in the correct building asset folder, following existing building scale/anchor conventions. Add a render/asset smoke test for built and construction sprites.
+- [x] **T250**: Add canteen asset placeholders and `asset_meta.json` in the correct building asset folder, following existing building scale/anchor conventions. Add a render/asset smoke test for built and construction sprites.
 - [ ] **T251**: Implement canteen asset loading/render wiring and make the asset smoke test green. Run full `pytest -q`.
 
 ### 22.2 Cook hiring and canteen production
@@ -103,6 +103,7 @@
 
 ## Notes
 
+- Canteen building art: `assets/buildings/canteen/` (`default.png`, `construction.png`, `asset_meta.json`); swap PNGs without changing paths.
 - `game.resource_catalog` holds Town Hall warehouse key allow-list, `simple_meal` display label, and guards so carriers cannot enqueue `simple_meal` deliveries to Town Hall.
 - Tests run headless via `SDL_VIDEODRIVER=dummy` in `tests/conftest.py`.
 - Extended history, completed phase checklists, and older decisions log: **`progress_archive.md`**.

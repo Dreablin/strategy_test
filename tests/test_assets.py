@@ -66,6 +66,28 @@ def test_building_sprite_smoke() -> None:
             assert 0 <= ay <= spr.get_height()
 
 
+def test_canteen_disk_placeholders_and_sprite_smoke() -> None:
+    """T250: canteen folder has meta + PNGs; built/construction sprites load with valid anchors."""
+    root = Path(__file__).resolve().parents[1] / "assets" / "buildings" / "canteen"
+    assert (root / "asset_meta.json").is_file()
+    assert (root / "default.png").is_file()
+    assert (root / "construction.png").is_file()
+
+    for b_tag in ("canteen", "CANTEEN"):
+        for level in (1, 5, 10):
+            spr = building_sprite(b_tag, level)
+            _assert_nonempty_surface(spr)
+            ax, ay = building_sprite_anchor(b_tag, level)
+            assert 0 <= ax <= spr.get_width()
+            assert 0 <= ay <= spr.get_height()
+        for target_level in (1, 10):
+            cspr = building_sprite_construction(b_tag, target_level)
+            _assert_nonempty_surface(cspr)
+            cax, cay = assets_mod.building_sprite_construction_anchor(b_tag, target_level)
+            assert 0 <= cax <= cspr.get_width()
+            assert 0 <= cay <= cspr.get_height()
+
+
 def test_worker_dot_smoke() -> None:
     for w_type in ("LUMBERJACK", "STONECUTTER", "MINER", "FARMER", "ANIMAL_HERDER", "MILLER", "BAKER"):
         _assert_nonempty_surface(worker_dot(w_type))

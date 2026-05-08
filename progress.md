@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 22 - Canteen, cook, meals, and worker satiety
-- **Next Task:** T269 - RED tests for hunger hooks on processor/gatherer workers
-- **Last Completed:** T268 - `game.worker_dining` (walk, wait, eat, release)
-- **Total Progress:** 268 / 276 (Phase 22: 23 / 31 done)
+- **Next Task:** T270 - Implement hunger hooks at processor/gatherer cycle boundaries
+- **Last Completed:** T269 - RED tests for post-cycle hunger canteen attempt
+- **Total Progress:** 269 / 276 (Phase 22: 24 / 31 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -67,7 +67,7 @@
 
 ### 22.5 Hunger check integration for all worker families
 
-- [ ] **T269**: Add RED tests for processor/gatherer/miner/farmer hunger checks: after a completed production/gather/field cycle and before normal rest, a hungry worker attempts to reserve canteen; if blocked by missing slot/path, existing work/rest behavior continues.
+- [x] **T269**: Add RED tests for processor/gatherer/miner/farmer hunger checks: after a completed production/gather/field cycle and before normal rest, a hungry worker attempts to reserve canteen; if blocked by missing slot/path, existing work/rest behavior continues.
 - [ ] **T270**: Implement hunger hooks for processor workers, gatherers, miner, farmer, and forester at the cycle boundaries covered by T269. Run full `pytest -q`.
 - [ ] **T271**: Add RED tests for blocked-cycle hunger checks: when a worker cannot start a new cycle because inputs/output/storage/target conditions block it, the hunger check still runs at a throttled retry point and does not spam reservations.
 - [ ] **T272**: Implement throttled hunger checks for blocked processor/gatherer/farmer/miner states. Run full `pytest -q`.
@@ -103,6 +103,7 @@
 
 ## Notes
 
+- **2026-05-07:** T269 RED: `tests/test_worker_hunger_cycle_red.py` imports `game.worker_hunger.try_hunger_canteen_after_completed_cycle`; collection fails with `ModuleNotFoundError` until T270.
 - **2026-05-08:** T268 adds `worker_dining.py` + Worker `dining_*` fields; `tests/test_dining_runtime_red.py` green.
 - **2026-05-08:** T267 RED: `game.worker_dining` (`DINING_EAT_DURATION_MS`, `diner_stand_tile_for`, `dining_runtime_phase`, `update_dining_runtime`, `assign_diner_meals_for_canteen`); collection fails until T268.
 - **2026-05-08:** T266 adds `canteen_selection.py`: hunger threshold `2_000`, shortest 4-dir path to any approach tile, skip full/UC canteens, `try_reserve_diner_slot`; `tests/test_canteen_selection_red.py` green.

@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 22 - Canteen, cook, meals, and worker satiety
-- **Next Task:** T273 - RED tests for builder/carrier hunger hooks
-- **Last Completed:** T272 - Throttled `try_blocked_cycle_hunger_check` + wiring for blocked cycles
-- **Total Progress:** 272 / 276 (Phase 22: 27 / 31 done)
+- **Next Task:** T274 - Implement builder/carrier hunger hooks and return-to-work behavior
+- **Last Completed:** T273 - RED tests for builder/carrier hunger hooks
+- **Total Progress:** 273 / 276 (Phase 22: 28 / 31 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -71,7 +71,7 @@
 - [x] **T270**: Implement hunger hooks for processor workers, gatherers, miner, farmer, and forester at the cycle boundaries covered by T269. Run full `pytest -q`.
 - [x] **T271**: Add RED tests for blocked-cycle hunger checks: when a worker cannot start a new cycle because inputs/output/storage/target conditions block it, the hunger check still runs at a throttled retry point and does not spam reservations.
 - [x] **T272**: Implement throttled hunger checks for blocked processor/gatherer/farmer/miner states. Run full `pytest -q`.
-- [ ] **T273**: Add RED tests for builders and carriers: builder checks hunger after construction completion and while idle with no construction; carrier checks after delivery completion and while idle with no transport; neither abandons an active construction or active carried item.
+- [x] **T273**: Add RED tests for builders and carriers: builder checks hunger after construction completion and while idle with no construction; carrier checks after delivery completion and while idle with no transport; neither abandons an active construction or active carried item.
 - [ ] **T274**: Implement builder/carrier hunger hooks and return-to-work behavior after dining. Carriers must only go to canteen when not carrying anything. Run full `pytest -q`.
 
 ### 22.6 Canteen UI, diner tiles, smoke, and final verification
@@ -103,6 +103,7 @@
 
 ## Notes
 
+- **2026-05-08:** T273 RED: `tests/test_worker_hunger_builder_carrier_red.py` expects `game.worker_hunger.try_builder_hunger_after_completion_or_idle` and `try_carrier_hunger_after_delivery_or_idle`; collection fails with `ImportError` until T274.
 - **2026-05-08:** T272 adds `BLOCKED_HUNGER_RETRY_MS` (4s), `try_blocked_cycle_hunger_check`, `Worker.blocked_cycle_hunger_try_ms`; `WorkerManager._try_blocked_cycle_hunger` at processor input/output block, gatherer/forester inactive or storage/target/path blocks, miner full storage, farmer field dispatch blocks; reset on post-cycle hunger, dining finish, assign, demolish; `tests/test_worker_hunger_blocked_red.py` green; full `pytest -q` green.
 - **2026-05-08:** T270 adds `worker_hunger.try_hunger_canteen_after_completed_cycle` (lazy-imports `canteen_selection` to avoid registry/workers cycles); wired after processor cycle rest, miner rest, gatherer deposit rest, forester return rest, farmer camp return; T269 test MINER case seeds `IronDeposit` like other iron tests; full `pytest -q` green.
 - **2026-05-07:** T269 RED: `tests/test_worker_hunger_cycle_red.py` imports `game.worker_hunger.try_hunger_canteen_after_completed_cycle`; collection fails with `ModuleNotFoundError` until T270.

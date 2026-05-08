@@ -81,6 +81,7 @@ from game.worker_hiring import (
     hire,
 )
 from game.worker_models import TransportTask, Worker
+from game.worker_satiety import apply_satiety_game_time
 from game.worker_status import (
     production_status_for_building,
     water_draw_progress_for_building,
@@ -418,6 +419,16 @@ class WorkerManager(
                 tiles.append((x, y))
         return tiles
 
+    @staticmethod
+    def _tick_worker_satiety(worker: Worker, now_ms: int) -> None:
+        last = worker.satiety_last_sample_ms
+        if last < 0:
+            worker.satiety_last_sample_ms = int(now_ms)
+            return
+        worker.satiety, worker.satiety_last_sample_ms = apply_satiety_game_time(
+            worker.satiety, last, now_ms
+        )
+
     def update(self, now_ms: int) -> None:
         """Advance worker movement interpolation/state for this frame."""
         world = getattr(self._registry, "_world", None) if self._registry is not None else None
@@ -437,6 +448,7 @@ class WorkerManager(
         completed_buildings: list[Building] = []
         completed_site_builders: dict[int, Worker] = {}
         for worker in self._workers:
+            self._tick_worker_satiety(worker, int(now_ms))
             worker.update(now_ms)
             updater = self._updaters.get(worker.type_tag)
             if updater is not None:

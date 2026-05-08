@@ -8,6 +8,7 @@ from game.buildings.base import Building
 from game.characteristics import Characteristics
 from game.config import WORKER_TILE_TRAVEL_MS
 from game.worker_constants import CHOP_DURATION_MS
+from game.worker_satiety import MAX_WORKER_SATIETY
 
 
 @dataclass(slots=True)
@@ -43,11 +44,13 @@ class Worker:
         "characteristics",
         "transport_task",
         "satiety",
+        "satiety_last_sample_ms",
     )
 
     def __init__(self, type_tag: str, *, stand_tile: tuple[int, int] = (17, 19)) -> None:
         self.type_tag = type_tag
-        self.satiety = 10_000
+        self.satiety = MAX_WORKER_SATIETY
+        self.satiety_last_sample_ms = -1
         self.assigned_building: Building | None = None
         self.idle = True
         self.stand_tile: tuple[int, int] = stand_tile

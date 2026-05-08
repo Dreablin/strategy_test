@@ -34,7 +34,8 @@ def test_hired_worker_starts_at_max_satiety(worker_type: str) -> None:
     world._trees.clear()  # noqa: SLF001
     world._stones.clear()  # noqa: SLF001
     registry = BuildingRegistry(world)
-    registry.place(TownHall, town_hall_origin_tile())
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    town_hall.level = 5  # hire gates: STONECUTTER 3, MINER 5
     school = registry.place(School, near_town_hall_tile(8, 8))
     school.construction_site = None
     wm = WorkerManager(registry)

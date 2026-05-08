@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 22 - Canteen, cook, meals, and worker satiety
-- **Next Task:** T265 - RED tests for canteen selection / hungry worker
-- **Last Completed:** T264 - `game.canteen_dining`, `Canteen._diner_occupants`, `Worker.dining_canteen`
-- **Total Progress:** 264 / 276 (Phase 22: 19 / 31 done)
+- **Next Task:** T266 - implement `game.canteen_selection` (nearest reachable canteen)
+- **Last Completed:** T265 - RED tests `tests/test_canteen_selection_red.py`
+- **Total Progress:** 265 / 276 (Phase 22: 20 / 31 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -59,8 +59,8 @@
 ### 22.4 Canteen dining slots and reservation model
 
 - [x] **T263**: Add RED tests for canteen diner slot model: slot capacity by level, immediate reservation by worker identity, no duplicate reservation by the same worker, no over-reservation, release on dining completion, release on worker/building removal, and release on canteen demolition.
-- [~] **T264**: Implement canteen diner slot/reservation data model and cleanup helpers. Keep it independent from production storage. Run full `pytest -q`.
-- [ ] **T265**: Add RED tests for canteen selection: hungry worker below `2_000` picks the nearest reachable canteen with a free slot, reserves immediately, does not require a prepared meal to reserve, and continues working if no slot/path exists.
+- [x] **T264**: Implement canteen diner slot/reservation data model and cleanup helpers. Keep it independent from production storage. Run full `pytest -q`.
+- [x] **T265**: Add RED tests for canteen selection: hungry worker below `2_000` picks the nearest reachable canteen with a free slot, reserves immediately, does not require a prepared meal to reserve, and continues working if no slot/path exists.
 - [ ] **T266**: Implement canteen selection and reservation helper functions in small modules/mixins, reusing 4-dir pathfinding and existing blocked-tile rules. Run full `pytest -q`.
 - [ ] **T267**: Add RED tests for dining runtime: reserved worker walks to canteen, appears in a specific tile slot, waits there if no `simple_meal` is available, starts a `20_000 ms` eating timer only after a meal is assigned, consumes `1 simple_meal` when eating starts, restores satiety to `10_000` when the timer completes, releases the slot, and returns to work.
 - [ ] **T268**: Implement shared dining runtime states, waiting/eating transitions, deterministic one-meal-per-worker assignment, and progress helpers without entangling them with carrier transport tasks or processor production tasks. Run full `pytest -q`.
@@ -103,6 +103,8 @@
 
 ## Notes
 
+- **2026-05-08:** T265 RED: `game.canteen_selection` (`HUNGER_SATIETY_THRESHOLD`, `reserve_nearest_reachable_canteen_if_hungry`); collection fails until T266 (add unreachable/no-path case there if needed).
+- **2026-05-08:** T264 implements `canteen_dining` helpers plus `Canteen._diner_occupants` and `Worker.dining_canteen` back-reference; `tests/test_canteen_diner_slots_red.py` green.
 - **2026-05-08:** T263 RED: `game.canteen_dining` (`try_reserve_diner_slot`, `release_*`, `count_reserved_diner_slots`); collection fails until T264.
 - **2026-05-08:** T262 adds `Satiety: current/max` (clamped) after `State:`; `WorkerPanel.body_lines` powers layout/draw; `tests/test_worker_panel_satiety_red.py` green.
 - **2026-05-08:** T261 RED: `WorkerPanel.body_lines` + a `Satiety: current/max` line (see `tests/test_worker_panel_satiety_red.py`); full `pytest -q` fails until T262.

@@ -7,6 +7,7 @@ import pygame
 from game.construction import ConstructionSite
 from game.assets import grass_tile
 from game.config import near_town_hall_tile, town_hall_origin_tile
+from game.buildings.canteen import Canteen
 from game.buildings.field import Field, WHEAT_EMPTY, WHEAT_PHASE_3
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.registry import BuildingRegistry
@@ -59,6 +60,26 @@ def test_placed_building_drawn() -> None:
     Renderer.draw_buildings(surface, world, registry)
 
     cx, cy = camp.grid_pos  # type: ignore[assignment]
+    px, py = _tile_center_pixel(surface, world, cx + 1, cy + 1)
+    color = surface.get_at((px, py))[:3]
+    grass_color = grass_tile().get_at((32, 16))[:3]
+    assert color != _SENTINEL
+    assert color != grass_color
+
+
+def test_placed_canteen_drawn_with_disk_sprite() -> None:
+    """T251: CANTEEN on map uses building_sprite path (disk art), not bare grass."""
+    world = World()
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    canteen = registry.place(Canteen, near_town_hall_tile(10, 8))
+    canteen.construction_site = None
+    surface = pygame.Surface((1280, 720))
+    surface.fill(_SENTINEL)
+    Renderer.draw_world(surface, world)
+    Renderer.draw_buildings(surface, world, registry)
+
+    cx, cy = canteen.grid_pos  # type: ignore[assignment]
     px, py = _tile_center_pixel(surface, world, cx + 1, cy + 1)
     color = surface.get_at((px, py))[:3]
     grass_color = grass_tile().get_at((32, 16))[:3]

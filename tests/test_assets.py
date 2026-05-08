@@ -57,6 +57,7 @@ def test_building_sprite_smoke() -> None:
         "bakery",
         "well",
         "chicken_farm",
+        "canteen",
     ):
         for level in (1, 5, 10):
             spr = building_sprite(b_type, level)
@@ -67,7 +68,7 @@ def test_building_sprite_smoke() -> None:
 
 
 def test_canteen_disk_placeholders_and_sprite_smoke() -> None:
-    """T250: canteen folder has meta + PNGs; built/construction sprites load with valid anchors."""
+    """T250/T251: disk placeholders; built/construction sprites and anchors (CANTEEN type_tag)."""
     root = Path(__file__).resolve().parents[1] / "assets" / "buildings" / "canteen"
     assert (root / "asset_meta.json").is_file()
     assert (root / "default.png").is_file()

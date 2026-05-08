@@ -298,6 +298,7 @@ def _building_palette(b_type: str) -> tuple[tuple[int, int, int], tuple[int, int
         "well": ((104, 128, 152), (48, 70, 92)),
         "school": ((120, 124, 168), (62, 66, 108)),
         "house": ((172, 142, 126), (110, 86, 76)),
+        "canteen": ((168, 132, 102), (92, 68, 48)),
     }
     return palettes.get(t, ((120, 120, 130), (60, 60, 70)))
 

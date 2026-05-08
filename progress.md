@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 22 - Canteen, cook, meals, and worker satiety
-- **Next Task:** T263 - RED tests for canteen diner slot model
-- **Last Completed:** T262 - worker panel satiety line and `WorkerPanel.body_lines`
-- **Total Progress:** 262 / 276 (Phase 22: 17 / 31 done)
+- **Next Task:** T264 - implement canteen diner slot model (`game.canteen_dining`)
+- **Last Completed:** T263 - RED tests `tests/test_canteen_diner_slots_red.py`
+- **Total Progress:** 263 / 276 (Phase 22: 18 / 31 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -58,7 +58,7 @@
 
 ### 22.4 Canteen dining slots and reservation model
 
-- [ ] **T263**: Add RED tests for canteen diner slot model: slot capacity by level, immediate reservation by worker identity, no duplicate reservation by the same worker, no over-reservation, release on dining completion, release on worker/building removal, and release on canteen demolition.
+- [x] **T263**: Add RED tests for canteen diner slot model: slot capacity by level, immediate reservation by worker identity, no duplicate reservation by the same worker, no over-reservation, release on dining completion, release on worker/building removal, and release on canteen demolition.
 - [ ] **T264**: Implement canteen diner slot/reservation data model and cleanup helpers. Keep it independent from production storage. Run full `pytest -q`.
 - [ ] **T265**: Add RED tests for canteen selection: hungry worker below `2_000` picks the nearest reachable canteen with a free slot, reserves immediately, does not require a prepared meal to reserve, and continues working if no slot/path exists.
 - [ ] **T266**: Implement canteen selection and reservation helper functions in small modules/mixins, reusing 4-dir pathfinding and existing blocked-tile rules. Run full `pytest -q`.
@@ -103,6 +103,7 @@
 
 ## Notes
 
+- **2026-05-08:** T263 RED: `game.canteen_dining` (`try_reserve_diner_slot`, `release_*`, `count_reserved_diner_slots`); collection fails until T264.
 - **2026-05-08:** T262 adds `Satiety: current/max` (clamped) after `State:`; `WorkerPanel.body_lines` powers layout/draw; `tests/test_worker_panel_satiety_red.py` green.
 - **2026-05-08:** T261 RED: `WorkerPanel.body_lines` + a `Satiety: current/max` line (see `tests/test_worker_panel_satiety_red.py`); full `pytest -q` fails until T262.
 - **2026-05-08:** T260 adds `game/worker_satiety.py`, `Worker.satiety_last_sample_ms` (bootstrap on first `update`), `_tick_worker_satiety` in `WorkerManager.update`; hire satiety test uses Town Hall level 5 for MINER/STONECUTTER gates.

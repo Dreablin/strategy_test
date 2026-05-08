@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 22 - Canteen, cook, meals, and worker satiety
-- **Next Task:** T253 - implement COOK hire wiring (full `pytest -q` expected green after)
-- **Last Completed:** T252 - RED tests for hireable COOK (`tests/test_cook_hiring_red.py`; suite RED until T253)
-- **Total Progress:** 252 / 276 (Phase 22: 7 / 31 done)
+- **Next Task:** T254 - RED tests for canteen production gating
+- **Last Completed:** T253 - COOK hire wiring, satiety default, school panel, assignment updater (`_update_cook`), settings
+- **Total Progress:** 253 / 276 (Phase 22: 8 / 31 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -42,7 +42,7 @@
 ### 22.2 Cook hiring and canteen production
 
 - [x] **T252**: Add RED tests for new hireable `COOK`: appears in school panel, can be queued/cancelled like other workers, starts with full satiety, has worker dot/UI fallback asset, and maps to `CANTEEN` assignment.
-- [ ] **T253**: Implement cook hire wiring, worker labels/assets, school panel entry, worker-to-building mapping, and assignment. Run full `pytest -q`.
+- [x] **T253**: Implement cook hire wiring, worker labels/assets, school panel entry, worker-to-building mapping, and assignment. Run full `pytest -q`.
 - [ ] **T254**: Add RED tests for canteen production gating: no cook means no production, inactive canteen prevents new cycles, missing any input blocks cycle start, full `simple_meal` storage blocks cycle start, existing cycle continues when active is toggled off only if current local rules for other processors require it.
 - [ ] **T255**: Implement canteen processor runtime using the shared processor pattern where possible: `30_000 ms` work, consume all three inputs at cycle start or completion consistently with existing processors, output `simple_meal`, then `5_000 ms` cook rest. Run full `pytest -q`.
 - [ ] **T256**: Add RED tests for carrier input tasks into canteen: chicken, bread, and water are delivered while capacity plus inbound reservations allow it; water uses the existing direct-well flow; duplicate queued/in-flight tasks do not overfill local storage.
@@ -103,7 +103,7 @@
 
 ## Notes
 
-- **2026-05-08:** After T252, `pytest -q` reports **7 failures** in `tests/test_cook_hiring_red.py` until T253 implements `COOK` (expected RED).
+- **2026-05-08:** T253 implements hireable `COOK` (`WORKER_TO_BUILDING`, school panel, `Worker.satiety`, assets, `_update_cook`); `tests/test_cook_hiring_red.py` and full suite green.
 - Canteen building art: `assets/buildings/canteen/` (`default.png`, `construction.png`, `asset_meta.json`); `Renderer.draw_buildings` uses `building_sprite` / `building_sprite_construction` with `type_tag` `CANTEEN` (maps to folder `canteen`).
 - `game.resource_catalog` holds Town Hall warehouse key allow-list, `simple_meal` display label, and guards so carriers cannot enqueue `simple_meal` deliveries to Town Hall.
 - Tests run headless via `SDL_VIDEODRIVER=dummy` in `tests/conftest.py`.

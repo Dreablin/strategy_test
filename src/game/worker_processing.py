@@ -88,6 +88,45 @@ class WorkerProcessingMixin:
         WorkerProcessingMixin._update_processor_worker(worker, now_ms, BAKERY_PROCESSOR)
 
     @staticmethod
+    def _update_cook(worker: Worker, now_ms: int, world: Any) -> None:
+        """Park cook at canteen center; production cycle wiring comes in T255."""
+        _ = now_ms
+        building = worker.assigned_building
+        if building is None or building.type_tag != "CANTEEN":
+            return
+        if building.is_under_construction:
+            return
+        if world is None:
+            return
+        center_tile = building_center_tile(building)
+        active = bool(getattr(building, "active", True))
+        if worker.state == "moving":
+            return
+        if worker.state == "resting":
+            if not active:
+                worker.current_tile = center_tile
+                worker.stand_tile = center_tile
+                worker.idle = False
+                return
+            worker.state = "working"
+            worker.camp_wait_until_ms = 0
+        if worker.state in {"working", "processing"} and worker.current_tile != center_tile:
+            worker.current_tile = center_tile
+            worker.stand_tile = center_tile
+            worker.idle = False
+            return
+        if not active:
+            worker.state = "resting"
+            worker.current_tile = center_tile
+            worker.stand_tile = center_tile
+            worker.idle = False
+            return
+        worker.state = "working"
+        worker.current_tile = center_tile
+        worker.stand_tile = center_tile
+        worker.idle = False
+
+    @staticmethod
     def _update_animal_herder(worker: Worker, now_ms: int, world: Any) -> None:
         _ = world
         WorkerProcessingMixin._update_processor_worker(worker, now_ms, CHICKEN_FARM_PROCESSOR)

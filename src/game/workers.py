@@ -137,6 +137,7 @@ class WorkerManager(
             "SAWYER": self._update_sawyer,
             "MILLER": self._update_miller,
             "BAKER": self._update_baker,
+            "COOK": self._update_cook,
             "ANIMAL_HERDER": self._update_animal_herder,
             "FARMER": self._update_farmer,
         }

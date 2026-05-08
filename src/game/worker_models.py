@@ -42,10 +42,12 @@ class Worker:
         "chop_duration_ms",
         "characteristics",
         "transport_task",
+        "satiety",
     )
 
     def __init__(self, type_tag: str, *, stand_tile: tuple[int, int] = (17, 19)) -> None:
         self.type_tag = type_tag
+        self.satiety = 10_000
         self.assigned_building: Building | None = None
         self.idle = True
         self.stand_tile: tuple[int, int] = stand_tile

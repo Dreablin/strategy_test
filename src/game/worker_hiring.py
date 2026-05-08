@@ -20,6 +20,7 @@ WORKER_TO_BUILDING: dict[str, str] = {
     "SAWYER": "SAWMILL",
     "MILLER": "MILL",
     "BAKER": "BAKERY",
+    "COOK": "CANTEEN",
 }
 HIRABLE_WORKERS: set[str] = set(WORKER_TO_BUILDING) | {"CARRIER", "BUILDER", "BAKER", "ANIMAL_HERDER"}
 

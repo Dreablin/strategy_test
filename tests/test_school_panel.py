@@ -73,7 +73,7 @@ def test_school_panel_layout_contains_seven_training_slots() -> None:
     assert any(worker_type == "ANIMAL_HERDER" for worker_type, _ in layout.hire_buttons)
     assert layout.hire_buttons[0][0] == "CARRIER"
     assert layout.hire_buttons[1][0] == "BUILDER"
-    assert len(layout.hire_buttons) == 11
+    assert len(layout.hire_buttons) == 12
 
 
 def test_school_panel_sawyer_hire_click_returns_worker_action() -> None:

@@ -6,6 +6,7 @@ from typing import ClassVar
 
 from game.buildings.base import Building
 from game.worker_constants import CANTEEN_CYCLE_MS
+from game.worker_models import Worker
 
 CANTEEN_LOCAL_RESOURCES: tuple[str, ...] = ("chicken", "bread", "water", "simple_meal")
 CANTEEN_STORAGE_BASE = 5
@@ -15,12 +16,13 @@ CANTEEN_DINER_SLOTS_BASE = 3
 class Canteen(Building):
     type_tag: ClassVar[str] = "CANTEEN"
 
-    __slots__ = ("active", "_local_storage", "processing_started_ms", "processing_duration_ms")
+    __slots__ = ("active", "_local_storage", "_diner_occupants", "processing_started_ms", "processing_duration_ms")
 
     def __init__(self, level: int = 1, grid_pos: tuple[int, int] | None = None) -> None:
         super().__init__(level=level, grid_pos=grid_pos)
         self.active = True
         self._local_storage = {resource: 0 for resource in CANTEEN_LOCAL_RESOURCES}
+        self._diner_occupants: set[Worker] = set()
         self.processing_started_ms = 0
         self.processing_duration_ms = CANTEEN_CYCLE_MS
 

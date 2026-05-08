@@ -5,24 +5,35 @@ from __future__ import annotations
 from typing import ClassVar
 
 from game.buildings.base import Building
+from game.config import building_level_int_setting
 from game.worker_constants import CANTEEN_CYCLE_MS
 from game.worker_models import Worker
 
 CANTEEN_LOCAL_RESOURCES: tuple[str, ...] = ("chicken", "bread", "water", "simple_meal")
-CANTEEN_STORAGE_BASE = 5
-CANTEEN_DINER_SLOTS_BASE = 3
+CANTEEN_STORAGE_BASE = building_level_int_setting("CANTEEN", "storage", 1)
+CANTEEN_DINER_SLOTS_BASE = building_level_int_setting("CANTEEN", "diner_slots", 1)
 
 
 class Canteen(Building):
     type_tag: ClassVar[str] = "CANTEEN"
 
-    __slots__ = ("active", "_local_storage", "_diner_occupants", "processing_started_ms", "processing_duration_ms")
+    __slots__ = (
+        "active",
+        "_local_storage",
+        "_diner_occupants",
+        "_reserved_meal_workers",
+        "_diner_queue_seq",
+        "processing_started_ms",
+        "processing_duration_ms",
+    )
 
     def __init__(self, level: int = 1, grid_pos: tuple[int, int] | None = None) -> None:
         super().__init__(level=level, grid_pos=grid_pos)
         self.active = True
         self._local_storage = {resource: 0 for resource in CANTEEN_LOCAL_RESOURCES}
         self._diner_occupants: set[Worker] = set()
+        self._reserved_meal_workers: set[Worker] = set()
+        self._diner_queue_seq = 0
         self.processing_started_ms = 0
         self.processing_duration_ms = CANTEEN_CYCLE_MS
 
@@ -34,7 +45,7 @@ class Canteen(Building):
 
     def local_storage_capacity(self, resource: str) -> int:
         self._require_local_resource(resource)
-        return CANTEEN_STORAGE_BASE + self.level - 1
+        return building_level_int_setting(self.type_tag, "storage", self.level)
 
     def local_storage_amount(self, resource: str) -> int:
         self._require_local_resource(resource)
@@ -59,7 +70,7 @@ class Canteen(Building):
         self._local_storage[resource] -= n
 
     def diner_slot_capacity(self) -> int:
-        return CANTEEN_DINER_SLOTS_BASE + self.level - 1
+        return building_level_int_setting(self.type_tag, "diner_slots", self.level)
 
     def has_recipe_inputs(self) -> bool:
         return (

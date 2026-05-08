@@ -1,5 +1,33 @@
 {
   "building_type": "CANTEEN",
+  "storage": {
+    "capacity_by_level": {
+      "1": 5,
+      "2": 6,
+      "3": 7,
+      "4": 8,
+      "5": 9,
+      "6": 10,
+      "7": 11,
+      "8": 12,
+      "9": 13,
+      "10": 14
+    }
+  },
+  "diner_slots": {
+    "capacity_by_level": {
+      "1": 3,
+      "2": 4,
+      "3": 5,
+      "4": 6,
+      "5": 7,
+      "6": 8,
+      "7": 9,
+      "8": 10,
+      "9": 11,
+      "10": 12
+    }
+  },
   "levels": {
     "1": {"cost": {"wood": 4, "stone": 2}, "build_time_ms": 30000},
     "2": {"cost": {"boards": 3, "stone": 2}, "build_time_ms": 30000},

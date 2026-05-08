@@ -1,14 +1,22 @@
 """Failing movement-model tests for Phase 9 (T54)."""
 
+import json
+from pathlib import Path
+
 import pytest
 
 import game.config as config
 from game.workers import Worker
 
 
-def test_worker_travel_constant_exists_and_is_3000() -> None:
+def _game_settings() -> dict:
+    path = Path(__file__).resolve().parents[1] / "game_settings.json"
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def test_worker_travel_constant_is_loaded_from_settings() -> None:
     assert hasattr(config, "WORKER_TILE_TRAVEL_MS")
-    assert config.WORKER_TILE_TRAVEL_MS == 3000
+    assert config.WORKER_TILE_TRAVEL_MS == _game_settings()["timing"]["worker_tile_travel_ms"]
 
 
 def test_worker_has_path_and_progress_fields() -> None:

@@ -25,6 +25,16 @@ def _min_chebyshev_between_footprints(
     return best
 
 
+def _worker_inside_building_footprint(worker, building: Building) -> bool:
+    pos = building.grid_pos
+    if pos is None:
+        return False
+    gx, gy = pos
+    w, h = type(building).footprint
+    wx, wy = worker.current_tile
+    return gx <= wx < gx + w and gy <= wy < gy + h
+
+
 class BuildingRegistry:
     """Owns placed `Building` instances and mirrors their footprints on `World`."""
 
@@ -186,17 +196,31 @@ class BuildingRegistry:
         if self._worker_manager is not None:
             for worker in self._worker_manager.workers():
                 if worker.assigned_building is building:
-                    bx, by = building.grid_pos if building.grid_pos is not None else (0, 0)
-                    bw, bh = type(building).footprint
-                    cx = bx + bw // 2
-                    cy = by + bh // 2
-                    worker.state = "resting"
-                    worker.current_tile = (cx, cy)
-                    worker.stand_tile = (cx, cy)
-                    worker.target_tile = (cx, cy)
-                    worker.path = []
-                    worker.segment_progress = 0.0
-                    resting_worker = worker
+                    if _worker_inside_building_footprint(worker, building):
+                        bx, by = building.grid_pos if building.grid_pos is not None else (0, 0)
+                        bw, bh = type(building).footprint
+                        cx = bx + bw // 2
+                        cy = by + bh // 2
+                        worker.state = "resting"
+                        worker.current_tile = (cx, cy)
+                        worker.stand_tile = (cx, cy)
+                        worker.target_tile = (cx, cy)
+                        worker.path = []
+                        worker.segment_progress = 0.0
+                        resting_worker = worker
+                    else:
+                        self._worker_manager._clear_building_bonus(worker)
+                        worker.assigned_building = None
+                        worker.idle = True
+                        worker.stand_tile = worker.current_tile
+                        worker.target_tile = None
+                        worker.path = []
+                        worker.segment_started_ms = 0
+                        worker.segment_progress = 0.0
+                        worker.state = "idle"
+                        worker.camp_wait_until_ms = 0
+                        worker.target_tree = None
+                        worker.chop_started_ms = 0
                     break
         building.construction_site = ConstructionSite(
             required_resources=dict(spec.cost),

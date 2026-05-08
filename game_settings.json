@@ -3,11 +3,16 @@
     "tick_ms": 10000,
     "worker_tile_travel_ms": 3000
   },
+  "workers": {
+    "satiety": {
+      "max": 10000,
+      "drain_per_game_second": 5
+    }
+  },
   "world": {
     "tile_w": 64,
     "tile_h": 32,
-    "grid_size": 110,
-    "gather_resource_search_radius": 20
+    "grid_size": 110
   },
   "window": {
     "size": [

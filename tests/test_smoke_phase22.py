@@ -11,7 +11,6 @@ from game.canteen_dining import count_reserved_diner_slots
 from game.config import near_town_hall_tile, town_hall_origin_tile
 from game.worker_dining import (
     DINING_EAT_DURATION_MS,
-    assign_diner_meals_for_canteen,
     dining_runtime_phase,
     update_dining_runtime,
 )
@@ -97,8 +96,6 @@ def test_smoke_phase22_canteen_meal_and_dining_end_to_end() -> None:
     diner.satiety = 300
     diner.state = "idle"
     diner.idle = True
-    canteen.take_local_storage("simple_meal", 1)
-    assert canteen.local_storage_amount("simple_meal") == 0
 
     reserved = try_carrier_hunger_after_delivery_or_idle(
         diner,
@@ -108,9 +105,11 @@ def test_smoke_phase22_canteen_meal_and_dining_end_to_end() -> None:
         now_ms=now_ms["t"],
     )
     assert reserved, "expected hungry carrier to reserve a canteen diner slot"
+    assert diner.dining_meal_reserved is True
     assert count_reserved_diner_slots(canteen) >= 1
+    assert canteen.local_storage_amount("simple_meal") >= 1
 
-    waiting = False
+    eating = False
     for _ in range(1000):
         now_ms["t"] += 250
         update_dining_runtime(
@@ -121,29 +120,10 @@ def test_smoke_phase22_canteen_meal_and_dining_end_to_end() -> None:
             registry=registry,
             now_ms=now_ms["t"],
         )
-        if dining_runtime_phase(diner) == "waiting_for_meal":
-            waiting = True
+        if dining_runtime_phase(diner) == "eating":
+            eating = True
             break
-    assert waiting, "expected diner to reach canteen and wait when no meal exists"
-    assert dining_runtime_phase(diner) == "waiting_for_meal"
-
-    meal_again = _advance_until(
-        workers,
-        now_ms,
-        lambda: canteen.local_storage_amount("simple_meal") >= 1,
-        steps=5000,
-    )
-    assert meal_again, "expected a new simple_meal to be produced while diner waits"
-
-    assign_diner_meals_for_canteen(canteen, now_ms=now_ms["t"])
-    update_dining_runtime(
-        diner,
-        canteen=canteen,
-        world=world,
-        worker_manager=workers,
-        registry=registry,
-        now_ms=now_ms["t"],
-    )
+    assert eating, "expected diner to start eating after reaching canteen with reserved meal"
     assert dining_runtime_phase(diner) == "eating"
 
     ate_done = _advance_until(

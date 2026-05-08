@@ -38,7 +38,7 @@ def test_not_hungry_does_not_reserve() -> None:
     assert worker.dining_canteen is None
 
 
-def test_hungry_reserves_without_simple_meal_in_canteen() -> None:
+def test_hungry_does_not_reserve_without_available_simple_meal() -> None:
     world, registry, wm = _base_world()
     c = registry.place(Canteen, (50, 48))
     c.construction_site = None
@@ -48,9 +48,26 @@ def test_hungry_reserves_without_simple_meal_in_canteen() -> None:
     chosen = reserve_nearest_reachable_canteen_if_hungry(
         world=world, registry=registry, worker_manager=wm, worker=worker
     )
+    assert chosen is None
+    assert worker.dining_canteen is None
+    assert count_reserved_diner_slots(c) == 0
+
+
+def test_hungry_reserves_slot_and_meal_when_simple_meal_available() -> None:
+    world, registry, wm = _base_world()
+    c = registry.place(Canteen, (50, 48))
+    c.construction_site = None
+    c.add_local_storage("simple_meal", 1)
+    worker = Worker("LUMBERJACK", stand_tile=(46, 48))
+    worker.satiety = HUNGER_SATIETY_THRESHOLD - 1
+    chosen = reserve_nearest_reachable_canteen_if_hungry(
+        world=world, registry=registry, worker_manager=wm, worker=worker
+    )
     assert chosen is c
     assert worker.dining_canteen is c
+    assert worker.dining_meal_reserved is True
     assert count_reserved_diner_slots(c) == 1
+    assert c.local_storage_amount("simple_meal") == 1
 
 
 def test_hungry_picks_nearest_reachable_canteen() -> None:
@@ -59,6 +76,8 @@ def test_hungry_picks_nearest_reachable_canteen() -> None:
     far.construction_site = None
     near = registry.place(Canteen, (52, 48))
     near.construction_site = None
+    far.add_local_storage("simple_meal", 1)
+    near.add_local_storage("simple_meal", 1)
     worker = Worker("MINER", stand_tile=(46, 48))
     worker.satiety = 500
     chosen = reserve_nearest_reachable_canteen_if_hungry(
@@ -74,6 +93,7 @@ def test_hungry_skips_full_canteen_for_next_with_free_slot() -> None:
     near.construction_site = None
     far = registry.place(Canteen, (58, 48))
     far.construction_site = None
+    far.add_local_storage("simple_meal", 1)
     for w in (Worker("CARRIER", stand_tile=(60 + i, 60)) for i in range(near.diner_slot_capacity())):
         assert try_reserve_diner_slot(near, w) is True
     worker = Worker("BAKER", stand_tile=(46, 48))
@@ -83,6 +103,32 @@ def test_hungry_skips_full_canteen_for_next_with_free_slot() -> None:
     )
     assert chosen is far
     assert worker.dining_canteen is far
+
+
+def test_available_meal_reservations_limit_how_many_workers_go_to_canteen() -> None:
+    world, registry, wm = _base_world()
+    c = registry.place(Canteen, (52, 48))
+    c.construction_site = None
+    c.add_local_storage("simple_meal", 2)
+    workers = [Worker("CARRIER", stand_tile=(46 + i, 48)) for i in range(3)]
+    for worker in workers:
+        worker.satiety = 100
+
+    chosen = [
+        reserve_nearest_reachable_canteen_if_hungry(
+            world=world,
+            registry=registry,
+            worker_manager=wm,
+            worker=worker,
+        )
+        for worker in workers
+    ]
+
+    assert chosen[:2] == [c, c]
+    assert chosen[2] is None
+    assert [worker.dining_canteen for worker in workers] == [c, c, None]
+    assert [worker.dining_meal_reserved for worker in workers] == [True, True, False]
+    assert c.local_storage_amount("simple_meal") == 2
 
 
 def test_skips_canteen_under_construction() -> None:
@@ -98,6 +144,7 @@ def test_skips_canteen_under_construction() -> None:
     )
     good = registry.place(Canteen, (58, 48))
     good.construction_site = None
+    good.add_local_storage("simple_meal", 1)
     worker = Worker("SAWYER", stand_tile=(46, 48))
     worker.satiety = 100
     chosen = reserve_nearest_reachable_canteen_if_hungry(

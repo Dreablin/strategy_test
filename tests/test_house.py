@@ -9,6 +9,7 @@ from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
 from game.config import near_town_hall_tile, town_hall_origin_tile
 from game.housing import max_population
+from game.housing import housing_town_hall
 from game.world import World
 from game.workers import Worker, WorkerManager
 
@@ -65,10 +66,11 @@ def test_house_demolish_is_allowed_when_population_fits_remaining_cap() -> None:
     house = registry.place(House, near_town_hall_tile(8, 8))
     house.construction_site = None
     workers = WorkerManager(registry=registry)
-    for _ in range(8):
+    remaining_cap = housing_town_hall(1)
+    for _ in range(remaining_cap):
         workers.add_worker(Worker("LUMBERJACK"))
 
     registry.demolish(house, workers)
 
     assert house not in registry.all()
-    assert max_population(registry, workers) == 8
+    assert max_population(registry, workers) == remaining_cap

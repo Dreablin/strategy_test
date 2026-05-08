@@ -6,7 +6,7 @@ from game.buildings.bakery import Bakery
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
 from game.buildings.well import Well
-from game.config import near_town_hall_tile, town_hall_origin_tile
+from game.config import building_level_int_setting, near_town_hall_tile, town_hall_origin_tile
 from game.world import World
 from game.workers import (
     TransportTask,
@@ -20,11 +20,9 @@ from game.workers import (
 )
 
 
-def test_bakery_storage_capacity_grows_every_second_level() -> None:
-    assert Bakery(level=1).input_capacity() == 3
-    assert Bakery(level=2).input_capacity() == 4
-    assert Bakery(level=3).input_capacity() == 4
-    assert Bakery(level=10).input_capacity() == 8
+def test_bakery_storage_capacity_uses_building_settings() -> None:
+    for level in (1, 2, 3, 10):
+        assert Bakery(level=level).input_capacity() == building_level_int_setting("BAKERY", "storage", level)
 
 
 def test_bakery_input_transport_tasks_generate_flour_refill() -> None:

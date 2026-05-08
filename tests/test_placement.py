@@ -7,7 +7,6 @@ from game.buildings.forester_hut import ForesterHut
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.stone_mine import StoneMine
 from game.config import TILE_H, TILE_W
-from game.config import GATHER_RESOURCE_SEARCH_RADIUS
 from game.iso import screen_to_world, world_to_screen
 from game.render import Renderer
 from game.ui.placement import PlacementController
@@ -19,7 +18,14 @@ from game.ui.placement import (
 )
 from game.world import World
 from game.buildings.farm import Farm
-from game.workers import FARMER_FIELD_RADIUS, building_center_tile, select_farmer_field_target
+from game.workers import (
+    FARMER_FIELD_RADIUS,
+    FORESTER_PLANT_RADIUS,
+    LUMBER_CAMP_RESOURCE_RADIUS,
+    STONE_MINE_RESOURCE_RADIUS,
+    building_center_tile,
+    select_farmer_field_target,
+)
 
 
 def _cell_center_screen(surface: pygame.Surface, world: World, gx: int, gy: int) -> tuple[int, int]:
@@ -121,16 +127,16 @@ def test_pending_gather_building_border_uses_future_building_center() -> None:
     tiles = _pending_building_range_border_tiles(
         LumberCamp,
         grid_pos,
-        radius=GATHER_RESOURCE_SEARCH_RADIUS,
+        radius=LUMBER_CAMP_RESOURCE_RADIUS,
     )
     gx, gy = grid_pos
     w, h = LumberCamp.footprint
     center = (gx + w // 2, gy + h // 2)
 
-    assert (center[0] + GATHER_RESOURCE_SEARCH_RADIUS, center[1]) in tiles
-    assert (center[0] - GATHER_RESOURCE_SEARCH_RADIUS, center[1]) in tiles
-    assert (center[0], center[1] + GATHER_RESOURCE_SEARCH_RADIUS) in tiles
-    assert (center[0], center[1] - GATHER_RESOURCE_SEARCH_RADIUS) in tiles
+    assert (center[0] + LUMBER_CAMP_RESOURCE_RADIUS, center[1]) in tiles
+    assert (center[0] - LUMBER_CAMP_RESOURCE_RADIUS, center[1]) in tiles
+    assert (center[0], center[1] + LUMBER_CAMP_RESOURCE_RADIUS) in tiles
+    assert (center[0], center[1] - LUMBER_CAMP_RESOURCE_RADIUS) in tiles
 
 
 def test_placement_zone_specs_for_gather_buildings_match_worker_radii() -> None:
@@ -138,6 +144,6 @@ def test_placement_zone_specs_for_gather_buildings_match_worker_radii() -> None:
     from game.buildings.field import Field
 
     assert _placement_zone_specs(Field) == [("FARM", FARMER_FIELD_RADIUS)]
-    assert _placement_zone_specs(LumberCamp) == [("LUMBER_CAMP", GATHER_RESOURCE_SEARCH_RADIUS)]
-    assert _placement_zone_specs(StoneMine) == [("STONE_MINE", GATHER_RESOURCE_SEARCH_RADIUS)]
-    assert _placement_zone_specs(ForesterHut) == [("FORESTER_HUT", 15)]
+    assert _placement_zone_specs(LumberCamp) == [("LUMBER_CAMP", LUMBER_CAMP_RESOURCE_RADIUS)]
+    assert _placement_zone_specs(StoneMine) == [("STONE_MINE", STONE_MINE_RESOURCE_RADIUS)]
+    assert _placement_zone_specs(ForesterHut) == [("FORESTER_HUT", FORESTER_PLANT_RADIUS)]

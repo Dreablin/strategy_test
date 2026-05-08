@@ -5,8 +5,7 @@ from __future__ import annotations
 from typing import ClassVar
 
 from game.buildings.base import Building
-
-BAKERY_STORAGE_BASE = 3
+from game.config import building_level_int_setting
 
 
 class Bakery(Building):
@@ -42,7 +41,7 @@ class Bakery(Building):
         return self.storage_capacity()
 
     def storage_capacity(self) -> int:
-        return BAKERY_STORAGE_BASE + self.level // 2
+        return building_level_int_setting(self.type_tag, "storage", self.level)
 
     def input_amount(self) -> int:
         return int(self.flour_in)

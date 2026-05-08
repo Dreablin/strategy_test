@@ -72,7 +72,11 @@ def test_field_builder_stands_on_field_tile_while_building_and_finishes_in_10s()
     build_started = _advance_until(
         workers,
         now_ms,
-        lambda: field.construction_site is not None and field.construction_site.builder is builder,
+        lambda: (
+            field.construction_site is not None
+            and field.construction_site.builder is builder
+            and field.construction_site.build_started_ms is not None
+        ),
     )
 
     assert build_started

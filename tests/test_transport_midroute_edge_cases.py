@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from game.construction import ConstructionSite
 from game.buildings.bakery import Bakery
+from game.buildings.chicken_farm import ChickenFarm
 from game.buildings.farm import Farm
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.mill import Mill
@@ -107,6 +108,65 @@ def test_carrier_returns_resource_to_town_hall_when_construction_target_is_demol
 
     assert town_hall.warehouse_amount("wood") == 1
     assert target not in registry.all()
+
+
+def test_water_delivery_is_dropped_when_processor_target_starts_upgrade() -> None:
+    world = _empty_world()
+    registry = BuildingRegistry(world)
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    town_hall.construction_site = None
+    town_hall.add_to_warehouse("boards", 3)
+    town_hall.add_to_warehouse("stone", 1)
+    target = registry.place(ChickenFarm, near_town_hall_tile(18, 8))
+    target.construction_site = None
+    well = registry.place(Well, near_town_hall_tile(24, 8))
+    well.construction_site = None
+
+    workers = WorkerManager(registry, now_ms_fn=lambda: 0)
+    registry.bind_worker_manager(workers)
+    carrier = Worker("CARRIER")
+    workers.add_worker(carrier)
+    carrier.transport_task = TransportTask("water", well, target)
+    carrier.carrying = "water"
+    carrier.state = "carrier_unloading"
+    carrier.camp_wait_until_ms = 0
+
+    assert registry.upgrade_building(target)
+
+    workers.update(1_000)
+
+    assert carrier.transport_task is None
+    assert carrier.carrying is None
+    assert carrier.state == "idle"
+    assert town_hall.warehouse_amount("water") == 0
+
+
+def test_queued_processor_delivery_is_removed_when_target_starts_upgrade() -> None:
+    world = _empty_world()
+    registry = BuildingRegistry(world)
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    town_hall.construction_site = None
+    town_hall.add_to_warehouse("wheat", 1)
+    town_hall.add_to_warehouse("boards", 3)
+    town_hall.add_to_warehouse("stone", 1)
+    target = registry.place(ChickenFarm, near_town_hall_tile(18, 8))
+    target.construction_site = None
+
+    workers = WorkerManager(registry, now_ms_fn=lambda: 0)
+    registry.bind_worker_manager(workers)
+    carrier = Worker("CARRIER")
+    workers.add_worker(carrier)
+    workers.enqueue_transport_task(resource="wheat", source=town_hall, target=target, amount=1)
+
+    assert registry.upgrade_building(target)
+
+    workers.update(1_000)
+
+    active = [carrier.transport_task] if carrier.transport_task is not None else []
+    queued_and_active = workers._transport_queue + active  # noqa: SLF001
+    assert not any(t.resource == "wheat" and t.target is target for t in queued_and_active)
+    assert target.input_amount() == 0
+    assert town_hall.warehouse_amount("wheat") == 1
 
 
 def test_carrier_returns_resource_when_construction_finishes_before_delivery_from_local_source() -> None:

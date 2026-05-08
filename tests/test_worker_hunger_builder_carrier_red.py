@@ -28,6 +28,7 @@ def _base() -> tuple[World, BuildingRegistry, WorkerManager, Canteen]:
             break
     canteen = registry.place(Canteen, near_town_hall_tile(10, 4))
     canteen.construction_site = None
+    canteen.add_local_storage("simple_meal", canteen.local_storage_capacity("simple_meal"))
     return world, registry, WorkerManager(registry), canteen
 
 

@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from game.buildings.sawmill import Sawmill
+from game.config import building_level_int_setting
 
 
 def test_sawmill_defaults_and_panel_helpers() -> None:
@@ -16,20 +17,21 @@ def test_sawmill_defaults_and_panel_helpers() -> None:
     assert sawmill.active is True
     assert sawmill.input_amount() == 0
     assert sawmill.output_amount() == 0
-    assert sawmill.input_capacity() == 3
-    assert sawmill.output_capacity() == 3
+    assert sawmill.input_capacity() == building_level_int_setting("SAWMILL", "storage", 1)
+    assert sawmill.output_capacity() == building_level_int_setting("SAWMILL", "storage", 1)
     assert sawmill.progress_state(now_ms=0) == "idle"
 
 
 def test_sawmill_split_storage_add_take_and_bounds() -> None:
     sawmill = Sawmill(level=1, grid_pos=(10, 10))
-    sawmill.add_wood_in(3)
+    cap = sawmill.input_capacity()
+    sawmill.add_wood_in(cap)
     sawmill.add_boards_out(2)
-    assert sawmill.input_amount() == 3
+    assert sawmill.input_amount() == cap
     assert sawmill.output_amount() == 2
     sawmill.take_wood_in(1)
     sawmill.take_boards_out(1)
-    assert sawmill.input_amount() == 2
+    assert sawmill.input_amount() == cap - 1
     assert sawmill.output_amount() == 1
     with pytest.raises(ValueError):
         sawmill.add_wood_in(2)
@@ -49,17 +51,12 @@ def test_sawmill_active_toggle_and_processing_progress() -> None:
     assert sawmill.processing_progress(now_ms=50_000) == 1.0
 
 
-def test_sawmill_storage_capacity_milestones_level5_and_level10() -> None:
-    sawmill_l1 = Sawmill(level=1, grid_pos=(10, 10))
-    sawmill_l5 = Sawmill(level=5, grid_pos=(10, 10))
-    sawmill_l10 = Sawmill(level=10, grid_pos=(10, 10))
-
-    assert sawmill_l1.input_capacity() == 3
-    assert sawmill_l1.output_capacity() == 3
-    assert sawmill_l5.input_capacity() == 4
-    assert sawmill_l5.output_capacity() == 4
-    assert sawmill_l10.input_capacity() == 5
-    assert sawmill_l10.output_capacity() == 5
+def test_sawmill_storage_capacity_uses_building_settings() -> None:
+    for level in (1, 5, 10):
+        sawmill = Sawmill(level=level, grid_pos=(10, 10))
+        expected = building_level_int_setting("SAWMILL", "storage", level)
+        assert sawmill.input_capacity() == expected
+        assert sawmill.output_capacity() == expected
 
 
 def test_sawmill_asset_hook_folder_exists() -> None:

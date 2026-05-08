@@ -5,9 +5,7 @@ from __future__ import annotations
 from typing import ClassVar
 
 from game.buildings.base import Building
-from game.buildings.storage import BUILDING_STORAGE_BASE
-
-SAWMILL_STORAGE_BASE = BUILDING_STORAGE_BASE
+from game.config import building_level_int_setting
 
 
 class Sawmill(Building):
@@ -26,12 +24,10 @@ class Sawmill(Building):
         self.active = bool(value)
 
     def input_capacity(self) -> int:
-        milestones = int(self.level >= 5) + int(self.level >= 10)
-        return SAWMILL_STORAGE_BASE + milestones
+        return building_level_int_setting(self.type_tag, "storage", self.level)
 
     def output_capacity(self) -> int:
-        milestones = int(self.level >= 5) + int(self.level >= 10)
-        return SAWMILL_STORAGE_BASE + milestones
+        return building_level_int_setting(self.type_tag, "storage", self.level)
 
     def input_amount(self) -> int:
         return int(self.wood_in)

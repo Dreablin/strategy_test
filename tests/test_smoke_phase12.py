@@ -10,7 +10,7 @@ from game.buildings.town_hall import TownHall
 from game.stones import Stone
 from game.trees import Tree, TreeStage
 from game.world import World
-from game.workers import MINE_DURATION_MS, WorkerManager
+from game.workers import MINE_DURATION_MS, WorkerManager, building_center_tile
 
 
 def test_world_boots_with_six_stone_clusters_one_on_th_ring_twenty() -> None:
@@ -126,6 +126,8 @@ def test_stonecutter_cycle_toggle_upgrade_and_storage_smoke() -> None:
     assert stonecutter.target_tree is None
 
     # Lumberjack: upgrade camp and validate gather-speed bonus is applied.
+    lumberjack.current_tile = building_center_tile(camp)
+    lumberjack.stand_tile = lumberjack.current_tile
     assert registry.upgrade_building(camp)
     assert camp in registry.all()
     assert camp.is_under_construction

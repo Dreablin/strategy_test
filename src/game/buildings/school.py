@@ -5,9 +5,10 @@ from __future__ import annotations
 from typing import ClassVar
 
 from game.buildings.base import Building
+from game.config import building_int_setting
 
-SCHOOL_QUEUE_CAPACITY = 7
-SCHOOL_TRAINING_MS = 30_000
+SCHOOL_QUEUE_CAPACITY = building_int_setting("SCHOOL", "training", "queue_capacity")
+SCHOOL_TRAINING_MS = building_int_setting("SCHOOL", "training", "duration_ms")
 
 
 class TrainingEntry:

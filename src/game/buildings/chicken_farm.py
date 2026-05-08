@@ -5,9 +5,7 @@ from __future__ import annotations
 from typing import ClassVar
 
 from game.buildings.base import Building
-from game.buildings.storage import BUILDING_STORAGE_BASE
-
-CHICKEN_FARM_STORAGE_BASE = BUILDING_STORAGE_BASE
+from game.config import building_level_int_setting
 
 
 class ChickenFarm(Building):
@@ -34,7 +32,7 @@ class ChickenFarm(Building):
         self.active = bool(value)
 
     def storage_capacity(self) -> int:
-        return CHICKEN_FARM_STORAGE_BASE + self.level // 2
+        return building_level_int_setting(self.type_tag, "storage", self.level)
 
     def input_capacity(self) -> int:
         return self.storage_capacity()

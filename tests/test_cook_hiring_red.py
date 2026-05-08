@@ -9,6 +9,7 @@ from game.buildings.registry import BuildingRegistry
 from game.buildings.school import School
 from game.buildings.town_hall import TownHall
 from game.config import near_town_hall_tile, town_hall_origin_tile
+from game.worker_satiety import MAX_WORKER_SATIETY
 from game.ui.school_panel import SchoolPanel
 from game.world import World
 from game.worker_hiring import HIRABLE_WORKERS, WORKER_TO_BUILDING
@@ -81,7 +82,7 @@ def test_cook_training_enqueue_and_cancel() -> None:
 
 def test_worker_cook_starts_at_full_satiety() -> None:
     cook = Worker("COOK")
-    assert cook.satiety == 10_000
+    assert cook.satiety == MAX_WORKER_SATIETY
 
 
 def test_hired_cook_starts_at_full_satiety() -> None:
@@ -95,7 +96,7 @@ def test_hired_cook_starts_at_full_satiety() -> None:
     wm = WorkerManager(registry)
     hired = wm.hire("COOK", source_building=school)
     assert hired is not None
-    assert hired.satiety == 10_000
+    assert hired.satiety == MAX_WORKER_SATIETY
 
 
 def test_cook_worker_dot_and_ui_icons_fallback_smoke() -> None:

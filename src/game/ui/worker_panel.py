@@ -64,6 +64,12 @@ _PURPOSE_LABEL: dict[str, str] = {
     "return": "Return to Town Hall",
 }
 
+_STATE_LABEL: dict[str, str] = {
+    "going_to_canteen": "Going to canteen",
+    "waiting_for_meal": "Waiting for meal",
+    "eating": "Eating",
+}
+
 
 @dataclass(frozen=True, slots=True)
 class WorkerPanelLayout:
@@ -86,8 +92,9 @@ def _building_name(building) -> str:
 
 def _worker_lines(worker: Worker) -> list[str]:
     sat = clamp_worker_satiety(int(getattr(worker, "satiety", 0)))
+    state = _STATE_LABEL.get(str(worker.state), str(worker.state))
     lines = [
-        f"State: {worker.state}",
+        f"State: {state}",
         f"Satiety: {sat}/{MAX_WORKER_SATIETY}",
         f"Assigned: {_building_name(worker.assigned_building) if worker.assigned_building is not None else 'none'}",
         f"Carrying: {_label(worker.carrying, _RESOURCE_LABEL)}",

@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 import pygame
 
-from game.assets import worker_dot
+from game.assets import worker_ui_icon
 from game.buildings.canteen import Canteen
 from game.resource_catalog import resource_display_label
 from game.ui.building_panel import BuildingPanel
@@ -14,11 +14,12 @@ from game.worker_dining import DINING_EAT_DURATION_MS
 
 _PANEL_PAD = 16
 _BTN_H = 32
-_EXTRA_BOTTOM = 168
+_EXTRA_BOTTOM = 240
 _LINE = 22
-_DINER_TILE_SIZE = 26
+_DINER_TILE_W = 48
+_DINER_TILE_H = 42
 _DINER_GAP = 8
-_DINER_PAD_TOP = 8
+_DINER_ROW_GAP = 8
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,16 +39,16 @@ class CanteenPanel:
         if slots <= 0:
             return ()
         width = layout.frame.width - _PANEL_PAD * 2
-        cols = max(1, width // (_DINER_TILE_SIZE + _DINER_GAP))
+        cols = max(1, (width + _DINER_GAP) // (_DINER_TILE_W + _DINER_GAP))
         left = layout.frame.left + _PANEL_PAD
-        top = layout.frame.top + _PANEL_PAD + 4 * 26 + 32 + 5 * _LINE + 4
+        top = layout.frame.top + _PANEL_PAD + 4 * 26 + 32 + 5 * _LINE + 26
         tiles: list[pygame.Rect] = []
         for idx in range(slots):
             row = idx // cols
             col = idx % cols
-            x = left + col * (_DINER_TILE_SIZE + _DINER_GAP)
-            y = top + row * (_DINER_TILE_SIZE + _DINER_PAD_TOP)
-            tiles.append(pygame.Rect(x, y, _DINER_TILE_SIZE, _DINER_TILE_SIZE))
+            x = left + col * (_DINER_TILE_W + _DINER_GAP)
+            y = top + row * (_DINER_TILE_H + _DINER_ROW_GAP)
+            tiles.append(pygame.Rect(x, y, _DINER_TILE_W, _DINER_TILE_H))
         return tuple(tiles)
 
     @staticmethod
@@ -174,17 +175,20 @@ class CanteenPanel:
                 continue
             diner = occupants[idx]
             phase = str(getattr(diner, "dining_phase", "none"))
-            state = "Eating" if phase == "eating" else "Waiting"
-            icon = worker_dot(diner.type_tag)
+            icon = worker_ui_icon(diner.type_tag, size=20)
+            if phase not in {"waiting_for_meal", "eating"}:
+                icon = icon.copy()
+                icon.set_alpha(128)
             icon_pos = (
                 tile.left + (tile.width - icon.get_width()) // 2,
-                tile.top + 2,
+                tile.top + 4,
             )
             surface.blit(icon, icon_pos)
-            label = body.render(diner.type_tag[:3], True, (234, 238, 244))
-            surface.blit(label, (tile.left + 2, tile.bottom - label.get_height() - 2))
-            state_surf = body.render(state, True, (188, 194, 206))
-            surface.blit(state_surf, (tile.right + 4, tile.top + 2))
+            label = pygame.font.Font(None, 15).render(diner.type_tag[:3], True, (234, 238, 244))
+            if phase not in {"waiting_for_meal", "eating"}:
+                label = label.copy()
+                label.set_alpha(128)
+            surface.blit(label, (tile.centerx - label.get_width() // 2, tile.bottom - label.get_height() - 4))
             if phase == "eating":
                 started = int(getattr(diner, "dining_eating_started_ms", 0))
                 t = 0.0 if started <= 0 else max(

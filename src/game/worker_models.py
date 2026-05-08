@@ -49,7 +49,9 @@ class Worker:
         "dining_phase",
         "dining_eating_started_ms",
         "dining_meal_assigned",
+        "dining_meal_reserved",
         "dining_target_tile",
+        "dining_queue_order",
         "blocked_cycle_hunger_try_ms",
     )
 
@@ -61,7 +63,9 @@ class Worker:
         self.dining_phase = "none"
         self.dining_eating_started_ms = 0
         self.dining_meal_assigned = False
+        self.dining_meal_reserved = False
         self.dining_target_tile: tuple[int, int] | None = None
+        self.dining_queue_order = -1
         self.blocked_cycle_hunger_try_ms = -1
         self.assigned_building: Building | None = None
         self.idle = True
@@ -94,6 +98,8 @@ class Worker:
                 self.state = "going_to_stone"
             elif move_state == "going_to_plant_tile":
                 self.state = "going_to_plant_tile"
+            elif move_state == "going_to_canteen":
+                self.state = "going_to_canteen"
             elif move_state == "returning":
                 self.state = "returning"
             else:
@@ -109,7 +115,19 @@ class Worker:
         self.idle = False
 
     def update(self, now_ms: int) -> None:
-        if self.state not in {"moving", "going_to_tree", "going_to_stone", "going_to_plant_tile", "going_to_field", "returning"} or self.target_tile is None:
+        if (
+            self.state
+            not in {
+                "moving",
+                "going_to_tree",
+                "going_to_stone",
+                "going_to_plant_tile",
+                "going_to_field",
+                "going_to_canteen",
+                "returning",
+            }
+            or self.target_tile is None
+        ):
             return
         travel_ms = self._effective_travel_ms()
         elapsed = max(0, int(now_ms) - self.segment_started_ms)
@@ -133,6 +151,8 @@ class Worker:
                 self.state = "arrived_plant_tile"
             elif self.state == "going_to_field":
                 self.state = "arrived_field"
+            elif self.state == "going_to_canteen":
+                self.state = "arrived_canteen"
             elif self.state == "returning":
                 self.state = "arrived_camp"
             else:

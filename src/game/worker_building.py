@@ -30,6 +30,19 @@ class WorkerBuildingMixin:
                 )
                 return
             if site.builder is worker:
+                if worker.state == "moving":
+                    worker.idle = False
+                    return
+                if not site.is_fully_supplied():
+                    site.builder = None
+                    worker.assigned_building = None
+                    worker.idle = True
+                    worker.state = "idle"
+                    return
+                if site.build_started_ms is None:
+                    worker.state = "entering_site"
+                    self._park_worker_inside_building(worker, building)
+                    site.build_started_ms = int(now_ms)
                 worker.idle = False
                 worker.state = "building"
                 return
@@ -76,6 +89,7 @@ class WorkerBuildingMixin:
             if best_path is None:
                 continue
             worker.assigned_building = target
+            target.construction_site.builder = worker
             worker.start_move(best_path, started_ms=now_ms)
             return
         try_builder_hunger_after_completion_or_idle(

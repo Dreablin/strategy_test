@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-BUILDING_STORAGE_BASE = 3
-BUILDING_STORAGE_PER_LEVEL = 2
+from game.config import building_level_int_setting
 
 
 class StorageMixin:
@@ -15,7 +14,7 @@ class StorageMixin:
     level: int
 
     def storage_capacity(self) -> int:
-        return BUILDING_STORAGE_BASE + BUILDING_STORAGE_PER_LEVEL * (self.level - 1)
+        return building_level_int_setting(self.type_tag, "storage", self.level)
 
     def add_to_storage(self, amount: int) -> None:
         n = int(amount)

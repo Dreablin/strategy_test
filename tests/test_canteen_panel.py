@@ -87,6 +87,17 @@ def test_canteen_panel_layout_has_one_diner_tile_per_slot() -> None:
     tiles = CanteenPanel._diner_tiles(layout, canteen.diner_slot_capacity())
     assert len(tiles) == canteen.diner_slot_capacity()
     assert len({(t.x, t.y, t.w, t.h) for t in tiles}) == len(tiles)
+    progress_bar_bottom = layout.frame.top + 16 + 4 * 26 + 32 + 5 * 22 + 12
+    assert all(tile.top > progress_bar_bottom for tile in tiles)
+    assert layout.upgrade is not None
+    assert all(tile.bottom < layout.upgrade.top for tile in tiles)
+
+    high_level = Canteen(level=10, grid_pos=(10, 10))
+    high_layout = CanteenPanel.layout(surface, high_level, worker_assigned=True, production_status="Processing")
+    high_tiles = CanteenPanel._diner_tiles(high_layout, high_level.diner_slot_capacity())
+    assert high_layout.upgrade is None
+    assert high_layout.demolish is not None
+    assert all(tile.bottom < high_layout.demolish.top for tile in high_tiles)
 
 
 def test_canteen_panel_draws_reserved_diner_worker_and_eating_progress() -> None:

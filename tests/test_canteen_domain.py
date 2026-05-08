@@ -8,7 +8,7 @@ from game import config
 from game.buildings.canteen import Canteen
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
-from game.config import near_town_hall_tile, town_hall_origin_tile
+from game.config import building_level_int_setting, near_town_hall_tile, town_hall_origin_tile
 from game.world import World
 
 
@@ -50,25 +50,26 @@ def test_canteen_local_storage_buckets_start_empty_and_capacity_scales_by_level(
     assert canteen.local_storage_resources() == ("chicken", "bread", "water", "simple_meal")
     for resource in canteen.local_storage_resources():
         assert canteen.local_storage_amount(resource) == 0
-        assert canteen.local_storage_capacity(resource) == 5
+        assert canteen.local_storage_capacity(resource) == building_level_int_setting("CANTEEN", "storage", 1)
 
     upgraded = Canteen(level=4)
     for resource in upgraded.local_storage_resources():
-        assert upgraded.local_storage_capacity(resource) == 8
+        assert upgraded.local_storage_capacity(resource) == building_level_int_setting("CANTEEN", "storage", 4)
 
 
 def test_canteen_local_storage_helpers_enforce_bucket_capacity() -> None:
     canteen = Canteen(level=1)
+    cap = canteen.local_storage_capacity("chicken")
 
-    canteen.add_local_storage("chicken", 5)
-    assert canteen.local_storage_amount("chicken") == 5
+    canteen.add_local_storage("chicken", cap)
+    assert canteen.local_storage_amount("chicken") == cap
     with pytest.raises(ValueError):
         canteen.add_local_storage("chicken", 1)
 
     canteen.take_local_storage("chicken", 2)
-    assert canteen.local_storage_amount("chicken") == 3
+    assert canteen.local_storage_amount("chicken") == cap - 2
     with pytest.raises(ValueError):
-        canteen.take_local_storage("chicken", 4)
+        canteen.take_local_storage("chicken", cap)
 
 
 def test_canteen_rejects_unknown_local_storage_resource() -> None:
@@ -81,6 +82,7 @@ def test_canteen_rejects_unknown_local_storage_resource() -> None:
 
 
 def test_canteen_diner_slot_capacity_scales_by_level() -> None:
-    assert Canteen(level=1).diner_slot_capacity() == 3
-    assert Canteen(level=4).diner_slot_capacity() == 6
-    assert Canteen(level=10).diner_slot_capacity() == 12
+    for level in (1, 4, 10):
+        assert Canteen(level=level).diner_slot_capacity() == building_level_int_setting(
+            "CANTEEN", "diner_slots", level
+        )

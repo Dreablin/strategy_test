@@ -30,12 +30,15 @@ from game.transport_tasks import (
 from game.worker_constants import (
     CHOP_DURATION_MS,
     FARMER_FIELD_RADIUS,
+    FORESTER_PLANT_RADIUS,
     GATHER_SPEED_PER_LEVEL,
     IRON_MINE_CYCLE_MS,
+    LUMBER_CAMP_RESOURCE_RADIUS,
     LUMBERJACK_REST_MS,
     MINER_REST_MS,
     MINE_DURATION_MS,
     MOVE_SPEED_PER_LEVEL,
+    STONE_MINE_RESOURCE_RADIUS,
     STONECUTTER_REST_MS,
 )
 from game.worker_geometry import (
@@ -75,6 +78,9 @@ __all__ = [
     "IRON_MINE_CYCLE_MS",
     "MINER_REST_MS",
     "FARMER_FIELD_RADIUS",
+    "FORESTER_PLANT_RADIUS",
+    "LUMBER_CAMP_RESOURCE_RADIUS",
+    "STONE_MINE_RESOURCE_RADIUS",
     "building_center_tile",
     "town_hall_spawn_tile",
     "select_farmer_field_target",
@@ -448,6 +454,7 @@ class WorkerManager(
     def update(self, now_ms: int) -> None:
         """Advance worker movement interpolation/state for this frame."""
         world = getattr(self._registry, "_world", None) if self._registry is not None else None
+        now_ms = int(now_ms)
         self._update_field_growth(int(now_ms))
         self._enqueue_construction_transport_tasks()
         self._enqueue_sawmill_refill_tasks()
@@ -461,14 +468,36 @@ class WorkerManager(
         self._enqueue_chicken_farm_output_tasks()
         self._enqueue_iron_mine_output_tasks()
         self._enqueue_farm_wheat_output_tasks()
+        if self._registry is not None:
+            from game.buildings.canteen import Canteen
+            from game.worker_dining import assign_diner_meals_for_canteen
+
+            for building in self._registry.all():
+                if isinstance(building, Canteen) and not building.is_under_construction:
+                    assign_diner_meals_for_canteen(building, now_ms=now_ms)
         completed_buildings: list[Building] = []
         completed_site_builders: dict[int, Worker] = {}
         for worker in self._workers:
-            self._tick_worker_satiety(worker, int(now_ms))
+            self._tick_worker_satiety(worker, now_ms)
+            if worker.dining_canteen is not None and self._registry is not None and world is not None:
+                from game.buildings.canteen import Canteen
+                from game.worker_dining import update_dining_runtime
+
+                canteen = worker.dining_canteen
+                if isinstance(canteen, Canteen) and canteen in self._registry.all():
+                    update_dining_runtime(
+                        worker,
+                        canteen=canteen,
+                        world=world,
+                        worker_manager=self,
+                        registry=self._registry,
+                        now_ms=now_ms,
+                    )
+                    continue
             worker.update(now_ms)
             updater = self._updaters.get(worker.type_tag)
             if updater is not None:
-                updater(worker, int(now_ms), world)
+                updater(worker, now_ms, world)
         spawned = False
         if self._registry is not None:
             for building in self._registry.all():

@@ -6,19 +6,21 @@ import random
 from typing import Any
 
 from game.buildings.base import Building
-from game.config import GATHER_RESOURCE_SEARCH_RADIUS
 from game.pathfinding import find_path_bfs
 from game.worker_constants import (
     CHOP_DURATION_MS,
+    FORESTER_PLANT_RADIUS,
     FORESTER_REST_MS,
     FORESTER_RETURN_RETRY_MS,
     FORESTER_TARGET_RANDOM_TRIES,
     FORESTER_TARGET_RETRY_MS,
     IRON_MINE_CYCLE_MS,
+    LUMBER_CAMP_RESOURCE_RADIUS,
     LUMBERJACK_REST_MS,
     MINER_REST_MS,
     MINE_DURATION_MS,
     PLANT_DURATION_MS,
+    STONE_MINE_RESOURCE_RADIUS,
     STONECUTTER_REST_MS,
 )
 from game.worker_geometry import building_center_tile
@@ -343,8 +345,8 @@ class WorkerGatheringMixin:
             return None
         approach_set = set(hut_approaches)
         for _ in range(FORESTER_TARGET_RANDOM_TRIES):
-            x = random.randint(hx - 15, hx + 15)
-            y = random.randint(hy - 15, hy + 15)
+            x = random.randint(hx - FORESTER_PLANT_RADIUS, hx + FORESTER_PLANT_RADIUS)
+            y = random.randint(hy - FORESTER_PLANT_RADIUS, hy + FORESTER_PLANT_RADIUS)
             if not world.is_in_grass(x, y):
                 continue
             if (x, y) == from_tile:
@@ -461,8 +463,8 @@ class WorkerGatheringMixin:
         skip_targets: set[tuple[int, int]] | None = None,
     ) -> tuple[int, int] | None:
         anchor = building_center_tile(camp)
-        radius = GATHER_RESOURCE_SEARCH_RADIUS
         if world_query == "tree":
+            radius = LUMBER_CAMP_RESOURCE_RADIUS
             return find_nearest_free_tree(
                 world,
                 from_tile,
@@ -473,6 +475,7 @@ class WorkerGatheringMixin:
                 max_search_radius=radius,
             )
         if world_query == "stone":
+            radius = STONE_MINE_RESOURCE_RADIUS
             return find_nearest_free_stone(
                 world,
                 from_tile,

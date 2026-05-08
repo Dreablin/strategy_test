@@ -71,3 +71,12 @@ def test_worker_panel_body_lines_include_satiety_with_active_transport_task() ->
     assert str(MAX_WORKER_SATIETY) in sat
     assert any("Task:" in ln for ln in lines)
     assert any("Resource:" in ln for ln in lines)
+
+
+def test_worker_panel_body_lines_show_dining_state_labels() -> None:
+    worker = Worker("BUILDER", stand_tile=near_town_hall_tile())
+    worker.state = "waiting_for_meal"
+
+    lines = WorkerPanel.body_lines(worker)
+
+    assert "State: Waiting for meal" in lines

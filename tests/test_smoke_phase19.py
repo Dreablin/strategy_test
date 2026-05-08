@@ -8,7 +8,7 @@ from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
 from game.config import near_town_hall_tile, town_hall_origin_tile
 from game.world import World
-from game.workers import CHOP_DURATION_MS, WorkerManager
+from game.workers import CHOP_DURATION_MS, WorkerManager, building_center_tile
 
 
 def _tick(workers: WorkerManager, now_ms: dict[str, int], dt_ms: int = 500) -> None:
@@ -82,7 +82,7 @@ def test_smoke_phase19_construction_to_upgrade_cycle() -> None:
     assert camp.is_under_construction
     assert camp.construction_site is not None
     assert camp.construction_site.target_level == 2
-    assert lumberjack.state == "resting"
+    assert lumberjack.current_tile != building_center_tile(camp) or lumberjack.state == "resting"
 
     built_upgrade = _advance_until(workers, now_ms, lambda: (not camp.is_under_construction), steps=3000)
     assert built_upgrade, "expected level-2 upgrade construction to complete"

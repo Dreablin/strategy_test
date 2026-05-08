@@ -201,6 +201,7 @@ class Renderer:
             "going_to_stone",
             "going_to_plant_tile",
             "going_to_field",
+            "going_to_canteen",
             "returning",
         }
         entries: list[tuple[str, bool, float, float]] = []

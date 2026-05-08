@@ -1,5 +1,7 @@
 """Shared worker timing and tuning constants."""
 
+from game.config import building_int_setting
+
 CHOP_DURATION_MS = 10_000
 MINE_DURATION_MS = 10_000
 PLANT_DURATION_MS = 5_000
@@ -27,7 +29,10 @@ CHICKEN_FARM_CYCLE_MS = BAKERY_CYCLE_MS
 ANIMAL_HERDER_REST_MS = BAKER_REST_MS
 FARMER_REST_MS = 5_000
 FARMER_ACTION_MS = 5_000
-FARMER_FIELD_RADIUS = 10
+FARMER_FIELD_RADIUS = building_int_setting("FARM", "work_radius")
+FORESTER_PLANT_RADIUS = building_int_setting("FORESTER_HUT", "plant_radius")
+LUMBER_CAMP_RESOURCE_RADIUS = building_int_setting("LUMBER_CAMP", "resource_search_radius")
+STONE_MINE_RESOURCE_RADIUS = building_int_setting("STONE_MINE", "resource_search_radius")
 FARMER_NO_TARGET_WORKING_STATE_MS = 900_000
 MOVE_SPEED_PER_LEVEL = 0.05
 GATHER_SPEED_PER_LEVEL = 0.05

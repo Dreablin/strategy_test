@@ -24,13 +24,19 @@ from game.buildings.sawmill import Sawmill
 from game.buildings.well import Well
 from game.camera import Camera
 from game.buildings.stone_mine import StoneMine
-from game.config import GATHER_RESOURCE_SEARCH_RADIUS, TILE_H, TILE_W
+from game.config import TILE_H, TILE_W
 from game.iso import screen_to_world, world_to_screen
 from game.iron import IronDeposit
 from game.render import Renderer
 from game.stones import Stone
 from game.world import World
-from game.workers import FARMER_FIELD_RADIUS, building_center_tile
+from game.workers import (
+    FARMER_FIELD_RADIUS,
+    FORESTER_PLANT_RADIUS,
+    LUMBER_CAMP_RESOURCE_RADIUS,
+    STONE_MINE_RESOURCE_RADIUS,
+    building_center_tile,
+)
 
 _TAG_TO_CLASS: dict[str, Type[Building]] = {
     "LUMBER_CAMP": LumberCamp,
@@ -108,12 +114,11 @@ def _placement_zone_specs(cls: Type[Building] | None) -> list[tuple[str, int]]:
     if cls is Field:
         return [("FARM", FARMER_FIELD_RADIUS)]
     if cls is LumberCamp:
-        return [("LUMBER_CAMP", GATHER_RESOURCE_SEARCH_RADIUS)]
+        return [("LUMBER_CAMP", LUMBER_CAMP_RESOURCE_RADIUS)]
     if cls is StoneMine:
-        return [("STONE_MINE", GATHER_RESOURCE_SEARCH_RADIUS)]
+        return [("STONE_MINE", STONE_MINE_RESOURCE_RADIUS)]
     if cls is ForesterHut:
-        # Matches current forester target search window in WorkerManager.
-        return [("FORESTER_HUT", 15)]
+        return [("FORESTER_HUT", FORESTER_PLANT_RADIUS)]
     return []
 
 

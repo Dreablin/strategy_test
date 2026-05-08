@@ -4,6 +4,7 @@ from typing import ClassVar
 
 from game.buildings.base import Building
 from game.buildings.storage import StorageMixin
+from game.config import building_level_int_setting
 
 
 class Farm(StorageMixin, Building):
@@ -15,5 +16,4 @@ class Farm(StorageMixin, Building):
         self.stored = 0
 
     def storage_capacity(self) -> int:
-        """Farm capacity grows +1 every two levels starting from 3 at L1."""
-        return 3 + ((self.level - 1) // 2)
+        return building_level_int_setting(self.type_tag, "storage", self.level)

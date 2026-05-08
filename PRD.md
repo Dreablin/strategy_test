@@ -11,6 +11,10 @@ preserving these invariants over literal old phase wording:
 - When adding new buildings, follow `building_extension_guide.md` so building
   class state, construction settings, assets, UI, transport, and worker runtime
   stay in their focused modules.
+- Per-building balance belongs in `src/game/settings/buildings/<building>.json`.
+  Keep construction requirements, local storage capacities, work/search radii,
+  school training settings, and housing capacity there instead of duplicating
+  those values in Python code or `game_settings.json`.
 - Resources move physically through internal building storages, Town Hall
   warehouse, and carrier transport tasks. Do not reintroduce passive wallet
   production.
@@ -45,10 +49,11 @@ preserving these invariants over literal old phase wording:
 
 ### F-RES — Resources
 
-- **F-RES-01 (MUST):** Current resource keys are `wheat`, `wood`, `stone`, `iron`, `boards`, `flour`, `bread`, and `water`. All quantities are non-negative integers.
-- **F-RES-02 (MUST):** Town Hall warehouse persists all resources except `water`. Current starting warehouse is configured in `game_settings.json` / `config.TOWN_HALL_STARTING_WAREHOUSE` and includes `wheat=200`, `wood=200`, and zeroes for unlocked processed outputs by default.
+- **F-RES-01 (MUST):** Current resource keys include raw goods, processed goods, food goods, water, and canteen-local meals. All quantities are non-negative integers.
+- **F-RES-02 (MUST):** Town Hall warehouse persists all resources except `water`. Starting warehouse contents are configured only in `game_settings.json` / `config.TOWN_HALL_STARTING_WAREHOUSE`.
 - **F-RES-03 (MUST):** Resource flow is physical: producers fill building internal storages, processors consume local inputs and fill local outputs, and carriers move units between buildings. Do not add passive per-cycle wallet income.
 - **F-RES-04 (MUST):** `water` is not stored in Town Hall. A carrier assigned to a water task reserves a free `WELL`, enters it, draws water for `WELL_DRAW_WATER_MS`, leaves with `carrying="water"`, releases the well, and delivers directly to a water consumer.
+- **F-RES-05 (MUST):** `simple_meal` is local to `CANTEEN`. It is produced, reserved, and consumed inside canteens; it must not be exported to Town Hall or treated as a generic carrier-delivered warehouse resource.
 
 ### F-TICK — Cycle System
 
@@ -81,7 +86,7 @@ preserving these invariants over literal old phase wording:
 
 - Stone is a per-tile world entity with hidden `units` (default `STONE_UNITS_PER_TILE = 15`).
 - Stone tiles are impassable and unbuildable. Trees must not spawn on stone; stone must not spawn on existing trees/metals/buildings.
-- Stone generation creates clusters outside the Town Hall area, with one useful cluster near the Town Hall ring. Keep exact tuning in `world.py`/tests.
+- Stone generation creates clusters outside the Town Hall area, with one useful cluster near the Town Hall ring. Keep exact generation tuning in the world generation code/settings and tests, not in this PRD.
 - Stonecutter stands adjacent to stone, mines for `MINE_DURATION_MS`, decrements units, removes depleted stone, returns to `STONE_MINE`, deposits into local storage, then carriers export it.
 - Stone reservations mirror tree reservations: one worker per resource tile; release on worker cleanup, demolition, completion, or resource disappearance.
 
@@ -95,7 +100,7 @@ preserving these invariants over literal old phase wording:
 
 ### F-BLD — Buildings (general)
 
-- **F-BLD-01 (MUST):** Current building types include `TOWN_HALL`, `LUMBER_CAMP`, `STONE_MINE`, `IRON_MINE`, `FARM`, `FIELD`, `FORESTER_HUT`, `SAWMILL`, `MILL`, `BAKERY`, `WELL`, `SCHOOL`, `HOUSE`. Each type must be registered consistently in building class, config/settings, placement map, assets folder mapping, panels where needed, and bottom-bar menu.
+- **F-BLD-01 (MUST):** Current building types include `TOWN_HALL`, `LUMBER_CAMP`, `STONE_MINE`, `IRON_MINE`, `FARM`, `FIELD`, `FORESTER_HUT`, `SAWMILL`, `MILL`, `BAKERY`, `CANTEEN`, `WELL`, `SCHOOL`, `HOUSE`. Each type must be registered consistently in building class, config/settings, placement map, assets folder mapping, panels where needed, and bottom-bar menu.
 - **F-BLD-02 (MUST):** Standard buildings use a **2×2** footprint unless noted. Exceptions: `TOWN_HALL` is **3×3**, `FIELD` is **1×1**, and `WELL` is **1×1**.
 - **F-BLD-03 (MUST):** Most buildings can reach level **10** when construction requirements exist. Exceptions: `FIELD` is crop-state driven and not upgraded; `WELL` has max level 1; `TOWN_HALL` is unique, cannot be demolished or built from the menu, and can upgrade levels 1..10.
 - **F-BLD-04 (MUST):** Placement order creates a construction site, not an instant finished building, for configured buildings. There is no wallet-spend gate at click time, but construction/upgrades require resource delivery and build time through `ConstructionSite`.
@@ -125,7 +130,7 @@ preserving these invariants over literal old phase wording:
 
 - Fixed 96px strip with multi-level menu: Main → Resource / Social / Processing / Dev.
 - Resource: `LUMBER_CAMP`, `STONE_MINE`, `IRON_MINE`, `FARM`, `FIELD`, `FORESTER_HUT`, `WELL`.
-- Processing: `SAWMILL`, `MILL`, `BAKERY`. Social: `SCHOOL`, `HOUSE`. Dev: place tree, stone, iron.
+- Processing: `SAWMILL`, `MILL`, `BAKERY`. Social: `SCHOOL`, `HOUSE`, `CANTEEN`. Dev: place tree, stone, iron.
 - Leaf clicks post placement intent. Buttons are gated by tech/state, not wallet affordability.
 
 ### F-UI-PANEL — Building Info Panel (modal)
@@ -135,6 +140,7 @@ preserving these invariants over literal old phase wording:
 - Do not duplicate the same local stock with two counters. Upgrade is disabled at max level, under construction, or by explicit state gates such as non-empty School queue.
 - Town Hall panel has no Demolish and no hiring. Hiring/training happens at School.
 - Well panel reflects temporary carrier occupancy and draw progress. Once carrier leaves with water, well is shown ready even though that carrier still has a water task.
+- Canteen panel shows real local food inputs, local meal stock, cook/production status, diner slots, and per-diner eating progress. Reserved/walking diners may be shown before they physically arrive, but must be visually distinguishable from diners already waiting or eating.
 
 ### F-DEMO — Demolish
 
@@ -158,27 +164,28 @@ preserving these invariants over literal old phase wording:
 
 ### F-STORE — Internal Storage Contracts
 
-- **F-STORE-01 (MUST):** Raw gather producers (`LUMBER_CAMP`, `STONE_MINE`, `IRON_MINE`, `FARM`) expose local output storage. Generic producers use `stored` + `storage_capacity()` unless a building overrides capacity.
-- **F-STORE-02 (MUST):** Generic output storage capacity is `3 + 2 × (L − 1)`. Farm is intentionally different: L1-L2 capacity 3, then +1 every two levels (`3 + floor((L - 1) / 2)`).
+- **F-STORE-01 (MUST):** Raw gather producers (`LUMBER_CAMP`, `STONE_MINE`, `IRON_MINE`, `FARM`) expose local output storage. Generic producers use `stored` + `storage_capacity()` unless a building needs a specialized storage API.
+- **F-STORE-02 (MUST):** Local storage capacities are per-building balance settings. Read them from that building's JSON under `src/game/settings/buildings/`; do not hard-code storage formulas in building classes when adding or changing buildings.
 - **F-STORE-03 (MUST):** A worker assigned to a raw producer must not start a new gathering/harvest cycle when the relevant local output storage is full. The worker waits until carriers make space.
 - **F-STORE-04 (MUST):** Processors can have separate local input and output storages:
   - `SAWMILL`: input wood, output boards.
   - `MILL`: input wheat, output flour.
   - `BAKERY`: input flour + water, output bread.
-- **F-STORE-05 (MUST):** Processor storage capacity follows each building class. Current sawmill/mill/bakery storage grows by level according to local class helpers, not the generic raw-producer formula in all cases.
+  - `CANTEEN`: local food/water inputs, local `simple_meal` output.
+- **F-STORE-05 (MUST):** Processor storage capacity follows each building's settings. Processors may have different input/output resources, but capacity tuning should live in the processor building JSON.
 - **F-STORE-06 (MUST):** UI should show real local amounts only. Inbound/planned delivery counts are used for task planning but must not be displayed as already stored.
 
 ### F-HOUSING — Housing Capacity
 
 - Each living worker occupies one housing slot.
-- Town Hall housing: `8 + 2 × (L − 1)`. House housing: `2 + 2 × (L − 1)`.
+- Town Hall and House housing capacity are per-level building settings in their building JSON files.
 - New training/hire requests that would exceed capacity must be rejected with disabled/no-op UI.
 - Population icon is disk-first with procedural fallback.
 
 ### F-SCHOOL-Q — School Training Queue
 
-- Each `SCHOOL` has an independent FIFO queue of 7 slots. Ordering enqueues into the leftmost empty slot. Training is free but housing-gated.
-- Only the front slot progresses: `30_000 ms`, worker icon in the cell, yellow progress along the bottom. Completion spawns at that school, removes the icon, shifts the queue left, and restarts the new front from 0.
+- Each `SCHOOL` has an independent FIFO queue. Queue capacity and training duration are configured in `school.json`. Ordering enqueues into the leftmost empty slot. Training is free but housing-gated.
+- Only the front slot progresses. Completion spawns at that school, removes the icon, shifts the queue left, and restarts the new front from 0.
 - School panel hiring controls are compact worker tiles with icon/avatar and label. The panel absorbs clicks across its whole frame.
 - School upgrade is blocked while any queue slot is occupied; completed training and cancellation both can unblock it.
 
@@ -190,12 +197,22 @@ preserving these invariants over literal old phase wording:
 
 ### F-WORK — Workers
 
-- Current worker types: `CARRIER`, `BUILDER`, `LUMBERJACK`, `STONECUTTER`, `MINER`, `FARMER`, `FORESTER`, `SAWYER`, `MILLER`, `BAKER`. Staffed production workers only work in matching buildings.
+- Current worker types: `CARRIER`, `BUILDER`, `LUMBERJACK`, `STONECUTTER`, `MINER`, `FARMER`, `FORESTER`, `SAWYER`, `MILLER`, `BAKER`, `COOK`. Staffed production workers only work in matching buildings.
 - Workers are acquired only through School queue, respect housing, move with 4-direction BFS, never step onto blocking footprints, and are rendered with sprite interpolation.
 - `WorkerManager.reassign_all()` runs after relevant state changes (training, construction, demolition, upgrade) to match idle compatible workers to unstaffed buildings.
 - Production only happens when the worker state machine allows it. Town Hall has no worker slot.
 - Cycles: stonecutter mirrors lumberjack on stones; forester plants; miner stays inside `IRON_MINE`; farmer works external `FIELD` tiles.
-- Farmer target reservations prevent two farmers from sowing/harvesting the same field. Builder exits completed regular buildings from the bottom; after completing `FIELD`, builder stays on that field tile.
+- Farmer target reservations prevent two farmers from sowing/harvesting the same field. Farm field radius is configured in `farm.json` and must be shared by runtime selection and placement-range UI. Builder exits completed regular buildings from the bottom; after completing `FIELD`, builder stays on that field tile.
+
+### F-FOOD — Satiety, Canteens, And Dining
+
+- **F-FOOD-01 (MUST):** Every worker has satiety that drains over game time and is visible in the worker panel. New workers start full; eating restores satiety to full. Tuning constants belong in code/tests, not in this PRD.
+- **F-FOOD-02 (MUST):** Hungry workers may try to dine only at safe cycle boundaries: after completing or failing to start normal work, while idle, or after finishing a delivery/construction step. Carriers must not abandon carried resources, and builders must not abandon active construction.
+- **F-FOOD-03 (MUST):** A worker should go to a canteen only when a reachable canteen has both a free diner slot and an unreserved local `simple_meal`. Reserving a dining trip reserves both the slot and the meal immediately, while the visible canteen storage still shows only real stored meals.
+- **F-FOOD-04 (MUST):** Dining has explicit worker-owned phases: going to canteen, waiting/eating inside the canteen, and returning to work. A reserved/walking diner occupies a slot for planning/UI, but eating starts only after physical arrival.
+- **F-FOOD-05 (MUST):** Meal assignment is one meal per worker. Normal dining dispatch reserves a meal before the worker leaves for the canteen, so more workers should not go eat than there are unreserved meals. If a waiting-diner state exists because of older state or edge-case recovery, assign meals deterministically by actual arrival/waiting order.
+- **F-FOOD-06 (MUST):** After eating, a worker releases the canteen slot and walks back to the assigned workplace before resuming `working`. Do not teleport workers back to their buildings. If the worker's own workplace is the same canteen and the worker is already inside it, skip pointless pathing and resume locally.
+- **F-FOOD-07 (MUST):** Dining reservation cleanup must run when a worker, canteen, or relevant building is demolished or invalidated so slots and reserved meals cannot remain stuck.
 
 ### F-PROD — Production
 
@@ -206,9 +223,10 @@ preserving these invariants over literal old phase wording:
 - **F-PROD-03 (MUST):** Raw production fills source building internal output storage. Processor production consumes local inputs and fills local output storage.
 - **F-PROD-04 (MUST):** Current cycles:
   - Lumberjack/stonecutter gather from external resource tiles and return to camp/mine.
-  - Miner stays inside `IRON_MINE`: 45s mining for +1 iron into local storage, then 10s rest.
-  - Sawyer/miller/baker must be assigned and inside their processor. Sawmill/mill use standard processing/rest cadence; bakery uses 45s processing + 10s rest and requires both flour and water.
-  - Farmer prioritizes ripe fields, then empty fields, within radius 10 from assigned farm; harvest/sow action time is 5s.
+  - Miner stays inside `IRON_MINE`, producing into local storage through its configured work/rest cadence.
+  - Sawyer/miller/baker must be assigned and inside their processor. Sawmill/mill/bakery use configured processing/rest cadence and local input requirements.
+  - Cook must be assigned and inside `CANTEEN`; canteen production consumes local food/water inputs and produces local `simple_meal`.
+  - Farmer prioritizes ripe fields, then empty fields, within the configured radius from assigned farm.
 - **F-PROD-05 (MUST):** Turning a processor inactive prevents new cycles and new input deliveries, but an already-started processing cycle may finish according to that building's existing runtime rule. Do not make active toggles delete in-flight carried resources.
 
 ### F-TRANSPORT — Carrier Logistics
@@ -218,6 +236,7 @@ preserving these invariants over literal old phase wording:
 - **F-TRANSPORT-03 (MUST):** Input-demand planning must account for already queued or in-flight deliveries so local input capacity is not overpromised. UI still displays only real stored local amounts.
 - **F-TRANSPORT-04 (MUST):** Resource-to-processor routing should be capability based. For example wheat consumers expose `add_wheat_in` plus input amount/capacity; water consumers expose `add_water_in`, `water_amount`, `water_capacity`. Do not hard-code wheat to only `MILL`.
 - **F-TRANSPORT-05 (MUST):** Water tasks are special: source is a free `WELL`, no Town Hall water stock exists, the well is reserved only until the carrier leaves with water, and another carrier may use that well while the first carrier is still carrying water to the target.
+- **F-TRANSPORT-06 (MUST):** Carrier planning for canteen inputs follows normal inbound-capacity rules for local inputs, but `simple_meal` is never an output transport task.
 
 ### F-INPUT — Input
 

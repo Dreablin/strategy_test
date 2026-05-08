@@ -48,12 +48,58 @@ def _load_settings() -> dict:
 
 SETTINGS = _load_settings()
 
+
+def _load_building_settings() -> dict[str, dict]:
+    project_root = _project_root()
+    buildings_dir = project_root / "src" / "game" / "settings" / "buildings"
+    if not buildings_dir.exists():
+        raise FileNotFoundError(f"Missing required settings directory: {buildings_dir}")
+
+    result: dict[str, dict] = {}
+    for path in sorted(buildings_dir.glob("*.json")):
+        payload = _load_json_object(path)
+        b_type = str(payload.get("building_type", path.stem)).upper()
+        result[b_type] = payload
+    return result
+
+
+BUILDING_SETTINGS = _load_building_settings()
+
 TICK_MS = int(SETTINGS["timing"]["tick_ms"])
 WORKER_TILE_TRAVEL_MS = int(SETTINGS["timing"]["worker_tile_travel_ms"])
+MAX_WORKER_SATIETY = int(SETTINGS["workers"]["satiety"]["max"])
+SATIETY_DRAIN_PER_GAME_SECOND = int(SETTINGS["workers"]["satiety"]["drain_per_game_second"])
 TILE_W = int(SETTINGS["world"]["tile_w"])
 TILE_H = int(SETTINGS["world"]["tile_h"])
 GRID_SIZE = int(SETTINGS["world"]["grid_size"])
-GATHER_RESOURCE_SEARCH_RADIUS = int(SETTINGS["world"].get("gather_resource_search_radius", 20))
+
+
+def building_setting(type_tag: str, *keys: str) -> object:
+    """Return a required setting value from a per-building JSON file."""
+    current: object = BUILDING_SETTINGS[str(type_tag).upper()]
+    for key in keys:
+        if not isinstance(current, dict) or key not in current:
+            joined = ".".join((str(type_tag).upper(), *keys))
+            raise KeyError(f"Missing building setting: {joined}")
+        current = current[key]
+    return current
+
+
+def building_int_setting(type_tag: str, *keys: str) -> int:
+    return int(building_setting(type_tag, *keys))
+
+
+def building_level_int_setting(type_tag: str, section: str, level: int) -> int:
+    payload = building_setting(type_tag, section)
+    if not isinstance(payload, dict) or "capacity_by_level" not in payload:
+        raise KeyError(f"Missing level settings for {str(type_tag).upper()}.{section}")
+    by_level = payload["capacity_by_level"]
+    if not isinstance(by_level, dict):
+        raise ValueError(f"{str(type_tag).upper()}.{section}.capacity_by_level must be an object")
+    key = str(max(1, int(level)))
+    if key not in by_level:
+        raise KeyError(f"Missing level setting for {str(type_tag).upper()}.{section}.level {key}")
+    return int(by_level[key])
 
 
 def town_hall_origin_tile() -> tuple[int, int]:
@@ -97,6 +143,8 @@ def _load_construction_requirements() -> dict[str, dict[int, ConstructionSpec]]:
         payload = _load_json_object(path)
         b_type = str(payload.get("building_type", path.stem)).upper()
         raw_levels = payload.get("levels")
+        if raw_levels is None:
+            continue
         if not isinstance(raw_levels, dict) or not raw_levels:
             raise ValueError(f"construction entry for {b_type!r} must define levels")
 

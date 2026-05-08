@@ -1,5 +1,9 @@
 {
   "building_type": "SCHOOL",
+  "training": {
+    "queue_capacity": 7,
+    "duration_ms": 30000
+  },
   "levels": {
     "1": {"cost": {"wood": 2}, "build_time_ms": 30000},
     "2": {"cost": {"boards": 2}, "build_time_ms": 30000},

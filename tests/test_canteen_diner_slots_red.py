@@ -69,8 +69,9 @@ def test_release_for_worker_clears_reservation() -> None:
 
 def test_release_all_for_canteen_clears_every_slot() -> None:
     c = Canteen(level=2, grid_pos=(11, 11))
-    for w in _workers(3):
+    cap = c.diner_slot_capacity()
+    for w in _workers(cap):
         assert try_reserve_diner_slot(c, w) is True
-    assert count_reserved_diner_slots(c) == 3
+    assert count_reserved_diner_slots(c) == cap
     release_all_diner_slots_for_canteen(c)
     assert count_reserved_diner_slots(c) == 0

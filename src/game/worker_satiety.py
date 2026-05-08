@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-MAX_WORKER_SATIETY = 10_000
-SATIETY_DRAIN_PER_GAME_SECOND = 15
+from game.config import MAX_WORKER_SATIETY, SATIETY_DRAIN_PER_GAME_SECOND
 
 
 def clamp_worker_satiety(value: int) -> int:

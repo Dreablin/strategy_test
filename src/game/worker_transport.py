@@ -153,6 +153,13 @@ class WorkerTransportMixin:
             if task.source not in known or task.target not in known:
                 stale_indices.append(idx)
                 continue
+            if (
+                not task.returning_to_town_hall
+                and task.purpose != "construction"
+                and bool(getattr(task.target, "is_under_construction", False))
+            ):
+                stale_indices.append(idx)
+                continue
             site = getattr(task.target, "construction_site", None)
             if task.purpose == "construction":
                 if not bool(getattr(task.target, "is_under_construction", False)) or site is None:
@@ -267,6 +274,10 @@ class WorkerTransportMixin:
             if site is None:
                 return True
             return int(site.remaining_resources().get(str(task.resource).lower(), 0)) <= 0
+        if not task.returning_to_town_hall and (
+            bool(getattr(task.target, "is_under_construction", False))
+        ):
+            return True
         return False
 
     def _reroute_or_cancel_invalid_transport(self, worker: Worker, task: TransportTask, now_ms: int) -> bool:

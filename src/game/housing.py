@@ -4,15 +4,15 @@ from __future__ import annotations
 
 from typing import Any
 
+from game.config import building_level_int_setting
+
 
 def housing_town_hall(level: int) -> int:
-    lvl = max(1, int(level))
-    return 8 + 2 * (lvl - 1)
+    return building_level_int_setting("TOWN_HALL", "housing", level)
 
 
 def housing_house(level: int) -> int:
-    lvl = max(1, int(level))
-    return 2 + 2 * (lvl - 1)
+    return building_level_int_setting("HOUSE", "housing", level)
 
 
 def house_contributes_housing(building: Any) -> bool:

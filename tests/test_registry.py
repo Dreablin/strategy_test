@@ -5,6 +5,7 @@ import math
 import pytest
 
 from game.buildings.lumber_camp import LumberCamp
+from game.buildings.chicken_farm import ChickenFarm
 from game.buildings.iron_mine import IronMine
 from game.buildings.stone_mine import StoneMine
 from game.buildings.sawmill import Sawmill
@@ -306,7 +307,7 @@ def test_upgrade_assigned_worker_transitions_to_resting_inside_building() -> Non
     assert worker.current_tile == (15, 15)
 
 
-def test_upgrade_pauses_active_building_and_parks_gathering_worker_inside() -> None:
+def test_upgrade_pauses_active_building_and_releases_worker_outside_footprint() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
     camp = registry.place(LumberCamp, (14, 14))
@@ -322,10 +323,44 @@ def test_upgrade_pauses_active_building_and_parks_gathering_worker_inside() -> N
     assert registry.upgrade_building(camp)
 
     assert camp.active is False
-    assert worker.assigned_building is camp
-    assert worker.state == "resting"
-    assert worker.current_tile == (15, 15)
-    assert worker.stand_tile == (15, 15)
+    assert worker.assigned_building is None
+    assert worker.idle is True
+    assert worker.state == "idle"
+    assert worker.current_tile == (20, 20)
+    assert worker.stand_tile == (20, 20)
+    assert camp.construction_site is not None
+    assert camp.construction_site.resting_worker is None
+
+
+def test_upgrade_does_not_teleport_worker_walking_to_newly_built_workplace() -> None:
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    farm = registry.place(ChickenFarm, near_town_hall_tile(18, 8))
+    farm.construction_site = None
+    workers = WorkerManager(registry)
+    registry.bind_worker_manager(workers)
+    worker = Worker("ANIMAL_HERDER", stand_tile=(8, 8))
+    workers.add_worker(worker)
+    worker.assigned_building = farm
+    worker.state = "moving"
+    worker.idle = False
+    worker.current_tile = (8, 8)
+    worker.stand_tile = (8, 8)
+    worker.target_tile = (9, 8)
+    worker.path = [(8, 8), (9, 8), (10, 8)]
+    worker.segment_progress = 0.25
+
+    assert registry.upgrade_building(farm)
+
+    assert farm.construction_site is not None
+    assert farm.construction_site.resting_worker is None
+    assert worker.assigned_building is None
+    assert worker.idle is True
+    assert worker.state == "idle"
+    assert worker.current_tile == (8, 8)
+    assert worker.target_tile is None
+    assert worker.path == []
 
 
 def test_upgrade_rejected_while_building_already_under_construction() -> None:

@@ -2,7 +2,7 @@
 
 import pygame
 
-from game.buildings.school import SCHOOL_TRAINING_MS
+from game.buildings.school import SCHOOL_QUEUE_CAPACITY, SCHOOL_TRAINING_MS
 from game.buildings.school import School
 from game.ui.school_panel import SchoolPanel
 
@@ -60,11 +60,11 @@ def test_school_panel_upgrade_reenabled_after_training_completes_or_is_cancelled
     assert cancelled_layout.upgrade_enabled is True
 
 
-def test_school_panel_layout_contains_seven_training_slots() -> None:
+def test_school_panel_layout_contains_configured_training_slots() -> None:
     surface = pygame.Surface((900, 700))
     school = School(level=1, grid_pos=(10, 10))
     layout = SchoolPanel.layout(surface, school, worker_assigned=False)
-    assert len(layout.queue_slots) == 7
+    assert len(layout.queue_slots) == SCHOOL_QUEUE_CAPACITY
     assert any(worker_type == "CARRIER" for worker_type, _ in layout.hire_buttons)
     assert any(worker_type == "BUILDER" for worker_type, _ in layout.hire_buttons)
     assert any(worker_type == "SAWYER" for worker_type, _ in layout.hire_buttons)

@@ -5,7 +5,7 @@ import pytest
 from game.construction import ConstructionSite
 from game.buildings.farm import Farm
 from game.buildings.chicken_farm import ChickenFarm
-from game.config import town_hall_origin_tile
+from game.config import building_level_int_setting, town_hall_origin_tile
 from game.buildings.iron_mine import IronMine
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.mill import Mill
@@ -141,23 +141,24 @@ def test_upgrade_rejected_at_max_level() -> None:
 def test_producing_buildings_expose_storage_api_with_default_state(cls: type) -> None:
     b = cls(level=1, grid_pos=(10, 10))
     assert b.stored == 0
-    assert b.storage_capacity() == 3
+    assert b.storage_capacity() == building_level_int_setting(b.type_tag, "storage", 1)
     assert b.is_storage_full() is False
 
 
 @pytest.mark.parametrize("cls", [LumberCamp, StoneMine, IronMine])
 def test_storage_capacity_scales_with_level(cls: type) -> None:
     b = cls(level=5, grid_pos=(10, 10))
-    assert b.storage_capacity() == 11
+    assert b.storage_capacity() == building_level_int_setting(b.type_tag, "storage", 5)
 
 
 @pytest.mark.parametrize("cls", [LumberCamp, StoneMine, IronMine, Farm])
 def test_add_to_storage_rejects_negative_and_overflow(cls: type) -> None:
     b = cls(level=1, grid_pos=(10, 10))
+    cap = b.storage_capacity()
     with pytest.raises(ValueError):
         b.add_to_storage(-1)
-    b.add_to_storage(3)
-    assert b.stored == 3
+    b.add_to_storage(cap)
+    assert b.stored == cap
     assert b.is_storage_full() is True
     with pytest.raises(ValueError):
         b.add_to_storage(1)
@@ -203,12 +204,19 @@ def test_buildings_default_to_not_under_construction(cls: type) -> None:
 
 def test_chicken_farm_storage_and_level_caps() -> None:
     farm = ChickenFarm(level=1, grid_pos=(10, 10))
-    assert farm.input_capacity() == 3
-    assert farm.water_capacity() == 3
-    assert farm.output_capacity() == 3
-    assert ChickenFarm(level=2, grid_pos=(10, 10)).input_capacity() == 4
-    assert ChickenFarm(level=3, grid_pos=(10, 10)).output_capacity() == 4
-    assert ChickenFarm(level=10, grid_pos=(10, 10)).water_capacity() == 8
+    expected_l1 = building_level_int_setting("CHICKEN_FARM", "storage", 1)
+    assert farm.input_capacity() == expected_l1
+    assert farm.water_capacity() == expected_l1
+    assert farm.output_capacity() == expected_l1
+    assert ChickenFarm(level=2, grid_pos=(10, 10)).input_capacity() == building_level_int_setting(
+        "CHICKEN_FARM", "storage", 2
+    )
+    assert ChickenFarm(level=3, grid_pos=(10, 10)).output_capacity() == building_level_int_setting(
+        "CHICKEN_FARM", "storage", 3
+    )
+    assert ChickenFarm(level=10, grid_pos=(10, 10)).water_capacity() == building_level_int_setting(
+        "CHICKEN_FARM", "storage", 10
+    )
 
 
 def test_chicken_farm_max_level_10() -> None:

@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 23 - Well as staffed water producer
-- **Next Task:** T280 - Implement staffed well production as a complete runtime slice
-- **Last Completed:** T279 - Add WATERMAN as a complete hireable worker slice
-- **Total Progress:** 279 / 286 (Phase 23: 3 / 10 done)
+- **Next Task:** T281 - Refactor water task planning as a complete slice
+- **Last Completed:** T280 - Implement staffed well production as a complete runtime slice
+- **Total Progress:** 280 / 286 (Phase 23: 4 / 10 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -57,7 +57,7 @@
 
 ### 23.3 Well production runtime
 
-- [ ] **T280**: Implement staffed well production as a complete runtime slice. Add/adjust tests and implementation together for: no worker means no water, inactive/under-construction well does not start new cycles, full storage blocks start, configured cycle produces `+1 water`, configured rest happens between cycles, worker remains inside/assigned correctly, and progress/status helpers match other staffed producers; run full `pytest` and `ruff check src tests`.
+- [x] **T280**: Implement staffed well production as a complete runtime slice. Add/adjust tests and implementation together for: no worker means no water, inactive/under-construction well does not start new cycles, full storage blocks start, configured cycle produces `+1 water`, configured rest happens between cycles, worker remains inside/assigned correctly, and progress/status helpers match other staffed producers; run full `pytest` and `ruff check src tests`.
 
 ### 23.4 Water transport refactor
 

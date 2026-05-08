@@ -78,6 +78,10 @@ def production_status_for_building(manager: Any, building: Building) -> str:
             return "Resting"
         if worker.state == "processing":
             return "Processing"
+        if int(getattr(building, "water_amount", lambda: 0)()) >= int(
+            getattr(building, "water_capacity", lambda: 0)()
+        ):
+            return "Output full"
         return "Ready"
     if building.type_tag == "FARM":
         if hasattr(building, "is_storage_full") and building.is_storage_full():

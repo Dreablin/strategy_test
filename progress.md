@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 22 - Canteen, cook, meals, and worker satiety
-- **Next Task:** T261 - RED tests for worker panel satiety display
-- **Last Completed:** T260 - `worker_satiety` module, `satiety_last_sample_ms`, `WorkerManager` satiety tick
-- **Total Progress:** 260 / 276 (Phase 22: 15 / 31 done)
+- **Next Task:** T262 - worker panel satiety UI (`WorkerPanel.body_lines`, draw)
+- **Last Completed:** T261 - RED tests `tests/test_worker_panel_satiety_red.py` (`WorkerPanel.body_lines` pending)
+- **Total Progress:** 261 / 276 (Phase 22: 16 / 31 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -53,7 +53,7 @@
 
 - [x] **T259**: Add RED tests for worker satiety model: every newly created/hired worker starts at `10_000`, max clamp is `10_000`, min clamp is `0`, and deterministic draining subtracts `15` per elapsed in-game second without frame-rate drift.
 - [x] **T260**: Implement satiety fields/timestamps on `Worker` and central satiety ticking in `WorkerManager.update` so every worker drains once per elapsed second. Run full `pytest -q`.
-- [ ] **T261**: Add RED tests for worker panel satiety display, including idle worker, carrier carrying a resource, and worker with an active transport task.
+- [x] **T261**: Add RED tests for worker panel satiety display, including idle worker, carrier carrying a resource, and worker with an active transport task.
 - [ ] **T262**: Update worker panel UI to show satiety as current/max and keep existing task/resource lines intact. Run full `pytest -q`.
 
 ### 22.4 Canteen dining slots and reservation model
@@ -103,6 +103,7 @@
 
 ## Notes
 
+- **2026-05-08:** T261 RED: `WorkerPanel.body_lines` + a `Satiety: current/max` line (see `tests/test_worker_panel_satiety_red.py`); full `pytest -q` fails until T262.
 - **2026-05-08:** T260 adds `game/worker_satiety.py`, `Worker.satiety_last_sample_ms` (bootstrap on first `update`), `_tick_worker_satiety` in `WorkerManager.update`; hire satiety test uses Town Hall level 5 for MINER/STONECUTTER gates.
 - **2026-05-08:** T259 RED: `tests/test_worker_satiety_red.py` expects `game.worker_satiety` (`MAX_WORKER_SATIETY`, `clamp_worker_satiety`, `apply_satiety_game_time`, …); collection fails until T260 adds the module and wiring.
 - **2026-05-08:** T258 adds `CanteenPanel` (storage lines, blocked reason, progress bar, active toggle), `CANTEEN` in `production_status_for_building`, input wiring, and `tests/test_canteen_panel.py`; worker and population panels show **Cook** / **Canteen** labels.

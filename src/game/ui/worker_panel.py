@@ -8,6 +8,7 @@ import pygame
 
 from game.resource_catalog import resource_display_label
 from game.worker_models import Worker
+from game.worker_satiety import MAX_WORKER_SATIETY, clamp_worker_satiety
 
 _PANEL_W = 420
 _PANEL_PAD = 16
@@ -84,8 +85,10 @@ def _building_name(building) -> str:
 
 
 def _worker_lines(worker: Worker) -> list[str]:
+    sat = clamp_worker_satiety(int(getattr(worker, "satiety", 0)))
     lines = [
         f"State: {worker.state}",
+        f"Satiety: {sat}/{MAX_WORKER_SATIETY}",
         f"Assigned: {_building_name(worker.assigned_building) if worker.assigned_building is not None else 'none'}",
         f"Carrying: {_label(worker.carrying, _RESOURCE_LABEL)}",
     ]
@@ -111,9 +114,14 @@ class WorkerPanel:
     """Small read-only worker panel, mirroring building modal behavior."""
 
     @staticmethod
+    def body_lines(worker: Worker) -> list[str]:
+        """Body text lines under the title (includes satiety and task summary)."""
+        return _worker_lines(worker)
+
+    @staticmethod
     def layout(surface: pygame.Surface, worker: Worker) -> WorkerPanelLayout:
         sw, sh = surface.get_size()
-        row_count = len(_worker_lines(worker))
+        row_count = len(WorkerPanel.body_lines(worker))
         h = _PANEL_PAD * 2 + _ROW + 8 + row_count * _ROW + 8
         frame = pygame.Rect(sw // 2 - _PANEL_W // 2, sh // 2 - h // 2, _PANEL_W, h)
         close = pygame.Rect(
@@ -155,7 +163,7 @@ class WorkerPanel:
         )
 
         y = layout.frame.top + _PANEL_PAD + _ROW + 8
-        for line in _worker_lines(worker):
+        for line in WorkerPanel.body_lines(worker):
             surface.blit(body_font.render(line, True, (200, 204, 214)), (layout.frame.left + _PANEL_PAD, y))
             y += _ROW
 

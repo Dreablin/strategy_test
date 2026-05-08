@@ -1,75 +1,83 @@
-# Progress — Isometric Strategy Game
+# Progress - Isometric Strategy Game
 
 ## Current Status
 
-- **Phase:** 21 — Wheat fields + farmer field cycle
-- **Next Task:** Phase 21 complete
-- **Last Completed:** T245 — Final verification gate
-- **Total Progress:** 245 / 245 (Phase 19: 25 / 25 done; Phase 20: 11 / 11 done; Phase 21: 25 / 25 done)
+- **Phase:** 22 - Canteen, cook, meals, and worker satiety
+- **Next Task:** T247 - Canteen domain implementation
+- **Last Completed:** T246 - Canteen domain RED tests
+- **Total Progress:** 246 / 276 (Phase 22: 1 / 31 done)
 
-> **Archive:** Full history and completed phases are in **`progress_archive.md`**. Do **not** re-run completed tasks.
+> **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
 ---
 
 ## Task Log
 
-## Phase 21 — Wheat fields + farmer field cycle
+## Phase 22 - Canteen, cook, meals, and worker satiety
 
-**Goal.** Add new buildable **FIELD** (1x1, built by Builder, no resource delivery), wheat growth on fields (4 phases, 45s each), farmer work loop (harvest priority, then sow), farm local storage integration, and carrier transport through the existing shared transport queue.
+**Goal.** Add a social building **CANTEEN**, a new hireable worker **COOK**, local-only **simple meals**, shared worker satiety, and a dining flow where hungry workers reserve a canteen slot, walk there, eat in parallel, then return to work.
 
-**PRD refs (to add/align):** F-BLD/F-CONSTRUCT extensions for FIELD, F-WORK farmer cycle, crop growth lifecycle, transport queue integration.
+**Implementation notes.**
 
-### 21.1 Domain scaffold — field entity and wheat phases
+- Canteen is a social building with 10 levels.
+- Level 1 local storage: `5 chicken`, `5 bread`, `5 water`, `5 simple_meal`.
+- Each canteen level above 1 adds `+1` capacity to every local storage bucket and `+1` diner slot.
+- Level 1 diner slots: `3`.
+- `simple_meal` is local to canteens only. It must not appear in Town Hall warehouse resources and carriers must not export it.
+- Cook cycle: needs assigned cook, active canteen, `1 chicken + 1 bread + 1 water`, `30_000 ms` production, `5_000 ms` rest, outputs `1 simple_meal` into canteen local storage.
+- Worker satiety: max `10_000`, initial `10_000`, drains by `15` per in-game second, clamps to `[0, 10_000]`.
+- Hunger trigger threshold: below `2_000`.
+- Dining duration after a meal is assigned: `20_000 ms`.
+- Meal waiting rule: lack of `simple_meal` does not block reserving a slot or walking to the canteen. A hungry worker who reaches a canteen with no available meal stays in the reserved diner slot and waits. Eating starts only when the canteen has a `simple_meal` available for that specific waiting worker. If several workers wait and fewer meals are available, assign meals deterministically to waiting workers one at a time; workers without an assigned meal keep waiting for the next produced meal. Consume `1 simple_meal` when a worker starts eating, then restore satiety to `10_000` and release the slot after the `20_000 ms` eating timer completes.
 
-- [x] **T221**: Add failing tests for new `FIELD` building type: footprint **1x1**, placeable from **Resource/Production** menu, cannot be upgraded (or level fixed at 1), and walkability semantics: field tile is always walkable for all workers. Include placement/registry/pathfinding assertions.
-- [x] **T222**: Implement `Field` domain model/building class + registration wiring (`config`, placement mapping, bottom bar entry under production/resource group). Keep construction resource cost empty (`{}`) and construction time `10_000 ms`.
-- [x] **T223**: Add wheat lifecycle domain model in a dedicated module (or field module): states `PHASE_1..PHASE_4` plus `EMPTY` (ready-to-sow). Add pure helpers for transitions and timestamps. Write RED tests for state progression and reset-after-harvest.
+### 22.1 Canteen domain, config, assets, and menu
 
-### 21.2 Construction flow — builder-on-tile build for FIELD
+- [x] **T246**: Add RED tests for `CANTEEN` building domain: social/build menu entry, 10 max levels, configured construction cost/time, local storage buckets for `chicken`, `bread`, `water`, and `simple_meal`, level 1 capacities of `5`, per-level `+1` capacity, level 1 diner slots of `3`, and per-level `+1` diner slot.
+- [ ] **T247**: Implement `Canteen` building class, config/json wiring, registry/placement/bottom-bar social menu entry, local storage helpers, and capacity formulas. Run full `pytest -q`.
+- [ ] **T248**: Add RED tests proving `simple_meal` is not a Town Hall warehouse resource, is not displayed in Town Hall storage, and is never generated as a carrier export task.
+- [ ] **T249**: Implement the local-only `simple_meal` resource labels/helpers needed by canteen UI and tests without adding it to Town Hall warehouse. Run full `pytest -q`.
+- [ ] **T250**: Add canteen asset placeholders and `asset_meta.json` in the correct building asset folder, following existing building scale/anchor conventions. Add a render/asset smoke test for built and construction sprites.
+- [ ] **T251**: Implement canteen asset loading/render wiring and make the asset smoke test green. Run full `pytest -q`.
 
-- [x] **T224**: Add failing tests for FIELD-specific construction behavior: builder path target is the field tile itself (not approach tile), builder stands on tile, build progress runs for `10_000 ms`, then construction completes into built field.
-- [x] **T225**: Implement FIELD construction specialization in builder/construction runtime while keeping generic construction behavior unchanged for other buildings. Ensure no carrier resource delivery tasks are generated for FIELD construction sites.
-- [x] **T226**: Add rendering/UI support for FIELD construction progress bar under builder while building (on-map world progress bar). Include headless render test that verifies bar appears only during FIELD build.
+### 22.2 Cook hiring and canteen production
 
-### 21.3 Wheat growth runtime
+- [ ] **T252**: Add RED tests for new hireable `COOK`: appears in school panel, can be queued/cancelled like other workers, starts with full satiety, has worker dot/UI fallback asset, and maps to `CANTEEN` assignment.
+- [ ] **T253**: Implement cook hire wiring, worker labels/assets, school panel entry, worker-to-building mapping, and assignment. Run full `pytest -q`.
+- [ ] **T254**: Add RED tests for canteen production gating: no cook means no production, inactive canteen prevents new cycles, missing any input blocks cycle start, full `simple_meal` storage blocks cycle start, existing cycle continues when active is toggled off only if current local rules for other processors require it.
+- [ ] **T255**: Implement canteen processor runtime using the shared processor pattern where possible: `30_000 ms` work, consume all three inputs at cycle start or completion consistently with existing processors, output `simple_meal`, then `5_000 ms` cook rest. Run full `pytest -q`.
+- [ ] **T256**: Add RED tests for carrier input tasks into canteen: chicken, bread, and water are delivered while capacity plus inbound reservations allow it; water uses the existing direct-well flow; duplicate queued/in-flight tasks do not overfill local storage.
+- [ ] **T257**: Implement canteen input transport task generation and dedupe/inbound counting using existing transport queue conventions. Do not add any output transport for `simple_meal`. Run full `pytest -q`.
+- [ ] **T258**: Add and implement canteen panel production status/progress tests: worker line, input/output storage lines, active toggle, production progress bar, rest/status text, upgrade/demolish controls. Run full `pytest -q`.
 
-- [x] **T227**: Add failing tests for wheat autonomous growth timing on built fields: `PHASE_1 -> PHASE_2 -> PHASE_3 -> PHASE_4`, each step every `45_000 ms`, growth pauses only if field is not sown.
-- [x] **T228**: Implement runtime growth updater (world/worker manager tick path): deterministic timestamp-based progression using existing `now_ms` flow; no per-frame floating accumulation drift.
-- [x] **T229**: Add tests + implementation for harvest reset: when farmer harvests `PHASE_4`, field becomes `EMPTY` immediately and can be selected for sowing in the same/next farmer cycle.
+### 22.3 Satiety model and worker panel
 
-### 21.4 Farmer behavior cycle (Farm worker AI)
+- [ ] **T259**: Add RED tests for worker satiety model: every newly created/hired worker starts at `10_000`, max clamp is `10_000`, min clamp is `0`, and deterministic draining subtracts `15` per elapsed in-game second without frame-rate drift.
+- [ ] **T260**: Implement satiety fields/timestamps on `Worker` and central satiety ticking in `WorkerManager.update` so every worker drains once per elapsed second. Run full `pytest -q`.
+- [ ] **T261**: Add RED tests for worker panel satiety display, including idle worker, carrier carrying a resource, and worker with an active transport task.
+- [ ] **T262**: Update worker panel UI to show satiety as current/max and keep existing task/resource lines intact. Run full `pytest -q`.
 
-- [x] **T230**: Add RED tests for farmer assignment lifecycle: after hire farmer enters farm, rests, then starts field work cycles from farm home base.
-- [x] **T231**: Add RED tests for farmer target selection priority within radius **10** (Chebyshev) from assigned farm:  
-  1) pick ripe field (`PHASE_4`) first;  
-  2) if none, pick empty field (`EMPTY`) for sowing;  
-  3) if neither exists, stay/rest and retry later.
-- [x] **T232**: Implement farmer navigation + action loop for **harvest** action: move to target field tile, perform `5_000 ms` action with progress bar, then carry wheat back to farm local storage.
-- [x] **T233**: Implement farmer navigation + action loop for **sow** action: move to empty field tile, perform `5_000 ms` action with progress bar, set field to `PHASE_1`, return to farm.
-- [x] **T234**: Integrate standard post-action rest cycle (same rest semantics as other producer workers) between farmer work actions; add tests for rest gating before next dispatch.
+### 22.4 Canteen dining slots and reservation model
 
-### 21.5 Farm storage and capacities
+- [ ] **T263**: Add RED tests for canteen diner slot model: slot capacity by level, immediate reservation by worker identity, no duplicate reservation by the same worker, no over-reservation, release on dining completion, release on worker/building removal, and release on canteen demolition.
+- [ ] **T264**: Implement canteen diner slot/reservation data model and cleanup helpers. Keep it independent from production storage. Run full `pytest -q`.
+- [ ] **T265**: Add RED tests for canteen selection: hungry worker below `2_000` picks the nearest reachable canteen with a free slot, reserves immediately, does not require a prepared meal to reserve, and continues working if no slot/path exists.
+- [ ] **T266**: Implement canteen selection and reservation helper functions in small modules/mixins, reusing 4-dir pathfinding and existing blocked-tile rules. Run full `pytest -q`.
+- [ ] **T267**: Add RED tests for dining runtime: reserved worker walks to canteen, appears in a specific tile slot, waits there if no `simple_meal` is available, starts a `20_000 ms` eating timer only after a meal is assigned, consumes `1 simple_meal` when eating starts, restores satiety to `10_000` when the timer completes, releases the slot, and returns to work.
+- [ ] **T268**: Implement shared dining runtime states, waiting/eating transitions, deterministic one-meal-per-worker assignment, and progress helpers without entangling them with carrier transport tasks or processor production tasks. Run full `pytest -q`.
 
-- [x] **T235**: Add failing tests for farm local storage capacity formula: L1=`3`, then `+1` slot every 2 levels (expected: L1-2=3, L3-4=4, L5-6=5, L7-8=6, L9-10=7).
-- [x] **T236**: Implement/adjust farm storage capacity helpers and deposit guards so harvest deposit respects local capacity; when full, farmer cannot start new harvest cycle and reports blocked reason.
+### 22.5 Hunger check integration for all worker families
 
-### 21.6 Transport queue integration (carrier)
+- [ ] **T269**: Add RED tests for processor/gatherer/miner/farmer hunger checks: after a completed production/gather/field cycle and before normal rest, a hungry worker attempts to reserve canteen; if blocked by missing slot/path, existing work/rest behavior continues.
+- [ ] **T270**: Implement hunger hooks for processor workers, gatherers, miner, farmer, and forester at the cycle boundaries covered by T269. Run full `pytest -q`.
+- [ ] **T271**: Add RED tests for blocked-cycle hunger checks: when a worker cannot start a new cycle because inputs/output/storage/target conditions block it, the hunger check still runs at a throttled retry point and does not spam reservations.
+- [ ] **T272**: Implement throttled hunger checks for blocked processor/gatherer/farmer/miner states. Run full `pytest -q`.
+- [ ] **T273**: Add RED tests for builders and carriers: builder checks hunger after construction completion and while idle with no construction; carrier checks after delivery completion and while idle with no transport; neither abandons an active construction or active carried item.
+- [ ] **T274**: Implement builder/carrier hunger hooks and return-to-work behavior after dining. Carriers must only go to canteen when not carrying anything. Run full `pytest -q`.
 
-- [x] **T237**: Add RED tests for transport task generation from farm local wheat storage into shared transport queue using existing priority rules (construction highest, then normal production logistics).
-- [x] **T238**: Implement task emission for wheat export/import through current generic `TransportTask` pipeline; avoid per-frame duplicate spam (dedupe/throttle consistent with sawmill logic).
-- [x] **T239**: Add edge-case tests for mid-route state changes (target full/no longer needs resource): carrier redirects/fallbacks using existing conventions, no task loss/deadlock.
+### 22.6 Canteen UI, diner tiles, smoke, and final verification
 
-### 21.7 UI, statuses, and player feedback
-
-- [x] **T240**: Add/extend farm panel lines: local wheat storage `stored/capacity`, farmer status, blocked hints (no fields in radius, storage full, resting, moving, sowing, harvesting).
-- [x] **T241**: Add field visual states for wheat phases (`PHASE_1..PHASE_4`) with disk-first assets + procedural fallback. Include render tests ensuring phase-specific sprite selection.
-- [x] **T242**: Add action progress bars for farmer on field tile (sow/harvest) and verify draw order does not hide bar behind building sprites in common camera positions.
-
-### 21.8 Regression, integration, and phase close
-
-- [x] **T243**: Regression sweep for existing worker/building/pathfinding behavior (especially construction, sawmill, carriers, forester). Fix any breakages; run targeted tests while iterating.
-- [x] **T244**: Add end-to-end smoke `tests/test_smoke_phase21.py`: place farm + several fields, build fields via builder, sow to `PHASE_4`, harvest to farm storage, carrier exports wheat via shared queue, ensure loop repeats.
-- [x] **T245**: Final verification gate: full `pytest -q` + `ruff check src tests`; update Current Status and Notes; mark Phase 21 tasks; emit completion marker only when all tasks are `[x]`.
+- [ ] **T275**: Add and implement canteen panel diner tiles: one tile per slot, occupied/reserved state, waiting-vs-eating state, worker avatar/label, and per-diner eating progress bar only while eating. Include click-panel tests and headless render assertions.
+- [ ] **T276**: Add end-to-end smoke test: build canteen, hire cook, deliver chicken/bread/water, produce `simple_meal`, drain worker satiety below threshold, reserve a dining slot, wait if no meal exists, eat for `20_000 ms` after meal assignment, restore satiety, release slot, and return to work. Final gate: full `pytest -q` plus `ruff check src tests`; update Current Status and Notes; mark Phase 22 complete only when all tasks are `[x]`.
 
 ---
 
@@ -84,7 +92,8 @@
 
 | Date | Task | Decision | Rationale |
 |------|------|----------|-----------|
-| | | | |
+| 2026-05-04 | Phase 22 | `simple_meal` is canteen-local and is not a Town Hall warehouse resource. | Meals are consumed inside canteens and should not enter global carrier export/storage loops. |
+| 2026-05-04 | Phase 22 | Dining slot reservation is allowed without a prepared meal; the worker waits in the canteen until a `simple_meal` is assigned, then eats for `20_000 ms`. | Matches the requirement that hungry workers can sit in the canteen while food production catches up, and that one available meal feeds only one waiting worker. |
 
 ## Issues & Blockers
 
@@ -95,28 +104,8 @@
 ## Notes
 
 - Tests run headless via `SDL_VIDEODRIVER=dummy` in `tests/conftest.py`.
-- Extended history, completed phase checklists, and decisions log: **`progress_archive.md`**.
+- Extended history, completed phase checklists, and older decisions log: **`progress_archive.md`**.
 - Pathfinding contract: **4-dir** `find_path_bfs` (no diagonals), aligned with PRD.
-- T223 GREEN check: `pytest -q` passes after adding wheat lifecycle constants/helpers in `game.buildings.field`.
-- T224 RED check: `pytest -q` fails because builder targets non-field tiles and never begins FIELD build (`construction_site.builder` remains `None`).
-- T225 GREEN check: `pytest -q` passes with FIELD builder destination targeting the field tile itself; full suite green.
-- T226 GREEN check: `pytest -q` passes with world-space FIELD build progress bar rendered only during active field construction.
-- T227 RED check: `pytest -q` fails on missing `game.buildings.field.advance_wheat_growth` timing helper (45_000 ms steps).
-- T228 GREEN check: `pytest -q` passes with deterministic 45-second phase advancement helper (`advance_wheat_growth`) and full suite green.
-- T229 GREEN check: `pytest -q` passes with immediate harvest reset (`PHASE_4 -> EMPTY`) and sow-eligibility helper for same/next cycle selection.
-- T230 RED check: `pytest -q` fails because farmer stays generic `working` and does not enter farm rest/field-cycle states.
-- T231 RED check: `pytest -q` fails on missing farmer target selector (`select_farmer_field_target`) and no runtime priority dispatch yet.
-- T232 GREEN check: `pytest -q` passes with farmer rest->target->harvest->return loop and priority selector wired in runtime; full suite green.
-- T233 GREEN check: `pytest -q` passes with farmer empty-field sow action (`5_000 ms`) setting `PHASE_1` and returning to farm; full suite green.
-- T234 GREEN check: `pytest -q` passes with explicit tests proving farmer remains in `resting` until rest timeout after sow and harvest actions.
-- T235 RED check: `pytest -q` fails as expected on farm storage capacity formula (current `storage_capacity()` returns `5` at level 2, expected `3`).
-- T236 GREEN check: `pytest -q` passes with farm-specific capacity ladder (`+1` every 2 levels) and farmer harvest dispatch blocked when farm storage is full.
-- T237 RED check: `pytest -q` fails because no wheat export tasks are generated from farm local storage into the shared transport queue.
-- T238 GREEN check: `pytest -q` passes with farm wheat export tasks emitted into shared queue and deduped per desired-count parity with current queue/in-flight tasks.
-- T239 GREEN check: `pytest -q` passes with stale farm wheat tasks dropped after farm source empties mid-route while construction unavailable tasks remain queued for retry.
-- T240 GREEN check: `pytest -q` passes with farm panel/status hints for `No fields in radius`, `Storage full`, `Resting`, `Moving`, `Sowing`, and `Harvesting`.
-- T241 GREEN check: `pytest -q` passes with phase-specific FIELD sprite selection (`PHASE_1..PHASE_4`) and render test coverage.
-- T242 GREEN check: `pytest -q` passes with farmer `sowing`/`harvesting` field-tile action bars rendered in worker overlay order and dedicated render test coverage.
-- T243 GREEN check: targeted regression sweep passes (`pytest -q` on construction, sawmill, forester, workers, pathfinding, and transport suites: `107 passed`).
-- T244 GREEN check: `tests/test_smoke_phase21.py` added and passing; fixed farmer `arrived_camp` deposit path so harvest now reaches farm storage and exports to Town Hall via carrier; full suite green (`504 passed`).
-- T245 GREEN check: final verification gate passes (`pytest -q`: `504 passed`; `ruff check src tests`: `All checks passed!`); completion marker `.cursor/ralph/done` created.
+- Worker extension rules: **`worker_extension_guide.md`**.
+- Building extension rules: **`building_extension_guide.md`**.
+- Ralph-loop contract: leave exactly one `[~]` task, otherwise the next agent starts the first `[ ]` task.

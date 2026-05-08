@@ -69,10 +69,20 @@ def test_bottom_bar_social_house_posts_build_event() -> None:
     surface = pygame.Surface((1200, 720))
     BottomBar._menu = "social"  # noqa: SLF001
     pygame.event.clear()
-    BottomBar.handle_click(surface, (1000, 700))
+    BottomBar.handle_click(surface, (750, 700))
     events = [e for e in pygame.event.get() if e.type == BUILD_MENU_SELECT]
     assert events
     assert events[-1].building_type == "HOUSE"
+
+
+def test_bottom_bar_social_canteen_posts_build_event() -> None:
+    surface = pygame.Surface((1200, 720))
+    BottomBar._menu = "social"  # noqa: SLF001
+    pygame.event.clear()
+    BottomBar.handle_click(surface, (1050, 700))
+    events = [e for e in pygame.event.get() if e.type == BUILD_MENU_SELECT]
+    assert events
+    assert events[-1].building_type == "CANTEEN"
 
 
 def test_bottom_bar_processing_sawmill_posts_build_event() -> None:

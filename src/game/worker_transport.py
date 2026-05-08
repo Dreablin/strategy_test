@@ -365,10 +365,10 @@ class WorkerTransportMixin:
                 worker.state = "idle"
                 worker.idle = True
                 return
-            if not hasattr(task.source, "take_from_storage"):
-                if task.resource == "water" and task.source.type_tag == "WELL":
-                    pass
-                elif task.resource == "wood" and hasattr(task.source, "take_wood_in"):
+            if task.resource == "water" and task.source.type_tag == "WELL":
+                pass
+            elif not hasattr(task.source, "take_from_storage"):
+                if task.resource == "wood" and hasattr(task.source, "take_wood_in"):
                     try:
                         task.source.take_wood_in(1)  # type: ignore[attr-defined]
                     except ValueError:

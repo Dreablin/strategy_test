@@ -77,10 +77,10 @@ def test_town_hall_max_level_10() -> None:
         TownHall(level=11)
 
 
-def test_well_max_level_1() -> None:
-    Well(level=1)
+def test_well_max_level_10() -> None:
+    Well(level=10)
     with pytest.raises(ValueError):
-        Well(level=2)
+        Well(level=11)
 
 
 def test_upgrade_lumber_camp_starts_construction_to_level_2() -> None:
@@ -137,7 +137,7 @@ def test_upgrade_rejected_at_max_level() -> None:
     assert not registry.upgrade_building(b)
 
 
-@pytest.mark.parametrize("cls", [LumberCamp, StoneMine, IronMine, Farm])
+@pytest.mark.parametrize("cls", [LumberCamp, StoneMine, IronMine, Farm, Well])
 def test_producing_buildings_expose_storage_api_with_default_state(cls: type) -> None:
     b = cls(level=1, grid_pos=(10, 10))
     assert b.stored == 0
@@ -145,13 +145,13 @@ def test_producing_buildings_expose_storage_api_with_default_state(cls: type) ->
     assert b.is_storage_full() is False
 
 
-@pytest.mark.parametrize("cls", [LumberCamp, StoneMine, IronMine])
+@pytest.mark.parametrize("cls", [LumberCamp, StoneMine, IronMine, Well])
 def test_storage_capacity_scales_with_level(cls: type) -> None:
     b = cls(level=5, grid_pos=(10, 10))
     assert b.storage_capacity() == building_level_int_setting(b.type_tag, "storage", 5)
 
 
-@pytest.mark.parametrize("cls", [LumberCamp, StoneMine, IronMine, Farm])
+@pytest.mark.parametrize("cls", [LumberCamp, StoneMine, IronMine, Farm, Well])
 def test_add_to_storage_rejects_negative_and_overflow(cls: type) -> None:
     b = cls(level=1, grid_pos=(10, 10))
     cap = b.storage_capacity()
@@ -164,14 +164,17 @@ def test_add_to_storage_rejects_negative_and_overflow(cls: type) -> None:
         b.add_to_storage(1)
 
 
-@pytest.mark.parametrize("cls", [LumberCamp, StoneMine, IronMine, Farm])
+@pytest.mark.parametrize("cls", [LumberCamp, StoneMine, IronMine, Farm, Well])
 def test_take_from_storage_rejects_overdraw(cls: type) -> None:
     b = cls(level=1, grid_pos=(10, 10))
-    b.add_to_storage(2)
-    b.take_from_storage(1)
-    assert b.stored == 1
+    initial = min(2, b.storage_capacity())
+    if initial > 0:
+        b.add_to_storage(initial)
+    if initial > 1:
+        b.take_from_storage(1)
+        assert b.stored == initial - 1
     with pytest.raises(ValueError):
-        b.take_from_storage(2)
+        b.take_from_storage(initial + 1)
 
 
 def test_town_hall_exposes_warehouse_api() -> None:
@@ -195,7 +198,23 @@ def test_town_hall_exposes_warehouse_api() -> None:
     assert th.warehouse_amount("wood") == 1
 
 
-@pytest.mark.parametrize("cls", [LumberCamp, StoneMine, IronMine, Farm, ChickenFarm, TownHall])
+def test_well_exposes_local_water_storage_api() -> None:
+    well = Well(level=3, grid_pos=(10, 10))
+    assert well.local_storage_resources() == ("water",)
+    assert well.local_storage_capacity("water") == building_level_int_setting("WELL", "storage", 3)
+    assert well.water_amount() == 0
+    assert well.water_capacity() == well.storage_capacity()
+    assert well.output_amount() == 0
+    assert well.output_capacity() == well.storage_capacity()
+    well.add_water_in(2)
+    assert well.water_amount() == 2
+    well.take_water_in(1)
+    assert well.water_amount() == 1
+    with pytest.raises(KeyError):
+        well.local_storage_amount("wood")
+
+
+@pytest.mark.parametrize("cls", [LumberCamp, StoneMine, IronMine, Farm, ChickenFarm, TownHall, Well])
 def test_buildings_default_to_not_under_construction(cls: type) -> None:
     building = cls(level=1, grid_pos=(10, 10))
     assert building.construction_site is None

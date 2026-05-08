@@ -2,10 +2,10 @@
 
 ## Current Status
 
-- **Phase:** 22 - Canteen, cook, meals, and worker satiety
-- **Next Task:** None - Phase 22 complete
-- **Last Completed:** T276 - End-to-end canteen dining smoke and final verification gate
-- **Total Progress:** 276 / 276 (Phase 22: 31 / 31 done)
+- **Phase:** 23 - Well as staffed water producer
+- **Next Task:** T280 - Implement staffed well production as a complete runtime slice
+- **Last Completed:** T279 - Add WATERMAN as a complete hireable worker slice
+- **Total Progress:** 279 / 286 (Phase 23: 3 / 10 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -13,71 +13,63 @@
 
 ## Task Log
 
-## Phase 22 - Canteen, cook, meals, and worker satiety
+## Phase 23 - Well as staffed water producer
 
-**Goal.** Add a social building **CANTEEN**, a new hireable worker **COOK**, local-only **simple meals**, shared worker satiety, and a dining flow where hungry workers reserve a canteen slot, walk there, eat in parallel, then return to work.
+**Goal.** Replace the old direct-well flow, where carriers reserve a well and draw water themselves, with a normal worker-operated producer building. A `WELL` has an assigned water worker, produces water into local storage, and carriers transport stored water from wells to water consumers. Water still must not be stored in Town Hall.
 
-**Implementation notes.**
+**Design notes.**
 
-- Canteen is a social building with 10 levels.
-- Level 1 local storage: `5 chicken`, `5 bread`, `5 water`, `5 simple_meal`.
-- Each canteen level above 1 adds `+1` capacity to every local storage bucket and `+1` diner slot.
-- Level 1 diner slots: `3`.
-- `simple_meal` is local to canteens only. It must not appear in Town Hall warehouse resources and carriers must not export it.
-- Cook cycle: needs assigned cook, active canteen, `1 chicken + 1 bread + 1 water`, `30_000 ms` production, `5_000 ms` rest, outputs `1 simple_meal` into canteen local storage.
-- Worker satiety: max `10_000`, initial `10_000`, drains by `15` per in-game second, clamps to `[0, 10_000]`.
-- Hunger trigger threshold: below `2_000`.
-- Dining duration after a meal is assigned: `20_000 ms`.
-- Meal waiting rule: lack of `simple_meal` does not block reserving a slot or walking to the canteen. A hungry worker who reaches a canteen with no available meal stays in the reserved diner slot and waits. Eating starts only when the canteen has a `simple_meal` available for that specific waiting worker. If several workers wait and fewer meals are available, assign meals deterministically to waiting workers one at a time; workers without an assigned meal keep waiting for the next produced meal. Consume `1 simple_meal` when a worker starts eating, then restore satiety to `10_000` and release the slot after the `20_000 ms` eating timer completes.
+- Worker name: use `WATERMAN` unless the user asks for a different final name.
+- `WELL` becomes a normal upgradable resource building:
+  - 10 levels.
+  - Construction and upgrades are configured in `src/game/settings/buildings/well.json`.
+  - Local water storage capacity is configured in `well.json`: level 1 has 1 water, each later level adds 1.
+  - Production timing and worker rest are configured in `well.json`.
+- `WATERMAN` is hired through `SCHOOL`, appears in school/population/worker UI, and is assigned to `WELL`.
+- Water production:
+  - Requires an assigned `WATERMAN`.
+  - Requires completed, active `WELL`.
+  - Starts only when well local storage has free space.
+  - Produces discrete `+1 water` into the well local storage.
+  - Worker rests after each production cycle.
+- Water logistics:
+  - Water is never stored in Town Hall warehouse.
+  - Water delivery tasks are generated from well local storage to any active water consumer exposing `water_amount`, `water_capacity`, and `add_water_in`.
+  - Planning must account for queued and in-flight water deliveries so consumer capacity is not overpromised.
+  - Source well selection should prefer nearest available stored water for the target where practical, but correctness and no overfill are more important than perfect routing.
+- Old direct-well behavior must be removed, not layered under the new model:
+  - No well `busy` flag.
+  - No carrier-side water drawing timer.
+  - No carrier reservation/release of wells.
+  - No `WELL_DRAW_WATER_MS` transport special case.
+  - No well panel status based on temporary carrier occupancy.
+- Keep delivery queue logic capability-based. Do not hard-code water only to bakery/canteen/chicken farm.
+- Every implementation task must end with full `pytest` and `ruff check src tests`.
 
-### 22.1 Canteen domain, config, assets, and menu
+### 23.1 Well domain, settings, and UI
 
-- [x] **T246**: Add RED tests for `CANTEEN` building domain: social/build menu entry, 10 max levels, configured construction cost/time, local storage buckets for `chicken`, `bread`, `water`, and `simple_meal`, level 1 capacities of `5`, per-level `+1` capacity, level 1 diner slots of `3`, and per-level `+1` diner slot.
-- [x] **T247**: Implement `Canteen` building class, config/json wiring, registry/placement/bottom-bar social menu entry, local storage helpers, and capacity formulas. Run full `pytest -q`.
-- [x] **T248**: Add RED tests proving `simple_meal` is not a Town Hall warehouse resource, is not displayed in Town Hall storage, and is never generated as a carrier export task.
-- [x] **T249**: Implement the local-only `simple_meal` resource labels/helpers needed by canteen UI and tests without adding it to Town Hall warehouse. Run full `pytest -q`.
-- [x] **T250**: Add canteen asset placeholders and `asset_meta.json` in the correct building asset folder, following existing building scale/anchor conventions. Add a render/asset smoke test for built and construction sprites.
-- [x] **T251**: Implement canteen asset loading/render wiring and make the asset smoke test green. Run full `pytest -q`.
+- [x] **T277**: Convert `WELL` settings/domain to a normal local-storage building in one complete slice. Update `well.json` to 10 levels with construction/upgrade levels, storage capacity by level, production duration, and worker rest duration; refactor `Well` to remove `busy/reserve/release`; add water local storage helpers/progress fields/max level 10; update or rewrite focused well domain tests so they pass against the new model; run full `pytest` and `ruff check src tests`.
+- [x] **T278**: Update Well UI/panel/status in one complete slice. Show local water storage, worker assignment/status, production/rest progress, active toggle if applicable, upgrade, and demolish; remove carrier-draw status/progress from `WellPanel`, `worker_status`, `workers.py`, and input panel calls; update panel/status tests so they pass; run full `pytest` and `ruff check src tests`.
 
-### 22.2 Cook hiring and canteen production
+### 23.2 WATERMAN hiring and assignment
 
-- [x] **T252**: Add RED tests for new hireable `COOK`: appears in school panel, can be queued/cancelled like other workers, starts with full satiety, has worker dot/UI fallback asset, and maps to `CANTEEN` assignment.
-- [x] **T253**: Implement cook hire wiring, worker labels/assets, school panel entry, worker-to-building mapping, and assignment. Run full `pytest -q`.
-- [x] **T254**: Add RED tests for canteen production gating: no cook means no production, inactive canteen prevents new cycles, missing any input blocks cycle start, full `simple_meal` storage blocks cycle start, existing cycle continues when active is toggled off only if current local rules for other processors require it.
-- [x] **T255**: Implement canteen processor runtime using the shared processor pattern where possible: `30_000 ms` work, consume all three inputs at cycle start or completion consistently with existing processors, output `simple_meal`, then `5_000 ms` cook rest. Run full `pytest -q`.
-- [x] **T256**: Add RED tests for carrier input tasks into canteen: chicken, bread, and water are delivered while capacity plus inbound reservations allow it; water uses the existing direct-well flow; duplicate queued/in-flight tasks do not overfill local storage.
-- [x] **T257**: Implement canteen input transport task generation and dedupe/inbound counting using existing transport queue conventions. Do not add any output transport for `simple_meal`. Run full `pytest -q`.
-- [x] **T258**: Add and implement canteen panel production status/progress tests: worker line, input/output storage lines, active toggle, production progress bar, rest/status text, upgrade/demolish controls. Run full `pytest -q`.
+- [x] **T279**: Add `WATERMAN` as a complete hireable worker slice. Add/adjust tests and implementation together for: school queue/hire UI, hire gates/settings, asset fallbacks/icons, population/worker labels, `WORKER_TO_BUILDING`, assignment to completed `WELL`, and full satiety on creation/hire; run full `pytest` and `ruff check src tests`.
 
-### 22.3 Satiety model and worker panel
+### 23.3 Well production runtime
 
-- [x] **T259**: Add RED tests for worker satiety model: every newly created/hired worker starts at `10_000`, max clamp is `10_000`, min clamp is `0`, and deterministic draining subtracts `15` per elapsed in-game second without frame-rate drift.
-- [x] **T260**: Implement satiety fields/timestamps on `Worker` and central satiety ticking in `WorkerManager.update` so every worker drains once per elapsed second. Run full `pytest -q`.
-- [x] **T261**: Add RED tests for worker panel satiety display, including idle worker, carrier carrying a resource, and worker with an active transport task.
-- [x] **T262**: Update worker panel UI to show satiety as current/max and keep existing task/resource lines intact. Run full `pytest -q`.
+- [ ] **T280**: Implement staffed well production as a complete runtime slice. Add/adjust tests and implementation together for: no worker means no water, inactive/under-construction well does not start new cycles, full storage blocks start, configured cycle produces `+1 water`, configured rest happens between cycles, worker remains inside/assigned correctly, and progress/status helpers match other staffed producers; run full `pytest` and `ruff check src tests`.
 
-### 22.4 Canteen dining slots and reservation model
+### 23.4 Water transport refactor
 
-- [x] **T263**: Add RED tests for canteen diner slot model: slot capacity by level, immediate reservation by worker identity, no duplicate reservation by the same worker, no over-reservation, release on dining completion, release on worker/building removal, and release on canteen demolition.
-- [x] **T264**: Implement canteen diner slot/reservation data model and cleanup helpers. Keep it independent from production storage. Run full `pytest -q`.
-- [x] **T265**: Add RED tests for canteen selection: hungry worker below `2_000` picks the nearest reachable canteen with a free slot, reserves immediately, does not require a prepared meal to reserve, and continues working if no slot/path exists.
-- [x] **T266**: Implement canteen selection and reservation helper functions in small modules/mixins, reusing 4-dir pathfinding and existing blocked-tile rules. Run full `pytest -q`.
-- [x] **T267**: Add RED tests for dining runtime: reserved worker walks to canteen, appears in a specific tile slot, waits there if no `simple_meal` is available, starts a `20_000 ms` eating timer only after a meal is assigned, consumes `1 simple_meal` when eating starts, restores satiety to `10_000` when the timer completes, releases the slot, and returns to work.
-- [x] **T268**: Implement shared dining runtime states, waiting/eating transitions, deterministic one-meal-per-worker assignment, and progress helpers without entangling them with carrier transport tasks or processor production tasks. Run full `pytest -q`.
+- [ ] **T281**: Refactor water task planning as a complete slice. Replace direct free-well task generation with tasks from well local storage to active water consumers; account for queued/in-flight outbound water from wells and inbound water to consumers; prefer reasonable nearest-source routing where practical; add tests with multiple wells and multiple consumers proving later bakeries/canteens can receive water; run full `pytest` and `ruff check src tests`.
+- [ ] **T282**: Clean carrier transport water handling as a complete slice. Remove well reservation/release, carrier-side draw duration, carried-well-water special counting, and failed-pickup branches tied to `Well.busy`; make water behave like a local-storage resource except it has no Town Hall fallback; update carrier tests so they pass; run full `pytest` and `ruff check src tests`.
+- [ ] **T283**: Cover demolition and invalidation behavior for new water logistics in one complete slice. If a water source well or target consumer is demolished while queued/in-flight, carriers must not crash or trap resources; carried water may be dropped if no valid target exists; water must never be returned to Town Hall. Add/adjust tests and implementation together; run full `pytest` and `ruff check src tests`.
 
-### 22.5 Hunger check integration for all worker families
+### 23.5 Old logic cleanup and documentation
 
-- [x] **T269**: Add RED tests for processor/gatherer/miner/farmer hunger checks: after a completed production/gather/field cycle and before normal rest, a hungry worker attempts to reserve canteen; if blocked by missing slot/path, existing work/rest behavior continues.
-- [x] **T270**: Implement hunger hooks for processor workers, gatherers, miner, farmer, and forester at the cycle boundaries covered by T269. Run full `pytest -q`.
-- [x] **T271**: Add RED tests for blocked-cycle hunger checks: when a worker cannot start a new cycle because inputs/output/storage/target conditions block it, the hunger check still runs at a throttled retry point and does not spam reservations.
-- [x] **T272**: Implement throttled hunger checks for blocked processor/gatherer/farmer/miner states. Run full `pytest -q`.
-- [x] **T273**: Add RED tests for builders and carriers: builder checks hunger after construction completion and while idle with no construction; carrier checks after delivery completion and while idle with no transport; neither abandons an active construction or active carried item.
-- [x] **T274**: Implement builder/carrier hunger hooks and return-to-work behavior after dining. Carriers must only go to canteen when not carrying anything. Run full `pytest -q`.
-
-### 22.6 Canteen UI, diner tiles, smoke, and final verification
-
-- [x] **T275**: Add and implement canteen panel diner tiles: one tile per slot, occupied/reserved state, waiting-vs-eating state, worker avatar/label, and per-diner eating progress bar only while eating. Include click-panel tests and headless render assertions.
-- [x] **T276**: Add end-to-end smoke test: build canteen, hire cook, deliver chicken/bread/water, produce `simple_meal`, drain worker satiety below threshold, reserve a dining slot, wait if no meal exists, eat for `20_000 ms` after meal assignment, restore satiety, release slot, and return to work. Final gate: full `pytest -q` plus `ruff check src tests`; update Current Status and Notes; mark Phase 22 complete only when all tasks are `[x]`.
+- [ ] **T284**: Remove obsolete direct-well symbols and tests in one complete cleanup slice. Eliminate `WELL_DRAW_WATER_MS`, `water_worker_for_well`, `water_draw_progress_for_building`, `Well.busy`, `reserve`, `release`, direct draw panel wording, and old tests that only describe carrier-side drawing. Replace them only with tests for the new producer/storage model where coverage would otherwise be lost. Run full `pytest` and `ruff check src tests`.
+- [ ] **T285**: Update `PRD.md` for the new well model in one complete documentation slice. Document `WELL` as a normal staffed producer with local water storage, `WATERMAN` as its worker, water delivery from well local storage to consumers, and the rule that Town Hall never stores water. Remove old text about carriers reserving/drawing from wells. Run full `pytest` and `ruff check src tests`.
+- [ ] **T286**: Add/update one end-to-end smoke test and close the phase. Cover well construction/setup, `WATERMAN` assignment, water production into local well storage, carrier delivery to at least two water consumers, no Town Hall water storage, and no starvation of the second consumer. Final gate: full `pytest` plus `ruff check src tests`; update Current Status and Notes; mark Phase 23 complete only when all tasks are `[x]`.
 
 ---
 
@@ -85,15 +77,18 @@
 
 - Keep exactly one active task marked `[~]` at a time.
 - Start new work from the first unchecked `[ ]` task in the active phase.
-- Mark `[x]` only after verification (`pytest -q`, and `ruff check src tests` when relevant).
+- Each task must be independently finishable: add or update tests and implementation in the same task, and leave the full suite passing before marking `[x]`.
+- Do not leave intentionally failing RED tests in a checked-in task. If a test must fail temporarily while working, finish the implementation before marking the task done.
+- Mark `[x]` only after verification (`pytest`, and `ruff check src tests` when relevant).
 - If blocked after repeated attempts, mark `[!]` and add a row in **Issues & Blockers**.
 
 ## Decisions Log
 
 | Date | Task | Decision | Rationale |
 |------|------|----------|-----------|
-| 2026-05-04 | Phase 22 | `simple_meal` is canteen-local and is not a Town Hall warehouse resource. | Meals are consumed inside canteens and should not enter global carrier export/storage loops. |
-| 2026-05-04 | Phase 22 | Dining slot reservation is allowed without a prepared meal; the worker waits in the canteen until a `simple_meal` is assigned, then eats for `20_000 ms`. | Matches the requirement that hungry workers can sit in the canteen while food production catches up, and that one available meal feeds only one waiting worker. |
+| 2026-05-08 | Phase 23 | Replace direct-well carrier drawing with staffed well production and local well storage. | The old model required special queue logic for wells and starved later water consumers. A normal producer model matches the rest of the economy and simplifies transport. |
+| 2026-05-08 | Phase 23 | Use `WATERMAN` as the implementation worker type unless renamed later. | The user suggested a waterman-style worker; using one stable internal tag keeps tasks unblocked. |
+| 2026-05-08 | Phase 23 | Water remains excluded from Town Hall storage. | Water should be produced locally at wells and delivered directly to consumers, preserving the existing non-warehouse water rule. |
 
 ## Issues & Blockers
 
@@ -103,31 +98,9 @@
 
 ## Notes
 
-- **2026-05-08:** T276 adds `tests/test_smoke_phase22.py` end-to-end canteen flow: canteen build/setup, cook assignment, chicken/bread/water deliveries, `simple_meal` production, hunger-triggered slot reservation, waiting with no meal, `DINING_EAT_DURATION_MS` eating completion, satiety reset, slot release, and idle return state. Final gates: full `pytest -q` (`751 passed`) and `ruff check src tests` green.
-- **2026-05-08:** T275 extends `CanteenPanel` with per-slot diner tiles (`_diner_tiles`), occupied vs empty visuals, worker avatar (`worker_dot`) + short label, waiting/eating state text, and per-diner eating progress strip only in `eating`; click inside diner tiles keeps panel open (no action). Added tests in `tests/test_canteen_panel.py`; full `pytest -q` and targeted `ruff` green.
-- **2026-05-08:** T274 adds `try_builder_hunger_after_completion_or_idle` and `try_carrier_hunger_after_delivery_or_idle` in `worker_hunger.py`; wired in `worker_building._update_builder` (post-completion + idle/no-target) and `worker_transport._update_carrier` (idle/no-task + post-delivery). Carrier hook requires `transport_task is None` and `carrying is None` to avoid abandoning items; blocked-cycle stamping keeps non-hungry workers at `-1`; `tests/test_worker_hunger_builder_carrier_red.py` and full `pytest -q` green.
-- **2026-05-08:** T273 RED: `tests/test_worker_hunger_builder_carrier_red.py` expects `game.worker_hunger.try_builder_hunger_after_completion_or_idle` and `try_carrier_hunger_after_delivery_or_idle`; collection fails with `ImportError` until T274.
-- **2026-05-08:** T272 adds `BLOCKED_HUNGER_RETRY_MS` (4s), `try_blocked_cycle_hunger_check`, `Worker.blocked_cycle_hunger_try_ms`; `WorkerManager._try_blocked_cycle_hunger` at processor input/output block, gatherer/forester inactive or storage/target/path blocks, miner full storage, farmer field dispatch blocks; reset on post-cycle hunger, dining finish, assign, demolish; `tests/test_worker_hunger_blocked_red.py` green; full `pytest -q` green.
-- **2026-05-08:** T270 adds `worker_hunger.try_hunger_canteen_after_completed_cycle` (lazy-imports `canteen_selection` to avoid registry/workers cycles); wired after processor cycle rest, miner rest, gatherer deposit rest, forester return rest, farmer camp return; T269 test MINER case seeds `IronDeposit` like other iron tests; full `pytest -q` green.
-- **2026-05-07:** T269 RED: `tests/test_worker_hunger_cycle_red.py` imports `game.worker_hunger.try_hunger_canteen_after_completed_cycle`; collection fails with `ModuleNotFoundError` until T270.
-- **2026-05-08:** T268 adds `worker_dining.py` + Worker `dining_*` fields; `tests/test_dining_runtime_red.py` green.
-- **2026-05-08:** T267 RED: `game.worker_dining` (`DINING_EAT_DURATION_MS`, `diner_stand_tile_for`, `dining_runtime_phase`, `update_dining_runtime`, `assign_diner_meals_for_canteen`); collection fails until T268.
-- **2026-05-08:** T266 adds `canteen_selection.py`: hunger threshold `2_000`, shortest 4-dir path to any approach tile, skip full/UC canteens, `try_reserve_diner_slot`; `tests/test_canteen_selection_red.py` green.
-- **2026-05-08:** T265 RED: `game.canteen_selection` (`HUNGER_SATIETY_THRESHOLD`, `reserve_nearest_reachable_canteen_if_hungry`); collection fails until T266 (add unreachable/no-path case there if needed).
-- **2026-05-08:** T264 implements `canteen_dining` helpers plus `Canteen._diner_occupants` and `Worker.dining_canteen` back-reference; `tests/test_canteen_diner_slots_red.py` green.
-- **2026-05-08:** T263 RED: `game.canteen_dining` (`try_reserve_diner_slot`, `release_*`, `count_reserved_diner_slots`); collection fails until T264.
-- **2026-05-08:** T262 adds `Satiety: current/max` (clamped) after `State:`; `WorkerPanel.body_lines` powers layout/draw; `tests/test_worker_panel_satiety_red.py` green.
-- **2026-05-08:** T261 RED: `WorkerPanel.body_lines` + a `Satiety: current/max` line (see `tests/test_worker_panel_satiety_red.py`); full `pytest -q` fails until T262.
-- **2026-05-08:** T260 adds `game/worker_satiety.py`, `Worker.satiety_last_sample_ms` (bootstrap on first `update`), `_tick_worker_satiety` in `WorkerManager.update`; hire satiety test uses Town Hall level 5 for MINER/STONECUTTER gates.
-- **2026-05-08:** T259 RED: `tests/test_worker_satiety_red.py` expects `game.worker_satiety` (`MAX_WORKER_SATIETY`, `clamp_worker_satiety`, `apply_satiety_game_time`, …); collection fails until T260 adds the module and wiring.
-- **2026-05-08:** T258 adds `CanteenPanel` (storage lines, blocked reason, progress bar, active toggle), `CANTEEN` in `production_status_for_building`, input wiring, and `tests/test_canteen_panel.py`; worker and population panels show **Cook** / **Canteen** labels.
-- **2026-05-08:** T257 implements `canteen_input_transport_tasks`, `Canteen` `water_amount` / `water_capacity` / `add_water_in`, carrier deposit to local chicken/bread, `_enqueue_canteen_input_tasks`, and `count_carried_town_hall_delivery` for refill dedupe; transport tests green.
-- **2026-05-08:** T255 wires `COOK` through `CANTEEN_PROCESSOR` (`CANTEEN_CYCLE_MS`, `COOK_REST_MS`); `tests/test_canteen_production_gating_red.py` green with full suite.
-- **2026-05-08:** T253 implements hireable `COOK` (`WORKER_TO_BUILDING`, school panel, `Worker.satiety`, assets, `_update_cook`); `tests/test_cook_hiring_red.py` and full suite green.
-- Canteen building art: `assets/buildings/canteen/` (`default.png`, `construction.png`, `asset_meta.json`); `Renderer.draw_buildings` uses `building_sprite` / `building_sprite_construction` with `type_tag` `CANTEEN` (maps to folder `canteen`).
-- `game.resource_catalog` holds Town Hall warehouse key allow-list, `simple_meal` display label, and guards so carriers cannot enqueue `simple_meal` deliveries to Town Hall.
+- **2026-05-08:** Phase 23 planning replaces the old direct-well flow. Start at T279. Tasks are vertical slices: each task updates tests and implementation together and must leave the full suite passing. The highest-risk cleanup areas are `transport_tasks.water_input_transport_tasks`, `worker_transport` water branches, `worker_status`, `WellPanel`, and tests that expect `Well.busy` / carrier-side drawing.
+- **2026-05-08:** Keep old completed phase details in `progress_archive.md`; `progress.md` should stay focused on the current active phase to keep agent context small.
 - Tests run headless via `SDL_VIDEODRIVER=dummy` in `tests/conftest.py`.
-- Extended history, completed phase checklists, and older decisions log: **`progress_archive.md`**.
 - Pathfinding contract: **4-dir** `find_path_bfs` (no diagonals), aligned with PRD.
 - Worker extension rules: **`worker_extension_guide.md`**.
 - Building extension rules: **`building_extension_guide.md`**.

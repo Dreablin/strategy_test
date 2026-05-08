@@ -311,6 +311,8 @@ def water_input_transport_tasks(registry: Any) -> list[TransportTask]:
     tasks: list[TransportTask] = []
     well_idx = 0
     for building in buildings:
+        if building.type_tag == "WELL":
+            continue
         if not _accepts_water_input(building):
             continue
         if getattr(building, "is_under_construction", False):

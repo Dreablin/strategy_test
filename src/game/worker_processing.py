@@ -90,6 +90,26 @@ class WorkerProcessingMixin:
     def _update_animal_herder(self, worker: Worker, now_ms: int, world: Any) -> None:
         self._update_processor_worker(worker, now_ms, CHICKEN_FARM_PROCESSOR, world)
 
+    def _update_waterman(self, worker: Worker, now_ms: int, world: Any) -> None:
+        """Park at well center when assigned; production cycles are T280."""
+        _ = now_ms, world
+        building = worker.assigned_building
+        if building is None or building.type_tag != "WELL":
+            return
+        if building.is_under_construction:
+            return
+        if worker.state == "moving":
+            return
+        center_tile = building_center_tile(building)
+        if worker.current_tile != center_tile:
+            worker.current_tile = center_tile
+            worker.stand_tile = center_tile
+        worker.target_tile = center_tile
+        worker.path = []
+        worker.segment_progress = 0.0
+        worker.state = "working"
+        worker.idle = False
+
     def _update_processor_worker(
         self, worker: Worker, now_ms: int, spec: ProcessorSpec, world: Any
     ) -> None:

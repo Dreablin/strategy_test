@@ -71,9 +71,10 @@ def test_school_panel_layout_contains_configured_training_slots() -> None:
     assert any(worker_type == "MILLER" for worker_type, _ in layout.hire_buttons)
     assert any(worker_type == "BAKER" for worker_type, _ in layout.hire_buttons)
     assert any(worker_type == "ANIMAL_HERDER" for worker_type, _ in layout.hire_buttons)
+    assert any(worker_type == "WATERMAN" for worker_type, _ in layout.hire_buttons)
     assert layout.hire_buttons[0][0] == "CARRIER"
     assert layout.hire_buttons[1][0] == "BUILDER"
-    assert len(layout.hire_buttons) == 12
+    assert len(layout.hire_buttons) == 13
 
 
 def test_school_panel_sawyer_hire_click_returns_worker_action() -> None:
@@ -98,6 +99,14 @@ def test_school_panel_baker_hire_click_returns_worker_action() -> None:
     layout = SchoolPanel.layout(surface, school, worker_assigned=False)
     baker_button = next(rect for worker_type, rect in layout.hire_buttons if worker_type == "BAKER")
     assert SchoolPanel.click_action(surface, baker_button.center, school, worker_assigned=False) == "hire:BAKER"
+
+
+def test_school_panel_waterman_hire_click_returns_worker_action() -> None:
+    surface = pygame.Surface((900, 700))
+    school = School(level=1, grid_pos=(10, 10))
+    layout = SchoolPanel.layout(surface, school, worker_assigned=False)
+    button = next(rect for worker_type, rect in layout.hire_buttons if worker_type == "WATERMAN")
+    assert SchoolPanel.click_action(surface, button.center, school, worker_assigned=False) == "hire:WATERMAN"
 
 
 def test_school_panel_animal_herder_hire_click_returns_worker_action() -> None:

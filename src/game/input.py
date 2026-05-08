@@ -464,10 +464,7 @@ class GameInput:
                 worker_assigned=worker_status != "empty",
                 worker_status=worker_status,
                 production_status=production_status,
-                draw_progress=self._worker_manager.water_draw_progress_for_building(
-                    self._panel,
-                    pygame.time.get_ticks(),
-                ),
+                now_ms=pygame.time.get_ticks(),
             )
             return
         worker_status = self._panel_worker_status()
@@ -902,6 +899,8 @@ class GameInput:
                         self._registry.demolish(b, self._worker_manager)
                         self._panel = None
                         self._sync_assignments()
+                    elif action == "toggle_active" and self._panel is not None:
+                        self._panel.set_active(not self._panel.active)
                     return
             layout = BuildingPanel.layout(
                 surface,

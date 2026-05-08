@@ -57,8 +57,6 @@ from game.worker_models import TransportTask, Worker
 from game.worker_satiety import apply_satiety_game_time
 from game.worker_status import (
     production_status_for_building,
-    water_draw_progress_for_building,
-    water_worker_for_well,
     worker_status_for_building,
 )
 from game.worker_building import WorkerBuildingMixin
@@ -143,6 +141,7 @@ class WorkerManager(
             "MILLER": self._update_miller,
             "BAKER": self._update_baker,
             "COOK": self._update_cook,
+            "WATERMAN": self._update_waterman,
             "ANIMAL_HERDER": self._update_animal_herder,
             "FARMER": self._update_farmer,
         }
@@ -249,12 +248,6 @@ class WorkerManager(
 
     def production_status_for_building(self, building: Building) -> str:
         return production_status_for_building(self, building)
-
-    def _water_worker_for_well(self, well: Building) -> Worker | None:
-        return water_worker_for_well(self, well)
-
-    def water_draw_progress_for_building(self, building: Building, now_ms: int | None = None) -> float:
-        return water_draw_progress_for_building(self, building, now_ms=now_ms)
 
     def staffed_buildings(self) -> set[Building]:
         return {w.assigned_building for w in self._workers if w.assigned_building is not None}

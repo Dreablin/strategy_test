@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 22 - Canteen, cook, meals, and worker satiety
-- **Next Task:** T256 - RED tests for canteen carrier input transport
-- **Last Completed:** T255 - canteen processor (`CANTEEN_PROCESSOR`, cook uses shared processor pattern, 30k/5k cycle)
-- **Total Progress:** 255 / 276 (Phase 22: 10 / 31 done)
+- **Next Task:** T257 - implement canteen input transport and enqueue wiring (green after T256 RED)
+- **Last Completed:** T256 - RED tests for canteen carrier inputs (`tests/test_canteen_transport_inputs_red.py`; failures until T257)
+- **Total Progress:** 256 / 276 (Phase 22: 11 / 31 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -45,7 +45,7 @@
 - [x] **T253**: Implement cook hire wiring, worker labels/assets, school panel entry, worker-to-building mapping, and assignment. Run full `pytest -q`.
 - [x] **T254**: Add RED tests for canteen production gating: no cook means no production, inactive canteen prevents new cycles, missing any input blocks cycle start, full `simple_meal` storage blocks cycle start, existing cycle continues when active is toggled off only if current local rules for other processors require it.
 - [x] **T255**: Implement canteen processor runtime using the shared processor pattern where possible: `30_000 ms` work, consume all three inputs at cycle start or completion consistently with existing processors, output `simple_meal`, then `5_000 ms` cook rest. Run full `pytest -q`.
-- [ ] **T256**: Add RED tests for carrier input tasks into canteen: chicken, bread, and water are delivered while capacity plus inbound reservations allow it; water uses the existing direct-well flow; duplicate queued/in-flight tasks do not overfill local storage.
+- [x] **T256**: Add RED tests for carrier input tasks into canteen: chicken, bread, and water are delivered while capacity plus inbound reservations allow it; water uses the existing direct-well flow; duplicate queued/in-flight tasks do not overfill local storage.
 - [ ] **T257**: Implement canteen input transport task generation and dedupe/inbound counting using existing transport queue conventions. Do not add any output transport for `simple_meal`. Run full `pytest -q`.
 - [ ] **T258**: Add and implement canteen panel production status/progress tests: worker line, input/output storage lines, active toggle, production progress bar, rest/status text, upgrade/demolish controls. Run full `pytest -q`.
 
@@ -103,6 +103,7 @@
 
 ## Notes
 
+- **2026-05-08:** T256 adds `tests/test_canteen_transport_inputs_red.py`; full `pytest -q` reports **7 failures** until T257 (`canteen_input_transport_tasks`, canteen water intake, carrier enqueue + deposit).
 - **2026-05-08:** T255 wires `COOK` through `CANTEEN_PROCESSOR` (`CANTEEN_CYCLE_MS`, `COOK_REST_MS`); `tests/test_canteen_production_gating_red.py` green with full suite.
 - **2026-05-08:** T253 implements hireable `COOK` (`WORKER_TO_BUILDING`, school panel, `Worker.satiety`, assets, `_update_cook`); `tests/test_cook_hiring_red.py` and full suite green.
 - Canteen building art: `assets/buildings/canteen/` (`default.png`, `construction.png`, `asset_meta.json`); `Renderer.draw_buildings` uses `building_sprite` / `building_sprite_construction` with `type_tag` `CANTEEN` (maps to folder `canteen`).

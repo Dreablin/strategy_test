@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 22 - Canteen, cook, meals, and worker satiety
-- **Next Task:** T259 - RED tests for worker satiety model
-- **Last Completed:** T258 - canteen panel production UI (`CanteenPanel`, worker status, input tests, COOK/CANTEEN labels in worker and population panels)
-- **Total Progress:** 258 / 276 (Phase 22: 13 / 31 done)
+- **Next Task:** T260 - implement satiety ticking on Worker / WorkerManager
+- **Last Completed:** T259 - RED tests for worker satiety (`tests/test_worker_satiety_red.py`, `game.worker_satiety` pending)
+- **Total Progress:** 259 / 276 (Phase 22: 14 / 31 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -51,7 +51,7 @@
 
 ### 22.3 Satiety model and worker panel
 
-- [ ] **T259**: Add RED tests for worker satiety model: every newly created/hired worker starts at `10_000`, max clamp is `10_000`, min clamp is `0`, and deterministic draining subtracts `15` per elapsed in-game second without frame-rate drift.
+- [x] **T259**: Add RED tests for worker satiety model: every newly created/hired worker starts at `10_000`, max clamp is `10_000`, min clamp is `0`, and deterministic draining subtracts `15` per elapsed in-game second without frame-rate drift.
 - [ ] **T260**: Implement satiety fields/timestamps on `Worker` and central satiety ticking in `WorkerManager.update` so every worker drains once per elapsed second. Run full `pytest -q`.
 - [ ] **T261**: Add RED tests for worker panel satiety display, including idle worker, carrier carrying a resource, and worker with an active transport task.
 - [ ] **T262**: Update worker panel UI to show satiety as current/max and keep existing task/resource lines intact. Run full `pytest -q`.
@@ -103,6 +103,7 @@
 
 ## Notes
 
+- **2026-05-08:** T259 RED: `tests/test_worker_satiety_red.py` expects `game.worker_satiety` (`MAX_WORKER_SATIETY`, `clamp_worker_satiety`, `apply_satiety_game_time`, …); collection fails until T260 adds the module and wiring.
 - **2026-05-08:** T258 adds `CanteenPanel` (storage lines, blocked reason, progress bar, active toggle), `CANTEEN` in `production_status_for_building`, input wiring, and `tests/test_canteen_panel.py`; worker and population panels show **Cook** / **Canteen** labels.
 - **2026-05-08:** T257 implements `canteen_input_transport_tasks`, `Canteen` `water_amount` / `water_capacity` / `add_water_in`, carrier deposit to local chicken/bread, `_enqueue_canteen_input_tasks`, and `count_carried_town_hall_delivery` for refill dedupe; transport tests green.
 - **2026-05-08:** T255 wires `COOK` through `CANTEEN_PROCESSOR` (`CANTEEN_CYCLE_MS`, `COOK_REST_MS`); `tests/test_canteen_production_gating_red.py` green with full suite.

@@ -21,6 +21,7 @@ from game.worker_constants import (
     SAWYER_REST_MS,
 )
 from game.worker_geometry import building_center_tile
+from game.worker_hunger import try_hunger_canteen_after_completed_cycle
 from game.worker_models import Worker
 
 
@@ -74,33 +75,24 @@ class WorkerProcessingMixin:
         effective = int(round(MILL_BASE_CYCLE_MS * mult))
         return max(MILL_MIN_CYCLE_MS, effective)
 
-    @staticmethod
-    def _update_sawyer(worker: Worker, now_ms: int, world: Any) -> None:
-        _ = world
-        WorkerProcessingMixin._update_processor_worker(worker, now_ms, SAWMILL_PROCESSOR)
+    def _update_sawyer(self, worker: Worker, now_ms: int, world: Any) -> None:
+        self._update_processor_worker(worker, now_ms, SAWMILL_PROCESSOR, world)
 
-    @staticmethod
-    def _update_miller(worker: Worker, now_ms: int, world: Any) -> None:
-        _ = world
-        WorkerProcessingMixin._update_processor_worker(worker, now_ms, MILL_PROCESSOR)
+    def _update_miller(self, worker: Worker, now_ms: int, world: Any) -> None:
+        self._update_processor_worker(worker, now_ms, MILL_PROCESSOR, world)
 
-    @staticmethod
-    def _update_baker(worker: Worker, now_ms: int, world: Any) -> None:
-        _ = world
-        WorkerProcessingMixin._update_processor_worker(worker, now_ms, BAKERY_PROCESSOR)
+    def _update_baker(self, worker: Worker, now_ms: int, world: Any) -> None:
+        self._update_processor_worker(worker, now_ms, BAKERY_PROCESSOR, world)
 
-    @staticmethod
-    def _update_cook(worker: Worker, now_ms: int, world: Any) -> None:
-        _ = world
-        WorkerProcessingMixin._update_processor_worker(worker, now_ms, CANTEEN_PROCESSOR)
+    def _update_cook(self, worker: Worker, now_ms: int, world: Any) -> None:
+        self._update_processor_worker(worker, now_ms, CANTEEN_PROCESSOR, world)
 
-    @staticmethod
-    def _update_animal_herder(worker: Worker, now_ms: int, world: Any) -> None:
-        _ = world
-        WorkerProcessingMixin._update_processor_worker(worker, now_ms, CHICKEN_FARM_PROCESSOR)
+    def _update_animal_herder(self, worker: Worker, now_ms: int, world: Any) -> None:
+        self._update_processor_worker(worker, now_ms, CHICKEN_FARM_PROCESSOR, world)
 
-    @staticmethod
-    def _update_processor_worker(worker: Worker, now_ms: int, spec: ProcessorSpec) -> None:
+    def _update_processor_worker(
+        self, worker: Worker, now_ms: int, spec: ProcessorSpec, world: Any
+    ) -> None:
         building = worker.assigned_building
         if building is None or building.type_tag != spec.building_type:
             return
@@ -142,6 +134,15 @@ class WorkerProcessingMixin:
             worker.camp_wait_until_ms = int(now_ms) + spec.rest_ms
             worker.current_tile = center_tile
             worker.idle = False
+            reg = getattr(self, "_registry", None)
+            if world is not None and reg is not None:
+                try_hunger_canteen_after_completed_cycle(
+                    worker,
+                    world=world,
+                    registry=reg,
+                    worker_manager=self,
+                    now_ms=int(now_ms),
+                )
             return
         if not active:
             worker.state = "resting"

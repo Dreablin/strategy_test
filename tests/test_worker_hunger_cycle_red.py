@@ -14,6 +14,7 @@ from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
 from game.canteen_dining import try_reserve_diner_slot
 from game.config import near_town_hall_tile, town_hall_origin_tile
+from game.iron import IronDeposit
 from game.worker_hunger import try_hunger_canteen_after_completed_cycle
 from game.worker_models import Worker
 from game.world import World
@@ -43,12 +44,20 @@ def _post_cycle_resting_worker(w: Worker, *, now_ms: int = 10_000) -> None:
     w.camp_wait_until_ms = int(now_ms) + 8_000
 
 
+def _place_iron_mine(registry: BuildingRegistry) -> object:
+    world = registry._world  # noqa: SLF001
+    world._iron.clear()  # noqa: SLF001
+    mine_pos = near_town_hall_tile(12, 4)
+    world._iron[mine_pos] = IronDeposit(blocking=False)  # noqa: SLF001
+    return registry.place(IronMine, mine_pos)
+
+
 @pytest.mark.parametrize(
     "type_tag, place_building",
     [
         ("BAKER", lambda r: r.place(Bakery, near_town_hall_tile(6, 4))),
         ("LUMBERJACK", lambda r: r.place(LumberCamp, near_town_hall_tile(4, 6))),
-        ("MINER", lambda r: r.place(IronMine, near_town_hall_tile(14, 4))),
+        ("MINER", _place_iron_mine),
         ("FARMER", lambda r: r.place(Farm, near_town_hall_tile(8, 4))),
     ],
 )

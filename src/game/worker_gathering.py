@@ -22,6 +22,7 @@ from game.worker_constants import (
     STONECUTTER_REST_MS,
 )
 from game.worker_geometry import building_center_tile
+from game.worker_hunger import try_hunger_canteen_after_completed_cycle
 from game.worker_models import Worker
 from game.world import find_nearest_free_stone, find_nearest_free_tree
 
@@ -125,6 +126,16 @@ class WorkerGatheringMixin:
             worker.chop_duration_ms = CHOP_DURATION_MS
             self._park_worker_inside_camp(worker, camp)
             worker.camp_wait_until_ms = now_ms + gather_state["rest_ms"]
+            if self._registry is not None:
+                w = getattr(self._registry, "_world", None)
+                if w is not None:
+                    try_hunger_canteen_after_completed_cycle(
+                        worker,
+                        world=w,
+                        registry=self._registry,
+                        worker_manager=self,
+                        now_ms=int(now_ms),
+                    )
             return
 
     def _update_forester(self, worker: Worker, now_ms: int, world: Any) -> None:
@@ -188,6 +199,14 @@ class WorkerGatheringMixin:
             worker.chop_started_ms = 0
             worker.chop_duration_ms = CHOP_DURATION_MS
             worker.camp_wait_until_ms = now_ms + FORESTER_REST_MS
+            if self._registry is not None and world is not None:
+                try_hunger_canteen_after_completed_cycle(
+                    worker,
+                    world=world,
+                    registry=self._registry,
+                    worker_manager=self,
+                    now_ms=int(now_ms),
+                )
             return
     def _gather_state_for(self, worker_type: str) -> dict[str, Any] | None:
         if worker_type == "LUMBERJACK":
@@ -228,9 +247,7 @@ class WorkerGatheringMixin:
         worker.start_move(path, started_ms=now_ms, move_state="going_to_plant_tile")
 
 
-    @staticmethod
-    def _update_miner(worker: Worker, now_ms: int, world: Any) -> None:
-        _ = world
+    def _update_miner(self, worker: Worker, now_ms: int, world: Any) -> None:
         mine = worker.assigned_building
         if mine is None or mine.type_tag != "IRON_MINE":
             return
@@ -266,6 +283,15 @@ class WorkerGatheringMixin:
             worker.camp_wait_until_ms = int(now_ms) + MINER_REST_MS
             worker.current_tile = center_tile
             worker.idle = False
+            reg = self._registry
+            if world is not None and reg is not None:
+                try_hunger_canteen_after_completed_cycle(
+                    worker,
+                    world=world,
+                    registry=reg,
+                    worker_manager=self,
+                    now_ms=int(now_ms),
+                )
             return
         if hasattr(mine, "is_storage_full") and mine.is_storage_full():
             worker.state = "working"

@@ -22,6 +22,7 @@ from game.worker_constants import (
     FARMER_REST_MS,
 )
 from game.worker_geometry import building_center_tile, select_farmer_field_target
+from game.worker_hunger import try_hunger_canteen_after_completed_cycle
 from game.worker_models import Worker
 
 
@@ -130,6 +131,14 @@ class WorkerFarmingMixin:
             worker.chop_duration_ms = CHOP_DURATION_MS
             worker.state = "resting"
             worker.camp_wait_until_ms = now_ms + FARMER_REST_MS
+            if self._registry is not None and world is not None:
+                try_hunger_canteen_after_completed_cycle(
+                    worker,
+                    world=world,
+                    registry=self._registry,
+                    worker_manager=self,
+                    now_ms=int(now_ms),
+                )
 
     def _builder_destination_tiles(self, building: Building) -> list[tuple[int, int]]:
         """Builder path target tiles for construction entry."""

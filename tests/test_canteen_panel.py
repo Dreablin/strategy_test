@@ -5,7 +5,9 @@ from __future__ import annotations
 import pygame
 
 from game.buildings.canteen import Canteen
+from game.canteen_dining import try_reserve_diner_slot
 from game.ui.canteen_panel import CanteenPanel
+from game.worker_models import Worker
 
 
 def test_canteen_panel_supports_building_and_toggle_click() -> None:
@@ -76,3 +78,55 @@ def test_canteen_panel_draw_smoke_and_progress_bar() -> None:
     bar_sample_y = layout.frame.bottom - 80
     c = surface.get_at((bar_center_x, bar_sample_y))
     assert c.r > 80 or c.g > 80 or c.b > 80
+
+
+def test_canteen_panel_layout_has_one_diner_tile_per_slot() -> None:
+    surface = pygame.Surface((1280, 720))
+    canteen = Canteen(level=3, grid_pos=(10, 10))
+    layout = CanteenPanel.layout(surface, canteen, worker_assigned=True, production_status="Processing")
+    tiles = CanteenPanel._diner_tiles(layout, canteen.diner_slot_capacity())
+    assert len(tiles) == canteen.diner_slot_capacity()
+    assert len({(t.x, t.y, t.w, t.h) for t in tiles}) == len(tiles)
+
+
+def test_canteen_panel_draws_reserved_diner_worker_and_eating_progress() -> None:
+    surface = pygame.Surface((1280, 720))
+    canteen = Canteen(level=1, grid_pos=(10, 10))
+    worker = Worker("BAKER", stand_tile=(12, 12))
+    assert try_reserve_diner_slot(canteen, worker)
+    worker.dining_phase = "eating"
+    worker.dining_eating_started_ms = 10_000
+    now_ms = 20_000
+
+    CanteenPanel.draw(
+        surface,
+        canteen,
+        worker_assigned=True,
+        worker_status="assigned",
+        production_status="Processing",
+        now_ms=now_ms,
+    )
+    layout = CanteenPanel.layout(surface, canteen, worker_assigned=True, production_status="Processing")
+    tiles = CanteenPanel._diner_tiles(layout, canteen.diner_slot_capacity())
+    tile = tiles[0]
+    inside = surface.get_at((tile.left + 3, tile.top + 3))
+    assert inside.r > 40 or inside.g > 40 or inside.b > 40
+    progress = surface.get_at((tile.left + 2, tile.bottom - 3))
+    assert progress.r > 120
+
+
+def test_canteen_panel_click_inside_diner_tile_keeps_panel_open() -> None:
+    surface = pygame.Surface((1280, 720))
+    canteen = Canteen(level=1, grid_pos=(10, 10))
+    layout = CanteenPanel.layout(surface, canteen, worker_assigned=True, production_status="Processing")
+    tile = CanteenPanel._diner_tiles(layout, canteen.diner_slot_capacity())[0]
+    assert (
+        CanteenPanel.click_action(
+            surface,
+            tile.center,
+            canteen,
+            worker_assigned=True,
+            production_status="Processing",
+        )
+        is None
+    )

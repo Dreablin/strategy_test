@@ -6,14 +6,19 @@ from dataclasses import dataclass
 
 import pygame
 
+from game.assets import worker_dot
 from game.buildings.canteen import Canteen
 from game.resource_catalog import resource_display_label
 from game.ui.building_panel import BuildingPanel
+from game.worker_dining import DINING_EAT_DURATION_MS
 
 _PANEL_PAD = 16
 _BTN_H = 32
 _EXTRA_BOTTOM = 168
 _LINE = 22
+_DINER_TILE_SIZE = 26
+_DINER_GAP = 8
+_DINER_PAD_TOP = 8
 
 
 @dataclass(frozen=True, slots=True)
@@ -24,9 +29,27 @@ class CanteenPanelLayout:
     upgrade_enabled: bool
     demolish: pygame.Rect | None
     toggle: pygame.Rect
+    diner_tiles: tuple[pygame.Rect, ...]
 
 
 class CanteenPanel:
+    @staticmethod
+    def _diner_tiles(layout: CanteenPanelLayout, slots: int) -> tuple[pygame.Rect, ...]:
+        if slots <= 0:
+            return ()
+        width = layout.frame.width - _PANEL_PAD * 2
+        cols = max(1, width // (_DINER_TILE_SIZE + _DINER_GAP))
+        left = layout.frame.left + _PANEL_PAD
+        top = layout.frame.top + _PANEL_PAD + 4 * 26 + 32 + 5 * _LINE + 4
+        tiles: list[pygame.Rect] = []
+        for idx in range(slots):
+            row = idx // cols
+            col = idx % cols
+            x = left + col * (_DINER_TILE_SIZE + _DINER_GAP)
+            y = top + row * (_DINER_TILE_SIZE + _DINER_PAD_TOP)
+            tiles.append(pygame.Rect(x, y, _DINER_TILE_SIZE, _DINER_TILE_SIZE))
+        return tuple(tiles)
+
     @staticmethod
     def supports_building(building) -> bool:
         return isinstance(building, Canteen)
@@ -89,6 +112,7 @@ class CanteenPanel:
             upgrade_enabled=base.upgrade_enabled,
             demolish=base.demolish,
             toggle=toggle,
+            diner_tiles=(),
         )
 
     @staticmethod
@@ -130,6 +154,48 @@ class CanteenPanel:
         for i, text in enumerate(lines):
             surf = body.render(text, True, (200, 204, 214))
             surface.blit(surf, (layout.frame.left + _PANEL_PAD, details_y + i * _LINE))
+
+        layout = CanteenPanelLayout(
+            frame=layout.frame,
+            close=layout.close,
+            upgrade=layout.upgrade,
+            upgrade_enabled=layout.upgrade_enabled,
+            demolish=layout.demolish,
+            toggle=layout.toggle,
+            diner_tiles=CanteenPanel._diner_tiles(layout, canteen.diner_slot_capacity()),
+        )
+        occupants = sorted(canteen._diner_occupants, key=id)
+        for idx, tile in enumerate(layout.diner_tiles):
+            occupied = idx < len(occupants)
+            bg = (74, 84, 96) if occupied else (52, 58, 66)
+            pygame.draw.rect(surface, bg, tile, border_radius=4)
+            pygame.draw.rect(surface, (116, 124, 136), tile, width=1, border_radius=4)
+            if not occupied:
+                continue
+            diner = occupants[idx]
+            phase = str(getattr(diner, "dining_phase", "none"))
+            state = "Eating" if phase == "eating" else "Waiting"
+            icon = worker_dot(diner.type_tag)
+            icon_pos = (
+                tile.left + (tile.width - icon.get_width()) // 2,
+                tile.top + 2,
+            )
+            surface.blit(icon, icon_pos)
+            label = body.render(diner.type_tag[:3], True, (234, 238, 244))
+            surface.blit(label, (tile.left + 2, tile.bottom - label.get_height() - 2))
+            state_surf = body.render(state, True, (188, 194, 206))
+            surface.blit(state_surf, (tile.right + 4, tile.top + 2))
+            if phase == "eating":
+                started = int(getattr(diner, "dining_eating_started_ms", 0))
+                t = 0.0 if started <= 0 else max(
+                    0.0,
+                    min(1.0, (int(now_ms) - started) / float(DINING_EAT_DURATION_MS)),
+                )
+                progress_bg = pygame.Rect(tile.left, tile.bottom - 4, tile.width, 3)
+                pygame.draw.rect(surface, (44, 48, 56), progress_bg, border_radius=2)
+                if t > 0.0:
+                    fill = pygame.Rect(progress_bg.left, progress_bg.top, max(1, int(progress_bg.width * t)), progress_bg.height)
+                    pygame.draw.rect(surface, (210, 150, 95), fill, border_radius=2)
 
         reason = CanteenPanel.blocked_reason(
             canteen,
@@ -182,6 +248,10 @@ class CanteenPanel:
             worker_assigned=worker_assigned,
             production_status=production_status,
         )
+        if CanteenPanel._diner_tiles(layout, canteen.diner_slot_capacity()):
+            for tile in CanteenPanel._diner_tiles(layout, canteen.diner_slot_capacity()):
+                if tile.collidepoint(pos):
+                    return None
         if layout.toggle.collidepoint(pos):
             return "toggle_active"
         return None

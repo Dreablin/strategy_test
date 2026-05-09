@@ -104,7 +104,8 @@ transport tasks.
      processor refills, water inputs, or output exports.
    - The task builder should express desired deliveries only. Let
      `worker_transport.py` handle queue deduplication, priority selection,
-     carrier movement, invalid-task rerouting, and water well reservation.
+     carrier movement, invalid-task rerouting, and water-specific reroute rules
+     (carried water is dropped rather than sent to Town Hall).
    - Capacity checks must account for inbound queued/carried deliveries, not
      only current local storage. Player panels still show only real stored
      amounts.

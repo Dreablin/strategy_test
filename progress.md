@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 23 - Well as staffed water producer
-- **Next Task:** T284 - Remove obsolete direct-well symbols and tests in one complete cleanup slice
-- **Last Completed:** T283 - Cover demolition and invalidation behavior for new water logistics
-- **Total Progress:** 283 / 286 (Phase 23: 7 / 10 done)
+- **Next Task:** T285 - Update `PRD.md` for the new well model in one complete documentation slice
+- **Last Completed:** T284 - Remove obsolete direct-well symbols and tests in one complete cleanup slice
+- **Total Progress:** 284 / 286 (Phase 23: 8 / 10 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -67,7 +67,7 @@
 
 ### 23.5 Old logic cleanup and documentation
 
-- [ ] **T284**: Remove obsolete direct-well symbols and tests in one complete cleanup slice. Eliminate any remaining `water_worker_for_well`, `water_draw_progress_for_building`, direct draw panel wording, and old tests that only describe carrier-side drawing. (`WELL_DRAW_WATER_MS`, `Well.busy`, `reserve`/`release` removed in T282.) Replace them only with tests for the new producer/storage model where coverage would otherwise be lost. Run full `pytest` and `ruff check src tests`.
+- [x] **T284**: Remove obsolete direct-well symbols and tests in one complete cleanup slice. Eliminate any remaining `water_worker_for_well`, `water_draw_progress_for_building`, direct draw panel wording, and old tests that only describe carrier-side drawing. (`WELL_DRAW_WATER_MS`, `Well.busy`, `reserve`/`release` removed in T282.) Replace them only with tests for the new producer/storage model where coverage would otherwise be lost. Run full `pytest` and `ruff check src tests`.
 - [ ] **T285**: Update `PRD.md` for the new well model in one complete documentation slice. Document `WELL` as a normal staffed producer with local water storage, `WATERMAN` as its worker, water delivery from well local storage to consumers, and the rule that Town Hall never stores water. Remove old text about carriers reserving/drawing from wells. Run full `pytest` and `ruff check src tests`.
 - [ ] **T286**: Add/update one end-to-end smoke test and close the phase. Cover well construction/setup, `WATERMAN` assignment, water production into local well storage, carrier delivery to at least two water consumers, no Town Hall water storage, and no starvation of the second consumer. Final gate: full `pytest` plus `ruff check src tests`; update Current Status and Notes; mark Phase 23 complete only when all tasks are `[x]`.
 
@@ -98,8 +98,9 @@
 
 ## Notes
 
-- **2026-05-08:** Phase 23 planning replaces the old direct-well flow. Start at T279. Tasks are vertical slices: each task updates tests and implementation together and must leave the full suite passing. The highest-risk cleanup areas are `transport_tasks.water_input_transport_tasks`, `worker_transport` water branches, `worker_status`, `WellPanel`, and tests that expect `Well.busy` / carrier-side drawing.
+- **2026-05-08:** Phase 23 planning replaces the old direct-well flow. Tasks are vertical slices with full suite + ruff at each step. Remaining PRD alignment for wells is **T285** (edit `PRD.md` only there).
 - **2026-05-08:** T283: `notify_demolished` drops any transport queue entries whose source or target is the demolished building; tests cover queued well removal, mid-route drops when the well or consumer is removed, and Town Hall never gains warehouse water.
+- **2026-05-08:** T284: Renamed bakery water transport tests to describe well **storage** pickup (not carrier-side drawing); `building_extension_guide` no longer mentions well reservation. Obsolete helpers were already absent from `src/`.
 - **2026-05-08:** Keep old completed phase details in `progress_archive.md`; `progress.md` should stay focused on the current active phase to keep agent context small.
 - Tests run headless via `SDL_VIDEODRIVER=dummy` in `tests/conftest.py`.
 - Pathfinding contract: **4-dir** `find_path_bfs` (no diagonals), aligned with PRD.

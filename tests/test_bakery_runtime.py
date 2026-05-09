@@ -156,7 +156,7 @@ def test_baker_processes_flour_and_water_into_bread_and_rests() -> None:
     assert baker.camp_wait_until_ms == 56_000
 
 
-def test_carrier_draws_water_from_well_directly_to_bakery() -> None:
+def test_carrier_delivers_stored_water_from_well_to_bakery() -> None:
     world = World(world_seed=2)
     world._trees.clear()  # noqa: SLF001
     world._stones.clear()  # noqa: SLF001
@@ -201,7 +201,7 @@ def test_well_reports_generic_storage_and_production_status() -> None:
     assert well.processing_progress(10_000) == 0.5
 
 
-def test_well_is_available_after_carrier_leaves_with_water() -> None:
+def test_second_carrier_can_take_water_from_well_while_first_carries_to_bakery() -> None:
     world = World(world_seed=2)
     world._trees.clear()  # noqa: SLF001
     world._stones.clear()  # noqa: SLF001

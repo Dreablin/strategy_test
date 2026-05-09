@@ -1,4 +1,4 @@
-"""Well building: water producer with local storage and legacy carrier compatibility."""
+"""Well building: water producer with local storage for carrier pickup."""
 
 from __future__ import annotations
 
@@ -16,13 +16,12 @@ WELL_REST_MS = building_int_setting("WELL", "production", "rest_ms")
 class Well(StorageMixin, Building):
     type_tag: ClassVar[str] = "WELL"
     footprint: ClassVar[tuple[int, int]] = (1, 1)
-    __slots__ = ("active", "stored", "busy", "processing_started_ms", "processing_duration_ms", "rest_duration_ms")
+    __slots__ = ("active", "stored", "processing_started_ms", "processing_duration_ms", "rest_duration_ms")
 
     def __init__(self, level: int = 1, grid_pos: tuple[int, int] | None = None) -> None:
         super().__init__(level=level, grid_pos=grid_pos)
         self.active = True
         self.stored = 0
-        self.busy = False
         self.processing_started_ms = 0
         self.processing_duration_ms = WELL_CYCLE_MS
         self.rest_duration_ms = WELL_REST_MS
@@ -84,14 +83,6 @@ class Well(StorageMixin, Building):
             if self.processing_started_ms > 0 and self.processing_progress(now_ms) < 1.0
             else "idle"
         )
-
-    def reserve(self) -> None:
-        if self.busy:
-            raise ValueError("well is busy")
-        self.busy = True
-
-    def release(self) -> None:
-        self.busy = False
 
     @staticmethod
     def _require_local_resource(resource: str) -> None:

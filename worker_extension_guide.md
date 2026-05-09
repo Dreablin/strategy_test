@@ -97,9 +97,10 @@ logic.
 - If a target/source building is demolished while a carrier is en route, normal
   resources should be rerouted back to Town Hall. Water is not stored in Town
   Hall and should be dropped/cleared.
-- Water tasks are special: carriers reserve a free `WELL`, draw water there,
-  release the well after leaving with water, and deliver directly to the
-  consumer.
+- Water tasks: carriers pick up from a `WELL` using normal local storage
+  (`take_from_storage` / `add_to_storage` on return if undeliverable), same
+  interact timing as other pickups, and deliver to any water-capable consumer.
+  Water is never warehoused at Town Hall.
 - If a task cannot be assigned because a temporary source is busy, do not block
   unrelated tasks behind it. Requeue or skip it so other eligible deliveries can
   proceed.

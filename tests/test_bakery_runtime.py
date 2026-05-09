@@ -179,7 +179,6 @@ def test_carrier_draws_water_from_well_directly_to_bakery() -> None:
             break
 
     assert bakery.water_amount() == 1
-    assert well.busy is False
     assert town_hall.warehouse_amount("water") == 0
 
 

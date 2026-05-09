@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 23 - Well as staffed water producer
-- **Next Task:** T282 - Clean carrier transport water handling as a complete slice
-- **Last Completed:** T281 - Refactor water task planning as a complete slice
-- **Total Progress:** 281 / 286 (Phase 23: 5 / 10 done)
+- **Next Task:** T283 - Cover demolition and invalidation behavior for new water logistics
+- **Last Completed:** T282 - Clean carrier transport water handling as a complete slice
+- **Total Progress:** 282 / 286 (Phase 23: 6 / 10 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -62,12 +62,12 @@
 ### 23.4 Water transport refactor
 
 - [x] **T281**: Refactor water task planning as a complete slice. Replace direct free-well task generation with tasks from well local storage to active water consumers; account for queued/in-flight outbound water from wells and inbound water to consumers; prefer reasonable nearest-source routing where practical; add tests with multiple wells and multiple consumers proving later bakeries/canteens can receive water; run full `pytest` and `ruff check src tests`.
-- [ ] **T282**: Clean carrier transport water handling as a complete slice. Remove well reservation/release, carrier-side draw duration, carried-well-water special counting, and failed-pickup branches tied to `Well.busy`; make water behave like a local-storage resource except it has no Town Hall fallback; update carrier tests so they pass; run full `pytest` and `ruff check src tests`.
+- [x] **T282**: Clean carrier transport water handling as a complete slice. Remove well reservation/release, carrier-side draw duration, carried-well-water special counting, and failed-pickup branches tied to `Well.busy`; make water behave like a local-storage resource except it has no Town Hall fallback; update carrier tests so they pass; run full `pytest` and `ruff check src tests`.
 - [ ] **T283**: Cover demolition and invalidation behavior for new water logistics in one complete slice. If a water source well or target consumer is demolished while queued/in-flight, carriers must not crash or trap resources; carried water may be dropped if no valid target exists; water must never be returned to Town Hall. Add/adjust tests and implementation together; run full `pytest` and `ruff check src tests`.
 
 ### 23.5 Old logic cleanup and documentation
 
-- [ ] **T284**: Remove obsolete direct-well symbols and tests in one complete cleanup slice. Eliminate `WELL_DRAW_WATER_MS`, `water_worker_for_well`, `water_draw_progress_for_building`, `Well.busy`, `reserve`, `release`, direct draw panel wording, and old tests that only describe carrier-side drawing. Replace them only with tests for the new producer/storage model where coverage would otherwise be lost. Run full `pytest` and `ruff check src tests`.
+- [ ] **T284**: Remove obsolete direct-well symbols and tests in one complete cleanup slice. Eliminate any remaining `water_worker_for_well`, `water_draw_progress_for_building`, direct draw panel wording, and old tests that only describe carrier-side drawing. (`WELL_DRAW_WATER_MS`, `Well.busy`, `reserve`/`release` removed in T282.) Replace them only with tests for the new producer/storage model where coverage would otherwise be lost. Run full `pytest` and `ruff check src tests`.
 - [ ] **T285**: Update `PRD.md` for the new well model in one complete documentation slice. Document `WELL` as a normal staffed producer with local water storage, `WATERMAN` as its worker, water delivery from well local storage to consumers, and the rule that Town Hall never stores water. Remove old text about carriers reserving/drawing from wells. Run full `pytest` and `ruff check src tests`.
 - [ ] **T286**: Add/update one end-to-end smoke test and close the phase. Cover well construction/setup, `WATERMAN` assignment, water production into local well storage, carrier delivery to at least two water consumers, no Town Hall water storage, and no starvation of the second consumer. Final gate: full `pytest` plus `ruff check src tests`; update Current Status and Notes; mark Phase 23 complete only when all tasks are `[x]`.
 

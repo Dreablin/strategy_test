@@ -435,15 +435,15 @@ def test_carrier_returns_resource_to_town_hall_when_source_is_demolished_after_p
     assert source not in registry.all()
 
 
-def test_water_task_releases_reserved_well_when_target_is_demolished_before_pickup() -> None:
+def test_water_task_clears_carrier_when_target_demolished_before_pickup() -> None:
     world = _empty_world()
     registry = BuildingRegistry(world)
     registry.place(TownHall, town_hall_origin_tile())
     well = registry.place(Well, near_town_hall_tile(6, 8))
     well.construction_site = None
+    well.add_water_in(1)
     target = registry.place(Bakery, near_town_hall_tile(10, 8))
     target.construction_site = None
-    well.reserve()
 
     workers = WorkerManager(registry, now_ms_fn=lambda: 0)
     carrier = workers.hire("CARRIER")
@@ -455,20 +455,18 @@ def test_water_task_releases_reserved_well_when_target_is_demolished_before_pick
     registry.demolish(target, workers)
     workers.update(0)
 
-    assert well.busy is False
     assert carrier.transport_task is None
     assert carrier.carrying is None
     assert carrier.state == "idle"
 
 
-def test_busy_well_water_task_does_not_block_other_available_tasks() -> None:
+def test_empty_well_water_task_does_not_block_other_available_tasks() -> None:
     world = _empty_world()
     registry = BuildingRegistry(world)
     town_hall = registry.place(TownHall, town_hall_origin_tile())
     town_hall.add_to_warehouse("wood", 1)
     well = registry.place(Well, near_town_hall_tile(6, 8))
     well.construction_site = None
-    well.reserve()
     bakery = registry.place(Bakery, near_town_hall_tile(10, 8))
     bakery.construction_site = None
     sawmill = registry.place(Sawmill, near_town_hall_tile(14, 8))

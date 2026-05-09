@@ -167,7 +167,6 @@ def test_carrier_refills_chicken_farm_with_wheat_and_water() -> None:
     assert farm.input_amount() == 1
     assert farm.water_amount() == 1
     assert town_hall.warehouse_amount("wheat") == 0
-    assert well.busy is False
     assert carrier is not None
 
 

@@ -2,10 +2,10 @@
 
 ## Current Status
 
-- **Phase:** 23 - Well as staffed water producer
-- **Next Task:** T286 - Add/update one end-to-end smoke test and close the phase
-- **Last Completed:** T285 - Update `PRD.md` for the new well model in one complete documentation slice
-- **Total Progress:** 285 / 286 (Phase 23: 9 / 10 done)
+- **Phase:** 23 - Well as staffed water producer (**complete**)
+- **Next Task:** None — archive Phase 23 in `progress_archive.md` when starting Phase 24.
+- **Last Completed:** T286 - Phase 23 E2E smoke (well build, WATERMAN, carriers, two consumers, no TH water)
+- **Total Progress:** 286 / 286 (Phase 23: 10 / 10 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -69,7 +69,7 @@
 
 - [x] **T284**: Remove obsolete direct-well symbols and tests in one complete cleanup slice. Eliminate any remaining `water_worker_for_well`, `water_draw_progress_for_building`, direct draw panel wording, and old tests that only describe carrier-side drawing. (`WELL_DRAW_WATER_MS`, `Well.busy`, `reserve`/`release` removed in T282.) Replace them only with tests for the new producer/storage model where coverage would otherwise be lost. Run full `pytest` and `ruff check src tests`.
 - [x] **T285**: Update `PRD.md` for the new well model in one complete documentation slice. Document `WELL` as a normal staffed producer with local water storage, `WATERMAN` as its worker, water delivery from well local storage to consumers, and the rule that Town Hall never stores water. Remove old text about carriers reserving/drawing from wells. Run full `pytest` and `ruff check src tests`.
-- [ ] **T286**: Add/update one end-to-end smoke test and close the phase. Cover well construction/setup, `WATERMAN` assignment, water production into local well storage, carrier delivery to at least two water consumers, no Town Hall water storage, and no starvation of the second consumer. Final gate: full `pytest` plus `ruff check src tests`; update Current Status and Notes; mark Phase 23 complete only when all tasks are `[x]`.
+- [x] **T286**: Add/update one end-to-end smoke test and close the phase. Cover well construction/setup, `WATERMAN` assignment, water production into local well storage, carrier delivery to at least two water consumers, no Town Hall water storage, and no starvation of the second consumer. Final gate: full `pytest` plus `ruff check src tests`; update Current Status and Notes; mark Phase 23 complete only when all tasks are `[x]`.
 
 ---
 
@@ -98,6 +98,7 @@
 
 ## Notes
 
+- **2026-05-08:** T286: `tests/test_smoke_phase23.py` — supply well construction site, time-complete build, `WATERMAN` + two `CARRIER`s, `BAKERY` + `CANTEEN` both reach `water_amount >= 1`, Town Hall warehouse water stays 0.
 - **2026-05-08:** T285: PRD **F-RES-04**, **F-BLD-03**, well panel, **F-PROD-04**, **F-TRANSPORT-05**, and worker list now describe staffed `WELL` + `WATERMAN`, local water storage, carrier pickup from storage, and no Town Hall water / no obsolete reserve-draw model.
 - **2026-05-08:** T283: `notify_demolished` drops any transport queue entries whose source or target is the demolished building; tests cover queued well removal, mid-route drops when the well or consumer is removed, and Town Hall never gains warehouse water.
 - **2026-05-08:** T284: Renamed bakery water transport tests to describe well **storage** pickup (not carrier-side drawing); `building_extension_guide` no longer mentions well reservation. Obsolete helpers were already absent from `src/`.

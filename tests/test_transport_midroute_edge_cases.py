@@ -541,8 +541,8 @@ def test_water_inbound_tasks_count_against_target_capacity() -> None:
     registry = BuildingRegistry(world)
     registry.place(TownHall, town_hall_origin_tile())
     well_a = registry.place(Well, near_town_hall_tile(4, 4))
-    well_b = registry.place(Well, near_town_hall_tile(6, 4))
-    well_c = registry.place(Well, near_town_hall_tile(8, 4))
+    well_b = registry.place(Well, near_town_hall_tile(7, 4))
+    well_c = registry.place(Well, near_town_hall_tile(10, 4))
     for well in (well_a, well_b, well_c):
         well.construction_site = None
         well.add_water_in(1)

@@ -43,7 +43,7 @@ def test_later_bakery_gets_water_when_second_well_is_stocked() -> None:
     registry, _ = _registry_with_th()
     well_a = registry.place(Well, near_town_hall_tile(8, 10))
     well_b = registry.place(Well, near_town_hall_tile(26, 10))
-    bakery_early = registry.place(Bakery, near_town_hall_tile(10, 10))
+    bakery_early = registry.place(Bakery, near_town_hall_tile(11, 10))
     bakery_late = registry.place(Bakery, near_town_hall_tile(22, 10))
     for b in (well_a, well_b, bakery_early, bakery_late):
         b.construction_site = None
@@ -62,7 +62,7 @@ def test_water_tasks_second_consumer_prefers_canteen_nearest_well() -> None:
     registry, _ = _registry_with_th()
     w_left = registry.place(Well, near_town_hall_tile(8, 12))
     w_right = registry.place(Well, near_town_hall_tile(26, 12))
-    cant_left = registry.place(Canteen, near_town_hall_tile(10, 12))
+    cant_left = registry.place(Canteen, near_town_hall_tile(11, 12))
     cant_right = registry.place(Canteen, near_town_hall_tile(20, 12))
     for b in (w_left, w_right, cant_left, cant_right):
         b.construction_site = None

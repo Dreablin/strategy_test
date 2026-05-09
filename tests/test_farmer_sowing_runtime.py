@@ -76,7 +76,7 @@ def test_farmer_treats_newly_built_field_as_empty_and_can_sow() -> None:
     assert farmer is not None
 
     # No explicit _write_field_phase call: freshly built field should be considered EMPTY.
-    _advance(workers, now_ms, steps=220, step_ms=500)
+    _advance_until_phase(workers, now_ms, field, WHEAT_PHASE_1)
     assert workers._read_field_phase(field) == WHEAT_PHASE_1  # noqa: SLF001
 
 

@@ -9,6 +9,7 @@ from game.buildings.registry import BuildingRegistry
 from game.buildings.school import School
 from game.buildings.sawmill import Sawmill
 from game.buildings.town_hall import TownHall
+from game.buildings.well import Well
 from game.buildings.field import Field
 from game.camera import Camera
 from game.input import TOP_BAR_HEIGHT, GameInput, screen_to_grid
@@ -23,6 +24,7 @@ from game.ui.placement import PlacementController
 from game.ui.population_panel import PopulationPanel
 from game.ui.school_panel import SchoolPanel
 from game.ui.sawmill_panel import SawmillPanel
+from game.ui.well_panel import WellPanel
 from game.ui.top_bar import TopBar
 from game.ui.worker_panel import WorkerPanel
 from game.world import World
@@ -733,6 +735,34 @@ def test_school_panel_disabled_upgrade_click_does_not_start_construction() -> No
 
     assert inp.panel_building is school
     assert school.construction_site is None
+
+
+def test_well_panel_upgrade_click_starts_upgrade_construction() -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World(world_seed=2)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    well = registry.place(Well, near_town_hall_tile(12, 8))
+    well.construction_site = None
+    camera = Camera()
+    placement = PlacementController(world, registry, camera)
+    workers = WorkerManager(registry)
+    inp = GameInput(world, registry, placement, workers, camera)
+    inp._panel = well  # noqa: SLF001
+    layout = WellPanel.layout(surface, well, worker_assigned=False, production_status="No worker")
+    assert layout.upgrade is not None
+
+    inp.handle(
+        surface,
+        pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=layout.upgrade.center),
+    )
+
+    assert inp.panel_building is well
+    assert well.is_under_construction
+    assert well.construction_site is not None
+    assert well.construction_site.target_level == 2
 
 
 def test_dev_tools_place_entities_via_input_click() -> None:

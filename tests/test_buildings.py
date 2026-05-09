@@ -43,7 +43,7 @@ def test_building_type_tag(cls: type, expected_type: str) -> None:
         (Farm, (2, 2)),
         (ChickenFarm, (2, 2)),
         (Mill, (2, 2)),
-        (Well, (1, 1)),
+        (Well, (2, 2)),
     ],
 )
 def test_building_footprint(cls: type, expected_footprint: tuple[int, int]) -> None:

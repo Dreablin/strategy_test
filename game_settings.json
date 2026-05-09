@@ -1,7 +1,7 @@
 {
   "timing": {
     "tick_ms": 10000,
-    "worker_tile_travel_ms": 3000
+    "worker_tile_travel_ms": 300
   },
   "workers": {
     "satiety": {

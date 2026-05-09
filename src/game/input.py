@@ -894,6 +894,9 @@ class GameInput:
                     )
                     if action == "close":
                         self._panel = None
+                    elif action == "upgrade" and self._panel is not None:
+                        if self._registry.upgrade_building(self._panel):
+                            self._sync_assignments()
                     elif action == "demolish" and self._panel is not None:
                         b = self._panel
                         self._registry.demolish(b, self._worker_manager)

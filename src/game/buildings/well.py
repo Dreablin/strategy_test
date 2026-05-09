@@ -15,7 +15,7 @@ WELL_REST_MS = building_int_setting("WELL", "production", "rest_ms")
 
 class Well(StorageMixin, Building):
     type_tag: ClassVar[str] = "WELL"
-    footprint: ClassVar[tuple[int, int]] = (1, 1)
+    footprint: ClassVar[tuple[int, int]] = (2, 2)
     __slots__ = ("active", "stored", "processing_started_ms", "processing_duration_ms", "rest_duration_ms")
 
     def __init__(self, level: int = 1, grid_pos: tuple[int, int] | None = None) -> None:

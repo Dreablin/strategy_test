@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Any
 
 from game.buildings.base import Building
-from game.worker_constants import WELL_DRAW_WATER_MS
 from game.worker_models import Worker
 
 
@@ -16,15 +15,6 @@ def worker_status_for_building(manager: Any, building: Building) -> str:
             if worker.assigned_building is building:
                 return "resting"
         return "empty"
-    if building.type_tag == "WELL":
-        worker = water_worker_for_well(manager, building)
-        if worker is None:
-            return "empty"
-        if worker.state == "carrier_loading":
-            return "drawing water"
-        if worker.state in {"moving", "carrier_moving_to_source"}:
-            return "on the way"
-        return "assigned"
     for worker in manager._workers:
         if worker.assigned_building is not building:
             continue
@@ -71,25 +61,28 @@ def production_status_for_building(manager: Any, building: Building) -> str:
     """Human-readable production status for building panels."""
     if building.is_under_construction:
         return "Under construction"
-    if building.type_tag == "WELL":
-        worker = water_worker_for_well(manager, building)
-        if worker is None:
-            return "Ready"
-        if worker.state == "carrier_loading":
-            return "Drawing water"
-        if worker.state in {"moving", "carrier_moving_to_source"}:
-            return "Carrier on the way"
-        return "Busy"
     worker: Worker | None = None
     for candidate in manager._workers:
         if candidate.assigned_building is building:
             worker = candidate
             break
     if worker is None:
+        if building.type_tag == "WELL":
+            return "No worker" if getattr(building, "active", True) else "Inactive"
         return "No worker"
 
     if hasattr(building, "active") and not bool(getattr(building, "active")):
         return "Inactive"
+    if building.type_tag == "WELL":
+        if worker.state == "resting":
+            return "Resting"
+        if worker.state == "processing":
+            return "Processing"
+        if int(getattr(building, "water_amount", lambda: 0)()) >= int(
+            getattr(building, "water_capacity", lambda: 0)()
+        ):
+            return "Output full"
+        return "Ready"
     if building.type_tag == "FARM":
         if hasattr(building, "is_storage_full") and building.is_storage_full():
             return "Storage full"
@@ -204,32 +197,3 @@ def production_status_for_building(manager: Any, building: Building) -> str:
     return "Unknown"
 
 
-def water_worker_for_well(manager: Any, well: Building) -> Worker | None:
-    for worker in manager._workers:
-        task = worker.transport_task
-        if task is None:
-            continue
-        if task.resource == "water" and task.source is well:
-            if worker.carrying is not None:
-                continue
-            return worker
-    return None
-
-
-def water_draw_progress_for_building(
-    manager: Any,
-    building: Building,
-    now_ms: int | None = None,
-) -> float:
-    if building.type_tag != "WELL":
-        return 0.0
-    worker = water_worker_for_well(manager, building)
-    if worker is None or worker.state != "carrier_loading":
-        return 0.0
-    end_ms = int(worker.camp_wait_until_ms)
-    start_ms = end_ms - WELL_DRAW_WATER_MS
-    if now_ms is None:
-        now_ms = int(manager._now_ms_fn())
-    if end_ms <= start_ms:
-        return 0.0
-    return max(0.0, min(1.0, (int(now_ms) - start_ms) / float(end_ms - start_ms)))

@@ -37,7 +37,7 @@ _DESCRIPTION: dict[str, str] = {
     "BAKERY": "Bakes flour and water into bread.",
     "CHICKEN_FARM": "Raises chickens from grain and water.",
     "CANTEEN": "Cook prepares simple meals from chicken, bread, and water.",
-    "WELL": "Carriers draw water for production.",
+    "WELL": "Produces water into local storage.",
 }
 
 def _upgrade_label(building: Building) -> str:
@@ -186,8 +186,6 @@ class BuildingPanel:
         allowed_worker_status = {"empty", "on the way", "assigned"}
         if building.type_tag == "FARM":
             allowed_worker_status = allowed_worker_status | {"moving", "resting", "sowing", "harvesting"}
-        if building.type_tag == "WELL":
-            allowed_worker_status = allowed_worker_status | {"drawing water"}
         if worker_status not in allowed_worker_status:
             worker_status = "assigned" if worker_assigned else "empty"
         wstat = f"Worker: {worker_status}"

@@ -90,7 +90,16 @@ def test_canteen_disk_placeholders_and_sprite_smoke() -> None:
 
 
 def test_worker_dot_smoke() -> None:
-    for w_type in ("LUMBERJACK", "STONECUTTER", "MINER", "FARMER", "ANIMAL_HERDER", "MILLER", "BAKER"):
+    for w_type in (
+        "LUMBERJACK",
+        "STONECUTTER",
+        "MINER",
+        "FARMER",
+        "ANIMAL_HERDER",
+        "MILLER",
+        "BAKER",
+        "WATERMAN",
+    ):
         _assert_nonempty_surface(worker_dot(w_type))
 
 
@@ -189,7 +198,16 @@ def test_population_icon_falls_back_procedural_when_disk_asset_missing(tmp_path,
 
 
 def test_worker_and_hire_ui_icon_smoke() -> None:
-    for w_type in ("LUMBERJACK", "STONECUTTER", "MINER", "FARMER", "ANIMAL_HERDER", "MILLER", "BAKER"):
+    for w_type in (
+        "LUMBERJACK",
+        "STONECUTTER",
+        "MINER",
+        "FARMER",
+        "ANIMAL_HERDER",
+        "MILLER",
+        "BAKER",
+        "WATERMAN",
+    ):
         _assert_nonempty_surface(worker_ui_icon(w_type, 24))
         _assert_nonempty_surface(hire_ui_icon(w_type, 20))
 

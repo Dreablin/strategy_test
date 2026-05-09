@@ -294,37 +294,105 @@ def _accepts_water_input(building: Building) -> bool:
     )
 
 
-def water_input_transport_tasks(registry: Any) -> list[TransportTask]:
-    """Build direct water tasks from free wells to any active water consumer."""
+def _building_anchor_tile(building: Any) -> tuple[int, int]:
+    pos = getattr(building, "grid_pos", None)
+    if pos is None:
+        return (0, 0)
+    gx, gy = pos
+    cls = type(building)
+    fp = getattr(cls, "footprint", None)
+    if isinstance(fp, tuple) and len(fp) == 2:
+        w, h = int(fp[0]), int(fp[1])
+        return gx + w // 2, gy + h // 2
+    return int(gx), int(gy)
+
+
+def _manhattan_building_distance(a: Building, b: Building) -> int:
+    if getattr(a, "grid_pos", None) is None or getattr(b, "grid_pos", None) is None:
+        return 10**9
+    ac = _building_anchor_tile(a)
+    bc = _building_anchor_tile(b)
+    return abs(ac[0] - bc[0]) + abs(ac[1] - bc[1])
+
+
+def water_input_transport_tasks(
+    registry: Any,
+    *,
+    pending_pickups_by_well_id: dict[int, int] | None = None,
+    inbound_water_by_target_id: dict[int, int] | None = None,
+) -> list[TransportTask]:
+    """Build water tasks from well *local storage* to active water consumers.
+
+    ``pending_pickups_by_well_id`` counts water units already committed: tasks
+    queued or carriers en route to pick up from each well (pickup not completed).
+
+    ``inbound_water_by_target_id`` counts water already heading to each target
+    (queue + in-flight deliveries).
+    """
     if registry is None:
         return []
+    pending = pending_pickups_by_well_id or {}
+    inbound = inbound_water_by_target_id or {}
     buildings = list(registry.all())
-    wells = [
-        b
-        for b in buildings
-        if b.type_tag == "WELL"
-        and not getattr(b, "is_under_construction", False)
-        and not bool(getattr(b, "busy", False))
-    ]
-    if not wells:
-        return []
+
+    well_avail: dict[int, tuple[Building, int]] = {}
+    for b in buildings:
+        if b.type_tag != "WELL":
+            continue
+        if getattr(b, "is_under_construction", False):
+            continue
+        if not getattr(b, "active", True):
+            continue
+        stored = _water_amount(b)
+        committed = max(0, int(pending.get(id(b), 0)))
+        avail = max(0, stored - committed)
+        if avail > 0:
+            well_avail[id(b)] = (b, avail)
+
+    consumers: list[tuple[Building, int]] = []
+    for b in buildings:
+        if b.type_tag == "WELL":
+            continue
+        if not _accepts_water_input(b):
+            continue
+        if getattr(b, "is_under_construction", False):
+            continue
+        if not getattr(b, "active", False):
+            continue
+        capacity = _water_capacity(b)
+        water = _water_amount(b)
+        inb = max(0, int(inbound.get(id(b), 0)))
+        need = max(0, capacity - water - inb)
+        if need > 0:
+            consumers.append((b, need))
+
+    consumers.sort(key=lambda item: id(item[0]))
+    avail_map = {wid: count for wid, (_b, count) in well_avail.items()}
+    well_by_id = {wid: b for wid, (b, _c) in well_avail.items()}
+
     tasks: list[TransportTask] = []
-    well_idx = 0
-    for building in buildings:
-        if not _accepts_water_input(building):
-            continue
-        if getattr(building, "is_under_construction", False):
-            continue
-        if not getattr(building, "active", False):
-            continue
-        capacity = _water_capacity(building)
-        water = _water_amount(building)
-        want = max(0, capacity - water)
-        for _ in range(want):
-            if well_idx >= len(wells):
-                return tasks
-            tasks.append(TransportTask(resource="water", source=wells[well_idx], target=building, priority=0))
-            well_idx += 1
+    for consumer, need in consumers:
+        for _ in range(need):
+            best_id: int | None = None
+            best_dist = 10**9
+            for wid, left in avail_map.items():
+                if left <= 0:
+                    continue
+                d = _manhattan_building_distance(well_by_id[wid], consumer)
+                if d < best_dist or (d == best_dist and (best_id is None or wid < best_id)):
+                    best_dist = d
+                    best_id = wid
+            if best_id is None:
+                break
+            tasks.append(
+                TransportTask(
+                    resource="water",
+                    source=well_by_id[best_id],
+                    target=consumer,
+                    priority=0,
+                )
+            )
+            avail_map[best_id] -= 1
     return tasks
 
 

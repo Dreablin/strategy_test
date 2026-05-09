@@ -47,7 +47,7 @@ def test_smoke_phase11_lumberjack_cycle_toggle_and_reservation() -> None:
             break
     assert town_hall.warehouse_amount("wood") == wh_before + 1
     assert camp.delivered_wood >= 1
-    assert worker.state in {"going_to_tree", "working"}
+    assert worker.state in {"going_to_tree", "working", "chopping"}
 
     # 4) Toggle Off mid-second-cycle: second cycle finishes, no third starts.
     if worker.state == "idle":

@@ -154,6 +154,7 @@ def test_carrier_refills_chicken_farm_with_wheat_and_water() -> None:
     well = registry.place(Well, near_town_hall_tile(24, 8))
     farm.construction_site = None
     well.construction_site = None
+    well.add_water_in(1)
     town_hall.add_to_warehouse("wheat", 1)
     workers = WorkerManager(registry, now_ms_fn=lambda: 0)
     carrier = workers.hire("CARRIER")
@@ -166,7 +167,6 @@ def test_carrier_refills_chicken_farm_with_wheat_and_water() -> None:
     assert farm.input_amount() == 1
     assert farm.water_amount() == 1
     assert town_hall.warehouse_amount("wheat") == 0
-    assert well.busy is False
     assert carrier is not None
 
 

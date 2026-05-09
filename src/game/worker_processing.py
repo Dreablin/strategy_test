@@ -20,6 +20,7 @@ from game.worker_constants import (
     SAWMILL_MIN_CYCLE_MS,
     SAWYER_REST_MS,
 )
+from game.buildings.well import WELL_CYCLE_MS, WELL_REST_MS
 from game.worker_geometry import building_center_tile
 from game.worker_hunger import try_hunger_canteen_after_completed_cycle
 from game.worker_models import Worker
@@ -33,6 +34,7 @@ class ProcessorSpec:
     has_inputs: Callable[[Any], bool]
     consume_inputs: Callable[[Any], None]
     add_output: Callable[[Any], None]
+    rest_ms_for: Callable[[Any], int] | None = None
 
 
 def _output_has_space(building: Any) -> bool:
@@ -58,6 +60,12 @@ def _fixed_duration(duration_ms: int) -> Callable[[Any], int]:
         return duration_ms
 
     return duration
+
+
+def _spec_rest_ms(spec: ProcessorSpec, building: Any) -> int:
+    if spec.rest_ms_for is not None:
+        return max(0, int(spec.rest_ms_for(building)))
+    return max(0, int(spec.rest_ms))
 
 
 class WorkerProcessingMixin:
@@ -89,6 +97,9 @@ class WorkerProcessingMixin:
 
     def _update_animal_herder(self, worker: Worker, now_ms: int, world: Any) -> None:
         self._update_processor_worker(worker, now_ms, CHICKEN_FARM_PROCESSOR, world)
+
+    def _update_waterman(self, worker: Worker, now_ms: int, world: Any) -> None:
+        self._update_processor_worker(worker, now_ms, WELL_PROCESSOR, world)
 
     def _update_processor_worker(
         self, worker: Worker, now_ms: int, spec: ProcessorSpec, world: Any
@@ -131,7 +142,7 @@ class WorkerProcessingMixin:
                 spec.add_output(building)
             building.processing_started_ms = 0
             worker.state = "resting"
-            worker.camp_wait_until_ms = int(now_ms) + spec.rest_ms
+            worker.camp_wait_until_ms = int(now_ms) + _spec_rest_ms(spec, building)
             worker.current_tile = center_tile
             worker.idle = False
             reg = getattr(self, "_registry", None)
@@ -207,4 +218,14 @@ CANTEEN_PROCESSOR = ProcessorSpec(
         canteen.take_local_storage("water", 1),
     ),
     add_output=lambda canteen: canteen.add_local_storage("simple_meal", 1),
+)
+
+WELL_PROCESSOR = ProcessorSpec(
+    building_type="WELL",
+    duration_ms=lambda b: max(1, int(getattr(b, "processing_duration_ms", WELL_CYCLE_MS))),
+    rest_ms=int(WELL_REST_MS),
+    has_inputs=lambda _b: True,
+    consume_inputs=lambda _b: None,
+    add_output=lambda b: b.add_water_in(1),
+    rest_ms_for=lambda b: max(0, int(getattr(b, "rest_duration_ms", WELL_REST_MS))),
 )

@@ -9,7 +9,6 @@ from game.buildings.well import Well
 from game.config import building_level_int_setting, near_town_hall_tile, town_hall_origin_tile
 from game.world import World
 from game.workers import (
-    TransportTask,
     Worker,
     WorkerManager,
     bakery_input_transport_tasks,
@@ -58,7 +57,7 @@ def test_bakery_output_transport_tasks_generate_bread_exports() -> None:
     assert all(t.target is town_hall for t in tasks)
 
 
-def test_water_input_transport_tasks_use_free_wells_only() -> None:
+def test_water_input_transport_tasks_require_stored_well_water() -> None:
     world = World(world_seed=0)
     registry = BuildingRegistry(world)
     registry.place(TownHall, town_hall_origin_tile())
@@ -67,6 +66,9 @@ def test_water_input_transport_tasks_use_free_wells_only() -> None:
     bakery.construction_site = None
     well.construction_site = None
 
+    assert water_input_transport_tasks(registry) == []
+
+    well.add_water_in(1)
     tasks = water_input_transport_tasks(registry)
 
     assert len(tasks) == 1
@@ -74,8 +76,19 @@ def test_water_input_transport_tasks_use_free_wells_only() -> None:
     assert tasks[0].source is well
     assert tasks[0].target is bakery
 
-    well.reserve()
-    assert water_input_transport_tasks(registry) == []
+
+def test_water_input_transport_tasks_respect_pending_well_pickups() -> None:
+    world = World(world_seed=0)
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    bakery = registry.place(Bakery, near_town_hall_tile(14, 8))
+    well = registry.place(Well, near_town_hall_tile(20, 8))
+    bakery.construction_site = None
+    well.construction_site = None
+    well.add_water_in(1)
+
+    pending = {id(well): 1}
+    assert water_input_transport_tasks(registry, pending_pickups_by_well_id=pending) == []
 
 
 def test_water_input_transport_tasks_support_any_water_consumer() -> None:
@@ -102,6 +115,7 @@ def test_water_input_transport_tasks_support_any_water_consumer() -> None:
     registry.place(TownHall, town_hall_origin_tile())
     well = registry.place(Well, near_town_hall_tile(20, 8))
     well.construction_site = None
+    well.add_water_in(1)
     consumer = WaterConsumer()
     registry._buildings.append(consumer)  # noqa: SLF001
 
@@ -142,7 +156,7 @@ def test_baker_processes_flour_and_water_into_bread_and_rests() -> None:
     assert baker.camp_wait_until_ms == 56_000
 
 
-def test_carrier_draws_water_from_well_directly_to_bakery() -> None:
+def test_carrier_delivers_stored_water_from_well_to_bakery() -> None:
     world = World(world_seed=2)
     world._trees.clear()  # noqa: SLF001
     world._stones.clear()  # noqa: SLF001
@@ -152,12 +166,12 @@ def test_carrier_draws_water_from_well_directly_to_bakery() -> None:
     well = registry.place(Well, near_town_hall_tile(24, 8))
     bakery.construction_site = None
     well.construction_site = None
+    well.add_water_in(1)
     workers = WorkerManager(registry, now_ms_fn=lambda: 0)
     carrier = workers.hire("CARRIER")
     assert carrier is not None
 
     workers.update(0)
-    assert well.busy is True
 
     for now_ms in range(500, 180_000, 500):
         workers.update(now_ms)
@@ -165,31 +179,29 @@ def test_carrier_draws_water_from_well_directly_to_bakery() -> None:
             break
 
     assert bakery.water_amount() == 1
-    assert well.busy is False
     assert town_hall.warehouse_amount("water") == 0
 
 
-def test_well_reports_carrier_and_draw_progress() -> None:
+def test_well_reports_generic_storage_and_production_status() -> None:
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
     registry.place(TownHall, town_hall_origin_tile())
-    bakery = registry.place(Bakery, near_town_hall_tile(18, 8))
     well = registry.place(Well, near_town_hall_tile(24, 8))
-    bakery.construction_site = None
     well.construction_site = None
+    well.processing_started_ms = 5_000
+    well.processing_duration_ms = 10_000
     workers = WorkerManager(registry, now_ms_fn=lambda: 10_000)
-    carrier = Worker("CARRIER")
-    carrier.transport_task = TransportTask(resource="water", source=well, target=bakery)
-    carrier.state = "carrier_loading"
-    carrier.camp_wait_until_ms = 15_000
-    workers.add_worker(carrier)
+    waterman = Worker("WATERMAN")
+    waterman.assigned_building = well
+    waterman.state = "processing"
+    workers.add_worker(waterman)
 
-    assert workers.worker_status_for_building(well) == "drawing water"
-    assert workers.production_status_for_building(well) == "Drawing water"
-    assert workers.water_draw_progress_for_building(well, now_ms=10_000) == 0.5
+    assert workers.worker_status_for_building(well) == "assigned"
+    assert workers.production_status_for_building(well) == "Processing"
+    assert well.processing_progress(10_000) == 0.5
 
 
-def test_well_is_available_after_carrier_leaves_with_water() -> None:
+def test_second_carrier_can_take_water_from_well_while_first_carries_to_bakery() -> None:
     world = World(world_seed=2)
     world._trees.clear()  # noqa: SLF001
     world._stones.clear()  # noqa: SLF001
@@ -199,6 +211,9 @@ def test_well_is_available_after_carrier_leaves_with_water() -> None:
     well = registry.place(Well, near_town_hall_tile(24, 8))
     bakery.construction_site = None
     well.construction_site = None
+    well.level = 5
+    well.stored = 0
+    well.add_water_in(5)
     workers = WorkerManager(registry, now_ms_fn=lambda: 0)
     first = workers.hire("CARRIER")
     second = workers.hire("CARRIER")
@@ -206,7 +221,6 @@ def test_well_is_available_after_carrier_leaves_with_water() -> None:
     assert second is not None
 
     workers.update(0)
-    assert well.busy is True
 
     for now_ms in range(500, 120_000, 500):
         workers.update(now_ms)
@@ -214,13 +228,11 @@ def test_well_is_available_after_carrier_leaves_with_water() -> None:
             break
 
     assert first.carrying == "water"
-    assert well.busy is False
     assert workers.worker_status_for_building(well) == "empty"
-    assert workers.production_status_for_building(well) == "Ready"
+    assert workers.production_status_for_building(well) == "No worker"
 
     workers.update(now_ms + 500)
 
-    assert well.busy is True
     assert second.transport_task is not None
     assert second.transport_task.resource == "water"
     assert second.transport_task.source is well

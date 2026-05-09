@@ -1,7 +1,7 @@
 {
   "timing": {
     "tick_ms": 10000,
-    "worker_tile_travel_ms": 3000
+    "worker_tile_travel_ms": 300
   },
   "workers": {
     "satiety": {
@@ -56,7 +56,8 @@
       "SAWYER": 1,
       "MILLER": 1,
       "BAKER": 1,
-      "COOK": 1
+      "COOK": 1,
+      "WATERMAN": 1
     }
   },
   "levels": {

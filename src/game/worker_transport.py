@@ -24,7 +24,7 @@ from game.transport_tasks import (
     sawmill_output_transport_tasks,
     water_input_transport_tasks,
 )
-from game.worker_constants import CARRIER_INTERACT_MS, WELL_DRAW_WATER_MS
+from game.worker_constants import CARRIER_INTERACT_MS
 from game.worker_geometry import building_center_tile
 from game.worker_hunger import try_carrier_hunger_after_delivery_or_idle
 from game.worker_models import TransportTask, Worker
@@ -143,6 +143,40 @@ class WorkerTransportMixin:
             counts[key] = counts.get(key, 0) + 1
         return counts
 
+    def _pending_well_water_pickup_counts(self) -> dict[int, int]:
+        """Water units still at wells: queued tasks + carriers not yet loaded."""
+        counts: dict[int, int] = {}
+        for task in self._transport_queue:  # type: ignore[attr-defined]
+            if task.resource != "water" or task.source.type_tag != "WELL":
+                continue
+            wid = id(task.source)
+            counts[wid] = counts.get(wid, 0) + 1
+        for worker in self._workers:  # type: ignore[attr-defined]
+            t = worker.transport_task
+            if t is None or t.resource != "water" or t.source.type_tag != "WELL":
+                continue
+            if worker.carrying is not None:
+                continue
+            wid = id(t.source)
+            counts[wid] = counts.get(wid, 0) + 1
+        return counts
+
+    def _water_inbound_counts_by_target_id(self) -> dict[int, int]:
+        """Water deliveries already targeting each building (queue + in-flight)."""
+        counts: dict[int, int] = {}
+        for task in self._transport_queue:  # type: ignore[attr-defined]
+            if task.resource != "water":
+                continue
+            tid = id(task.target)
+            counts[tid] = counts.get(tid, 0) + 1
+        for worker in self._workers:  # type: ignore[attr-defined]
+            t = worker.transport_task
+            if t is None or t.resource != "water":
+                continue
+            tid = id(t.target)
+            counts[tid] = counts.get(tid, 0) + 1
+        return counts
+
     def _next_transport_task(self) -> TransportTask | None:
         if self._registry is None:
             return None
@@ -183,7 +217,7 @@ class WorkerTransportMixin:
             elif task.resource == "chicken" and hasattr(task.source, "output_amount"):
                 has_storage_source = int(task.source.output_amount()) > 0  # type: ignore[attr-defined]
             elif task.resource == "water" and task.source.type_tag == "WELL":
-                has_storage_source = not bool(getattr(task.source, "busy", False))
+                has_storage_source = _water_amount(task.source) > 0
             has_warehouse_source = hasattr(task.source, "warehouse_amount") and int(
                 task.source.warehouse_amount(task.resource)  # type: ignore[attr-defined]
             ) > 0
@@ -202,15 +236,11 @@ class WorkerTransportMixin:
             self._transport_queue.pop(idx)
         if not eligible:
             return None
-        _best_idx, best_task = max(eligible, key=lambda item: (int(item[1].priority), -item[0]))
-        if best_task in self._transport_queue:
+        eligible_sorted = sorted(eligible, key=lambda item: (-int(item[1].priority), item[0]))
+        for _idx, best_task in eligible_sorted:
+            if best_task not in self._transport_queue:
+                continue
             self._transport_queue.remove(best_task)
-            if best_task.resource == "water" and best_task.source.type_tag == "WELL":
-                try:
-                    best_task.source.reserve()  # type: ignore[attr-defined]
-                except ValueError:
-                    self._transport_queue.append(best_task)
-                    return self._next_transport_task()
             return best_task
         return None
 
@@ -283,8 +313,6 @@ class WorkerTransportMixin:
     def _reroute_or_cancel_invalid_transport(self, worker: Worker, task: TransportTask, now_ms: int) -> bool:
         if not self._transport_task_invalid(task):
             return True
-        if task.resource == "water" and task.source.type_tag == "WELL" and worker.carrying is None:
-            task.source.release()  # type: ignore[attr-defined]
         if worker.carrying is None:
             known = set(self._registry.all()) if self._registry is not None else set()
             exit_building = task.source if task.source in known else None
@@ -332,8 +360,6 @@ class WorkerTransportMixin:
             worker.transport_task = task
             worker.carrying = None
             if not self._start_move_to_building(worker, task.source, now_ms):
-                if task.resource == "water" and task.source.type_tag == "WELL":
-                    task.source.release()  # type: ignore[attr-defined]
                 self._transport_queue.insert(0, task)
                 worker.transport_task = None
                 worker.state = "idle"
@@ -353,22 +379,18 @@ class WorkerTransportMixin:
             if worker.state != "carrier_loading":
                 self._park_worker_inside_building(worker, task.source)
                 worker.state = "carrier_loading"
-                wait_ms = WELL_DRAW_WATER_MS if task.resource == "water" and task.source.type_tag == "WELL" else CARRIER_INTERACT_MS
+                wait_ms = CARRIER_INTERACT_MS
                 worker.camp_wait_until_ms = now_ms + wait_ms
                 return
             if now_ms < worker.camp_wait_until_ms:
                 return
             if task.source not in self._registry.all() or task.target not in self._registry.all():
-                if task.resource == "water" and task.source.type_tag == "WELL":
-                    task.source.release()  # type: ignore[attr-defined]
                 worker.transport_task = None
                 worker.state = "idle"
                 worker.idle = True
                 return
             if not hasattr(task.source, "take_from_storage"):
-                if task.resource == "water" and task.source.type_tag == "WELL":
-                    pass
-                elif task.resource == "wood" and hasattr(task.source, "take_wood_in"):
+                if task.resource == "wood" and hasattr(task.source, "take_wood_in"):
                     try:
                         task.source.take_wood_in(1)  # type: ignore[attr-defined]
                     except ValueError:
@@ -416,14 +438,14 @@ class WorkerTransportMixin:
                     self._drop_failed_pickup(worker, task)
                     return
             worker.carrying = task.resource
-            if task.resource == "water" and task.source.type_tag == "WELL":
-                task.source.release()  # type: ignore[attr-defined]
             if isinstance(task.source, TownHall):
                 # Town Hall center can trap pathfinding because it is fully enclosed by occupied tiles.
                 self._move_worker_to_building_approach(worker, task.source)
             if not self._start_move_to_building(worker, task.target, now_ms):
-                if task.resource == "water" and task.source.type_tag == "WELL":
-                    pass
+                if task.resource == "water" and task.source.type_tag == "WELL" and hasattr(
+                    task.source, "add_to_storage"
+                ):
+                    task.source.add_to_storage(1)  # type: ignore[attr-defined]
                 elif task.resource == "wood" and hasattr(task.source, "add_wood_in"):
                     task.source.add_wood_in(1)  # type: ignore[attr-defined]
                 elif task.resource == "boards" and hasattr(task.source, "add_boards_out"):
@@ -538,8 +560,8 @@ class WorkerTransportMixin:
         self,
         desired: list[TransportTask],
         *,
-        count_carried_well_water: bool = True,
         count_carried_town_hall_delivery: bool = True,
+        dedup_skip_carrying_workers: bool = False,
     ) -> None:
         desired_counts: dict[tuple[int, int, str, int, str], int] = {}
         for task in desired:
@@ -554,11 +576,7 @@ class WorkerTransportMixin:
             task = worker.transport_task
             if task is None:
                 continue
-            if (
-                not count_carried_well_water
-                and task.source.type_tag == "WELL"
-                and worker.carrying is not None
-            ):
+            if dedup_skip_carrying_workers and worker.carrying is not None:
                 continue
             if (
                 not count_carried_town_hall_delivery
@@ -673,22 +691,12 @@ class WorkerTransportMixin:
     def _enqueue_water_input_tasks(self) -> None:
         if self._registry is None:  # type: ignore[attr-defined]
             return
-        desired: list[TransportTask] = []
-        planned_counts: dict[tuple[int, str], int] = {}
-        for task in water_input_transport_tasks(self._registry):  # type: ignore[attr-defined]
-            target = task.target
-            water_capacity = _water_capacity(target)
-            water_amount = _water_amount(target)
-            inbound = self._inbound_resource_count(target, "water", planned_counts)  # type: ignore[attr-defined]
-            if water_amount + inbound >= water_capacity:
-                continue
-            desired.append(task)
-            key = (id(target), "water")
-            planned_counts[key] = planned_counts.get(key, 0) + 1
-        self._enqueue_desired_transport_tasks(
-            desired,
-            count_carried_well_water=False,
+        desired = water_input_transport_tasks(
+            self._registry,
+            pending_pickups_by_well_id=self._pending_well_water_pickup_counts(),
+            inbound_water_by_target_id=self._water_inbound_counts_by_target_id(),
         )
+        self._enqueue_desired_transport_tasks(desired, dedup_skip_carrying_workers=True)
 
     def _enqueue_bakery_output_tasks(self) -> None:
         if self._registry is None:  # type: ignore[attr-defined]

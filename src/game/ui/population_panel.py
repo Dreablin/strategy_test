@@ -31,6 +31,7 @@ _FILTER_WORKER_TYPES: tuple[str, ...] = (
     "ANIMAL_HERDER",
     "FORESTER",
     "COOK",
+    "WATERMAN",
 )
 
 _WORKER_LABEL: dict[str, str] = {
@@ -46,6 +47,7 @@ _WORKER_LABEL: dict[str, str] = {
     "ANIMAL_HERDER": "Herder",
     "FORESTER": "Forester",
     "COOK": "Cook",
+    "WATERMAN": "Waterman",
 }
 
 _BUILDING_LABEL: dict[str, str] = {

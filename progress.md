@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 23 - Well as staffed water producer
-- **Next Task:** T283 - Cover demolition and invalidation behavior for new water logistics
-- **Last Completed:** T282 - Clean carrier transport water handling as a complete slice
-- **Total Progress:** 282 / 286 (Phase 23: 6 / 10 done)
+- **Next Task:** T284 - Remove obsolete direct-well symbols and tests in one complete cleanup slice
+- **Last Completed:** T283 - Cover demolition and invalidation behavior for new water logistics
+- **Total Progress:** 283 / 286 (Phase 23: 7 / 10 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -63,7 +63,7 @@
 
 - [x] **T281**: Refactor water task planning as a complete slice. Replace direct free-well task generation with tasks from well local storage to active water consumers; account for queued/in-flight outbound water from wells and inbound water to consumers; prefer reasonable nearest-source routing where practical; add tests with multiple wells and multiple consumers proving later bakeries/canteens can receive water; run full `pytest` and `ruff check src tests`.
 - [x] **T282**: Clean carrier transport water handling as a complete slice. Remove well reservation/release, carrier-side draw duration, carried-well-water special counting, and failed-pickup branches tied to `Well.busy`; make water behave like a local-storage resource except it has no Town Hall fallback; update carrier tests so they pass; run full `pytest` and `ruff check src tests`.
-- [ ] **T283**: Cover demolition and invalidation behavior for new water logistics in one complete slice. If a water source well or target consumer is demolished while queued/in-flight, carriers must not crash or trap resources; carried water may be dropped if no valid target exists; water must never be returned to Town Hall. Add/adjust tests and implementation together; run full `pytest` and `ruff check src tests`.
+- [x] **T283**: Cover demolition and invalidation behavior for new water logistics in one complete slice. If a water source well or target consumer is demolished while queued/in-flight, carriers must not crash or trap resources; carried water may be dropped if no valid target exists; water must never be returned to Town Hall. Add/adjust tests and implementation together; run full `pytest` and `ruff check src tests`.
 
 ### 23.5 Old logic cleanup and documentation
 
@@ -99,6 +99,7 @@
 ## Notes
 
 - **2026-05-08:** Phase 23 planning replaces the old direct-well flow. Start at T279. Tasks are vertical slices: each task updates tests and implementation together and must leave the full suite passing. The highest-risk cleanup areas are `transport_tasks.water_input_transport_tasks`, `worker_transport` water branches, `worker_status`, `WellPanel`, and tests that expect `Well.busy` / carrier-side drawing.
+- **2026-05-08:** T283: `notify_demolished` drops any transport queue entries whose source or target is the demolished building; tests cover queued well removal, mid-route drops when the well or consumer is removed, and Town Hall never gains warehouse water.
 - **2026-05-08:** Keep old completed phase details in `progress_archive.md`; `progress.md` should stay focused on the current active phase to keep agent context small.
 - Tests run headless via `SDL_VIDEODRIVER=dummy` in `tests/conftest.py`.
 - Pathfinding contract: **4-dir** `find_path_bfs` (no diagonals), aligned with PRD.

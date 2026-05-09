@@ -309,6 +309,10 @@ class WorkerManager(
                     site.builder = None
                 if site.resting_worker is w:
                     site.resting_worker = None
+        if self._transport_queue:
+            self._transport_queue = [
+                t for t in self._transport_queue if t.source is not building and t.target is not building
+            ]
         if building.type_tag == "FIELD" and building.grid_pos is not None:
             self._field_reservations.pop(tuple(building.grid_pos), None)
 

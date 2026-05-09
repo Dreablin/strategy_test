@@ -240,7 +240,7 @@ def test_carrier_returns_resource_to_town_hall_when_processor_target_is_demolish
 def test_carrier_drops_water_when_target_is_demolished() -> None:
     world = _empty_world()
     registry = BuildingRegistry(world)
-    registry.place(TownHall, town_hall_origin_tile())
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
     well = registry.place(Well, near_town_hall_tile(6, 8))
     well.construction_site = None
     target = registry.place(Bakery, near_town_hall_tile(10, 8))
@@ -262,6 +262,54 @@ def test_carrier_drops_water_when_target_is_demolished() -> None:
     assert carrier.carrying is None
     assert carrier.state == "idle"
     assert target not in registry.all()
+    assert town_hall.warehouse_amount("water") == 0
+
+
+def test_carrier_drops_water_when_source_well_demolished_mid_route() -> None:
+    world = _empty_world()
+    registry = BuildingRegistry(world)
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
+    well = registry.place(Well, near_town_hall_tile(6, 8))
+    well.construction_site = None
+    target = registry.place(Bakery, near_town_hall_tile(10, 8))
+    target.construction_site = None
+
+    workers = WorkerManager(registry, now_ms_fn=lambda: 0)
+    carrier = workers.hire("CARRIER")
+    assert carrier is not None
+    carrier.current_tile = near_town_hall_tile(7, 8)
+    carrier.stand_tile = carrier.current_tile
+    carrier.state = "moving"
+    carrier.transport_task = TransportTask("water", well, target, priority=0)
+    carrier.carrying = "water"
+
+    registry.demolish(well, workers)
+    workers.update(0)
+
+    assert carrier.transport_task is None
+    assert carrier.carrying is None
+    assert carrier.state == "idle"
+    assert well not in registry.all()
+    assert town_hall.warehouse_amount("water") == 0
+
+
+def test_queued_water_transport_removed_when_well_demolished() -> None:
+    world = _empty_world()
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    well = registry.place(Well, near_town_hall_tile(6, 8))
+    well.construction_site = None
+    well.add_water_in(1)
+    bakery = registry.place(Bakery, near_town_hall_tile(10, 8))
+    bakery.construction_site = None
+
+    workers = WorkerManager(registry)
+    workers.enqueue_transport_task(resource="water", source=well, target=bakery, amount=1)
+    assert len(workers._transport_queue) == 1  # noqa: SLF001
+
+    registry.demolish(well, workers)
+
+    assert workers._transport_queue == []  # noqa: SLF001
 
 
 def test_queued_transport_task_is_dropped_when_target_was_demolished() -> None:
@@ -438,7 +486,7 @@ def test_carrier_returns_resource_to_town_hall_when_source_is_demolished_after_p
 def test_water_task_clears_carrier_when_target_demolished_before_pickup() -> None:
     world = _empty_world()
     registry = BuildingRegistry(world)
-    registry.place(TownHall, town_hall_origin_tile())
+    town_hall = registry.place(TownHall, town_hall_origin_tile())
     well = registry.place(Well, near_town_hall_tile(6, 8))
     well.construction_site = None
     well.add_water_in(1)
@@ -458,6 +506,7 @@ def test_water_task_clears_carrier_when_target_demolished_before_pickup() -> Non
     assert carrier.transport_task is None
     assert carrier.carrying is None
     assert carrier.state == "idle"
+    assert town_hall.warehouse_amount("water") == 0
 
 
 def test_empty_well_water_task_does_not_block_other_available_tasks() -> None:

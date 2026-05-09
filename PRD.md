@@ -52,7 +52,7 @@ preserving these invariants over literal old phase wording:
 - **F-RES-01 (MUST):** Current resource keys include raw goods, processed goods, food goods, water, and canteen-local meals. All quantities are non-negative integers.
 - **F-RES-02 (MUST):** Town Hall warehouse persists all resources except `water`. Starting warehouse contents are configured only in `game_settings.json` / `config.TOWN_HALL_STARTING_WAREHOUSE`.
 - **F-RES-03 (MUST):** Resource flow is physical: producers fill building internal storages, processors consume local inputs and fill local outputs, and carriers move units between buildings. Do not add passive per-cycle wallet income.
-- **F-RES-04 (MUST):** `water` is not stored in Town Hall. A carrier assigned to a water task reserves a free `WELL`, enters it, draws water for `WELL_DRAW_WATER_MS`, leaves with `carrying="water"`, releases the well, and delivers directly to a water consumer.
+- **F-RES-04 (MUST):** `water` is not stored in Town Hall. A `WELL` is a staffed producer with **local water storage** (capacity by level in `well.json`). An assigned `WATERMAN` produces `+1` water into that storage when the well is active, completed, and has free space, using the building’s configured work/rest cadence. Carriers execute normal `TransportTask("water", well, consumer, …)` pickups: they take units from the well’s local storage (`take_from_storage` / equivalent) with standard carrier interact timing and deliver to any active **water consumer** that exposes `water_amount`, `water_capacity`, and `add_water_in`. There is **no** well `busy` flag, **no** carrier-side water draw timer, and **no** `WELL_DRAW_WATER_MS` special case.
 - **F-RES-05 (MUST):** `simple_meal` is local to `CANTEEN`. It is produced, reserved, and consumed inside canteens; it must not be exported to Town Hall or treated as a generic carrier-delivered warehouse resource.
 
 ### F-TICK — Cycle System
@@ -102,7 +102,7 @@ preserving these invariants over literal old phase wording:
 
 - **F-BLD-01 (MUST):** Current building types include `TOWN_HALL`, `LUMBER_CAMP`, `STONE_MINE`, `IRON_MINE`, `FARM`, `FIELD`, `FORESTER_HUT`, `SAWMILL`, `MILL`, `BAKERY`, `CANTEEN`, `WELL`, `SCHOOL`, `HOUSE`. Each type must be registered consistently in building class, config/settings, placement map, assets folder mapping, panels where needed, and bottom-bar menu.
 - **F-BLD-02 (MUST):** Standard buildings use a **2×2** footprint unless noted. Exceptions: `TOWN_HALL` is **3×3**, `FIELD` is **1×1**, and `WELL` is **1×1**.
-- **F-BLD-03 (MUST):** Most buildings can reach level **10** when construction requirements exist. Exceptions: `FIELD` is crop-state driven and not upgraded; `WELL` has max level 1; `TOWN_HALL` is unique, cannot be demolished or built from the menu, and can upgrade levels 1..10.
+- **F-BLD-03 (MUST):** Most buildings can reach level **10** when construction requirements exist. Exceptions: `FIELD` is crop-state driven and not upgraded; `TOWN_HALL` is unique, cannot be demolished or built from the menu, and can upgrade levels 1..10. `WELL` follows the same level **1..10** construction/upgrade pattern as other upgradable resource buildings when configured in `well.json`.
 - **F-BLD-04 (MUST):** Placement order creates a construction site, not an instant finished building, for configured buildings. There is no wallet-spend gate at click time, but construction/upgrades require resource delivery and build time through `ConstructionSite`.
 - **F-BLD-05 (MUST):** Each new completed work building starts with **no assigned worker**. `WorkerManager.reassign_all()` may assign an idle compatible worker after construction completes.
 - **F-BLD-06 (MUST):** Production model is defined by **F-PROD** (worker-cycle driven, storage-constrained). Do not use `Building.income()` for active resources.
@@ -139,7 +139,7 @@ preserving these invariants over literal old phase wording:
 - Panel shows name + level, one-line description, relevant real local storage/input/output, stateful worker status, supported Upgrade, red Demolish, and close [×].
 - Do not duplicate the same local stock with two counters. Upgrade is disabled at max level, under construction, or by explicit state gates such as non-empty School queue.
 - Town Hall panel has no Demolish and no hiring. Hiring/training happens at School.
-- Well panel reflects temporary carrier occupancy and draw progress. Once carrier leaves with water, well is shown ready even though that carrier still has a water task.
+- Well panel shows **real** local water storage, assigned `WATERMAN` status, production/rest progress, active toggle where applicable, upgrade, and demolish—aligned with other staffed producers. Do not show carrier “draw” progress or well state derived from temporary carrier occupancy.
 - Canteen panel shows real local food inputs, local meal stock, cook/production status, diner slots, and per-diner eating progress. Reserved/walking diners may be shown before they physically arrive, but must be visually distinguishable from diners already waiting or eating.
 
 ### F-DEMO — Demolish
@@ -197,7 +197,7 @@ preserving these invariants over literal old phase wording:
 
 ### F-WORK — Workers
 
-- Current worker types: `CARRIER`, `BUILDER`, `LUMBERJACK`, `STONECUTTER`, `MINER`, `FARMER`, `FORESTER`, `SAWYER`, `MILLER`, `BAKER`, `COOK`. Staffed production workers only work in matching buildings.
+- Current worker types: `CARRIER`, `BUILDER`, `LUMBERJACK`, `STONECUTTER`, `MINER`, `FARMER`, `FORESTER`, `SAWYER`, `MILLER`, `BAKER`, `COOK`, `WATERMAN`. Staffed production workers only work in matching buildings. `WATERMAN` is hired via `SCHOOL` and works only at `WELL`.
 - Workers are acquired only through School queue, respect housing, move with 4-direction BFS, never step onto blocking footprints, and are rendered with sprite interpolation.
 - `WorkerManager.reassign_all()` runs after relevant state changes (training, construction, demolition, upgrade) to match idle compatible workers to unstaffed buildings.
 - Production only happens when the worker state machine allows it. Town Hall has no worker slot.
@@ -226,6 +226,7 @@ preserving these invariants over literal old phase wording:
   - Miner stays inside `IRON_MINE`, producing into local storage through its configured work/rest cadence.
   - Sawyer/miller/baker must be assigned and inside their processor. Sawmill/mill/bakery use configured processing/rest cadence and local input requirements.
   - Cook must be assigned and inside `CANTEEN`; canteen production consumes local food/water inputs and produces local `simple_meal`.
+  - `WATERMAN` must be assigned and inside a completed, active `WELL` with free local water storage; the well produces discrete `+1` water into that storage per configured cycle, then rests per `well.json`.
   - Farmer prioritizes ripe fields, then empty fields, within the configured radius from assigned farm.
 - **F-PROD-05 (MUST):** Turning a processor inactive prevents new cycles and new input deliveries, but an already-started processing cycle may finish according to that building's existing runtime rule. Do not make active toggles delete in-flight carried resources.
 
@@ -235,7 +236,7 @@ preserving these invariants over literal old phase wording:
 - **F-TRANSPORT-02 (MUST):** Production outputs are exported by carriers. If a processor with free input space exists for a compatible resource, carriers may deliver directly from producer output to processor input before Town Hall. Otherwise resources fall back to Town Hall warehouse where allowed.
 - **F-TRANSPORT-03 (MUST):** Input-demand planning must account for already queued or in-flight deliveries so local input capacity is not overpromised. UI still displays only real stored local amounts.
 - **F-TRANSPORT-04 (MUST):** Resource-to-processor routing should be capability based. For example wheat consumers expose `add_wheat_in` plus input amount/capacity; water consumers expose `add_water_in`, `water_amount`, `water_capacity`. Do not hard-code wheat to only `MILL`.
-- **F-TRANSPORT-05 (MUST):** Water tasks are special: source is a free `WELL`, no Town Hall water stock exists, the well is reserved only until the carrier leaves with water, and another carrier may use that well while the first carrier is still carrying water to the target.
+- **F-TRANSPORT-05 (MUST):** Water tasks are special only in that **no Town Hall water stock exists** and water must never be warehoused at Town Hall. Task sources are `WELL` instances with available **stored** water (same queue semantics as other local-storage pickups). Planning must count **queued and in-flight** outbound water from wells and inbound water to each consumer so capacities are not overpromised. Prefer reasonable nearest-well routing where practical. If a water source or consumer is demolished or becomes invalid while queued or in-flight, carriers must not trap state; carried water may be dropped, and invalid water must not be rerouted into Town Hall.
 - **F-TRANSPORT-06 (MUST):** Carrier planning for canteen inputs follows normal inbound-capacity rules for local inputs, but `simple_meal` is never an output transport task.
 
 ### F-INPUT — Input

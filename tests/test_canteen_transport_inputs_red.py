@@ -89,6 +89,7 @@ def test_canteen_input_tasks_skip_inactive_canteen() -> None:
 
 def test_water_input_tasks_use_well_to_canteen_when_space() -> None:
     registry, _, canteen, well = _empty_world_registry_canteen_th_well()
+    well.add_water_in(well.water_capacity())
 
     tasks = water_input_transport_tasks(registry)
 
@@ -102,6 +103,7 @@ def test_water_input_tasks_use_well_to_canteen_when_space() -> None:
 def test_worker_manager_respects_inbound_water_cap_for_canteen() -> None:
     """Duplicate / in-flight water must not enqueue past local water capacity (mirrors bakery)."""
     registry, _, canteen, well = _empty_world_registry_canteen_th_well()
+    well.add_water_in(well.water_capacity())
     cap = canteen.local_storage_capacity("water")
     canteen.add_local_storage("water", cap - 2)
 

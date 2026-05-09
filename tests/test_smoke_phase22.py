@@ -52,6 +52,9 @@ def test_smoke_phase22_canteen_meal_and_dining_end_to_end() -> None:
     bakery.construction_site = None
     well = registry.place(Well, near_town_hall_tile(10, 12))
     well.construction_site = None
+    well.level = 10
+    well.stored = 0
+    well.add_water_in(well.water_capacity())
     town_hall.add_to_warehouse("chicken", 2)
     town_hall.add_to_warehouse("bread", 2)
 

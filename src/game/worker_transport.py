@@ -143,6 +143,40 @@ class WorkerTransportMixin:
             counts[key] = counts.get(key, 0) + 1
         return counts
 
+    def _pending_well_water_pickup_counts(self) -> dict[int, int]:
+        """Water units still at wells: queued tasks + carriers not yet loaded."""
+        counts: dict[int, int] = {}
+        for task in self._transport_queue:  # type: ignore[attr-defined]
+            if task.resource != "water" or task.source.type_tag != "WELL":
+                continue
+            wid = id(task.source)
+            counts[wid] = counts.get(wid, 0) + 1
+        for worker in self._workers:  # type: ignore[attr-defined]
+            t = worker.transport_task
+            if t is None or t.resource != "water" or t.source.type_tag != "WELL":
+                continue
+            if worker.carrying is not None:
+                continue
+            wid = id(t.source)
+            counts[wid] = counts.get(wid, 0) + 1
+        return counts
+
+    def _water_inbound_counts_by_target_id(self) -> dict[int, int]:
+        """Water deliveries already targeting each building (queue + in-flight)."""
+        counts: dict[int, int] = {}
+        for task in self._transport_queue:  # type: ignore[attr-defined]
+            if task.resource != "water":
+                continue
+            tid = id(task.target)
+            counts[tid] = counts.get(tid, 0) + 1
+        for worker in self._workers:  # type: ignore[attr-defined]
+            t = worker.transport_task
+            if t is None or t.resource != "water":
+                continue
+            tid = id(t.target)
+            counts[tid] = counts.get(tid, 0) + 1
+        return counts
+
     def _next_transport_task(self) -> TransportTask | None:
         if self._registry is None:
             return None
@@ -183,7 +217,7 @@ class WorkerTransportMixin:
             elif task.resource == "chicken" and hasattr(task.source, "output_amount"):
                 has_storage_source = int(task.source.output_amount()) > 0  # type: ignore[attr-defined]
             elif task.resource == "water" and task.source.type_tag == "WELL":
-                has_storage_source = not bool(getattr(task.source, "busy", False))
+                has_storage_source = _water_amount(task.source) > 0
             has_warehouse_source = hasattr(task.source, "warehouse_amount") and int(
                 task.source.warehouse_amount(task.resource)  # type: ignore[attr-defined]
             ) > 0
@@ -202,15 +236,17 @@ class WorkerTransportMixin:
             self._transport_queue.pop(idx)
         if not eligible:
             return None
-        _best_idx, best_task = max(eligible, key=lambda item: (int(item[1].priority), -item[0]))
-        if best_task in self._transport_queue:
+        eligible_sorted = sorted(eligible, key=lambda item: (-int(item[1].priority), item[0]))
+        for _idx, best_task in eligible_sorted:
+            if best_task not in self._transport_queue:
+                continue
             self._transport_queue.remove(best_task)
             if best_task.resource == "water" and best_task.source.type_tag == "WELL":
                 try:
                     best_task.source.reserve()  # type: ignore[attr-defined]
                 except ValueError:
                     self._transport_queue.append(best_task)
-                    return self._next_transport_task()
+                    continue
             return best_task
         return None
 
@@ -673,18 +709,11 @@ class WorkerTransportMixin:
     def _enqueue_water_input_tasks(self) -> None:
         if self._registry is None:  # type: ignore[attr-defined]
             return
-        desired: list[TransportTask] = []
-        planned_counts: dict[tuple[int, str], int] = {}
-        for task in water_input_transport_tasks(self._registry):  # type: ignore[attr-defined]
-            target = task.target
-            water_capacity = _water_capacity(target)
-            water_amount = _water_amount(target)
-            inbound = self._inbound_resource_count(target, "water", planned_counts)  # type: ignore[attr-defined]
-            if water_amount + inbound >= water_capacity:
-                continue
-            desired.append(task)
-            key = (id(target), "water")
-            planned_counts[key] = planned_counts.get(key, 0) + 1
+        desired = water_input_transport_tasks(
+            self._registry,
+            pending_pickups_by_well_id=self._pending_well_water_pickup_counts(),
+            inbound_water_by_target_id=self._water_inbound_counts_by_target_id(),
+        )
         self._enqueue_desired_transport_tasks(
             desired,
             count_carried_well_water=False,

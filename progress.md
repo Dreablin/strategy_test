@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 23 - Well as staffed water producer
-- **Next Task:** T281 - Refactor water task planning as a complete slice
-- **Last Completed:** T280 - Implement staffed well production as a complete runtime slice
-- **Total Progress:** 280 / 286 (Phase 23: 4 / 10 done)
+- **Next Task:** T282 - Clean carrier transport water handling as a complete slice
+- **Last Completed:** T281 - Refactor water task planning as a complete slice
+- **Total Progress:** 281 / 286 (Phase 23: 5 / 10 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -61,7 +61,7 @@
 
 ### 23.4 Water transport refactor
 
-- [ ] **T281**: Refactor water task planning as a complete slice. Replace direct free-well task generation with tasks from well local storage to active water consumers; account for queued/in-flight outbound water from wells and inbound water to consumers; prefer reasonable nearest-source routing where practical; add tests with multiple wells and multiple consumers proving later bakeries/canteens can receive water; run full `pytest` and `ruff check src tests`.
+- [x] **T281**: Refactor water task planning as a complete slice. Replace direct free-well task generation with tasks from well local storage to active water consumers; account for queued/in-flight outbound water from wells and inbound water to consumers; prefer reasonable nearest-source routing where practical; add tests with multiple wells and multiple consumers proving later bakeries/canteens can receive water; run full `pytest` and `ruff check src tests`.
 - [ ] **T282**: Clean carrier transport water handling as a complete slice. Remove well reservation/release, carrier-side draw duration, carried-well-water special counting, and failed-pickup branches tied to `Well.busy`; make water behave like a local-storage resource except it has no Town Hall fallback; update carrier tests so they pass; run full `pytest` and `ruff check src tests`.
 - [ ] **T283**: Cover demolition and invalidation behavior for new water logistics in one complete slice. If a water source well or target consumer is demolished while queued/in-flight, carriers must not crash or trap resources; carried water may be dropped if no valid target exists; water must never be returned to Town Hall. Add/adjust tests and implementation together; run full `pytest` and `ruff check src tests`.
 

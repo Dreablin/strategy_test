@@ -125,6 +125,29 @@ class CowFarm(Building):
             raise ValueError("insufficient hide output")
         self.hide_out -= n
 
+    def recipe_wheat_required(self) -> int:
+        return building_int_setting(self.type_tag, "recipe", "inputs", "wheat")
+
+    def recipe_water_required(self) -> int:
+        return building_int_setting(self.type_tag, "recipe", "inputs", "water")
+
+    def recipe_beef_output(self) -> int:
+        return building_int_setting(self.type_tag, "recipe", "outputs", "beef")
+
+    def recipe_hide_output(self) -> int:
+        return building_int_setting(self.type_tag, "recipe", "outputs", "hide")
+
+    def production_rest_ms(self) -> int:
+        return building_int_setting(self.type_tag, "production", "rest_ms")
+
+    def has_recipe_inputs(self) -> bool:
+        return self.wheat_amount() >= self.recipe_wheat_required() and self.water_amount() >= self.recipe_water_required()
+
+    def has_recipe_output_space(self) -> bool:
+        beef_free = self.beef_capacity() - self.beef_amount()
+        hide_free = self.hide_capacity() - self.hide_amount()
+        return beef_free >= self.recipe_beef_output() and hide_free >= self.recipe_hide_output()
+
     def processing_progress(self, now_ms: int) -> float:
         if self.processing_started_ms <= 0:
             return 0.0

@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 24 - Cow Farm producer (**active**)
-- **Next Task:** T295 - Add Cow Farm recipe/progress helper methods only
-- **Last Completed:** T294 - Cow Farm hide output storage helpers
-- **Total Progress:** 294 / 311 (Phase 24: 8 / 25 done)
+- **Next Task:** T296 - Register COW_FARM for placement/construction only
+- **Last Completed:** T295 - Cow Farm recipe and production helpers
+- **Total Progress:** 295 / 311 (Phase 24: 9 / 25 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -56,11 +56,11 @@
 - [x] **T292**: Add Cow Farm water input storage helpers only. Implement `water_amount`, `water_capacity`, `add_water_in`, `take_water_in`, and overflow/underflow tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T293**: Add Cow Farm beef output storage helpers only. Implement `beef_amount`, `beef_capacity`, `add_beef_out`, `take_beef_out`, and overflow/underflow tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T294**: Add Cow Farm hide output storage helpers only. Implement `hide_amount`, `hide_capacity`, `add_hide_out`, `take_hide_out`, and overflow/underflow tests. Run full `pytest` and `ruff check src tests`.
-- [~] **T295**: Add Cow Farm recipe/progress helper methods only. Read recipe amounts and production timing from `cow_farm.json`; add helpers for checking recipe input availability, output free space, `processing_progress`, and `progress_state`. Add focused tests. Run full `pytest` and `ruff check src tests`.
+- [x] **T295**: Add Cow Farm recipe/progress helper methods only. Read recipe amounts and production timing from `cow_farm.json`; add helpers for checking recipe input availability, output free space, `processing_progress`, and `progress_state`. Add focused tests. Run full `pytest` and `ruff check src tests`.
 
 ### 24.2 Build menu, assets, and panel
 
-- [ ] **T296**: Register `COW_FARM` for placement/construction only. Wire the building class into placement maps and input construction selection so a Cow Farm can be placed and built, without adding menu visibility yet. Add focused placement/construction tests. Run full `pytest` and `ruff check src tests`.
+- [~] **T296**: Register `COW_FARM` for placement/construction only. Wire the building class into placement maps and input construction selection so a Cow Farm can be placed and built, without adding menu visibility yet. Add focused placement/construction tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T297**: Add Cow Farm asset loading/fallback only. Add the building folder mapping and placeholder/meta files only if real assets are absent; add focused asset tests proving construction and completed sprites resolve. Run full `pytest` and `ruff check src tests`.
 - [ ] **T298**: Add Cow Farm to the processing build menu only. Add the processing-menu tile and click routing for `COW_FARM`; add focused bottom-bar/input tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T299**: Add Cow Farm display labels/descriptions only. Update building display names/descriptions and any placement/panel labels that do not require a custom panel yet. Add focused label tests if existing patterns support them. Run full `pytest` and `ruff check src tests`.

@@ -184,16 +184,19 @@ def test_town_hall_exposes_warehouse_api() -> None:
     assert th.warehouse_amount("boards") == 0
     assert th.warehouse_amount("flour") == 0
     assert th.warehouse_amount("chicken") == 0
+    assert th.warehouse_amount("beef") == 0
     th.add_to_warehouse("wood", 2)
     th.add_to_warehouse("wheat", 1)
     th.add_to_warehouse("boards", 3)
     th.add_to_warehouse("flour", 4)
     th.add_to_warehouse("chicken", 5)
+    th.add_to_warehouse("beef", 6)
     assert th.warehouse_amount("wood") == 2
     assert th.warehouse_amount("wheat") == 1
     assert th.warehouse_amount("boards") == 3
     assert th.warehouse_amount("flour") == 4
     assert th.warehouse_amount("chicken") == 5
+    assert th.warehouse_amount("beef") == 6
     th.take_from_warehouse("wood", 1)
     assert th.warehouse_amount("wood") == 1
 

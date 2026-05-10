@@ -56,6 +56,7 @@ _RESOURCE_LABEL: dict[str, str] = {
     "flour": "Flour",
     "bread": "Bread",
     "chicken": "Chicken",
+    "beef": "Beef",
     "water": "Water",
 }
 
@@ -91,12 +92,18 @@ def _building_name(building) -> str:
     return _label(tag, _BUILDING_LABEL)
 
 
+def _move_speed_line(worker: Worker) -> str:
+    speed = worker.characteristics.move_speed_mult
+    return f"Move speed: {speed:.2f}x ({worker.effective_travel_ms()} ms/tile)"
+
+
 def _worker_lines(worker: Worker) -> list[str]:
     sat = clamp_worker_satiety(int(getattr(worker, "satiety", 0)))
     state = _STATE_LABEL.get(str(worker.state), str(worker.state))
     lines = [
         f"State: {state}",
         f"Satiety: {sat}/{MAX_WORKER_SATIETY}",
+        _move_speed_line(worker),
         f"Assigned: {_building_name(worker.assigned_building) if worker.assigned_building is not None else 'none'}",
         f"Carrying: {_label(worker.carrying, _RESOURCE_LABEL)}",
     ]

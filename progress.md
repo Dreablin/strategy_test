@@ -2,10 +2,10 @@
 
 ## Current Status
 
-- **Phase:** 23 - Well as staffed water producer (**complete**)
-- **Next Task:** None — archive Phase 23 in `progress_archive.md` when starting Phase 24.
-- **Last Completed:** T286 - Phase 23 E2E smoke (well build, WATERMAN, carriers, two consumers, no TH water)
-- **Total Progress:** 286 / 286 (Phase 23: 10 / 10 done)
+- **Phase:** 24 - Cow Farm producer (**active**)
+- **Next Task:** T288 - Add hide as a warehouse resource
+- **Last Completed:** T287 - Add beef as a complete warehouse resource
+- **Total Progress:** 287 / 311 (Phase 24: 1 / 25 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -13,82 +13,98 @@
 
 ## Task Log
 
-## Phase 23 - Well as staffed water producer
+## Phase 24 - Cow Farm producer
 
-**Goal.** Replace the old direct-well flow, where carriers reserve a well and draw water themselves, with a normal worker-operated producer building. A `WELL` has an assigned water worker, produces water into local storage, and carriers transport stored water from wells to water consumers. Water still must not be stored in Town Hall.
+**Goal.** Add `COW_FARM`, a processing building staffed by the existing `ANIMAL_HERDER`. It consumes wheat and water from local input storage, produces two output resources (`beef` and `hide`) into local output storage, and carriers export those outputs to Town Hall warehouse.
 
 **Design notes.**
 
-- Worker name: use `WATERMAN` unless the user asks for a different final name.
-- `WELL` becomes a normal upgradable resource building:
-  - 10 levels.
-  - Construction and upgrades are configured in `src/game/settings/buildings/well.json`.
-  - Local water storage capacity is configured in `well.json`: level 1 has 1 water, each later level adds 1.
-  - Production timing and worker rest are configured in `well.json`.
-- `WATERMAN` is hired through `SCHOOL`, appears in school/population/worker UI, and is assigned to `WELL`.
-- Water production:
-  - Requires an assigned `WATERMAN`.
-  - Requires completed, active `WELL`.
-  - Starts only when well local storage has free space.
-  - Produces discrete `+1 water` into the well local storage.
-  - Worker rests after each production cycle.
-- Water logistics:
-  - Water is never stored in Town Hall warehouse.
-  - Water delivery tasks are generated from well local storage to any active water consumer exposing `water_amount`, `water_capacity`, and `add_water_in`.
-  - Planning must account for queued and in-flight water deliveries so consumer capacity is not overpromised.
-  - Source well selection should prefer nearest available stored water for the target where practical, but correctness and no overfill are more important than perfect routing.
-- Old direct-well behavior must be removed, not layered under the new model:
-  - No well `busy` flag.
-  - No carrier-side water drawing timer.
-  - No carrier reservation/release of wells.
-  - No `WELL_DRAW_WATER_MS` transport special case.
-  - No well panel status based on temporary carrier occupancy.
-- Keep delivery queue logic capability-based. Do not hard-code water only to bakery/canteen/chicken farm.
-- Every implementation task must end with full `pytest` and `ruff check src tests`.
+- Building type: `COW_FARM`.
+- Worker: reuse the existing `ANIMAL_HERDER`; do not create a new worker type.
+- Player-facing name: Cow Farm.
+- Internal output resource ids: `beef` and `hide`.
+- Town Hall warehouse stores `beef` and `hide`.
+- Water remains excluded from Town Hall warehouse; it is still delivered from well local storage to consumers.
+- Cow Farm belongs in the processing build menu, alongside sawmill/mill/bakery/chicken farm.
+- Cow Farm has 10 levels.
+- Cow Farm settings must live in `src/game/settings/buildings/cow_farm.json`, not in hard-coded constants:
+  - construction and upgrade costs/times,
+  - local storage capacity per level,
+  - production duration,
+  - worker rest duration,
+  - recipe inputs and outputs.
+- Local storage capacity starts at 3 for every Cow Farm resource slot and increases by 1 every level. This applies to wheat, water, beef, and hide.
+- One production cycle consumes 3 wheat and 3 water, then produces 1 beef and 1 hide.
+- A cycle may start only when:
+  - the building is completed and active,
+  - an `ANIMAL_HERDER` is assigned and inside/working,
+  - both inputs have enough resources for the recipe,
+  - both output slots have enough free capacity for the recipe outputs.
+- Between production cycles, the worker rests using the rest duration from `cow_farm.json`.
+- Delivery planning must account for queued and in-flight resources when deciding whether Cow Farm needs wheat/water or has exportable beef/hide.
+- Keep transport logic capability-based where practical. Do not add special-case code that only works for one named consumer if a generic local-storage producer/consumer path already exists.
+- Each implementation task must add/update its own focused tests, then end with full `pytest` and `ruff check src tests`.
+- Do not create a task that only adds failing tests. Tests and implementation must land together in the same checked task.
 
-### 23.1 Well domain, settings, and UI
+### 24.1 Resources and domain foundation
 
-- [x] **T277**: Convert `WELL` settings/domain to a normal local-storage building in one complete slice. Update `well.json` to 10 levels with construction/upgrade levels, storage capacity by level, production duration, and worker rest duration; refactor `Well` to remove `busy/reserve/release`; add water local storage helpers/progress fields/max level 10; update or rewrite focused well domain tests so they pass against the new model; run full `pytest` and `ruff check src tests`.
-- [x] **T278**: Update Well UI/panel/status in one complete slice. Show local water storage, worker assignment/status, production/rest progress, active toggle if applicable, upgrade, and demolish; remove carrier-draw status/progress from `WellPanel`, `worker_status`, `workers.py`, and input panel calls; update panel/status tests so they pass; run full `pytest` and `ruff check src tests`.
+- [x] **T287**: Add `beef` as a complete warehouse resource. Update resource catalog/display label, Town Hall warehouse initialization/settings/UI, worker/population resource labels if needed, and focused tests proving `beef` exists in Town Hall storage and renders in the warehouse panel. Run full `pytest` and `ruff check src tests`.
+- [~] **T288**: Add `hide` as a complete warehouse resource. Update resource catalog/display label, Town Hall warehouse initialization/settings/UI, worker/population resource labels if needed, and focused tests proving `hide` exists in Town Hall storage and renders in the warehouse panel. Run full `pytest` and `ruff check src tests`.
+- [ ] **T289**: Add only `src/game/settings/buildings/cow_farm.json`. Include `COW_FARM` building type, 10 construction/upgrade levels, storage capacity by level, production duration, worker rest duration, and recipe input/output values. Add focused settings tests proving values are loaded from this JSON. Run full `pytest` and `ruff check src tests`.
+- [ ] **T290**: Add only the `CowFarm` building class shell in `src/game/buildings/cow_farm.py`. It should define `type_tag`, slots, active flag, progress fields, `set_active`, `storage_capacity`, and `max_level` behavior via settings, but no registration/menu/runtime yet. Add focused domain tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T291**: Add Cow Farm wheat input storage helpers only. Implement `wheat_amount`, `wheat_capacity`, `add_wheat_in`, `take_wheat_in`, and overflow/underflow tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T292**: Add Cow Farm water input storage helpers only. Implement `water_amount`, `water_capacity`, `add_water_in`, `take_water_in`, and overflow/underflow tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T293**: Add Cow Farm beef output storage helpers only. Implement `beef_amount`, `beef_capacity`, `add_beef_out`, `take_beef_out`, and overflow/underflow tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T294**: Add Cow Farm hide output storage helpers only. Implement `hide_amount`, `hide_capacity`, `add_hide_out`, `take_hide_out`, and overflow/underflow tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T295**: Add Cow Farm recipe/progress helper methods only. Read recipe amounts and production timing from `cow_farm.json`; add helpers for checking recipe input availability, output free space, `processing_progress`, and `progress_state`. Add focused tests. Run full `pytest` and `ruff check src tests`.
 
-### 23.2 WATERMAN hiring and assignment
+### 24.2 Build menu, assets, and panel
 
-- [x] **T279**: Add `WATERMAN` as a complete hireable worker slice. Add/adjust tests and implementation together for: school queue/hire UI, hire gates/settings, asset fallbacks/icons, population/worker labels, `WORKER_TO_BUILDING`, assignment to completed `WELL`, and full satiety on creation/hire; run full `pytest` and `ruff check src tests`.
+- [ ] **T296**: Register `COW_FARM` for placement/construction only. Wire the building class into placement maps and input construction selection so a Cow Farm can be placed and built, without adding menu visibility yet. Add focused placement/construction tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T297**: Add Cow Farm asset loading/fallback only. Add the building folder mapping and placeholder/meta files only if real assets are absent; add focused asset tests proving construction and completed sprites resolve. Run full `pytest` and `ruff check src tests`.
+- [ ] **T298**: Add Cow Farm to the processing build menu only. Add the processing-menu tile and click routing for `COW_FARM`; add focused bottom-bar/input tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T299**: Add Cow Farm display labels/descriptions only. Update building display names/descriptions and any placement/panel labels that do not require a custom panel yet. Add focused label tests if existing patterns support them. Run full `pytest` and `ruff check src tests`.
+- [ ] **T300**: Add Cow Farm panel shell only. Create `CowFarmPanel`, route it from input, and show title/worker status/upgrade/demolish/active toggle using existing base layout, without custom storage/progress details yet. Add click/layout tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T301**: Add Cow Farm panel storage rows only. Show wheat, water, beef, and hide local storage values in the panel. Add draw/layout tests proving rows render without overlapping actions. Run full `pytest` and `ruff check src tests`.
+- [ ] **T302**: Add Cow Farm panel production status/progress only. Show blocked reason and processing progress bar using Cow Farm helpers. Add tests for running, missing inputs, full outputs, inactive, and no-worker display states. Run full `pytest` and `ruff check src tests`.
 
-### 23.3 Well production runtime
+### 24.3 Worker assignment and production runtime
 
-- [x] **T280**: Implement staffed well production as a complete runtime slice. Add/adjust tests and implementation together for: no worker means no water, inactive/under-construction well does not start new cycles, full storage blocks start, configured cycle produces `+1 water`, configured rest happens between cycles, worker remains inside/assigned correctly, and progress/status helpers match other staffed producers; run full `pytest` and `ruff check src tests`.
+- [ ] **T303**: Add worker-building compatibility support for multi-building worker types only. Refactor assignment compatibility so `ANIMAL_HERDER` can target both `CHICKEN_FARM` and `COW_FARM`, while existing worker assignments remain unchanged. Add focused assignment/reassignment tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T304**: Add Cow Farm processor runtime only. Add a processor spec/update path for `COW_FARM` using JSON duration/rest and recipe; verify one cycle consumes wheat/water and produces beef/hide, with active/no-worker/under-construction/full-output gates. Add focused runtime tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T305**: Add Cow Farm production status integration only. Make worker/building status helpers report Cow Farm states consistently with other processors. Add focused status tests. Run full `pytest` and `ruff check src tests`.
 
-### 23.4 Water transport refactor
+### 24.4 Transport integration
 
-- [x] **T281**: Refactor water task planning as a complete slice. Replace direct free-well task generation with tasks from well local storage to active water consumers; account for queued/in-flight outbound water from wells and inbound water to consumers; prefer reasonable nearest-source routing where practical; add tests with multiple wells and multiple consumers proving later bakeries/canteens can receive water; run full `pytest` and `ruff check src tests`.
-- [x] **T282**: Clean carrier transport water handling as a complete slice. Remove well reservation/release, carrier-side draw duration, carried-well-water special counting, and failed-pickup branches tied to `Well.busy`; make water behave like a local-storage resource except it has no Town Hall fallback; update carrier tests so they pass; run full `pytest` and `ruff check src tests`.
-- [x] **T283**: Cover demolition and invalidation behavior for new water logistics in one complete slice. If a water source well or target consumer is demolished while queued/in-flight, carriers must not crash or trap resources; carried water may be dropped if no valid target exists; water must never be returned to Town Hall. Add/adjust tests and implementation together; run full `pytest` and `ruff check src tests`.
+- [ ] **T306**: Add Cow Farm wheat input delivery planning only. Carriers should deliver wheat to Cow Farm when planned inbound wheat plus stored wheat is below capacity. Add tests for no overfill with queued/in-flight wheat. Run full `pytest` and `ruff check src tests`.
+- [ ] **T307**: Add Cow Farm water input delivery planning only. Carriers should deliver water from well local storage to Cow Farm when planned inbound water plus stored water is below capacity. Verify existing Bakery/Canteen/Chicken Farm water delivery still works. Run full `pytest` and `ruff check src tests`.
+- [ ] **T308**: Add Cow Farm beef output export planning only. Carriers should export beef from Cow Farm local output storage to Town Hall, accounting for queued/in-flight beef exports. Add demolition/invalid-task coverage for beef if not already covered generically. Run full `pytest` and `ruff check src tests`.
+- [ ] **T309**: Add Cow Farm hide output export planning only. Carriers should export hide from Cow Farm local output storage to Town Hall, accounting for queued/in-flight hide exports. Add demolition/invalid-task coverage for hide if not already covered generically. Run full `pytest` and `ruff check src tests`.
 
-### 23.5 Old logic cleanup and documentation
+### 24.5 Documentation and smoke coverage
 
-- [x] **T284**: Remove obsolete direct-well symbols and tests in one complete cleanup slice. Eliminate any remaining `water_worker_for_well`, `water_draw_progress_for_building`, direct draw panel wording, and old tests that only describe carrier-side drawing. (`WELL_DRAW_WATER_MS`, `Well.busy`, `reserve`/`release` removed in T282.) Replace them only with tests for the new producer/storage model where coverage would otherwise be lost. Run full `pytest` and `ruff check src tests`.
-- [x] **T285**: Update `PRD.md` for the new well model in one complete documentation slice. Document `WELL` as a normal staffed producer with local water storage, `WATERMAN` as its worker, water delivery from well local storage to consumers, and the rule that Town Hall never stores water. Remove old text about carriers reserving/drawing from wells. Run full `pytest` and `ruff check src tests`.
-- [x] **T286**: Add/update one end-to-end smoke test and close the phase. Cover well construction/setup, `WATERMAN` assignment, water production into local well storage, carrier delivery to at least two water consumers, no Town Hall water storage, and no starvation of the second consumer. Final gate: full `pytest` plus `ruff check src tests`; update Current Status and Notes; mark Phase 23 complete only when all tasks are `[x]`.
+- [ ] **T310**: Update documentation only. Update `PRD.md`, `building_extension_guide.md`, and any worker guide text needed for shared worker compatibility and multi-output processors. Avoid hard-coding numeric balance values in PRD. Run full `pytest` and `ruff check src tests`.
+- [ ] **T311**: Add one Phase 24 end-to-end smoke test and close the phase. Cover Cow Farm construction/setup, `ANIMAL_HERDER` assignment, wheat + water delivery, production of beef + hide, export to Town Hall, and no Town Hall water storage. Final gate: full `pytest` plus `ruff check src tests`; update Current Status and Notes; mark Phase 24 complete only when all tasks are `[x]`.
 
 ---
 
 ## Rules For Next Phase
 
 - Keep exactly one active task marked `[~]` at a time.
-- Start new work from the first unchecked `[ ]` task in the active phase.
+- Start new work from the `[~]` task if present; otherwise start from the first unchecked `[ ]` task in the active phase.
 - Each task must be independently finishable: add or update tests and implementation in the same task, and leave the full suite passing before marking `[x]`.
 - Do not leave intentionally failing RED tests in a checked-in task. If a test must fail temporarily while working, finish the implementation before marking the task done.
 - Mark `[x]` only after verification (`pytest`, and `ruff check src tests` when relevant).
+- After marking a task `[x]`, move `[~]` to the next unchecked task and update Current Status.
 - If blocked after repeated attempts, mark `[!]` and add a row in **Issues & Blockers**.
 
 ## Decisions Log
 
 | Date | Task | Decision | Rationale |
 |------|------|----------|-----------|
-| 2026-05-08 | Phase 23 | Replace direct-well carrier drawing with staffed well production and local well storage. | The old model required special queue logic for wells and starved later water consumers. A normal producer model matches the rest of the economy and simplifies transport. |
-| 2026-05-08 | Phase 23 | Use `WATERMAN` as the implementation worker type unless renamed later. | The user suggested a waterman-style worker; using one stable internal tag keeps tasks unblocked. |
-| 2026-05-08 | Phase 23 | Water remains excluded from Town Hall storage. | Water should be produced locally at wells and delivered directly to consumers, preserving the existing non-warehouse water rule. |
+| 2026-05-10 | Phase 24 | Reuse `ANIMAL_HERDER` for Cow Farm. | User requested the same worker as Chicken Farm; assignment logic should support one worker type serving multiple compatible animal buildings. |
+| 2026-05-10 | Phase 24 | Use internal resource ids `beef` and `hide`. | They are concise, stable ids for player-facing beef and hide. |
+| 2026-05-10 | Phase 24 | Keep Cow Farm recipe, timing, rest, and storage capacity in `cow_farm.json`. | Building-specific balance belongs in per-building JSON so agents do not need to edit large global settings for each building. |
 
 ## Issues & Blockers
 
@@ -98,11 +114,10 @@
 
 ## Notes
 
-- **2026-05-08:** T286: `tests/test_smoke_phase23.py` — supply well construction site, time-complete build, `WATERMAN` + two `CARRIER`s, `BAKERY` + `CANTEEN` both reach `water_amount >= 1`, Town Hall warehouse water stays 0.
-- **2026-05-08:** T285: PRD **F-RES-04**, **F-BLD-03**, well panel, **F-PROD-04**, **F-TRANSPORT-05**, and worker list now describe staffed `WELL` + `WATERMAN`, local water storage, carrier pickup from storage, and no Town Hall water / no obsolete reserve-draw model.
-- **2026-05-08:** T283: `notify_demolished` drops any transport queue entries whose source or target is the demolished building; tests cover queued well removal, mid-route drops when the well or consumer is removed, and Town Hall never gains warehouse water.
-- **2026-05-08:** T284: Renamed bakery water transport tests to describe well **storage** pickup (not carrier-side drawing); `building_extension_guide` no longer mentions well reservation. Obsolete helpers were already absent from `src/`.
-- **2026-05-08:** Keep old completed phase details in `progress_archive.md`; `progress.md` should stay focused on the current active phase to keep agent context small.
+- **2026-05-10:** Phase 24 planned for Cow Farm. Tasks are ordered so no task is only a failing-test step; each task must include implementation plus its own tests.
+- **2026-05-10:** Phase 24 tasks were split into smaller ralph-loop slices after review: one resource, one storage slot, one UI part, or one transport flow per task where practical.
+- **2026-05-10:** `ANIMAL_HERDER` currently serves `CHICKEN_FARM`; T303 should generalize compatibility carefully instead of duplicating one-off assignment paths.
+- Keep old completed phase details in `progress_archive.md`; `progress.md` should stay focused on the current active phase to keep agent context small.
 - Tests run headless via `SDL_VIDEODRIVER=dummy` in `tests/conftest.py`.
 - Pathfinding contract: **4-dir** `find_path_bfs` (no diagonals), aligned with PRD.
 - Worker extension rules: **`worker_extension_guide.md`**.

@@ -7,6 +7,10 @@
     "satiety": {
       "max": 10000,
       "drain_per_game_second": 5
+    },
+    "effects": {
+      "global": {},
+      "by_type": {}
     }
   },
   "world": {
@@ -29,7 +33,8 @@
       "boards": 10,
       "flour": 0,
       "bread": 0,
-      "chicken": 0
+      "chicken": 0,
+      "beef": 0
     }
   },
   "gates": {

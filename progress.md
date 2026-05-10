@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 24 - Cow Farm producer (**active**)
-- **Next Task:** T299 - Add Cow Farm display labels/descriptions only
-- **Last Completed:** T298 - Cow Farm in processing build menu
-- **Total Progress:** 298 / 311 (Phase 24: 12 / 25 done)
+- **Next Task:** T300 - Add Cow Farm panel shell only
+- **Last Completed:** T299 - Cow Farm display labels and descriptions
+- **Total Progress:** 299 / 311 (Phase 24: 13 / 25 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -63,8 +63,8 @@
 - [x] **T296**: Register `COW_FARM` for placement/construction only. Wire the building class into placement maps and input construction selection so a Cow Farm can be placed and built, without adding menu visibility yet. Add focused placement/construction tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T297**: Add Cow Farm asset loading/fallback only. Add the building folder mapping and placeholder/meta files only if real assets are absent; add focused asset tests proving construction and completed sprites resolve. Run full `pytest` and `ruff check src tests`.
 - [x] **T298**: Add Cow Farm to the processing build menu only. Add the processing-menu tile and click routing for `COW_FARM`; add focused bottom-bar/input tests. Run full `pytest` and `ruff check src tests`.
-- [~] **T299**: Add Cow Farm display labels/descriptions only. Update building display names/descriptions and any placement/panel labels that do not require a custom panel yet. Add focused label tests if existing patterns support them. Run full `pytest` and `ruff check src tests`.
-- [ ] **T300**: Add Cow Farm panel shell only. Create `CowFarmPanel`, route it from input, and show title/worker status/upgrade/demolish/active toggle using existing base layout, without custom storage/progress details yet. Add click/layout tests. Run full `pytest` and `ruff check src tests`.
+- [x] **T299**: Add Cow Farm display labels/descriptions only. Update building display names/descriptions and any placement/panel labels that do not require a custom panel yet. Add focused label tests if existing patterns support them. Run full `pytest` and `ruff check src tests`.
+- [~] **T300**: Add Cow Farm panel shell only. Create `CowFarmPanel`, route it from input, and show title/worker status/upgrade/demolish/active toggle using existing base layout, without custom storage/progress details yet. Add click/layout tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T301**: Add Cow Farm panel storage rows only. Show wheat, water, beef, and hide local storage values in the panel. Add draw/layout tests proving rows render without overlapping actions. Run full `pytest` and `ruff check src tests`.
 - [ ] **T302**: Add Cow Farm panel production status/progress only. Show blocked reason and processing progress bar using Cow Farm helpers. Add tests for running, missing inputs, full outputs, inactive, and no-worker display states. Run full `pytest` and `ruff check src tests`.
 

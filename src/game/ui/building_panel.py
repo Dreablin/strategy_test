@@ -22,6 +22,7 @@ _DISPLAY_NAME: dict[str, str] = {
     "FORESTER_HUT": "Forester Hut",
     "BAKERY": "Bakery",
     "CHICKEN_FARM": "Chicken Farm",
+    "COW_FARM": "Cow Farm",
     "CANTEEN": "Canteen",
     "WELL": "Well",
 }
@@ -36,6 +37,7 @@ _DESCRIPTION: dict[str, str] = {
     "MILL": "Processes wheat into flour.",
     "BAKERY": "Bakes flour and water into bread.",
     "CHICKEN_FARM": "Raises chickens from grain and water.",
+    "COW_FARM": "Herder raises cattle using wheat and water; produces beef and hide.",
     "CANTEEN": "Cook prepares simple meals from chicken, bread, and water.",
     "WELL": "Produces water into local storage.",
 }
@@ -83,6 +85,15 @@ class BuildingPanel:
         has_status_row = production_status is not None
         text_rows = 4 + int(has_storage_row) + int(has_status_row)
         btn_count = int(can_upgrade) + int(show_demolish)
+        positioned_btn_count = btn_count
+        if (
+            extra_bottom_px > 0
+            and show_demolish
+            and not can_upgrade
+            and building.level >= max_lv
+            and max_lv > 1
+        ):
+            positioned_btn_count += 1
         h = (
             _PANEL_PAD * 2
             + _ROW
@@ -100,7 +111,7 @@ class BuildingPanel:
             _CLOSE,
         )
 
-        y = frame.bottom - _PANEL_PAD - (btn_count * (_BTN_H + 8) if btn_count else 0)
+        y = frame.bottom - _PANEL_PAD - (positioned_btn_count * (_BTN_H + 8) if positioned_btn_count else 0)
         demolish_r: pygame.Rect | None = None
         upgrade_r: pygame.Rect | None = None
         if show_demolish:

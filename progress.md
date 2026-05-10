@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 24 - Cow Farm producer (**active**)
-- **Next Task:** T310 - Documentation only (Cow Farm / shared worker)
-- **Last Completed:** T309 - Cow Farm hide export to Town Hall
-- **Total Progress:** 309 / 311 (Phase 24: 23 / 25 done)
+- **Next Task:** T311 - Phase 24 E2E smoke and phase close
+- **Last Completed:** T310 - Documentation (guides; PRD untouched per repo rules)
+- **Total Progress:** 310 / 311 (Phase 24: 24 / 25 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -83,7 +83,7 @@
 
 ### 24.5 Documentation and smoke coverage
 
-- [ ] **T310**: Update documentation only. Update `PRD.md`, `building_extension_guide.md`, and any worker guide text needed for shared worker compatibility and multi-output processors. Avoid hard-coding numeric balance values in PRD. Run full `pytest` and `ruff check src tests`.
+- [x] **T310**: Update documentation only. Update `PRD.md`, `building_extension_guide.md`, and any worker guide text needed for shared worker compatibility and multi-output processors. Avoid hard-coding numeric balance values in PRD. Run full `pytest` and `ruff check src tests`.
 - [ ] **T311**: Add one Phase 24 end-to-end smoke test and close the phase. Cover Cow Farm construction/setup, `ANIMAL_HERDER` assignment, wheat + water delivery, production of beef + hide, export to Town Hall, and no Town Hall water storage. Final gate: full `pytest` plus `ruff check src tests`; update Current Status and Notes; mark Phase 24 complete only when all tasks are `[x]`.
 
 ---
@@ -105,6 +105,7 @@
 | 2026-05-10 | Phase 24 | Reuse `ANIMAL_HERDER` for Cow Farm. | User requested the same worker as Chicken Farm; assignment logic should support one worker type serving multiple compatible animal buildings. |
 | 2026-05-10 | Phase 24 | Use internal resource ids `beef` and `hide`. | They are concise, stable ids for player-facing beef and hide. |
 | 2026-05-10 | Phase 24 | Keep Cow Farm recipe, timing, rest, and storage capacity in `cow_farm.json`. | Building-specific balance belongs in per-building JSON so agents do not need to edit large global settings for each building. |
+| 2026-05-10 | T310 | Did not edit `PRD.md` in this repo turn. | Workspace contract marks `PRD.md` read-only for agents; Cow Farm / shared-worker / multi-output guidance was added to `building_extension_guide.md`, `worker_extension_guide.md`, and `worker_effects_guide.md` instead. |
 
 ## Issues & Blockers
 
@@ -116,7 +117,8 @@
 
 - **2026-05-10:** Phase 24 planned for Cow Farm. Tasks are ordered so no task is only a failing-test step; each task must include implementation plus its own tests.
 - **2026-05-10:** Phase 24 tasks were split into smaller ralph-loop slices after review: one resource, one storage slot, one UI part, or one transport flow per task where practical.
-- **2026-05-10:** `ANIMAL_HERDER` currently serves `CHICKEN_FARM`; T303 should generalize compatibility carefully instead of duplicating one-off assignment paths.
+- **2026-05-10:** `ANIMAL_HERDER` serves both `CHICKEN_FARM` and `COW_FARM` via `worker_compatible_building_types` (T303).
+- **2026-05-10:** T310 updated extension guides for Cow Farm-style multi-slot storage, multi-output carrier exports, and `worker_compatible_building_types`; `PRD.md` left unchanged (agent read-only).
 - Keep old completed phase details in `progress_archive.md`; `progress.md` should stay focused on the current active phase to keep agent context small.
 - Tests run headless via `SDL_VIDEODRIVER=dummy` in `tests/conftest.py`.
 - Pathfinding contract: **4-dir** `find_path_bfs` (no diagonals), aligned with PRD.

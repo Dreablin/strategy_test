@@ -15,6 +15,8 @@ to the focused worker module that matches the worker's behavior.
 ## Current Worker Modules
 
 - `worker_models.py`: `Worker`, `TransportTask`, and worker characteristics.
+- `worker_effects_guide.md`: worker stat modifier contract and building
+  assigned-worker effect rules.
 - `worker_constants.py`: worker timing, speed, and retry constants.
 - `worker_hiring.py`: school hiring lists, worker-to-building mapping, housing
   checks, and hire helpers.
@@ -34,6 +36,11 @@ to the focused worker module that matches the worker's behavior.
 
    - Add the worker type to `HIRABLE_WORKERS` in `worker_hiring.py`.
    - Map it in `WORKER_TO_BUILDING` if it staffs a building.
+   - If the worker type needs a static baseline modifier, add it to
+     `game_settings.json` under `workers.effects.by_type.<WORKER_TYPE>`.
+   - If it staffs a building, it receives that building's JSON
+     `worker_effects.by_level.<level>.assigned_worker` through normal
+     assignment. Do not add a separate hard-coded speed formula.
    - Add school UI/icon data where school hiring controls are built.
    - Add or verify worker assets and asset loading tests.
 
@@ -101,6 +108,23 @@ logic.
   (`take_from_storage` / `add_to_storage` on return if undeliverable), same
   interact timing as other pickups, and deliver to any water-capable consumer.
   Water is never warehoused at Town Hall.
+- Carrier transport does not count as building assignment. A carrier never gets
+  `assigned_worker` effects from the source or target building of a transport
+  task.
+
+## One worker type, multiple staffable buildings
+
+Some hired workers can work at more than one building type. The canonical
+pattern is `worker_compatible_building_types(worker_type)` in
+`worker_hiring.py`, which returns every `type_tag` the worker may be assigned
+to. `WORKER_TO_BUILDING` may still name a primary pairing for defaults or UI,
+but compatibility checks and reassignment must use the frozenset, not only that
+single mapping.
+
+Example: `ANIMAL_HERDER` staffs both `CHICKEN_FARM` and `COW_FARM`. Adding
+another animal building should extend the frozenset and any placement or school
+labels that list compatible sites, without introducing a second worker type
+unless design explicitly requires it.
 - If a task cannot be assigned because a temporary source is busy, do not block
   unrelated tasks behind it. Requeue or skip it so other eligible deliveries can
   proceed.
@@ -112,7 +136,8 @@ logic.
 - Completed work buildings should start unstaffed. Let
   `WorkerManager.reassign_all()` assign an idle compatible worker.
 - If the building processes inputs into outputs, use `ProcessorSpec` unless its
-  cycle is materially different.
+  cycle is materially different. Multi-output buildings still use one spec per
+  cycle; local storage exposes separate output slots (see Cow Farm beef/hide).
 - If the building needs carrier-delivered inputs or exported outputs, add or
   extend transport task builders in `transport_tasks.py`.
 - Do not use passive `Building.income()` for active resources.

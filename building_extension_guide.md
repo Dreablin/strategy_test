@@ -21,7 +21,8 @@ transport tasks.
 - `src/game/buildings/registry.py`: placement, demolition, upgrades,
   construction site creation, world occupancy, and special placement rules.
 - `src/game/settings/buildings/<name>.json`: construction and upgrade costs.
-  Keep per-building construction data here, not hard-coded in `config.py`.
+  Keep per-building construction data and building-owned worker effects here,
+  not hard-coded in `config.py` or worker runtime.
 - `assets/buildings/<folder>/`: building sprites and `asset_meta.json`.
 - `src/game/assets.py`: type tag to asset-folder mapping and procedural fallback
   palette when needed.
@@ -48,6 +49,13 @@ transport tasks.
      `input_capacity()`, `output_amount()`, `output_capacity()`,
      `add_<resource>_in()`, `take_<resource>_in()`, and
      `add_<resource>_out()`.
+   - When a building has **multiple distinct input or output storages** (for
+     example `COW_FARM` with wheat and water inputs plus beef and hide
+     outputs), use explicit per-slot helpers (`wheat_amount`, `beef_amount`,
+     `take_hide_out`, and so on) instead of overloading a single generic pair.
+     Recipe and processor runtime still read amounts from JSON; keep balance
+     numbers in `src/game/settings/buildings/<name>.json`, not in code
+     constants.
 
 2. Add construction settings.
 
@@ -56,6 +64,9 @@ transport tasks.
    - Most normal buildings have 10 levels. Use explicit exceptions for special
      buildings such as `FIELD`, `WELL`, and `TOWN_HALL`.
    - Do not add duplicate construction cost tables in code.
+   - If the building should improve its assigned worker, add
+     `worker_effects.by_level.<level>.assigned_worker` in this JSON. These
+     effects apply only to `worker.assigned_building is building`.
 
 3. Register placement and menus.
 
@@ -97,11 +108,21 @@ transport tasks.
      `worker_transport.py`, not inside building classes.
    - Water is never stored in Town Hall. Water consumers should expose water
      input capability methods and use the existing water transport path.
+   - Building `assigned_worker` effects never apply to carriers just because a
+     carrier delivers to or picks up from the building.
 
 7. Extend transport deliberately.
 
    - Add task builders in `transport_tasks.py` for new construction inputs,
      processor refills, water inputs, or output exports.
+   - **Multi-output processors:** each warehoused Town Hall resource needs its
+     own export task generator (for example beef and hide each have a
+     `cow_farm_*_output_transport_tasks` builder). Each unit of local output
+     typically becomes one low-priority `TransportTask` toward `TOWN_HALL`.
+     Extend `worker_transport.py` for pickup (`take_*_out`), rollback on
+     failed path (`add_*_out`), `_next_transport_task` source presence, and
+     stale-queue removal when the source slot is empty, mirroring existing
+     chicken or single-output processor patterns.
    - The task builder should express desired deliveries only. Let
      `worker_transport.py` handle queue deduplication, priority selection,
      carrier movement, invalid-task rerouting, and water-specific reroute rules
@@ -158,3 +179,5 @@ $env:PYTHONPATH='src'
 - Normalizing `FIELD`, `WELL`, or `TOWN_HALL` into ordinary building behavior.
 - Adding a custom panel when the generic panel is enough.
 - Hard-coding one consumer for a resource when multiple consumers are expected.
+- Reintroducing Python formulas for per-level worker bonuses that belong in
+  building JSON.

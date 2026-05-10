@@ -43,6 +43,13 @@ class CowFarm(Building):
     def wheat_capacity(self) -> int:
         return self.storage_capacity()
 
+    def input_amount(self) -> int:
+        """Wheat slot (used by carrier / ``processor_input_transport_tasks``)."""
+        return self.wheat_amount()
+
+    def input_capacity(self) -> int:
+        return self.wheat_capacity()
+
     def add_wheat_in(self, amount: int) -> None:
         n = int(amount)
         if n < 0:

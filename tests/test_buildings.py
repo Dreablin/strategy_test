@@ -5,6 +5,7 @@ import pytest
 from game.construction import ConstructionSite
 from game.buildings.farm import Farm
 from game.buildings.chicken_farm import ChickenFarm
+from game.buildings.cow_farm import CowFarm
 from game.config import building_level_int_setting, town_hall_origin_tile
 from game.buildings.iron_mine import IronMine
 from game.buildings.lumber_camp import LumberCamp
@@ -25,6 +26,7 @@ from game.world import World
         (IronMine, "IRON_MINE"),
         (Farm, "FARM"),
         (ChickenFarm, "CHICKEN_FARM"),
+        (CowFarm, "COW_FARM"),
         (Mill, "MILL"),
         (Well, "WELL"),
     ],
@@ -42,6 +44,7 @@ def test_building_type_tag(cls: type, expected_type: str) -> None:
         (IronMine, (2, 2)),
         (Farm, (2, 2)),
         (ChickenFarm, (2, 2)),
+        (CowFarm, (2, 2)),
         (Mill, (2, 2)),
         (Well, (2, 2)),
     ],
@@ -57,6 +60,7 @@ def test_all_production_buildings_have_no_passive_income() -> None:
     assert IronMine.income(2) == {}
     assert Farm.income(5) == {}
     assert ChickenFarm.income(5) == {}
+    assert CowFarm.income(5) == {}
     assert Mill.income(5) == {}
     assert Well.income(1) == {}
 
@@ -220,7 +224,9 @@ def test_well_exposes_local_water_storage_api() -> None:
         well.local_storage_amount("wood")
 
 
-@pytest.mark.parametrize("cls", [LumberCamp, StoneMine, IronMine, Farm, ChickenFarm, TownHall, Well])
+@pytest.mark.parametrize(
+    "cls", [LumberCamp, StoneMine, IronMine, Farm, ChickenFarm, CowFarm, TownHall, Well]
+)
 def test_buildings_default_to_not_under_construction(cls: type) -> None:
     building = cls(level=1, grid_pos=(10, 10))
     assert building.construction_site is None

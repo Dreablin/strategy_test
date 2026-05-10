@@ -1,0 +1,38 @@
+"""Cow farm building shell: beef + hide processor (storage and recipe helpers land in later tasks)."""
+
+from __future__ import annotations
+
+from typing import ClassVar
+
+from game.buildings.base import Building
+from game.config import building_int_setting, building_level_int_setting
+
+
+class CowFarm(Building):
+    type_tag: ClassVar[str] = "COW_FARM"
+    footprint: ClassVar[tuple[int, int]] = (2, 2)
+    __slots__ = ("active", "processing_started_ms", "processing_duration_ms")
+
+    def __init__(self, level: int = 1, grid_pos: tuple[int, int] | None = None) -> None:
+        super().__init__(level=level, grid_pos=grid_pos)
+        self.active = True
+        self.processing_started_ms = 0
+        self.processing_duration_ms = building_int_setting(self.type_tag, "production", "cycle_ms")
+
+    def set_active(self, value: bool) -> None:
+        self.active = bool(value)
+
+    def storage_capacity(self) -> int:
+        return building_level_int_setting(self.type_tag, "storage", self.level)
+
+    def processing_progress(self, now_ms: int) -> float:
+        if self.processing_started_ms <= 0:
+            return 0.0
+        duration = max(1, int(self.processing_duration_ms))
+        elapsed = max(0, int(now_ms) - int(self.processing_started_ms))
+        return max(0.0, min(1.0, elapsed / float(duration)))
+
+    def progress_state(self, now_ms: int) -> str:
+        if self.processing_started_ms > 0 and self.processing_progress(now_ms) < 1.0:
+            return "processing"
+        return "idle"

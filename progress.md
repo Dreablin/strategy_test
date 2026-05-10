@@ -2,10 +2,10 @@
 
 ## Current Status
 
-- **Phase:** 24 - Cow Farm producer (**active**)
-- **Next Task:** T311 - Phase 24 E2E smoke and phase close
-- **Last Completed:** T310 - Documentation (guides; PRD untouched per repo rules)
-- **Total Progress:** 310 / 311 (Phase 24: 24 / 25 done)
+- **Phase:** 24 - Cow Farm producer (**complete**)
+- **Next Task:** None — Phase 24 finished; define Phase 25 in `progress.md` when ready
+- **Last Completed:** T311 - Phase 24 E2E smoke and phase close
+- **Total Progress:** 311 / 311 (Phase 24: 25 / 25 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -13,7 +13,7 @@
 
 ## Task Log
 
-## Phase 24 - Cow Farm producer
+## Phase 24 - Cow Farm producer (**complete**)
 
 **Goal.** Add `COW_FARM`, a processing building staffed by the existing `ANIMAL_HERDER`. It consumes wheat and water from local input storage, produces two output resources (`beef` and `hide`) into local output storage, and carriers export those outputs to Town Hall warehouse.
 
@@ -84,7 +84,7 @@
 ### 24.5 Documentation and smoke coverage
 
 - [x] **T310**: Update documentation only. Update `PRD.md`, `building_extension_guide.md`, and any worker guide text needed for shared worker compatibility and multi-output processors. Avoid hard-coding numeric balance values in PRD. Run full `pytest` and `ruff check src tests`.
-- [ ] **T311**: Add one Phase 24 end-to-end smoke test and close the phase. Cover Cow Farm construction/setup, `ANIMAL_HERDER` assignment, wheat + water delivery, production of beef + hide, export to Town Hall, and no Town Hall water storage. Final gate: full `pytest` plus `ruff check src tests`; update Current Status and Notes; mark Phase 24 complete only when all tasks are `[x]`.
+- [x] **T311**: Add one Phase 24 end-to-end smoke test and close the phase. Cover Cow Farm construction/setup, `ANIMAL_HERDER` assignment, wheat + water delivery, production of beef + hide, export to Town Hall, and no Town Hall water storage. Final gate: full `pytest` plus `ruff check src tests`; update Current Status and Notes; mark Phase 24 complete only when all tasks are `[x]`.
 
 ---
 
@@ -119,6 +119,7 @@
 - **2026-05-10:** Phase 24 tasks were split into smaller ralph-loop slices after review: one resource, one storage slot, one UI part, or one transport flow per task where practical.
 - **2026-05-10:** `ANIMAL_HERDER` serves both `CHICKEN_FARM` and `COW_FARM` via `worker_compatible_building_types` (T303).
 - **2026-05-10:** T310 updated extension guides for Cow Farm-style multi-slot storage, multi-output carrier exports, and `worker_compatible_building_types`; `PRD.md` left unchanged (agent read-only).
+- **2026-05-10:** T311 added `tests/test_smoke_phase24.py` (Cow Farm E2E); Phase 24 closed with all tasks `[x]`.
 - Keep old completed phase details in `progress_archive.md`; `progress.md` should stay focused on the current active phase to keep agent context small.
 - Tests run headless via `SDL_VIDEODRIVER=dummy` in `tests/conftest.py`.
 - Pathfinding contract: **4-dir** `find_path_bfs` (no diagonals), aligned with PRD.

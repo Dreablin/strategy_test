@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 24 - Cow Farm producer (**active**)
-- **Next Task:** T309 - Cow Farm hide output export planning only
-- **Last Completed:** T308 - Cow Farm beef export to Town Hall
-- **Total Progress:** 308 / 311 (Phase 24: 22 / 25 done)
+- **Next Task:** T310 - Documentation only (Cow Farm / shared worker)
+- **Last Completed:** T309 - Cow Farm hide export to Town Hall
+- **Total Progress:** 309 / 311 (Phase 24: 23 / 25 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -79,7 +79,7 @@
 - [x] **T306**: Add Cow Farm wheat input delivery planning only. Carriers should deliver wheat to Cow Farm when planned inbound wheat plus stored wheat is below capacity. Add tests for no overfill with queued/in-flight wheat. Run full `pytest` and `ruff check src tests`.
 - [x] **T307**: Add Cow Farm water input delivery planning only. Carriers should deliver water from well local storage to Cow Farm when planned inbound water plus stored water is below capacity. Verify existing Bakery/Canteen/Chicken Farm water delivery still works. Run full `pytest` and `ruff check src tests`.
 - [x] **T308**: Add Cow Farm beef output export planning only. Carriers should export beef from Cow Farm local output storage to Town Hall, accounting for queued/in-flight beef exports. Add demolition/invalid-task coverage for beef if not already covered generically. Run full `pytest` and `ruff check src tests`.
-- [~] **T309**: Add Cow Farm hide output export planning only. Carriers should export hide from Cow Farm local output storage to Town Hall, accounting for queued/in-flight hide exports. Add demolition/invalid-task coverage for hide if not already covered generically. Run full `pytest` and `ruff check src tests`.
+- [x] **T309**: Add Cow Farm hide output export planning only. Carriers should export hide from Cow Farm local output storage to Town Hall, accounting for queued/in-flight hide exports. Add demolition/invalid-task coverage for hide if not already covered generically. Run full `pytest` and `ruff check src tests`.
 
 ### 24.5 Documentation and smoke coverage
 

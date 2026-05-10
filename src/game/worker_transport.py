@@ -16,6 +16,7 @@ from game.transport_tasks import (
     canteen_input_transport_tasks,
     chicken_farm_output_transport_tasks,
     cow_farm_beef_output_transport_tasks,
+    cow_farm_hide_output_transport_tasks,
     construction_transport_tasks,
     farm_wheat_output_transport_tasks,
     iron_mine_output_transport_tasks,
@@ -219,10 +220,16 @@ class WorkerTransportMixin:
                 has_storage_source = int(task.source.output_amount()) > 0  # type: ignore[attr-defined]
             elif task.resource == "beef" and hasattr(task.source, "beef_amount"):
                 has_storage_source = int(task.source.beef_amount()) > 0  # type: ignore[attr-defined]
+            elif task.resource == "hide" and hasattr(task.source, "hide_amount"):
+                has_storage_source = int(task.source.hide_amount()) > 0  # type: ignore[attr-defined]
             elif task.resource == "water" and task.source.type_tag == "WELL":
                 has_storage_source = _water_amount(task.source) > 0
             if task.resource == "beef" and getattr(task.source, "type_tag", "") == "COW_FARM":
                 if int(task.source.beef_amount()) <= 0:  # type: ignore[attr-defined]
+                    stale_indices.append(idx)
+                    continue
+            if task.resource == "hide" and getattr(task.source, "type_tag", "") == "COW_FARM":
+                if int(task.source.hide_amount()) <= 0:  # type: ignore[attr-defined]
                     stale_indices.append(idx)
                     continue
             has_warehouse_source = hasattr(task.source, "warehouse_amount") and int(
@@ -433,6 +440,12 @@ class WorkerTransportMixin:
                     except ValueError:
                         self._drop_failed_pickup(worker, task)
                         return
+                elif task.resource == "hide" and hasattr(task.source, "take_hide_out"):
+                    try:
+                        task.source.take_hide_out(1)  # type: ignore[attr-defined]
+                    except ValueError:
+                        self._drop_failed_pickup(worker, task)
+                        return
                 elif not hasattr(task.source, "take_from_warehouse"):
                     worker.transport_task = None
                     worker.state = "idle"
@@ -471,6 +484,8 @@ class WorkerTransportMixin:
                     task.source.add_chicken_out(1)  # type: ignore[attr-defined]
                 elif task.resource == "beef" and hasattr(task.source, "add_beef_out"):
                     task.source.add_beef_out(1)  # type: ignore[attr-defined]
+                elif task.resource == "hide" and hasattr(task.source, "add_hide_out"):
+                    task.source.add_hide_out(1)  # type: ignore[attr-defined]
                 elif hasattr(task.source, "add_to_storage"):
                     task.source.add_to_storage(1)  # type: ignore[attr-defined]
                 elif hasattr(task.source, "add_to_warehouse"):
@@ -727,6 +742,11 @@ class WorkerTransportMixin:
         if self._registry is None:  # type: ignore[attr-defined]
             return
         self._enqueue_desired_transport_tasks(cow_farm_beef_output_transport_tasks(self._registry))  # type: ignore[attr-defined]
+
+    def _enqueue_cow_farm_hide_output_tasks(self) -> None:
+        if self._registry is None:  # type: ignore[attr-defined]
+            return
+        self._enqueue_desired_transport_tasks(cow_farm_hide_output_transport_tasks(self._registry))  # type: ignore[attr-defined]
 
     def _enqueue_iron_mine_output_tasks(self) -> None:
         if self._registry is None:  # type: ignore[attr-defined]

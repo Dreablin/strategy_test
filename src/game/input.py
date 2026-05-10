@@ -9,6 +9,7 @@ from game.buildings.bakery import Bakery
 from game.buildings.base import Building
 from game.buildings.canteen import Canteen
 from game.buildings.chicken_farm import ChickenFarm
+from game.buildings.cow_farm import CowFarm
 from game.buildings.forester_hut import ForesterHut
 from game.buildings.iron_mine import IronMine
 from game.buildings.lumber_camp import LumberCamp
@@ -27,6 +28,7 @@ from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT, BottomBar
 from game.ui.bakery_panel import BakeryPanel
 from game.ui.canteen_panel import CanteenPanel
 from game.ui.chicken_farm_panel import ChickenFarmPanel
+from game.ui.cow_farm_panel import CowFarmPanel
 from game.ui.building_panel import BuildingPanel
 from game.ui.construction_panel import ConstructionPanel
 from game.ui.forester_hut_panel import ForesterHutPanel
@@ -454,6 +456,19 @@ class GameInput:
                 now_ms=pygame.time.get_ticks(),
             )
             return
+        if CowFarmPanel.supports_building(self._panel):
+            assert isinstance(self._panel, CowFarm)
+            worker_status = self._panel_worker_status()
+            production_status = self._panel_production_status()
+            CowFarmPanel.draw(
+                surface,
+                self._panel,
+                worker_assigned=worker_status != "empty",
+                worker_status=worker_status,
+                production_status=production_status,
+                now_ms=pygame.time.get_ticks(),
+            )
+            return
         if WellPanel.supports_building(self._panel):
             assert isinstance(self._panel, Well)
             worker_status = self._panel_worker_status()
@@ -855,6 +870,37 @@ class GameInput:
                 )
                 if layout.frame.collidepoint(pos):
                     action = ChickenFarmPanel.click_action(
+                        surface,
+                        pos,
+                        self._panel,
+                        worker_assigned=worker_status != "empty",
+                        production_status=production_status,
+                    )
+                    if action == "close":
+                        self._panel = None
+                    elif action == "upgrade" and self._panel is not None:
+                        if self._registry.upgrade_building(self._panel):
+                            self._sync_assignments()
+                    elif action == "demolish" and self._panel is not None:
+                        b = self._panel
+                        self._registry.demolish(b, self._worker_manager)
+                        self._panel = None
+                        self._sync_assignments()
+                    elif action == "toggle_active" and self._panel is not None:
+                        self._panel.set_active(not self._panel.active)
+                    return
+            if CowFarmPanel.supports_building(self._panel):
+                assert isinstance(self._panel, CowFarm)
+                worker_status = self._panel_worker_status()
+                production_status = self._panel_production_status()
+                layout = CowFarmPanel.layout(
+                    surface,
+                    self._panel,
+                    worker_assigned=worker_status != "empty",
+                    production_status=production_status,
+                )
+                if layout.frame.collidepoint(pos):
+                    action = CowFarmPanel.click_action(
                         surface,
                         pos,
                         self._panel,

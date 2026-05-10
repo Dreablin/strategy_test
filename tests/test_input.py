@@ -4,6 +4,7 @@ import pygame
 
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.chicken_farm import ChickenFarm
+from game.buildings.cow_farm import CowFarm
 from game.buildings.mill import Mill
 from game.buildings.registry import BuildingRegistry
 from game.buildings.school import School
@@ -18,6 +19,7 @@ from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT, BottomBar
 from game.ui.building_panel import BuildingPanel
 from game.ui.construction_panel import ConstructionPanel
 from game.ui.chicken_farm_panel import ChickenFarmPanel
+from game.ui.cow_farm_panel import CowFarmPanel
 from game.ui.lumber_camp_panel import LumberCampPanel
 from game.ui.mill_panel import MillPanel
 from game.ui.placement import PlacementController
@@ -518,6 +520,54 @@ def test_chicken_farm_panel_draw_routing(monkeypatch) -> None:
     monkeypatch.setattr(ChickenFarmPanel, "draw", staticmethod(_draw_farm))
     inp.draw_panel(surface)
     assert called["farm"] == 1
+
+
+def test_cow_farm_panel_draw_routing(monkeypatch) -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World(world_seed=2)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    world._iron.clear()  # noqa: SLF001
+    world._gold.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    farm = registry.place(CowFarm, near_town_hall_tile(24, 8))
+    farm.construction_site = None
+    camera = Camera()
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(registry), camera)
+    inp._panel = farm  # noqa: SLF001
+    called = {"farm": 0}
+
+    def _draw_farm(*args, **kwargs):
+        called["farm"] += 1
+
+    monkeypatch.setattr(CowFarmPanel, "draw", staticmethod(_draw_farm))
+    inp.draw_panel(surface)
+    assert called["farm"] == 1
+
+
+def test_cow_farm_panel_toggle_click_toggles_active() -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World(world_seed=2)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    world._iron.clear()  # noqa: SLF001
+    world._gold.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    farm = registry.place(CowFarm, near_town_hall_tile(24, 8))
+    farm.construction_site = None
+    camera = Camera()
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(registry), camera)
+    inp._panel = farm  # noqa: SLF001
+    layout = CowFarmPanel.layout(surface, farm, worker_assigned=False, production_status=None)
+    inp.handle(
+        surface,
+        pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=layout.toggle.center),
+    )
+    assert farm.active is False
 
 
 def test_chicken_farm_panel_toggle_click_toggles_active() -> None:

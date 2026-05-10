@@ -57,6 +57,7 @@ def test_building_sprite_smoke() -> None:
         "bakery",
         "well",
         "chicken_farm",
+        "cow_farm",
         "canteen",
     ):
         for level in (1, 5, 10):
@@ -65,6 +66,26 @@ def test_building_sprite_smoke() -> None:
             ax, ay = building_sprite_anchor(b_type, level)
             assert 0 <= ax <= spr.get_width()
             assert 0 <= ay <= spr.get_height()
+
+
+def test_cow_farm_disk_meta_and_sprite_smoke() -> None:
+    """T297: meta on disk; ready + construction sprites resolve (procedural fallback)."""
+    root = Path(__file__).resolve().parents[1] / "assets" / "buildings" / "cow_farm"
+    assert (root / "asset_meta.json").is_file()
+
+    for b_tag in ("cow_farm", "COW_FARM"):
+        for level in (1, 5, 10):
+            spr = building_sprite(b_tag, level)
+            _assert_nonempty_surface(spr)
+            ax, ay = building_sprite_anchor(b_tag, level)
+            assert 0 <= ax <= spr.get_width()
+            assert 0 <= ay <= spr.get_height()
+        for target_level in (1, 10):
+            cspr = building_sprite_construction(b_tag, target_level)
+            _assert_nonempty_surface(cspr)
+            cax, cay = assets_mod.building_sprite_construction_anchor(b_tag, target_level)
+            assert 0 <= cax <= cspr.get_width()
+            assert 0 <= cay <= cspr.get_height()
 
 
 def test_canteen_disk_placeholders_and_sprite_smoke() -> None:

@@ -272,6 +272,28 @@ def chicken_farm_output_transport_tasks(registry: Any) -> list[TransportTask]:
     return tasks
 
 
+def cow_farm_beef_output_transport_tasks(registry: Any) -> list[TransportTask]:
+    """Build low-priority beef export tasks from cow farms to Town Hall warehouse."""
+    if registry is None:
+        return []
+    buildings = list(registry.all())
+    town_hall = next((b for b in buildings if b.type_tag == "TOWN_HALL"), None)
+    if town_hall is None:
+        return []
+    tasks: list[TransportTask] = []
+    for building in buildings:
+        if building.type_tag != "COW_FARM":
+            continue
+        if getattr(building, "is_under_construction", False):
+            continue
+        amount = int(getattr(building, "beef_amount", lambda: 0)())
+        if amount <= 0:
+            continue
+        for _ in range(amount):
+            tasks.append(TransportTask(resource="beef", source=building, target=town_hall, priority=0))
+    return tasks
+
+
 def _water_capacity(building: Building) -> int:
     water_capacity = getattr(building, "water_capacity", None)
     if callable(water_capacity):

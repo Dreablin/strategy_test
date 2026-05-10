@@ -17,6 +17,7 @@ from game.transport_tasks import (
     bakery_input_transport_tasks,
     bakery_output_transport_tasks,
     chicken_farm_output_transport_tasks,
+    cow_farm_beef_output_transport_tasks,
     construction_transport_tasks,
     farm_wheat_output_transport_tasks,
     iron_mine_output_transport_tasks,
@@ -90,6 +91,7 @@ __all__ = [
     "bakery_input_transport_tasks",
     "bakery_output_transport_tasks",
     "chicken_farm_output_transport_tasks",
+    "cow_farm_beef_output_transport_tasks",
     "iron_mine_output_transport_tasks",
     "farm_wheat_output_transport_tasks",
     "processor_input_transport_tasks",
@@ -472,6 +474,7 @@ class WorkerManager(
         self._enqueue_water_input_tasks()
         self._enqueue_bakery_output_tasks()
         self._enqueue_chicken_farm_output_tasks()
+        self._enqueue_cow_farm_beef_output_tasks()
         self._enqueue_iron_mine_output_tasks()
         self._enqueue_farm_wheat_output_tasks()
         if self._registry is not None:

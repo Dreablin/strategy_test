@@ -276,6 +276,18 @@ def test_build_menu_select_chicken_farm_sets_pending_type() -> None:
     assert placement.pending_type.type_tag == "CHICKEN_FARM"
 
 
+def test_build_menu_select_cow_farm_sets_pending_type() -> None:
+    surface = pygame.Surface((640, 480))
+    world = World()
+    registry = BuildingRegistry(world)
+    camera = Camera()
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(), camera)
+    inp.handle(surface, pygame.event.Event(BUILD_MENU_SELECT, building_type="COW_FARM"))
+    assert placement.pending_type is not None
+    assert placement.pending_type.type_tag == "COW_FARM"
+
+
 def test_under_construction_building_uses_construction_panel_draw(monkeypatch) -> None:
     surface = pygame.Surface((1280, 720))
     world = World(world_seed=2)

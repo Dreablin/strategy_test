@@ -48,6 +48,7 @@
       "CANTEEN": 1,
       "BAKERY": 1,
       "CHICKEN_FARM": 1,
+      "COW_FARM": 1,
       "WELL": 1
     },
     "hire_min_town_hall_level": {

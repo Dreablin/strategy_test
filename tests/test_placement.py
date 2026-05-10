@@ -3,6 +3,7 @@
 import pygame
 
 from game.buildings.registry import BuildingRegistry
+from game.buildings.cow_farm import CowFarm
 from game.buildings.forester_hut import ForesterHut
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.stone_mine import StoneMine
@@ -18,6 +19,8 @@ from game.ui.placement import (
 )
 from game.world import World
 from game.buildings.farm import Farm
+from game.buildings.town_hall import TownHall
+from game.config import CONSTRUCTION_REQUIREMENTS, town_hall_origin_tile
 from game.workers import (
     FARMER_FIELD_RADIUS,
     FORESTER_PLANT_RADIUS,
@@ -32,6 +35,26 @@ def _cell_center_screen(surface: pygame.Surface, world: World, gx: int, gy: int)
     ox, oy = Renderer.map_origin(surface, world)
     sx, sy = world_to_screen(gx, gy)
     return ox + sx + TILE_W // 2, oy + sy + TILE_H // 2
+
+
+def test_place_cow_farm_requires_town_hall_gate_and_starts_construction() -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    placement = PlacementController(world, registry)
+    placement.select("COW_FARM")
+    cx, cy = _cell_center_screen(surface, world, 12, 12)
+    assert placement.try_place(surface, (cx, cy))
+    cows = [b for b in registry.all() if b.type_tag == "COW_FARM"]
+    assert len(cows) == 1
+    assert isinstance(cows[0], CowFarm)
+    assert cows[0].is_under_construction
+    site = cows[0].construction_site
+    assert site is not None
+    spec = CONSTRUCTION_REQUIREMENTS["COW_FARM"][1]
+    assert site.required_resources == dict(spec.cost)
+    assert site.build_time_ms == spec.build_time_ms
 
 
 def test_place_lumber_camp_is_free() -> None:

@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 24 - Cow Farm producer (**active**)
-- **Next Task:** T302 - Add Cow Farm panel production status/progress only
-- **Last Completed:** T301 - Cow Farm panel storage rows
-- **Total Progress:** 301 / 311 (Phase 24: 15 / 25 done)
+- **Next Task:** T303 - Add worker-building compatibility support for multi-building worker types only
+- **Last Completed:** T302 - Cow Farm panel production status and progress bar
+- **Total Progress:** 302 / 311 (Phase 24: 16 / 25 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -66,11 +66,11 @@
 - [x] **T299**: Add Cow Farm display labels/descriptions only. Update building display names/descriptions and any placement/panel labels that do not require a custom panel yet. Add focused label tests if existing patterns support them. Run full `pytest` and `ruff check src tests`.
 - [x] **T300**: Add Cow Farm panel shell only. Create `CowFarmPanel`, route it from input, and show title/worker status/upgrade/demolish/active toggle using existing base layout, without custom storage/progress details yet. Add click/layout tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T301**: Add Cow Farm panel storage rows only. Show wheat, water, beef, and hide local storage values in the panel. Add draw/layout tests proving rows render without overlapping actions. Run full `pytest` and `ruff check src tests`.
-- [~] **T302**: Add Cow Farm panel production status/progress only. Show blocked reason and processing progress bar using Cow Farm helpers. Add tests for running, missing inputs, full outputs, inactive, and no-worker display states. Run full `pytest` and `ruff check src tests`.
+- [x] **T302**: Add Cow Farm panel production status/progress only. Show blocked reason and processing progress bar using Cow Farm helpers. Add tests for running, missing inputs, full outputs, inactive, and no-worker display states. Run full `pytest` and `ruff check src tests`.
 
 ### 24.3 Worker assignment and production runtime
 
-- [ ] **T303**: Add worker-building compatibility support for multi-building worker types only. Refactor assignment compatibility so `ANIMAL_HERDER` can target both `CHICKEN_FARM` and `COW_FARM`, while existing worker assignments remain unchanged. Add focused assignment/reassignment tests. Run full `pytest` and `ruff check src tests`.
+- [~] **T303**: Add worker-building compatibility support for multi-building worker types only. Refactor assignment compatibility so `ANIMAL_HERDER` can target both `CHICKEN_FARM` and `COW_FARM`, while existing worker assignments remain unchanged. Add focused assignment/reassignment tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T304**: Add Cow Farm processor runtime only. Add a processor spec/update path for `COW_FARM` using JSON duration/rest and recipe; verify one cycle consumes wheat/water and produces beef/hide, with active/no-worker/under-construction/full-output gates. Add focused runtime tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T305**: Add Cow Farm production status integration only. Make worker/building status helpers report Cow Farm states consistently with other processors. Add focused status tests. Run full `pytest` and `ruff check src tests`.
 

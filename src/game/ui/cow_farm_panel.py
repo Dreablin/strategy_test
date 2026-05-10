@@ -1,4 +1,4 @@
-"""Cow farm panel: shared building chrome, local storage rows, active toggle (progress in T302)."""
+"""Cow farm panel: storage rows, blocked hint, progress bar, and active toggle."""
 
 from __future__ import annotations
 
@@ -12,8 +12,10 @@ from game.ui.building_panel import BuildingPanel
 _PANEL_PAD = 16
 _BTN_H = 32
 _STORAGE_LINE_SP = 22
-# Reserve lower panel height like chicken farm so storage rows sit above upgrade/demolish.
-_EXTRA_BOTTOM = 152
+_BAR_H = 12
+_BLOCKED_TO_BAR_GAP = 24
+# Chicken-style detail stack plus one extra storage row (four inputs/outputs vs three).
+_EXTRA_BOTTOM = 152 + _STORAGE_LINE_SP
 # First storage line Y: same anchor as chicken farm details (between worker row and action buttons).
 _STORAGE_BLOCK_TOP_OFF = _PANEL_PAD + 4 * 26 + 32
 
@@ -49,6 +51,28 @@ class CowFarmPanel:
     @staticmethod
     def toggle_label(farm: CowFarm) -> str:
         return "Active" if farm.active else "Inactive"
+
+    @staticmethod
+    def blocked_reason(
+        farm: CowFarm,
+        *,
+        worker_status: str,
+        production_status: str | None,
+    ) -> str:
+        status = (production_status or "").strip().lower()
+        if not farm.active:
+            return "inactive"
+        if worker_status == "empty" or status == "no worker":
+            return "no worker"
+        if status == "resting":
+            return "resting"
+        if not farm.has_recipe_output_space():
+            return "output full"
+        if farm.wheat_amount() < farm.recipe_wheat_required():
+            return "no wheat"
+        if farm.water_amount() < farm.recipe_water_required():
+            return "no water"
+        return "running"
 
     @staticmethod
     def layout(
@@ -90,7 +114,6 @@ class CowFarmPanel:
         production_status: str | None = None,
         now_ms: int,
     ) -> None:
-        _ = now_ms
         BuildingPanel.draw(
             surface,
             farm,
@@ -112,6 +135,23 @@ class CowFarmPanel:
         for i, line in enumerate(CowFarmPanel.storage_line_texts(farm)):
             surf = body.render(line, True, (200, 204, 214))
             surface.blit(surf, (layout.frame.left + _PANEL_PAD, sy + i * _STORAGE_LINE_SP))
+        blocked_y = sy + 4 * _STORAGE_LINE_SP
+        reason = CowFarmPanel.blocked_reason(
+            farm,
+            worker_status=worker_status,
+            production_status=production_status,
+        )
+        reason_surf = body.render(f"Blocked: {reason}", True, (200, 204, 214))
+        surface.blit(reason_surf, (layout.frame.left + _PANEL_PAD, blocked_y))
+        bar_y = blocked_y + _BLOCKED_TO_BAR_GAP
+        bar_bg = pygame.Rect(layout.frame.left + _PANEL_PAD, bar_y, layout.frame.width - _PANEL_PAD * 2, _BAR_H)
+        pygame.draw.rect(surface, (52, 58, 66), bar_bg, border_radius=4)
+        progress = max(0.0, min(1.0, farm.processing_progress(now_ms)))
+        if progress > 0.0:
+            fill_w = max(1, int(round(bar_bg.width * progress)))
+            fill = pygame.Rect(bar_bg.left, bar_bg.top, fill_w, bar_bg.height)
+            pygame.draw.rect(surface, (214, 198, 154), fill, border_radius=4)
+        pygame.draw.rect(surface, (116, 124, 136), bar_bg, width=1, border_radius=4)
         active_bg = (84, 112, 84) if farm.active else (92, 64, 64)
         pygame.draw.rect(surface, active_bg, layout.toggle, border_radius=6)
         label = font.render(CowFarmPanel.toggle_label(farm), True, (240, 242, 250))

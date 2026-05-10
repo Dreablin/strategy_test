@@ -1,4 +1,4 @@
-"""Cow farm panel shell: layout and active toggle (T300)."""
+"""Cow farm panel: layout, storage, blocked hint, progress bar, toggle."""
 
 from __future__ import annotations
 
@@ -53,18 +53,62 @@ def test_cow_farm_panel_storage_line_texts() -> None:
 def test_cow_farm_panel_storage_block_clears_upgrade_and_demolish() -> None:
     surface = pygame.Surface((1280, 720))
     farm = CowFarm(level=1, grid_pos=(10, 10))
-    layout = CowFarmPanel.layout(surface, farm, worker_assigned=False, production_status=None)
+    layout = CowFarmPanel.layout(surface, farm, worker_assigned=False, production_status="No worker")
     sy = CowFarmPanel.storage_block_top(layout.frame.top)
-    storage_bottom_approx = sy + 4 * 22 + 20
+    # Four storage lines, blocked line, progress bar (see cow_farm_panel layout constants).
+    detail_bottom_approx = sy + 4 * 22 + 22 + 24 + 12 + 4
     assert layout.upgrade is not None and layout.demolish is not None
-    assert storage_bottom_approx < layout.upgrade.top - 4
+    assert detail_bottom_approx < layout.upgrade.top - 4
 
 
 def test_cow_farm_panel_storage_block_clears_demolish_at_max_level() -> None:
     surface = pygame.Surface((1280, 720))
     farm = CowFarm(level=CowFarm.max_level(), grid_pos=(10, 10))
-    layout = CowFarmPanel.layout(surface, farm, worker_assigned=False, production_status=None)
+    layout = CowFarmPanel.layout(surface, farm, worker_assigned=False, production_status="No worker")
     sy = CowFarmPanel.storage_block_top(layout.frame.top)
-    storage_bottom_approx = sy + 4 * 22 + 20
+    detail_bottom_approx = sy + 4 * 22 + 22 + 24 + 12 + 4
     assert layout.upgrade is None and layout.demolish is not None
-    assert storage_bottom_approx < layout.demolish.top - 4
+    assert detail_bottom_approx < layout.demolish.top - 4
+
+
+def test_cow_farm_panel_blocked_reason_hints() -> None:
+    farm = CowFarm(level=1, grid_pos=(10, 10))
+    assert CowFarmPanel.blocked_reason(farm, worker_status="empty", production_status="No worker") == "no worker"
+    farm.set_active(False)
+    assert CowFarmPanel.blocked_reason(farm, worker_status="assigned", production_status="Inactive") == "inactive"
+    farm.set_active(True)
+    farm.add_wheat_in(3)
+    farm.add_water_in(3)
+    farm.add_beef_out(farm.beef_capacity())
+    assert CowFarmPanel.blocked_reason(farm, worker_status="assigned", production_status="Output full") == "output full"
+    farm.take_beef_out(farm.beef_capacity())
+    assert CowFarmPanel.blocked_reason(farm, worker_status="assigned", production_status="Processing") == "running"
+    farm.take_wheat_in(3)
+    assert CowFarmPanel.blocked_reason(farm, worker_status="assigned", production_status="Ready") == "no wheat"
+    farm.add_wheat_in(3)
+    farm.take_water_in(3)
+    assert CowFarmPanel.blocked_reason(farm, worker_status="assigned", production_status="Ready") == "no water"
+    farm.add_water_in(3)
+    assert CowFarmPanel.blocked_reason(farm, worker_status="assigned", production_status="Resting") == "resting"
+
+
+def test_cow_farm_panel_progress_bar_shows_mid_cycle_fill() -> None:
+    surface = pygame.Surface((1280, 720))
+    farm = CowFarm(level=1, grid_pos=(10, 10))
+    farm.processing_started_ms = 1000
+    now_ms = 1000 + farm.processing_duration_ms // 2
+    CowFarmPanel.draw(
+        surface,
+        farm,
+        worker_assigned=True,
+        worker_status="assigned",
+        production_status="Processing",
+        now_ms=now_ms,
+    )
+    layout = CowFarmPanel.layout(surface, farm, worker_assigned=True, production_status="Processing")
+    sy = CowFarmPanel.storage_block_top(layout.frame.top)
+    bar_y = sy + 4 * 22 + 24
+    sample_x = layout.frame.left + 16 + 80
+    sample_y = bar_y + 6
+    px = surface.get_at((sample_x, sample_y))
+    assert px[:3] == (214, 198, 154)

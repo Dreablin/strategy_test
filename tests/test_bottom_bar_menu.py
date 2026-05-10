@@ -89,7 +89,7 @@ def test_bottom_bar_processing_sawmill_posts_build_event() -> None:
     surface = pygame.Surface((1200, 720))
     BottomBar._menu = "processing"  # noqa: SLF001
     pygame.event.clear()
-    BottomBar.handle_click(surface, (450, 700))
+    BottomBar.handle_click(surface, (300, 700))
     events = [e for e in pygame.event.get() if e.type == BUILD_MENU_SELECT]
     assert events
     assert events[-1].building_type == "SAWMILL"
@@ -99,7 +99,7 @@ def test_bottom_bar_processing_mill_posts_build_event() -> None:
     surface = pygame.Surface((1200, 720))
     BottomBar._menu = "processing"  # noqa: SLF001
     pygame.event.clear()
-    BottomBar.handle_click(surface, (600, 700))
+    BottomBar.handle_click(surface, (500, 700))
     events = [e for e in pygame.event.get() if e.type == BUILD_MENU_SELECT]
     assert events
     assert events[-1].building_type == "MILL"
@@ -109,7 +109,7 @@ def test_bottom_bar_processing_bakery_posts_build_event() -> None:
     surface = pygame.Surface((1200, 720))
     BottomBar._menu = "processing"  # noqa: SLF001
     pygame.event.clear()
-    BottomBar.handle_click(surface, (840, 700))
+    BottomBar.handle_click(surface, (700, 700))
     events = [e for e in pygame.event.get() if e.type == BUILD_MENU_SELECT]
     assert events
     assert events[-1].building_type == "BAKERY"
@@ -119,7 +119,17 @@ def test_bottom_bar_processing_chicken_farm_posts_build_event() -> None:
     surface = pygame.Surface((1200, 720))
     BottomBar._menu = "processing"  # noqa: SLF001
     pygame.event.clear()
-    BottomBar.handle_click(surface, (1080, 700))
+    BottomBar.handle_click(surface, (900, 700))
     events = [e for e in pygame.event.get() if e.type == BUILD_MENU_SELECT]
     assert events
     assert events[-1].building_type == "CHICKEN_FARM"
+
+
+def test_bottom_bar_processing_cow_farm_posts_build_event() -> None:
+    surface = pygame.Surface((1200, 720))
+    BottomBar._menu = "processing"  # noqa: SLF001
+    pygame.event.clear()
+    BottomBar.handle_click(surface, (1100, 700))
+    events = [e for e in pygame.event.get() if e.type == BUILD_MENU_SELECT]
+    assert events
+    assert events[-1].building_type == "COW_FARM"

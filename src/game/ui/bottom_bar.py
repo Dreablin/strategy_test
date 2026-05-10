@@ -87,6 +87,7 @@ class BottomBar:
                 ("mill", "Mill"),
                 ("bakery", "Bakery"),
                 ("chicken_farm", "Chicken Farm"),
+                ("cow_farm", "Cow Farm"),
             )
             rects = _button_rects(surface, len(entries))
             for rect, (_key, label) in zip(rects, entries):
@@ -97,7 +98,13 @@ class BottomBar:
                     text,
                     (btn.centerx - text.get_width() // 2, btn.centery - text.get_height() // 2),
                 )
-            for idx, asset_key in ((1, "sawmill"), (2, "mill"), (3, "bakery"), (4, "chicken_farm")):
+            for idx, asset_key in (
+                (1, "sawmill"),
+                (2, "mill"),
+                (3, "bakery"),
+                (4, "chicken_farm"),
+                (5, "cow_farm"),
+            ):
                 spr = pygame.transform.smoothscale(building_sprite(asset_key, 1), (40, 32))
                 btn = rects[idx].inflate(-6, -10)
                 surface.blit(spr, (btn.centerx - spr.get_width() // 2, btn.bottom - 40))
@@ -176,7 +183,7 @@ class BottomBar:
             return
 
         if menu == "processing":
-            entries = ("back", "sawmill", "mill", "bakery", "chicken_farm")
+            entries = ("back", "sawmill", "mill", "bakery", "chicken_farm", "cow_farm")
             for rect, key in zip(_button_rects(surface, len(entries)), entries):
                 if not rect.collidepoint(pos):
                     continue
@@ -190,6 +197,8 @@ class BottomBar:
                     pygame.event.post(pygame.event.Event(BUILD_MENU_SELECT, building_type="BAKERY"))
                 elif key == "chicken_farm":
                     pygame.event.post(pygame.event.Event(BUILD_MENU_SELECT, building_type="CHICKEN_FARM"))
+                elif key == "cow_farm":
+                    pygame.event.post(pygame.event.Event(BUILD_MENU_SELECT, building_type="COW_FARM"))
                 return
             return
 

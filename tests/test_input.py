@@ -14,7 +14,7 @@ from game.buildings.field import Field
 from game.camera import Camera
 from game.input import TOP_BAR_HEIGHT, GameInput, screen_to_grid
 from game.render import Renderer
-from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT
+from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT, BottomBar
 from game.ui.building_panel import BuildingPanel
 from game.ui.construction_panel import ConstructionPanel
 from game.ui.chicken_farm_panel import ChickenFarmPanel
@@ -286,6 +286,26 @@ def test_build_menu_select_cow_farm_sets_pending_type() -> None:
     inp.handle(surface, pygame.event.Event(BUILD_MENU_SELECT, building_type="COW_FARM"))
     assert placement.pending_type is not None
     assert placement.pending_type.type_tag == "COW_FARM"
+
+
+def test_input_processing_menu_cow_farm_click_selects_placement() -> None:
+    """T298: bottom bar processing submenu posts COW_FARM; GameInput arms placement."""
+    surface = pygame.Surface((1200, 720))
+    world = World()
+    registry = BuildingRegistry(world)
+    camera = Camera()
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(), camera)
+    BottomBar._menu = "processing"  # noqa: SLF001
+    pygame.event.clear()
+    BottomBar.handle_click(surface, (1100, 700))
+    ev = pygame.event.poll()
+    assert ev.type == BUILD_MENU_SELECT
+    assert ev.building_type == "COW_FARM"
+    inp.handle(surface, ev)
+    assert placement.pending_type is not None
+    assert placement.pending_type.type_tag == "COW_FARM"
+    BottomBar._menu = "main"  # noqa: SLF001
 
 
 def test_under_construction_building_uses_construction_panel_draw(monkeypatch) -> None:

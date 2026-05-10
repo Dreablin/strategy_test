@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 24 - Cow Farm producer (**active**)
-- **Next Task:** T291 - Add Cow Farm wheat input storage helpers only
-- **Last Completed:** T290 - Add CowFarm building class shell
-- **Total Progress:** 290 / 311 (Phase 24: 4 / 25 done)
+- **Next Task:** T292 - Add Cow Farm water input storage helpers only
+- **Last Completed:** T291 - Cow Farm wheat input storage helpers
+- **Total Progress:** 291 / 311 (Phase 24: 5 / 25 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -52,8 +52,8 @@
 - [x] **T288**: Add `hide` as a complete warehouse resource. Update resource catalog/display label, Town Hall warehouse initialization/settings/UI, worker/population resource labels if needed, and focused tests proving `hide` exists in Town Hall storage and renders in the warehouse panel. Run full `pytest` and `ruff check src tests`.
 - [x] **T289**: Add only `src/game/settings/buildings/cow_farm.json`. Include `COW_FARM` building type, 10 construction/upgrade levels, storage capacity by level, production duration, worker rest duration, and recipe input/output values. Add focused settings tests proving values are loaded from this JSON. Run full `pytest` and `ruff check src tests`.
 - [x] **T290**: Add only the `CowFarm` building class shell in `src/game/buildings/cow_farm.py`. It should define `type_tag`, slots, active flag, progress fields, `set_active`, `storage_capacity`, and `max_level` behavior via settings, but no registration/menu/runtime yet. Add focused domain tests. Run full `pytest` and `ruff check src tests`.
-- [~] **T291**: Add Cow Farm wheat input storage helpers only. Implement `wheat_amount`, `wheat_capacity`, `add_wheat_in`, `take_wheat_in`, and overflow/underflow tests. Run full `pytest` and `ruff check src tests`.
-- [ ] **T292**: Add Cow Farm water input storage helpers only. Implement `water_amount`, `water_capacity`, `add_water_in`, `take_water_in`, and overflow/underflow tests. Run full `pytest` and `ruff check src tests`.
+- [x] **T291**: Add Cow Farm wheat input storage helpers only. Implement `wheat_amount`, `wheat_capacity`, `add_wheat_in`, `take_wheat_in`, and overflow/underflow tests. Run full `pytest` and `ruff check src tests`.
+- [~] **T292**: Add Cow Farm water input storage helpers only. Implement `water_amount`, `water_capacity`, `add_water_in`, `take_water_in`, and overflow/underflow tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T293**: Add Cow Farm beef output storage helpers only. Implement `beef_amount`, `beef_capacity`, `add_beef_out`, `take_beef_out`, and overflow/underflow tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T294**: Add Cow Farm hide output storage helpers only. Implement `hide_amount`, `hide_capacity`, `add_hide_out`, `take_hide_out`, and overflow/underflow tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T295**: Add Cow Farm recipe/progress helper methods only. Read recipe amounts and production timing from `cow_farm.json`; add helpers for checking recipe input availability, output free space, `processing_progress`, and `progress_state`. Add focused tests. Run full `pytest` and `ruff check src tests`.

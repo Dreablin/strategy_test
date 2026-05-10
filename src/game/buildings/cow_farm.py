@@ -1,4 +1,4 @@
-"""Cow farm building shell: beef + hide processor (storage and recipe helpers land in later tasks)."""
+"""Cow farm: beef + hide processor; wheat/water/beef/hide slots gain helpers across tasks."""
 
 from __future__ import annotations
 
@@ -11,11 +11,12 @@ from game.config import building_int_setting, building_level_int_setting
 class CowFarm(Building):
     type_tag: ClassVar[str] = "COW_FARM"
     footprint: ClassVar[tuple[int, int]] = (2, 2)
-    __slots__ = ("active", "processing_started_ms", "processing_duration_ms")
+    __slots__ = ("active", "wheat_in", "processing_started_ms", "processing_duration_ms")
 
     def __init__(self, level: int = 1, grid_pos: tuple[int, int] | None = None) -> None:
         super().__init__(level=level, grid_pos=grid_pos)
         self.active = True
+        self.wheat_in = 0
         self.processing_started_ms = 0
         self.processing_duration_ms = building_int_setting(self.type_tag, "production", "cycle_ms")
 
@@ -24,6 +25,28 @@ class CowFarm(Building):
 
     def storage_capacity(self) -> int:
         return building_level_int_setting(self.type_tag, "storage", self.level)
+
+    def wheat_amount(self) -> int:
+        return int(self.wheat_in)
+
+    def wheat_capacity(self) -> int:
+        return self.storage_capacity()
+
+    def add_wheat_in(self, amount: int) -> None:
+        n = int(amount)
+        if n < 0:
+            raise ValueError("amount must be non-negative")
+        if self.wheat_in + n > self.wheat_capacity():
+            raise ValueError("wheat input overflow")
+        self.wheat_in += n
+
+    def take_wheat_in(self, amount: int) -> None:
+        n = int(amount)
+        if n < 0:
+            raise ValueError("amount must be non-negative")
+        if n > self.wheat_in:
+            raise ValueError("insufficient wheat input")
+        self.wheat_in -= n
 
     def processing_progress(self, now_ms: int) -> float:
         if self.processing_started_ms <= 0:

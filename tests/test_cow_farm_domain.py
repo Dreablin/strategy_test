@@ -1,4 +1,4 @@
-"""Cow Farm domain shell (T290): type, capacity, active, processing progress — no storage API yet."""
+"""Cow Farm domain shell (T290+): type, capacity, active, processing progress; wheat slot in T291."""
 
 from __future__ import annotations
 

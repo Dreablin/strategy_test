@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 24 - Cow Farm producer (**active**)
-- **Next Task:** T305 - Add Cow Farm production status integration only
-- **Last Completed:** T304 - Cow Farm processor runtime
-- **Total Progress:** 304 / 311 (Phase 24: 18 / 25 done)
+- **Next Task:** T306 - Cow Farm wheat input delivery planning (carriers, no overfill)
+- **Last Completed:** T305 - Cow Farm production status integration
+- **Total Progress:** 305 / 311 (Phase 24: 19 / 25 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -72,11 +72,11 @@
 
 - [x] **T303**: Add worker-building compatibility support for multi-building worker types only. Refactor assignment compatibility so `ANIMAL_HERDER` can target both `CHICKEN_FARM` and `COW_FARM`, while existing worker assignments remain unchanged. Add focused assignment/reassignment tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T304**: Add Cow Farm processor runtime only. Add a processor spec/update path for `COW_FARM` using JSON duration/rest and recipe; verify one cycle consumes wheat/water and produces beef/hide, with active/no-worker/under-construction/full-output gates. Add focused runtime tests. Run full `pytest` and `ruff check src tests`.
-- [~] **T305**: Add Cow Farm production status integration only. Make worker/building status helpers report Cow Farm states consistently with other processors. Add focused status tests. Run full `pytest` and `ruff check src tests`.
+- [x] **T305**: Add Cow Farm production status integration only. Make worker/building status helpers report Cow Farm states consistently with other processors. Add focused status tests. Run full `pytest` and `ruff check src tests`.
 
 ### 24.4 Transport integration
 
-- [ ] **T306**: Add Cow Farm wheat input delivery planning only. Carriers should deliver wheat to Cow Farm when planned inbound wheat plus stored wheat is below capacity. Add tests for no overfill with queued/in-flight wheat. Run full `pytest` and `ruff check src tests`.
+- [~] **T306**: Add Cow Farm wheat input delivery planning only. Carriers should deliver wheat to Cow Farm when planned inbound wheat plus stored wheat is below capacity. Add tests for no overfill with queued/in-flight wheat. Run full `pytest` and `ruff check src tests`.
 - [ ] **T307**: Add Cow Farm water input delivery planning only. Carriers should deliver water from well local storage to Cow Farm when planned inbound water plus stored water is below capacity. Verify existing Bakery/Canteen/Chicken Farm water delivery still works. Run full `pytest` and `ruff check src tests`.
 - [ ] **T308**: Add Cow Farm beef output export planning only. Carriers should export beef from Cow Farm local output storage to Town Hall, accounting for queued/in-flight beef exports. Add demolition/invalid-task coverage for beef if not already covered generically. Run full `pytest` and `ruff check src tests`.
 - [ ] **T309**: Add Cow Farm hide output export planning only. Carriers should export hide from Cow Farm local output storage to Town Hall, accounting for queued/in-flight hide exports. Add demolition/invalid-task coverage for hide if not already covered generically. Run full `pytest` and `ruff check src tests`.

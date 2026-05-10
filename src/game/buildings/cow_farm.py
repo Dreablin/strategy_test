@@ -16,6 +16,7 @@ class CowFarm(Building):
         "wheat_in",
         "water_in",
         "beef_out",
+        "hide_out",
         "processing_started_ms",
         "processing_duration_ms",
     )
@@ -26,6 +27,7 @@ class CowFarm(Building):
         self.wheat_in = 0
         self.water_in = 0
         self.beef_out = 0
+        self.hide_out = 0
         self.processing_started_ms = 0
         self.processing_duration_ms = building_int_setting(self.type_tag, "production", "cycle_ms")
 
@@ -100,6 +102,28 @@ class CowFarm(Building):
         if n > self.beef_out:
             raise ValueError("insufficient beef output")
         self.beef_out -= n
+
+    def hide_amount(self) -> int:
+        return int(self.hide_out)
+
+    def hide_capacity(self) -> int:
+        return self.storage_capacity()
+
+    def add_hide_out(self, amount: int) -> None:
+        n = int(amount)
+        if n < 0:
+            raise ValueError("amount must be non-negative")
+        if self.hide_out + n > self.hide_capacity():
+            raise ValueError("hide output overflow")
+        self.hide_out += n
+
+    def take_hide_out(self, amount: int) -> None:
+        n = int(amount)
+        if n < 0:
+            raise ValueError("amount must be non-negative")
+        if n > self.hide_out:
+            raise ValueError("insufficient hide output")
+        self.hide_out -= n
 
     def processing_progress(self, now_ms: int) -> float:
         if self.processing_started_ms <= 0:

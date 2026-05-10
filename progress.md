@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 24 - Cow Farm producer (**active**)
-- **Next Task:** T294 - Add Cow Farm hide output storage helpers only
-- **Last Completed:** T293 - Cow Farm beef output storage helpers
-- **Total Progress:** 293 / 311 (Phase 24: 7 / 25 done)
+- **Next Task:** T295 - Add Cow Farm recipe/progress helper methods only
+- **Last Completed:** T294 - Cow Farm hide output storage helpers
+- **Total Progress:** 294 / 311 (Phase 24: 8 / 25 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -55,8 +55,8 @@
 - [x] **T291**: Add Cow Farm wheat input storage helpers only. Implement `wheat_amount`, `wheat_capacity`, `add_wheat_in`, `take_wheat_in`, and overflow/underflow tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T292**: Add Cow Farm water input storage helpers only. Implement `water_amount`, `water_capacity`, `add_water_in`, `take_water_in`, and overflow/underflow tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T293**: Add Cow Farm beef output storage helpers only. Implement `beef_amount`, `beef_capacity`, `add_beef_out`, `take_beef_out`, and overflow/underflow tests. Run full `pytest` and `ruff check src tests`.
-- [~] **T294**: Add Cow Farm hide output storage helpers only. Implement `hide_amount`, `hide_capacity`, `add_hide_out`, `take_hide_out`, and overflow/underflow tests. Run full `pytest` and `ruff check src tests`.
-- [ ] **T295**: Add Cow Farm recipe/progress helper methods only. Read recipe amounts and production timing from `cow_farm.json`; add helpers for checking recipe input availability, output free space, `processing_progress`, and `progress_state`. Add focused tests. Run full `pytest` and `ruff check src tests`.
+- [x] **T294**: Add Cow Farm hide output storage helpers only. Implement `hide_amount`, `hide_capacity`, `add_hide_out`, `take_hide_out`, and overflow/underflow tests. Run full `pytest` and `ruff check src tests`.
+- [~] **T295**: Add Cow Farm recipe/progress helper methods only. Read recipe amounts and production timing from `cow_farm.json`; add helpers for checking recipe input availability, output free space, `processing_progress`, and `progress_state`. Add focused tests. Run full `pytest` and `ruff check src tests`.
 
 ### 24.2 Build menu, assets, and panel
 

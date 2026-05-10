@@ -76,6 +76,7 @@ _RESOURCE_LABEL: dict[str, str] = {
     "bread": "bread",
     "chicken": "chicken",
     "beef": "beef",
+    "hide": "hide",
     "water": "water",
 }
 

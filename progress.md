@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 26 - Wine, Winery, and Worker Tiers (**active**)
-- **Next Task:** T340 - Add worker tier metadata
-- **Last Completed:** T339 - Add `wine` as a complete Town Hall warehouse resource
-- **Total Progress:** 339 / 360 (Phase 26: 1 / 22 done)
+- **Next Task:** T341 - Add School panel tier filtering
+- **Last Completed:** T340 - Add worker tier metadata
+- **Total Progress:** 340 / 360 (Phase 26: 2 / 22 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -52,7 +52,7 @@
 ### 26.1 Resource and Worker Tier Foundation
 
 - [x] **T339**: Add `wine` as a complete Town Hall warehouse resource. Update resource catalog/display label, Town Hall warehouse initialization/settings, Town Hall storage UI, and focused tests proving `wine` exists in Town Hall storage and appears in the warehouse panel. Run full `pytest` and `ruff check src tests`.
-- [ ] **T340**: Add worker tier metadata only. Introduce a centralized helper/data source that returns `basic` or `advanced` for a worker type, assign `basic` to every existing worker type, and add focused tests for known existing workers. Do not change the School UI yet. Run full `pytest` and `ruff check src tests`.
+- [x] **T340**: Add worker tier metadata only. Introduce a centralized helper/data source that returns `basic` or `advanced` for a worker type, assign `basic` to every existing worker type, and add focused tests for known existing workers. Do not change the School UI yet. Run full `pytest` and `ruff check src tests`.
 - [ ] **T341**: Add School panel tier filtering only. Make the School panel layout able to list hire buttons for a requested tier and prove the `basic` view contains existing basic workers. Do not add clickable tabs yet. Run full `pytest` and `ruff check src tests`.
 - [ ] **T342**: Add clickable `Basic` / `Advanced` tabs to the School panel only. Add panel layout/click-action support and GameInput state/routing so tab selection persists while the panel is open. Add focused UI/input tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T343**: Add `WINEMAKER` as an advanced hireable worker only. Register the worker in hiring metadata with tier `advanced`, make it trainable from the School advanced tab, and add focused tests for tier, training queue, and hire selection. Do not assign it to any building yet. Run full `pytest` and `ruff check src tests`.

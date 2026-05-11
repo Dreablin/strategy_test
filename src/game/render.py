@@ -32,6 +32,7 @@ VISIBLE_TILE_MARGIN = 2
 WORKER_ACTION_PROGRESS_COLORS = {
     ("FARMER", "sowing"): (110, 220, 120),
     ("FARMER", "harvesting"): (240, 210, 80),
+    ("FARMER", "harvesting_grapes"): (240, 210, 80),
     ("LUMBERJACK", "chopping"): (214, 154, 118),
     ("STONECUTTER", "mining"): (160, 168, 180),
     ("FORESTER", "planting"): (110, 220, 120),
@@ -211,6 +212,7 @@ class Renderer:
             "going_to_stone",
             "going_to_plant_tile",
             "going_to_field",
+            "going_to_vineyard",
             "going_to_canteen",
             "returning",
         }

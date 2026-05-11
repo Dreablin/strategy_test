@@ -135,6 +135,7 @@ class Worker:
                 "going_to_stone",
                 "going_to_plant_tile",
                 "going_to_field",
+                "going_to_vineyard",
                 "going_to_canteen",
                 "returning",
             }
@@ -163,6 +164,8 @@ class Worker:
                 self.state = "arrived_plant_tile"
             elif self.state == "going_to_field":
                 self.state = "arrived_field"
+            elif self.state == "going_to_vineyard":
+                self.state = "arrived_vineyard"
             elif self.state == "going_to_canteen":
                 self.state = "arrived_canteen"
             elif self.state == "returning":

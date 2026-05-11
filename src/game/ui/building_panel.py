@@ -199,8 +199,13 @@ class BuildingPanel:
         surface.blit(body_font.render(desc, True, (200, 204, 214)), (layout.frame.left + _PANEL_PAD, y))
         y += _ROW
         allowed_worker_status = {"empty", "on the way", "assigned"}
-        if building.type_tag == "FARM":
-            allowed_worker_status = allowed_worker_status | {"moving", "resting", "sowing", "harvesting"}
+        if building.type_tag in {"FARM", "VINEYARD_FARM"}:
+            allowed_worker_status = allowed_worker_status | {
+                "moving",
+                "resting",
+                "sowing",
+                "harvesting",
+            }
         if worker_status not in allowed_worker_status:
             worker_status = "assigned" if worker_assigned else "empty"
         wstat = f"Worker: {worker_status}"

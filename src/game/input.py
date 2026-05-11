@@ -21,7 +21,7 @@ from game.buildings.sawmill import Sawmill
 from game.buildings.town_hall import TownHall
 from game.buildings.well import Well
 from game.camera import Camera
-from game.iso import screen_to_world
+from game.iso import screen_to_tile
 from game.render import Renderer
 from game.housing import current_population, max_population
 from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT, BottomBar
@@ -64,7 +64,7 @@ def screen_to_grid(
     """Map screen pixel to isometric grid cell using the same origin as ``Renderer.draw_world``."""
     ox, oy = Renderer.map_origin(surface, world)
     mx, my = screen_pos
-    return screen_to_world(mx - camera.offset[0] - ox, my - camera.offset[1] - oy)
+    return screen_to_tile(mx - camera.offset[0] - ox, my - camera.offset[1] - oy)
 
 
 def _on_map(surface: pygame.Surface, pos: tuple[int, int]) -> bool:
@@ -167,6 +167,7 @@ class GameInput:
             "going_to_stone",
             "going_to_plant_tile",
             "going_to_field",
+            "going_to_vineyard",
             "returning",
         }
         if worker.state in moving_states and worker.target_tile is not None:

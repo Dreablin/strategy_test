@@ -36,9 +36,22 @@ class WorkerFarmingMixin:
         if self._registry is None or world is None:
             return
         farm = worker.assigned_building
-        if farm is None or farm.type_tag != "FARM":
+        if farm is None:
             self._release_field_reservations_for(worker)
+            self._release_vineyard_plot_reservations_for(worker)
             return
+        if farm.type_tag == "VINEYARD_FARM":
+            self._release_field_reservations_for(worker)
+            self._update_vineyard_farm_farmer(worker, farm, now_ms, world)
+            return
+        if farm.type_tag != "FARM":
+            self._release_field_reservations_for(worker)
+            self._release_vineyard_plot_reservations_for(worker)
+            return
+        self._release_vineyard_plot_reservations_for(worker)
+        self._update_wheat_farm_farmer(worker, farm, now_ms, world)
+
+    def _update_wheat_farm_farmer(self, worker: Worker, farm: Building, now_ms: int, world: Any) -> None:
         if farm.is_under_construction:
             self._release_field_reservations_for(worker)
             return
@@ -147,6 +160,73 @@ class WorkerFarmingMixin:
                     worker_manager=self,
                     now_ms=int(now_ms),
                 )
+
+    def _update_vineyard_farm_farmer(self, worker: Worker, farm: Building, now_ms: int, world: Any) -> None:
+        """Grape plot dispatch: walk to ripe ``VINEYARD``, play harvest animation; completion is T330+."""
+        if farm.is_under_construction:
+            self._release_vineyard_plot_reservations_for(worker)
+            return
+        if worker.state == "vineyard_harvest_anim_done":
+            return
+        if worker.state == "working":
+            self._park_worker_inside_building(worker, farm)
+            worker.state = "resting"
+            if worker.camp_wait_until_ms <= now_ms:
+                worker.camp_wait_until_ms = now_ms + FARMER_REST_MS
+            return
+        if worker.state == "resting":
+            self._park_worker_inside_building(worker, farm)
+            if now_ms < worker.camp_wait_until_ms:
+                return
+            if hasattr(farm, "grapes_amount") and hasattr(farm, "grapes_capacity"):
+                try:
+                    if int(farm.grapes_amount()) >= int(farm.grapes_capacity()):
+                        worker.state = (
+                            "working_field" if now_ms >= FARMER_NO_TARGET_WORKING_STATE_MS else "resting"
+                        )
+                        worker.camp_wait_until_ms = now_ms + 1_000
+                        self._try_blocked_cycle_hunger(worker, now_ms)
+                        return
+                except (TypeError, ValueError):
+                    pass
+            plot = self.select_ripe_vineyard_for_vineyard_farm(farm, claimer=worker)
+            if plot is None:
+                worker.state = "working_field" if now_ms >= FARMER_NO_TARGET_WORKING_STATE_MS else "resting"
+                worker.camp_wait_until_ms = now_ms + 1_000
+                self._try_blocked_cycle_hunger(worker, now_ms)
+                return
+            if not self._reserve_vineyard_plot(plot, worker):
+                worker.state = "working_field" if now_ms >= FARMER_NO_TARGET_WORKING_STATE_MS else "resting"
+                worker.camp_wait_until_ms = now_ms + 1_000
+                self._try_blocked_cycle_hunger(worker, now_ms)
+                return
+            if not self._start_farmer_move_to_vineyard(worker, plot, now_ms, world):
+                self._release_vineyard_plot_reservations_for(worker)
+                worker.state = "working_field" if now_ms >= FARMER_NO_TARGET_WORKING_STATE_MS else "resting"
+                worker.camp_wait_until_ms = now_ms + 1_000
+                self._try_blocked_cycle_hunger(worker, now_ms)
+                return
+            worker.state = "going_to_vineyard"
+            worker.target_tree = plot.grid_pos
+            worker.camp_wait_until_ms = 0
+            return
+        if worker.state == "working_field":
+            self._park_worker_inside_building(worker, farm)
+            if now_ms < worker.camp_wait_until_ms:
+                return
+            worker.state = "resting"
+            worker.camp_wait_until_ms = now_ms
+            return
+        if worker.state == "arrived_vineyard":
+            worker.state = "harvesting_grapes"
+            worker.chop_started_ms = now_ms
+            worker.chop_duration_ms = FARMER_ACTION_MS
+            return
+        if worker.state == "harvesting_grapes":
+            if now_ms - worker.chop_started_ms < worker.chop_duration_ms:
+                return
+            worker.state = "vineyard_harvest_anim_done"
+            return
 
     def _builder_destination_tiles(self, building: Building) -> list[tuple[int, int]]:
         """Builder path target tiles for construction entry."""
@@ -268,6 +348,12 @@ class WorkerFarmingMixin:
         hit = self._registry.at(chosen[0], chosen[1])
         return hit if isinstance(hit, Vineyard) else None
 
+    def _vineyard_farm_has_actionable_ripe(self, farm: Building) -> bool:
+        """Whether an unreserved ripe vineyard exists in harvest radius (for panel copy)."""
+        return farm.type_tag == "VINEYARD_FARM" and self.select_ripe_vineyard_for_vineyard_farm(
+            farm, claimer=None
+        ) is not None
+
     def _reserve_vineyard_plot(self, plot: Building, worker: Worker) -> bool:
         if not isinstance(plot, Vineyard) or plot.grid_pos is None:
             return False
@@ -318,5 +404,28 @@ class WorkerFarmingMixin:
         if path is None:
             return False
         worker.start_move(path, started_ms=now_ms, move_state="going_to_field")
+        return True
+
+    @staticmethod
+    def _start_farmer_move_to_vineyard(worker: Worker, plot: Vineyard, now_ms: int, world: Any) -> bool:
+        """Route to a grass tile orthogonally adjacent to the plot (plot cell is occupied)."""
+        if plot.grid_pos is None:
+            return False
+        gx, gy = int(plot.grid_pos[0]), int(plot.grid_pos[1])
+        candidates = ((gx + 1, gy), (gx - 1, gy), (gx, gy + 1), (gx, gy - 1))
+        blocked = world.blocked_tiles()
+        blocked.discard(worker.current_tile)
+        best_path: list[tuple[int, int]] | None = None
+        for goal in candidates:
+            if not world.is_in_grass(goal[0], goal[1]):
+                continue
+            path = find_path_bfs(world, worker.current_tile, goal, blocked)
+            if path is None:
+                continue
+            if best_path is None or len(path) < len(best_path):
+                best_path = path
+        if best_path is None:
+            return False
+        worker.start_move(best_path, started_ms=now_ms, move_state="going_to_vineyard")
         return True
 

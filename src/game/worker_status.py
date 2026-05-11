@@ -18,13 +18,15 @@ def worker_status_for_building(manager: Any, building: Building) -> str:
     for worker in manager._workers:
         if worker.assigned_building is not building:
             continue
-        if building.type_tag == "FARM":
-            if worker.state in {"moving", "going_to_field", "returning"}:
+        if building.type_tag in {"FARM", "VINEYARD_FARM"}:
+            if worker.state in {"moving", "going_to_field", "going_to_vineyard", "returning"}:
                 return "moving"
             if worker.state == "sowing":
                 return "sowing"
-            if worker.state == "harvesting":
+            if worker.state in {"harvesting", "harvesting_grapes", "vineyard_harvest_anim_done"}:
                 return "harvesting"
+            if worker.state in {"arrived_vineyard"}:
+                return "moving"
             if worker.state in {"resting", "working_field"}:
                 return "resting"
             if worker.state == "working":
@@ -94,6 +96,30 @@ def production_status_for_building(manager: Any, building: Building) -> str:
             return "Harvesting"
         if worker.state in {"resting", "working_field"}:
             return "Resting" if manager._farm_has_actionable_field(building) else "No fields in radius"
+        if worker.state == "working":
+            now_ms = int(manager._now_ms_fn())
+            if worker.camp_wait_until_ms > now_ms:
+                return "Resting"
+        return "Ready"
+    if building.type_tag == "VINEYARD_FARM":
+        if hasattr(building, "grapes_amount") and hasattr(building, "grapes_capacity"):
+            try:
+                if int(building.grapes_amount()) >= int(building.grapes_capacity()):
+                    return "Storage full"
+            except (TypeError, ValueError):
+                pass
+        if worker.state in {"moving", "going_to_field", "going_to_vineyard", "returning"}:
+            return "Moving"
+        if worker.state in {"harvesting_grapes", "vineyard_harvest_anim_done"}:
+            return "Harvesting"
+        if worker.state == "arrived_vineyard":
+            return "Moving"
+        if worker.state in {"resting", "working_field"}:
+            return (
+                "Resting"
+                if manager._vineyard_farm_has_actionable_ripe(building)
+                else "No ripe vineyards in range"
+            )
         if worker.state == "working":
             now_ms = int(manager._now_ms_fn())
             if worker.camp_wait_until_ms > now_ms:

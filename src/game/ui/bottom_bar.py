@@ -112,6 +112,7 @@ class BottomBar:
                 ("bakery", "Bakery"),
                 ("chicken_farm", "Chicken Farm"),
                 ("cow_farm", "Cow Farm"),
+                ("winery", "Winery"),
             )
             rects = _button_rects(surface, len(entries))
             for rect, (_key, label) in zip(rects, entries):
@@ -128,6 +129,7 @@ class BottomBar:
                 (3, "bakery"),
                 (4, "chicken_farm"),
                 (5, "cow_farm"),
+                (6, "winery"),
             ):
                 spr = pygame.transform.smoothscale(building_sprite(asset_key, 1), (40, 32))
                 btn = rects[idx].inflate(-6, -10)
@@ -224,6 +226,7 @@ class BottomBar:
                 "bakery",
                 "chicken_farm",
                 "cow_farm",
+                "winery",
             )
             for rect, key in zip(_button_rects(surface, len(entries)), entries):
                 if not rect.collidepoint(pos):
@@ -240,6 +243,8 @@ class BottomBar:
                     pygame.event.post(pygame.event.Event(BUILD_MENU_SELECT, building_type="CHICKEN_FARM"))
                 elif key == "cow_farm":
                     pygame.event.post(pygame.event.Event(BUILD_MENU_SELECT, building_type="COW_FARM"))
+                elif key == "winery":
+                    pygame.event.post(pygame.event.Event(BUILD_MENU_SELECT, building_type="WINERY"))
                 return
             return
 

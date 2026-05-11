@@ -57,3 +57,19 @@ def test_bottom_bar_posts_selected_food_building_event() -> None:
     events = [e for e in pygame.event.get() if e.type == BUILD_MENU_SELECT]
     assert events
     assert events[-1].building_type == "FIELD"
+
+
+def test_bottom_bar_processing_menu_posts_winery_event() -> None:
+    surface = pygame.Surface((1200, 720))
+    BottomBar._menu = "processing"  # noqa: SLF001
+    pygame.event.clear()
+
+    from game.ui.bottom_bar import _button_rects
+
+    rects = _button_rects(surface, 7)
+    winery_center = rects[6].center
+    BottomBar.handle_click(surface, winery_center)
+
+    events = [e for e in pygame.event.get() if e.type == BUILD_MENU_SELECT]
+    assert events
+    assert events[-1].building_type == "WINERY"

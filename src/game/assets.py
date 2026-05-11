@@ -54,6 +54,7 @@ _WORKER_FOLDER: dict[str, str] = {
     "BAKER": "baker",
     "COOK": "cook",
     "WATERMAN": "waterman",
+    "WINEMAKER": "winemaker",
 }
 
 
@@ -795,6 +796,7 @@ def _worker_color(w_type: str) -> tuple[int, int, int]:
         "BAKER": (232, 184, 132),
         "COOK": (200, 120, 88),
         "WATERMAN": (72, 148, 210),
+        "WINEMAKER": (128, 48, 96),
     }
     return colors.get(t, (200, 200, 220))
 

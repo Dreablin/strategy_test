@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 26 - Wine, Winery, and Worker Tiers (**active**)
-- **Next Task:** T344 - Add Winemaker display assets/labels
-- **Last Completed:** T343 - Add WINEMAKER as an advanced hireable worker
-- **Total Progress:** 343 / 360 (Phase 26: 5 / 22 done)
+- **Next Task:** T345 - Add winery.json settings
+- **Last Completed:** T344 - Add Winemaker display assets/labels
+- **Total Progress:** 344 / 360 (Phase 26: 6 / 22 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -56,7 +56,7 @@
 - [x] **T341**: Add School panel tier filtering only. Make the School panel layout able to list hire buttons for a requested tier and prove the `basic` view contains existing basic workers. Do not add clickable tabs yet. Run full `pytest` and `ruff check src tests`.
 - [x] **T342**: Add clickable `Basic` / `Advanced` tabs to the School panel only. Add panel layout/click-action support and GameInput state/routing so tab selection persists while the panel is open. Add focused UI/input tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T343**: Add `WINEMAKER` as an advanced hireable worker only. Register the worker in hiring metadata with tier `advanced`, make it trainable from the School advanced tab, and add focused tests for tier, training queue, and hire selection. Do not assign it to any building yet. Run full `pytest` and `ruff check src tests`.
-- [ ] **T344**: Add Winemaker display assets/labels only. Add worker dot/UI/hire icon fallback coverage and player-facing worker labels for `WINEMAKER`, without runtime assignment changes. Run full `pytest` and `ruff check src tests`.
+- [x] **T344**: Add Winemaker display assets/labels only. Add worker dot/UI/hire icon fallback coverage and player-facing worker labels for `WINEMAKER`, without runtime assignment changes. Run full `pytest` and `ruff check src tests`.
 
 ### 26.2 Winery Building Foundation
 

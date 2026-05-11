@@ -2,10 +2,10 @@
 
 ## Current Status
 
-- **Phase:** 26 - Wine, Winery, and Worker Tiers (**active**)
-- **Next Task:** T360 - Close Phase 26
-- **Last Completed:** T359 - Update extension documentation
-- **Total Progress:** 359 / 360 (Phase 26: 21 / 22 done)
+- **Phase:** 26 - Wine, Winery, and Worker Tiers (**complete**)
+- **Next Task:** (none — all phases complete)
+- **Last Completed:** T360 - Close Phase 26
+- **Total Progress:** 360 / 360 (Phase 26: 22 / 22 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -84,7 +84,7 @@
 ### 26.5 Documentation and Closure
 
 - [x] **T359**: Update extension documentation only. Document worker tiers, School tab rules, Winery processing/transport expectations, and where Winery constants live. Avoid duplicating balance numbers in PRD-style docs except to point to JSON as source of truth. Run full `pytest` and `ruff check src tests`.
-- [ ] **T360**: Close Phase 26. Run final full `pytest` plus `ruff check src tests`; update Current Status, Last Completed, Total Progress, Decisions Log, and Notes; mark Phase 26 complete only when all tasks are `[x]`.
+- [x] **T360**: Close Phase 26. Run final full `pytest` plus `ruff check src tests`; update Current Status, Last Completed, Total Progress, Decisions Log, and Notes; mark Phase 26 complete only when all tasks are `[x]`.
 
 ---
 
@@ -114,6 +114,7 @@
 
 ## Notes
 
+- **2026-05-11:** Phase 26 complete — wine resource, Winery building, worker tiers (basic/advanced), School hire tabs, Winemaker worker, full transport and production chain.
 - **2026-05-11:** Phase 26 planned for wine, Winery, worker tiers, School hire tabs, and Winemaker.
 - Keep old completed phase details in `progress_archive.md`; `progress.md` should stay focused on the current active phase to keep agent context small.
 - Tests run headless via `SDL_VIDEODRIVER=dummy` in `tests/conftest.py`.

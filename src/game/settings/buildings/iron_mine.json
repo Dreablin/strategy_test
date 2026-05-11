@@ -14,6 +14,20 @@
       "10": 21
     }
   },
+  "worker_effects": {
+    "by_level": {
+      "1": {"assigned_worker": {}},
+      "2": {"assigned_worker": {"move_speed_mult": 0.05, "gather_speed_mult": 0.05}},
+      "3": {"assigned_worker": {"move_speed_mult": 0.1, "gather_speed_mult": 0.1}},
+      "4": {"assigned_worker": {"move_speed_mult": 0.15, "gather_speed_mult": 0.15}},
+      "5": {"assigned_worker": {"move_speed_mult": 0.2, "gather_speed_mult": 0.2}},
+      "6": {"assigned_worker": {"move_speed_mult": 0.25, "gather_speed_mult": 0.25}},
+      "7": {"assigned_worker": {"move_speed_mult": 0.3, "gather_speed_mult": 0.3}},
+      "8": {"assigned_worker": {"move_speed_mult": 0.35, "gather_speed_mult": 0.35}},
+      "9": {"assigned_worker": {"move_speed_mult": 0.4, "gather_speed_mult": 0.4}},
+      "10": {"assigned_worker": {"move_speed_mult": 0.45, "gather_speed_mult": 0.45}}
+    }
+  },
   "levels": {
     "1": {"cost": {"wood": 2}, "build_time_ms": 30000},
     "2": {"cost": {"boards": 2}, "build_time_ms": 30000},

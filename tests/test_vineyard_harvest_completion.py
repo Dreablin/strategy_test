@@ -9,6 +9,7 @@ from game.buildings.town_hall import TownHall
 from game.buildings.vineyard import Vineyard
 from game.buildings.vineyard_farm import VineyardFarm
 from game.config import near_town_hall_tile, town_hall_origin_tile
+from game.worker_geometry import building_center_tile
 from game.world import World
 from game.workers import WorkerManager
 
@@ -53,11 +54,26 @@ def test_vineyard_harvest_adds_grape_resets_plot_releases_reservation(
     workers.reassign_all()
     workers.update(now_ms["t"])
 
+    harvest_tile = farmer.current_tile
+    assert farmer.state == "returning"
+    assert farmer.current_tile == harvest_tile
+    assert farmer.current_tile != building_center_tile(vf)
+    assert farmer.carrying == "grapes"
+    assert vf.grapes_amount() == 0
+    assert not plot.is_ripe()
+    assert plot.grid_pos not in workers._vineyard_plot_reservations  # noqa: SLF001
+
+    for _ in range(400):
+        now_ms["t"] += 40
+        workers.reassign_all()
+        workers.update(now_ms["t"])
+        if farmer.state == "resting":
+            break
+
     assert farmer.state == "resting"
     assert vf.grapes_amount() == 1
-    assert not plot.is_ripe()
+    assert farmer.carrying is None
     assert farmer.target_tree is None
-    assert plot.grid_pos not in workers._vineyard_plot_reservations  # noqa: SLF001
 
 
 def test_vineyard_harvest_storage_full_skips_deposit_plot_stays_ripe(
@@ -100,8 +116,18 @@ def test_vineyard_harvest_storage_full_skips_deposit_plot_stays_ripe(
     workers.reassign_all()
     workers.update(now_ms["t"])
 
-    assert farmer.state == "resting"
+    assert farmer.state == "returning"
     assert vf.grapes_amount() == vf.grapes_capacity()
     assert plot.is_ripe()
     assert farmer.target_tree is None
     assert plot.grid_pos not in workers._vineyard_plot_reservations  # noqa: SLF001
+
+    for _ in range(400):
+        now_ms["t"] += 40
+        workers.reassign_all()
+        workers.update(now_ms["t"])
+        if farmer.state == "resting":
+            break
+
+    assert farmer.state == "resting"
+    assert farmer.carrying is None

@@ -57,6 +57,8 @@ def test_farmer_reaches_harvesting_grapes_at_ripe_vineyard(fast_farmer_and_trave
         "vineyard_harvest_anim_done",
     }
     assert farmer.target_tree == plot.grid_pos
+    if farmer.state in {"arrived_vineyard", "harvesting_grapes", "vineyard_harvest_anim_done"}:
+        assert farmer.current_tile == plot.grid_pos
 
 
 def test_farmer_reaches_vineyard_harvest_anim_done(fast_farmer_and_travel: None) -> None:
@@ -86,11 +88,23 @@ def test_farmer_reaches_vineyard_harvest_anim_done(fast_farmer_and_travel: None)
     assert farmer.state == "vineyard_harvest_anim_done"
     assert plot.is_ripe()
     assert farmer.target_tree == plot.grid_pos
+    assert farmer.current_tile == plot.grid_pos
 
     now_ms["t"] += 40
     workers.reassign_all()
     workers.update(now_ms["t"])
+    assert farmer.state == "returning"
+    assert farmer.carrying == "grapes"
+    assert vf.grapes_amount() == 0
+    assert not plot.is_ripe()
+
+    for _ in range(400):
+        now_ms["t"] += 40
+        workers.reassign_all()
+        workers.update(now_ms["t"])
+        if farmer.state == "resting":
+            break
+
     assert farmer.state == "resting"
     assert vf.grapes_amount() == 1
-    assert not plot.is_ripe()
     assert farmer.target_tree is None

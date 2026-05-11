@@ -146,7 +146,7 @@ class BuildingRegistry:
                     builder=None,
                     target_level=1,
                 )
-        if cls.type_tag != "FIELD":
+        if cls.type_tag not in {"FIELD", "VINEYARD"}:
             self._world.mark_occupied(gx, gy, w, h)
         self._buildings.append(inst)
         return inst
@@ -169,7 +169,7 @@ class BuildingRegistry:
             raise ValueError("building has no grid position")
         gx, gy = pos
         w, h = type(building).footprint
-        if building.type_tag != "FIELD":
+        if building.type_tag not in {"FIELD", "VINEYARD"}:
             self._world.free(gx, gy, w, h)
         self._buildings.remove(building)
 

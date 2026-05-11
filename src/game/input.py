@@ -75,6 +75,12 @@ def _on_map(surface: pygame.Surface, pos: tuple[int, int]) -> bool:
     return TOP_BAR_HEIGHT <= y < h - BAR_HEIGHT
 
 
+def _opens_map_panel(building: Building) -> bool:
+    if building.is_under_construction:
+        return True
+    return building.type_tag not in {"FIELD", "VINEYARD"}
+
+
 class GameInput:
     """Owns building panel selection; delegates placement and bottom bar where appropriate."""
 
@@ -1030,7 +1036,7 @@ class GameInput:
                 self._worker_panel = worker
                 return
             target = self._registry.at(gx, gy)
-            if target is not None and target.type_tag not in {"FIELD", "VINEYARD"}:
+            if target is not None and _opens_map_panel(target):
                 self._panel = target
             return
 
@@ -1041,6 +1047,6 @@ class GameInput:
 
         hit = self._registry.at(gx, gy)
         if hit is not None:
-            # FIELD and VINEYARD act as terrain/work plots; they do not open a building panel.
-            if hit.type_tag not in {"FIELD", "VINEYARD"}:
+            # Completed FIELD/VINEYARD plots act as terrain/work plots; construction sites stay selectable.
+            if _opens_map_panel(hit):
                 self._panel = hit

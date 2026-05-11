@@ -14,11 +14,14 @@ _RESOURCE_BUTTONS: tuple[tuple[str, str, str], ...] = (
     ("lumber_camp", "Lumber", "LUMBER_CAMP"),
     ("stone_mine", "Stone", "STONE_MINE"),
     ("iron_mine", "Iron", "IRON_MINE"),
-    ("farm", "Farm", "FARM"),
-    ("field", "Field", "FIELD"),
-    ("vineyard", "Vineyard", "VINEYARD"),
     ("forester_hut", "Forester", "FORESTER_HUT"),
     ("well", "Well", "WELL"),
+)
+_FOOD_BUTTONS: tuple[tuple[str, str, str], ...] = (
+    ("farm", "Farm", "FARM"),
+    ("field", "Field", "FIELD"),
+    ("vineyard_farm", "Vineyard Farm", "VINEYARD_FARM"),
+    ("vineyard", "Vineyard", "VINEYARD"),
 )
 # Backward-compat for tests importing previous flat menu tuple.
 _BUTTONS = _RESOURCE_BUTTONS
@@ -48,6 +51,7 @@ class BottomBar:
         if menu == "main":
             entries: tuple[tuple[str, str], ...] = (
                 ("resource", "Resource"),
+                ("food", "Food"),
                 ("social", "Social"),
                 ("processing", "Processing"),
                 ("dev", "Dev"),
@@ -60,6 +64,25 @@ class BottomBar:
                     text,
                     (btn.centerx - text.get_width() // 2, btn.centery - text.get_height() // 2),
                 )
+            return
+
+        if menu == "food":
+            entries = (("back", "Back", ""),) + _FOOD_BUTTONS
+            rects = _button_rects(surface, len(entries))
+            for rect, (asset_key, label, tag) in zip(rects, entries):
+                btn = rect.inflate(-6, -10)
+                pygame.draw.rect(surface, (36, 40, 48), btn, border_radius=6)
+                if tag == "":
+                    text = font.render(label, True, (220, 222, 230))
+                    surface.blit(
+                        text,
+                        (btn.centerx - text.get_width() // 2, btn.centery - text.get_height() // 2),
+                    )
+                    continue
+                spr = pygame.transform.smoothscale(building_sprite(asset_key, 1), (44, 34))
+                surface.blit(spr, (btn.centerx - spr.get_width() // 2, btn.bottom - 42))
+                text = font.render(label, True, (220, 222, 230))
+                surface.blit(text, (btn.centerx - text.get_width() // 2, btn.top + 10))
             return
 
         if menu == "social":
@@ -89,7 +112,6 @@ class BottomBar:
                 ("bakery", "Bakery"),
                 ("chicken_farm", "Chicken Farm"),
                 ("cow_farm", "Cow Farm"),
-                ("vineyard_farm", "Vineyard Farm"),
             )
             rects = _button_rects(surface, len(entries))
             for rect, (_key, label) in zip(rects, entries):
@@ -106,13 +128,10 @@ class BottomBar:
                 (3, "bakery"),
                 (4, "chicken_farm"),
                 (5, "cow_farm"),
-                (6, "vineyard_farm"),
             ):
                 spr = pygame.transform.smoothscale(building_sprite(asset_key, 1), (40, 32))
                 btn = rects[idx].inflate(-6, -10)
                 surface.blit(spr, (btn.centerx - spr.get_width() // 2, btn.bottom - 40))
-            msg = small_font.render("Processing", True, (150, 156, 170))
-            surface.blit(msg, (w // 2 - msg.get_width() // 2, y0 + 8))
             return
 
         if menu == "dev":
@@ -162,11 +181,23 @@ class BottomBar:
     def handle_click(surface: pygame.Surface, pos: tuple[int, int]) -> None:
         menu = BottomBar._menu
         if menu == "main":
-            entries = ("resource", "social", "processing", "dev")
+            entries = ("resource", "food", "social", "processing", "dev")
             for rect, key in zip(_button_rects(surface, len(entries)), entries):
                 if rect.collidepoint(pos):
                     BottomBar._menu = key
                     return
+            return
+
+        if menu == "food":
+            entries = (("back", "Back", ""),) + _FOOD_BUTTONS
+            for rect, (_asset_key, _label, tag) in zip(_button_rects(surface, len(entries)), entries):
+                if not rect.collidepoint(pos):
+                    continue
+                if tag == "":
+                    BottomBar._menu = "main"
+                    return
+                pygame.event.post(pygame.event.Event(BUILD_MENU_SELECT, building_type=tag))
+                return
             return
 
         if menu == "social":
@@ -193,7 +224,6 @@ class BottomBar:
                 "bakery",
                 "chicken_farm",
                 "cow_farm",
-                "vineyard_farm",
             )
             for rect, key in zip(_button_rects(surface, len(entries)), entries):
                 if not rect.collidepoint(pos):
@@ -210,8 +240,6 @@ class BottomBar:
                     pygame.event.post(pygame.event.Event(BUILD_MENU_SELECT, building_type="CHICKEN_FARM"))
                 elif key == "cow_farm":
                     pygame.event.post(pygame.event.Event(BUILD_MENU_SELECT, building_type="COW_FARM"))
-                elif key == "vineyard_farm":
-                    pygame.event.post(pygame.event.Event(BUILD_MENU_SELECT, building_type="VINEYARD_FARM"))
                 return
             return
 

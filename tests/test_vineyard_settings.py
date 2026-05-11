@@ -6,6 +6,11 @@ import json
 from pathlib import Path
 
 from game import config
+from game.buildings.registry import BuildingRegistry
+from game.buildings.town_hall import TownHall
+from game.buildings.vineyard import Vineyard
+from game.config import near_town_hall_tile, town_hall_origin_tile
+from game.world import World
 
 
 def _vineyard_json() -> dict:
@@ -23,6 +28,22 @@ def test_vineyard_footprint_is_one_by_one() -> None:
     fp = config.building_setting("VINEYARD", "footprint")
     assert fp["tiles_w"] == 1
     assert fp["tiles_h"] == 1
+
+
+def test_vineyard_plot_does_not_block_its_tile() -> None:
+    world = World(world_seed=0)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    world._iron.clear()  # noqa: SLF001
+    world.refresh_passability_tile_caches()
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    tile = near_town_hall_tile(12, 8)
+    plot = registry.place(Vineyard, tile)
+
+    assert plot.grid_pos == tile
+    assert not world.is_occupied(*tile)
+    assert tile not in world.blocked_tiles()
 
 
 def test_vineyard_growth_stages_and_duration_from_json() -> None:

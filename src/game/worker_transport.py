@@ -27,6 +27,7 @@ from game.transport_tasks import (
     sawmill_output_transport_tasks,
     water_input_transport_tasks,
     winery_input_transport_tasks,
+    winery_output_transport_tasks,
 )
 from game.worker_constants import CARRIER_INTERACT_MS
 from game.worker_geometry import building_center_tile
@@ -716,6 +717,11 @@ class WorkerTransportMixin:
         if self._registry is None:  # type: ignore[attr-defined]
             return
         self._enqueue_desired_transport_tasks(winery_input_transport_tasks(self._registry))  # type: ignore[attr-defined]
+
+    def _enqueue_winery_output_tasks(self) -> None:
+        if self._registry is None:  # type: ignore[attr-defined]
+            return
+        self._enqueue_desired_transport_tasks(winery_output_transport_tasks(self._registry))  # type: ignore[attr-defined]
 
     def _enqueue_canteen_input_tasks(self) -> None:
         if self._registry is None:  # type: ignore[attr-defined]

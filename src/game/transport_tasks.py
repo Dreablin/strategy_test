@@ -11,6 +11,7 @@ PROCESSOR_INPUT_ADD_METHOD_BY_RESOURCE: dict[str, str] = {
     "wheat": "add_wheat_in",
     "wood": "add_wood_in",
     "flour": "add_flour_in",
+    "grapes": "add_grapes",
 }
 
 
@@ -189,6 +190,11 @@ def mill_output_transport_tasks(registry: Any) -> list[TransportTask]:
 def bakery_input_transport_tasks(registry: Any) -> list[TransportTask]:
     """Build low-priority flour refill tasks from Town Hall to active bakeries."""
     return processor_input_transport_tasks(registry, "flour")
+
+
+def winery_input_transport_tasks(registry: Any) -> list[TransportTask]:
+    """Build low-priority grape refill tasks from Town Hall to active wineries."""
+    return processor_input_transport_tasks(registry, "grapes")
 
 
 def canteen_input_transport_tasks(registry: Any) -> list[TransportTask]:

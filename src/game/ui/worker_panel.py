@@ -43,6 +43,7 @@ _BUILDING_LABEL: dict[str, str] = {
     "BAKERY": "Bakery",
     "CHICKEN_FARM": "Chicken Farm",
     "COW_FARM": "Cow Farm",
+    "VINEYARD_FARM": "Vineyard Farm",
     "SCHOOL": "School",
     "WELL": "Well",
     "CANTEEN": "Canteen",

@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 26 - Wine, Winery, and Worker Tiers (**active**)
-- **Next Task:** T348 - Add Winery asset loading/fallback
-- **Last Completed:** T347 - Register WINERY for placement/construction
-- **Total Progress:** 347 / 360 (Phase 26: 9 / 22 done)
+- **Next Task:** T349 - Add Winery to Processing build menu
+- **Last Completed:** T348 - Add Winery asset loading/fallback
+- **Total Progress:** 348 / 360 (Phase 26: 10 / 22 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -63,7 +63,7 @@
 - [x] **T345**: Add only `src/game/settings/buildings/winery.json`. Include `WINERY`, footprint, 10 construction/upgrade levels, storage capacity by level, recipe, production cycle/rest timing, active default if used by processing buildings, and asset metadata. Add focused settings tests proving values are loaded from this JSON. Run full `pytest` and `ruff check src tests`.
 - [x] **T346**: Add only the `Winery` building class shell. Define `type_tag`, local grape input storage, local wine output storage, active flag, capacity helpers, add/take helpers, recipe/timing accessors, and progress helpers. Do not register placement or runtime yet. Add focused domain tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T347**: Register `WINERY` for placement/construction only. Wire the class into placement maps and construction config usage so it can be placed and built, without menu visibility or runtime production. Add focused placement/construction tests. Run full `pytest` and `ruff check src tests`.
-- [ ] **T348**: Add Winery asset loading/fallback only. Add building folder mapping and placeholder/meta files only if real assets are absent; add focused asset tests proving construction and completed sprites resolve. Run full `pytest` and `ruff check src tests`.
+- [x] **T348**: Add Winery asset loading/fallback only. Add building folder mapping and placeholder/meta files only if real assets are absent; add focused asset tests proving construction and completed sprites resolve. Run full `pytest` and `ruff check src tests`.
 - [ ] **T349**: Add Winery to the Processing build menu only. Add the menu tile/click routing for `WINERY` and focused bottom-bar/input tests that avoid brittle hard-coded per-button coordinate coverage where possible. Run full `pytest` and `ruff check src tests`.
 - [ ] **T350**: Add Winery display labels/descriptions only. Update building display names/descriptions, population/worker building labels if needed, and construction panel display name. Add focused label tests. Run full `pytest` and `ruff check src tests`.
 

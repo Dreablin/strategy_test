@@ -3,7 +3,19 @@
 from __future__ import annotations
 
 TOWN_HALL_WAREHOUSE_KEYS: frozenset[str] = frozenset(
-    ("wood", "stone", "iron", "wheat", "boards", "flour", "bread", "chicken", "beef", "hide")
+    (
+        "wood",
+        "stone",
+        "iron",
+        "wheat",
+        "boards",
+        "flour",
+        "bread",
+        "chicken",
+        "beef",
+        "hide",
+        "grapes",
+    )
 )
 
 SIMPLE_MEAL_KEY = "simple_meal"

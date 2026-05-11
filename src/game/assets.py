@@ -875,6 +875,7 @@ def _resource_colors(name: str) -> tuple[int, int, int]:
         "chicken": (214, 198, 154),
         "beef": (140, 52, 52),
         "hide": (120, 92, 68),
+        "grapes": (112, 48, 140),
         "simple_meal": (210, 150, 95),
     }
     return colors.get(key, (160, 160, 200))

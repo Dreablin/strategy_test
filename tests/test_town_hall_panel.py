@@ -64,16 +64,19 @@ def test_town_hall_panel_has_secondary_storage_frame_and_click_is_non_closing() 
     )
 
 
-def test_town_hall_storage_rows_include_bread_beef_and_hide() -> None:
+def test_town_hall_storage_rows_include_bread_beef_hide_and_grapes() -> None:
     keys = [key for key, _label in town_hall_panel._STORAGE_ROWS]  # noqa: SLF001
     assert "bread" in keys
     assert "chicken" in keys
     assert "beef" in keys
     assert "hide" in keys
+    assert "grapes" in keys
     beef_idx = keys.index("beef")
     assert town_hall_panel._STORAGE_ROWS[beef_idx][1] == "Beef"  # noqa: SLF001
     hide_idx = keys.index("hide")
     assert town_hall_panel._STORAGE_ROWS[hide_idx][1] == "Hide"  # noqa: SLF001
+    grapes_idx = keys.index("grapes")
+    assert town_hall_panel._STORAGE_ROWS[grapes_idx][1] == "Grapes"  # noqa: SLF001
 
 
 def test_beef_is_warehouse_resource_with_display_label() -> None:
@@ -84,6 +87,11 @@ def test_beef_is_warehouse_resource_with_display_label() -> None:
 def test_hide_is_warehouse_resource_with_display_label() -> None:
     assert is_town_hall_warehouse_resource("hide")
     assert resource_display_label("hide") == "Hide"
+
+
+def test_grapes_is_warehouse_resource_with_display_label() -> None:
+    assert is_town_hall_warehouse_resource("grapes")
+    assert resource_display_label("grapes") == "Grapes"
 
 
 def test_town_hall_panel_draw_includes_beef_cell_with_quantity() -> None:
@@ -102,6 +110,18 @@ def test_town_hall_panel_draw_includes_hide_cell_with_quantity() -> None:
     surface = pygame.Surface((1280, 720))
     town_hall = TownHall(level=1, grid_pos=(10, 10))
     town_hall.add_to_warehouse("hide", 17)
+    layout = TownHallPanel.layout(surface, town_hall, worker_assigned=False)
+    before = surface.subsurface(layout.storage_frame).copy()
+    TownHallPanel.draw(surface, town_hall, worker_assigned=False)
+    after = surface.subsurface(layout.storage_frame).copy()
+    assert before.get_bytesize() == after.get_bytesize()
+    assert before.get_buffer().raw != after.get_buffer().raw
+
+
+def test_town_hall_panel_draw_includes_grapes_cell_with_quantity() -> None:
+    surface = pygame.Surface((1280, 720))
+    town_hall = TownHall(level=1, grid_pos=(10, 10))
+    town_hall.add_to_warehouse("grapes", 9)
     layout = TownHallPanel.layout(surface, town_hall, worker_assigned=False)
     before = surface.subsurface(layout.storage_frame).copy()
     TownHallPanel.draw(surface, town_hall, worker_assigned=False)

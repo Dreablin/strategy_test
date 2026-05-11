@@ -2,10 +2,10 @@
 
 ## Current Status
 
-- **Phase:** 24 - Cow Farm producer (**complete**)
-- **Next Task:** None — Phase 24 finished; define Phase 25 in `progress.md` when ready
-- **Last Completed:** T311 - Phase 24 E2E smoke and phase close
-- **Total Progress:** 311 / 311 (Phase 24: 25 / 25 done)
+- **Phase:** 25 - Vineyard Farm and Vineyards (**active**)
+- **Next Task:** T313 - Add vineyard_farm.json settings only
+- **Last Completed:** T312 - Grapes as Town Hall warehouse resource
+- **Total Progress:** 312 / 338 (Phase 25: 1 / 27 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -13,78 +13,74 @@
 
 ## Task Log
 
-## Phase 24 - Cow Farm producer (**complete**)
+## Phase 25 - Vineyard Farm and Vineyards
 
-**Goal.** Add `COW_FARM`, a processing building staffed by the existing `ANIMAL_HERDER`. It consumes wheat and water from local input storage, produces two output resources (`beef` and `hide`) into local output storage, and carriers export those outputs to Town Hall warehouse.
+**Goal.** Add a `VINEYARD_FARM` staffed by the existing `FARMER`, plus separate 1-tile `VINEYARD` plots. Vineyards grow grapes automatically through timed stages. A farmer assigned to the Vineyard Farm harvests ripe nearby Vineyards into the farm's local storage, and carriers export grapes to Town Hall.
 
 **Design notes.**
 
-- Building type: `COW_FARM`.
-- Worker: reuse the existing `ANIMAL_HERDER`; do not create a new worker type.
-- Player-facing name: Cow Farm.
-- Internal output resource ids: `beef` and `hide`.
-- Town Hall warehouse stores `beef` and `hide`.
-- Water remains excluded from Town Hall warehouse; it is still delivered from well local storage to consumers.
-- Cow Farm belongs in the processing build menu, alongside sawmill/mill/bakery/chicken farm.
-- Cow Farm has 10 levels.
-- Cow Farm settings must live in `src/game/settings/buildings/cow_farm.json`, not in hard-coded constants:
-  - construction and upgrade costs/times,
-  - local storage capacity per level,
-  - production duration,
-  - worker rest duration,
-  - recipe inputs and outputs.
-- Local storage capacity starts at 3 for every Cow Farm resource slot and increases by 1 every level. This applies to wheat, water, beef, and hide.
-- One production cycle consumes 3 wheat and 3 water, then produces 1 beef and 1 hide.
-- A cycle may start only when:
-  - the building is completed and active,
-  - an `ANIMAL_HERDER` is assigned and inside/working,
-  - both inputs have enough resources for the recipe,
-  - both output slots have enough free capacity for the recipe outputs.
-- Between production cycles, the worker rests using the rest duration from `cow_farm.json`.
-- Delivery planning must account for queued and in-flight resources when deciding whether Cow Farm needs wheat/water or has exportable beef/hide.
-- Keep transport logic capability-based where practical. Do not add special-case code that only works for one named consumer if a generic local-storage producer/consumer path already exists.
+- Resource id: `grapes`.
+- Town Hall warehouse stores `grapes`.
+- Farm building type: `VINEYARD_FARM`.
+- Plot building type: `VINEYARD`.
+- Worker: reuse existing `FARMER`; do not add a new worker type.
+- `VINEYARD_FARM` has 10 levels.
+- `VINEYARD_FARM` local grape storage starts at 3 and increases by 1 each level.
+- `VINEYARD_FARM` harvest radius is 15 cells.
+- `VINEYARD` is a separate 1x1 buildable building/plot.
+- Each `VINEYARD` construction costs 1 board.
+- Once a `VINEYARD` is built, grapes grow automatically.
+- Grapes have 4 maturation stages; each stage lasts 45 seconds.
+- After a `VINEYARD` is harvested, it automatically restarts the growth cycle.
+- All balance/configuration values belong in building JSON files:
+  - `src/game/settings/buildings/vineyard_farm.json` for Vineyard Farm levels, storage, radius, worker effects, construction/upgrade costs/times, and any farm-specific timing.
+  - `src/game/settings/buildings/vineyard.json` for Vineyard plot construction, 1x1 footprint expectations, maturation stage count, per-stage duration, and asset scale/anchor/offset metadata if this project stores those there for plot-style buildings.
+- Asset folders and metadata should follow existing building/field conventions. If real assets are absent, add only minimal placeholders/fallback metadata needed for tests and runtime.
+- Keep field/plot logic separate enough that Wheat Field behavior is not accidentally changed.
 - Each implementation task must add/update its own focused tests, then end with full `pytest` and `ruff check src tests`.
 - Do not create a task that only adds failing tests. Tests and implementation must land together in the same checked task.
 
-### 24.1 Resources and domain foundation
+### 25.1 Resource and Farm Foundation
 
-- [x] **T287**: Add `beef` as a complete warehouse resource. Update resource catalog/display label, Town Hall warehouse initialization/settings/UI, worker/population resource labels if needed, and focused tests proving `beef` exists in Town Hall storage and renders in the warehouse panel. Run full `pytest` and `ruff check src tests`.
-- [x] **T288**: Add `hide` as a complete warehouse resource. Update resource catalog/display label, Town Hall warehouse initialization/settings/UI, worker/population resource labels if needed, and focused tests proving `hide` exists in Town Hall storage and renders in the warehouse panel. Run full `pytest` and `ruff check src tests`.
-- [x] **T289**: Add only `src/game/settings/buildings/cow_farm.json`. Include `COW_FARM` building type, 10 construction/upgrade levels, storage capacity by level, production duration, worker rest duration, and recipe input/output values. Add focused settings tests proving values are loaded from this JSON. Run full `pytest` and `ruff check src tests`.
-- [x] **T290**: Add only the `CowFarm` building class shell in `src/game/buildings/cow_farm.py`. It should define `type_tag`, slots, active flag, progress fields, `set_active`, `storage_capacity`, and `max_level` behavior via settings, but no registration/menu/runtime yet. Add focused domain tests. Run full `pytest` and `ruff check src tests`.
-- [x] **T291**: Add Cow Farm wheat input storage helpers only. Implement `wheat_amount`, `wheat_capacity`, `add_wheat_in`, `take_wheat_in`, and overflow/underflow tests. Run full `pytest` and `ruff check src tests`.
-- [x] **T292**: Add Cow Farm water input storage helpers only. Implement `water_amount`, `water_capacity`, `add_water_in`, `take_water_in`, and overflow/underflow tests. Run full `pytest` and `ruff check src tests`.
-- [x] **T293**: Add Cow Farm beef output storage helpers only. Implement `beef_amount`, `beef_capacity`, `add_beef_out`, `take_beef_out`, and overflow/underflow tests. Run full `pytest` and `ruff check src tests`.
-- [x] **T294**: Add Cow Farm hide output storage helpers only. Implement `hide_amount`, `hide_capacity`, `add_hide_out`, `take_hide_out`, and overflow/underflow tests. Run full `pytest` and `ruff check src tests`.
-- [x] **T295**: Add Cow Farm recipe/progress helper methods only. Read recipe amounts and production timing from `cow_farm.json`; add helpers for checking recipe input availability, output free space, `processing_progress`, and `progress_state`. Add focused tests. Run full `pytest` and `ruff check src tests`.
+- [x] **T312**: Add `grapes` as a complete warehouse resource. Update resource catalog/display label, Town Hall warehouse initialization/settings/UI, worker/population resource labels if needed, and focused tests proving `grapes` exists in Town Hall storage and renders in the warehouse panel. Run full `pytest` and `ruff check src tests`.
+- [~] **T313**: Add only `src/game/settings/buildings/vineyard_farm.json`. Include `VINEYARD_FARM`, 10 levels, construction/upgrade costs/times, local grape storage capacity by level, harvest radius, and worker effects if matching current farm-building conventions. Add focused settings tests proving values are loaded from this JSON. Run full `pytest` and `ruff check src tests`.
+- [ ] **T314**: Add only the `VineyardFarm` building class shell. It should define `type_tag`, active flag if matching farm-like buildings, progress/storage fields needed later, `set_active` if applicable, `storage_capacity`, `grapes_amount`, `add_grapes_to_storage`, `take_grapes_from_storage`, and max level behavior via settings. Do not register it in menus/runtime yet. Add focused domain tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T315**: Register `VINEYARD_FARM` for placement/construction only. Wire the class into placement maps and input construction selection so it can be placed and built, without adding menu visibility yet. Add focused placement/construction tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T316**: Add Vineyard Farm asset loading/fallback only. Add building folder mapping and placeholder/meta files only if real assets are absent; add focused asset tests proving construction and completed sprites resolve. Run full `pytest` and `ruff check src tests`.
+- [ ] **T317**: Add Vineyard Farm to the appropriate build menu only. Add the menu tile/click routing for `VINEYARD_FARM`; add focused bottom-bar/input tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T318**: Add Vineyard Farm display labels/descriptions only. Update building display names/descriptions and any placement labels that do not require a custom panel yet. Add focused label tests if existing patterns support them. Run full `pytest` and `ruff check src tests`.
 
-### 24.2 Build menu, assets, and panel
+### 25.2 Vineyard Plot Foundation
 
-- [x] **T296**: Register `COW_FARM` for placement/construction only. Wire the building class into placement maps and input construction selection so a Cow Farm can be placed and built, without adding menu visibility yet. Add focused placement/construction tests. Run full `pytest` and `ruff check src tests`.
-- [x] **T297**: Add Cow Farm asset loading/fallback only. Add the building folder mapping and placeholder/meta files only if real assets are absent; add focused asset tests proving construction and completed sprites resolve. Run full `pytest` and `ruff check src tests`.
-- [x] **T298**: Add Cow Farm to the processing build menu only. Add the processing-menu tile and click routing for `COW_FARM`; add focused bottom-bar/input tests. Run full `pytest` and `ruff check src tests`.
-- [x] **T299**: Add Cow Farm display labels/descriptions only. Update building display names/descriptions and any placement/panel labels that do not require a custom panel yet. Add focused label tests if existing patterns support them. Run full `pytest` and `ruff check src tests`.
-- [x] **T300**: Add Cow Farm panel shell only. Create `CowFarmPanel`, route it from input, and show title/worker status/upgrade/demolish/active toggle using existing base layout, without custom storage/progress details yet. Add click/layout tests. Run full `pytest` and `ruff check src tests`.
-- [x] **T301**: Add Cow Farm panel storage rows only. Show wheat, water, beef, and hide local storage values in the panel. Add draw/layout tests proving rows render without overlapping actions. Run full `pytest` and `ruff check src tests`.
-- [x] **T302**: Add Cow Farm panel production status/progress only. Show blocked reason and processing progress bar using Cow Farm helpers. Add tests for running, missing inputs, full outputs, inactive, and no-worker display states. Run full `pytest` and `ruff check src tests`.
+- [ ] **T319**: Add only `src/game/settings/buildings/vineyard.json`. Include `VINEYARD`, construction cost of 1 board, build time, maturation stage count, per-stage duration, and asset scale/anchor/offset metadata according to existing asset metadata conventions. Add focused settings tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T320**: Add only the `Vineyard` 1x1 building/plot class shell. It should define `type_tag`, 1x1 footprint, construction support, growth state fields, and basic phase/stage accessors, but no runtime growth yet. Add focused domain tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T321**: Register `VINEYARD` for placement/construction only. Wire the class into placement maps and input construction selection so plots can be placed and built, without adding menu visibility yet. Add focused placement/construction tests, including the 1-board construction requirement. Run full `pytest` and `ruff check src tests`.
+- [ ] **T322**: Add Vineyard plot asset loading/fallback only. Add folder mapping and placeholder/meta files only if real assets are absent; add focused tests proving each growth stage sprite resolves or falls back safely. Run full `pytest` and `ruff check src tests`.
+- [ ] **T323**: Add Vineyard plot to the appropriate build menu only. Add the menu tile/click routing for `VINEYARD`; add focused bottom-bar/input tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T324**: Add Vineyard display labels/descriptions only. Update building display names/descriptions and any placement labels that do not require custom runtime yet. Add focused label tests if existing patterns support them. Run full `pytest` and `ruff check src tests`.
 
-### 24.3 Worker assignment and production runtime
+### 25.3 Growth and Harvest Runtime
 
-- [x] **T303**: Add worker-building compatibility support for multi-building worker types only. Refactor assignment compatibility so `ANIMAL_HERDER` can target both `CHICKEN_FARM` and `COW_FARM`, while existing worker assignments remain unchanged. Add focused assignment/reassignment tests. Run full `pytest` and `ruff check src tests`.
-- [x] **T304**: Add Cow Farm processor runtime only. Add a processor spec/update path for `COW_FARM` using JSON duration/rest and recipe; verify one cycle consumes wheat/water and produces beef/hide, with active/no-worker/under-construction/full-output gates. Add focused runtime tests. Run full `pytest` and `ruff check src tests`.
-- [x] **T305**: Add Cow Farm production status integration only. Make worker/building status helpers report Cow Farm states consistently with other processors. Add focused status tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T325**: Add Vineyard growth runtime only. Built Vineyards should advance through configured growth stages using `vineyard.json` timing and become ripe after the final stage; under-construction Vineyards should not grow. Add focused growth tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T326**: Add Vineyard harvest reset only. When a ripe Vineyard is marked harvested, it should restart growth from the first stage automatically. Add focused domain/runtime tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T327**: Add Vineyard Farm radius/target selection only. Implement selection of ripe `VINEYARD` plots within the configured Vineyard Farm radius, accounting for reserved/claimed plots so two farmers do not target the same plot. Add focused selection/reservation tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T328**: Add FARMER compatibility with `VINEYARD_FARM` only. Extend worker-building compatibility so existing `FARMER` can be assigned to both normal `FARM` and `VINEYARD_FARM`, without changing wheat farm behavior. Add focused assignment tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T329**: Add farmer movement to ripe Vineyard plots only. A Farmer assigned to Vineyard Farm should walk to a reachable ripe Vineyard in range and enter a harvesting state, without depositing grapes yet. Add focused movement/state tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T330**: Add Vineyard harvest completion into farm local storage only. Completing a Vineyard harvest should add grapes to Vineyard Farm local storage, reset the Vineyard growth cycle, release the plot reservation, and respect full farm storage. Add focused runtime tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T331**: Add Vineyard Farm worker rest/status integration only. After a grape harvest, the farmer should return/rest according to existing farm-style worker rhythm, and panel/status helpers should report Vineyard Farm states consistently. Add focused status/rest tests. Run full `pytest` and `ruff check src tests`.
 
-### 24.4 Transport integration
+### 25.4 Transport and UI
 
-- [x] **T306**: Add Cow Farm wheat input delivery planning only. Carriers should deliver wheat to Cow Farm when planned inbound wheat plus stored wheat is below capacity. Add tests for no overfill with queued/in-flight wheat. Run full `pytest` and `ruff check src tests`.
-- [x] **T307**: Add Cow Farm water input delivery planning only. Carriers should deliver water from well local storage to Cow Farm when planned inbound water plus stored water is below capacity. Verify existing Bakery/Canteen/Chicken Farm water delivery still works. Run full `pytest` and `ruff check src tests`.
-- [x] **T308**: Add Cow Farm beef output export planning only. Carriers should export beef from Cow Farm local output storage to Town Hall, accounting for queued/in-flight beef exports. Add demolition/invalid-task coverage for beef if not already covered generically. Run full `pytest` and `ruff check src tests`.
-- [x] **T309**: Add Cow Farm hide output export planning only. Carriers should export hide from Cow Farm local output storage to Town Hall, accounting for queued/in-flight hide exports. Add demolition/invalid-task coverage for hide if not already covered generically. Run full `pytest` and `ruff check src tests`.
+- [ ] **T332**: Add Vineyard Farm grape output export planning only. Carriers should export grapes from Vineyard Farm local storage to Town Hall, accounting for queued/in-flight grape exports and Town Hall capacity. Add demolition/invalid-task coverage for grapes if not already covered generically. Run full `pytest` and `ruff check src tests`.
+- [ ] **T333**: Add Vineyard Farm panel shell only. Create/route a panel that shows title, worker status, upgrade, demolish, active toggle if the domain supports it, and close action, without custom storage/growth details yet. Add click/layout tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T334**: Add Vineyard Farm panel storage/status rows only. Show local grape storage and farmer status/production status in the panel without overlapping actions at level 10. Add draw/layout tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T335**: Add Vineyard plot panel or terrain-click behavior only. Decide based on existing field behavior: either make `VINEYARD` behave like terrain/no panel or show a minimal panel with growth stage. Add tests for the chosen click behavior. Run full `pytest` and `ruff check src tests`.
 
-### 24.5 Documentation and smoke coverage
+### 25.5 Documentation and Smoke Coverage
 
-- [x] **T310**: Update documentation only. Update `PRD.md`, `building_extension_guide.md`, and any worker guide text needed for shared worker compatibility and multi-output processors. Avoid hard-coding numeric balance values in PRD. Run full `pytest` and `ruff check src tests`.
-- [x] **T311**: Add one Phase 24 end-to-end smoke test and close the phase. Cover Cow Farm construction/setup, `ANIMAL_HERDER` assignment, wheat + water delivery, production of beef + hide, export to Town Hall, and no Town Hall water storage. Final gate: full `pytest` plus `ruff check src tests`; update Current Status and Notes; mark Phase 24 complete only when all tasks are `[x]`.
+- [ ] **T336**: Update extension documentation only. Document Vineyard Farm/Vineyard patterns in `building_extension_guide.md` and worker guidance as needed: farm-with-plots, shared FARMER compatibility, plot growth JSON, asset metadata expectations, and carrier export expectations. Avoid hard-coding balance numbers in PRD-style docs except where the JSON is the source of truth. Run full `pytest` and `ruff check src tests`.
+- [ ] **T337**: Add one focused integration test for Vineyard Farm + Vineyards. Cover constructing a Vineyard Farm and one Vineyard, growth to ripe, farmer harvest into farm storage, growth reset, and carrier export of grapes to Town Hall. Run full `pytest` and `ruff check src tests`.
+- [ ] **T338**: Close Phase 25. Run final full `pytest` plus `ruff check src tests`; update Current Status, Last Completed, Total Progress, Decisions Log, and Notes; mark Phase 25 complete only when all tasks are `[x]`.
 
 ---
 
@@ -102,10 +98,9 @@
 
 | Date | Task | Decision | Rationale |
 |------|------|----------|-----------|
-| 2026-05-10 | Phase 24 | Reuse `ANIMAL_HERDER` for Cow Farm. | User requested the same worker as Chicken Farm; assignment logic should support one worker type serving multiple compatible animal buildings. |
-| 2026-05-10 | Phase 24 | Use internal resource ids `beef` and `hide`. | They are concise, stable ids for player-facing beef and hide. |
-| 2026-05-10 | Phase 24 | Keep Cow Farm recipe, timing, rest, and storage capacity in `cow_farm.json`. | Building-specific balance belongs in per-building JSON so agents do not need to edit large global settings for each building. |
-| 2026-05-10 | T310 | Did not edit `PRD.md` in this repo turn. | Workspace contract marks `PRD.md` read-only for agents; Cow Farm / shared-worker / multi-output guidance was added to `building_extension_guide.md`, `worker_extension_guide.md`, and `worker_effects_guide.md` instead. |
+| 2026-05-10 | Phase 25 | Reuse `FARMER` for `VINEYARD_FARM`. | User requested the same worker as the normal farm; compatibility must support both farm types without changing wheat behavior. |
+| 2026-05-10 | Phase 25 | Model `VINEYARD` as a separate 1x1 buildable plot. | User requested vineyards as separate one-cell buildings built near the farm. |
+| 2026-05-10 | Phase 25 | Store Vineyard Farm and Vineyard constants in per-building JSON files. | Keeps balance/configuration near the building and avoids scattering constants through runtime code. |
 
 ## Issues & Blockers
 
@@ -115,11 +110,8 @@
 
 ## Notes
 
-- **2026-05-10:** Phase 24 planned for Cow Farm. Tasks are ordered so no task is only a failing-test step; each task must include implementation plus its own tests.
-- **2026-05-10:** Phase 24 tasks were split into smaller ralph-loop slices after review: one resource, one storage slot, one UI part, or one transport flow per task where practical.
-- **2026-05-10:** `ANIMAL_HERDER` serves both `CHICKEN_FARM` and `COW_FARM` via `worker_compatible_building_types` (T303).
-- **2026-05-10:** T310 updated extension guides for Cow Farm-style multi-slot storage, multi-output carrier exports, and `worker_compatible_building_types`; `PRD.md` left unchanged (agent read-only).
-- **2026-05-10:** T311 added `tests/test_smoke_phase24.py` (Cow Farm E2E); Phase 24 closed with all tasks `[x]`.
+- **2026-05-10:** Phase 25 planned for Vineyard Farm and Vineyards. Tasks are split for ralph-loop execution: one resource, one settings file, one class shell, one menu/asset/UI/runtime/transport action per task where practical.
+- **2026-05-10:** `FARMER` currently serves normal `FARM`; T328 should generalize compatibility carefully instead of duplicating one-off assignment paths.
 - Keep old completed phase details in `progress_archive.md`; `progress.md` should stay focused on the current active phase to keep agent context small.
 - Tests run headless via `SDL_VIDEODRIVER=dummy` in `tests/conftest.py`.
 - Pathfinding contract: **4-dir** `find_path_bfs` (no diagonals), aligned with PRD.

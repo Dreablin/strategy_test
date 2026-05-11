@@ -1,4 +1,4 @@
-"""Vineyard Farm building panel shell: header, worker row, actions, active toggle (T333)."""
+"""Vineyard Farm panel: grape storage row, worker/status via BuildingPanel, actions, toggle (T333–T334)."""
 
 from __future__ import annotations
 
@@ -11,7 +11,9 @@ from game.ui.building_panel import BuildingPanel
 
 _PANEL_PAD = 16
 _BTN_H = 32
-_EXTRA_BOTTOM = 48
+_ROW = 26
+# Reserve space for grape row + gap + toggle; phantom button slot at max level keeps buttons clear of toggle.
+_EXTRA_BOTTOM = 104
 
 
 @dataclass(frozen=True, slots=True)
@@ -28,6 +30,21 @@ class VineyardFarmPanel:
     @staticmethod
     def supports_building(building: object) -> bool:
         return isinstance(building, VineyardFarm)
+
+    @staticmethod
+    def grape_storage_line(farm: VineyardFarm) -> str:
+        return f"Grapes: {farm.grapes_amount()} / {farm.grapes_capacity()}"
+
+    @staticmethod
+    def _grape_label_y(layout: VineyardFarmPanelLayout) -> int:
+        """Place the grape line in the gap above the topmost primary action (upgrade or demolish)."""
+        if layout.upgrade is not None:
+            anchor_top = layout.upgrade.top
+        elif layout.demolish is not None:
+            anchor_top = layout.demolish.top
+        else:
+            anchor_top = layout.toggle.top
+        return anchor_top - _ROW - 8
 
     @staticmethod
     def toggle_label(farm: VineyardFarm) -> str:
@@ -88,6 +105,12 @@ class VineyardFarmPanel:
             farm,
             worker_assigned=worker_assigned,
             production_status=production_status,
+        )
+        body_font = pygame.font.Font(None, 22)
+        grape_y = VineyardFarmPanel._grape_label_y(layout)
+        surface.blit(
+            body_font.render(VineyardFarmPanel.grape_storage_line(farm), True, (200, 204, 214)),
+            (layout.frame.left + _PANEL_PAD, grape_y),
         )
         font = pygame.font.Font(None, 22)
         active_bg = (84, 112, 84) if farm.active else (92, 64, 64)

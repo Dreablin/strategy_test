@@ -49,3 +49,45 @@ def test_vineyard_farm_panel_draw_covers_toggle_region() -> None:
     layout = VineyardFarmPanel.layout(surface, farm, worker_assigned=True, production_status="Resting")
     px = surface.get_at((layout.toggle.centerx, layout.toggle.centery))
     assert px[0] > 30 or px[1] > 30 or px[2] > 30
+
+
+def test_grape_storage_line_reflects_amounts() -> None:
+    farm = VineyardFarm(level=2, grid_pos=(0, 0))
+    farm.grapes_in = 2
+    line = VineyardFarmPanel.grape_storage_line(farm)
+    assert "2 /" in line
+    assert str(farm.grapes_capacity()) in line
+
+
+def test_max_level_panel_grape_row_clear_of_demolish_and_toggle() -> None:
+    surface = pygame.Surface((1280, 720))
+    farm = VineyardFarm(level=10, grid_pos=(0, 0))
+    farm.construction_site = None
+    layout = VineyardFarmPanel.layout(surface, farm, worker_assigned=True, production_status="Ready")
+    assert layout.upgrade is None
+    assert layout.demolish is not None
+    grape_y = VineyardFarmPanel._grape_label_y(layout)
+    row = 26
+    assert grape_y + row <= layout.demolish.top
+    assert layout.toggle.top >= layout.demolish.bottom
+
+
+def test_draw_leaves_grape_text_above_demolish_at_level_10() -> None:
+    surface = pygame.Surface((1280, 720))
+    farm = VineyardFarm(level=10, grid_pos=(0, 0))
+    farm.construction_site = None
+    farm.grapes_in = 7
+    VineyardFarmPanel.draw(
+        surface,
+        farm,
+        worker_assigned=True,
+        worker_status="resting",
+        production_status="Resting",
+        now_ms=0,
+    )
+    layout = VineyardFarmPanel.layout(surface, farm, worker_assigned=True, production_status="Resting")
+    grape_y = VineyardFarmPanel._grape_label_y(layout)
+    x = layout.frame.left + 16 + 40
+    y = grape_y + 10
+    px = surface.get_at((x, y))
+    assert px != (36, 40, 52, 255)

@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 25 - Vineyard Farm and Vineyards (**active**)
-- **Next Task:** T320 - Vineyard 1x1 building class shell only
-- **Last Completed:** T319 - vineyard.json settings
-- **Total Progress:** 319 / 338 (Phase 25: 8 / 27 done)
+- **Next Task:** T321 - Register VINEYARD placement only
+- **Last Completed:** T320 - Vineyard 1x1 class shell
+- **Total Progress:** 320 / 338 (Phase 25: 9 / 27 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -53,8 +53,8 @@
 ### 25.2 Vineyard Plot Foundation
 
 - [x] **T319**: Add only `src/game/settings/buildings/vineyard.json`. Include `VINEYARD`, construction cost of 1 board, build time, maturation stage count, per-stage duration, and asset scale/anchor/offset metadata according to existing asset metadata conventions. Add focused settings tests. Run full `pytest` and `ruff check src tests`.
-- [~] **T320**: Add only the `Vineyard` 1x1 building/plot class shell. It should define `type_tag`, 1x1 footprint, construction support, growth state fields, and basic phase/stage accessors, but no runtime growth yet. Add focused domain tests. Run full `pytest` and `ruff check src tests`.
-- [ ] **T321**: Register `VINEYARD` for placement/construction only. Wire the class into placement maps and input construction selection so plots can be placed and built, without adding menu visibility yet. Add focused placement/construction tests, including the 1-board construction requirement. Run full `pytest` and `ruff check src tests`.
+- [x] **T320**: Add only the `Vineyard` 1x1 building/plot class shell. It should define `type_tag`, 1x1 footprint, construction support, growth state fields, and basic phase/stage accessors, but no runtime growth yet. Add focused domain tests. Run full `pytest` and `ruff check src tests`.
+- [~] **T321**: Register `VINEYARD` for placement/construction only. Wire the class into placement maps and input construction selection so plots can be placed and built, without adding menu visibility yet. Add focused placement/construction tests, including the 1-board construction requirement. Run full `pytest` and `ruff check src tests`.
 - [ ] **T322**: Add Vineyard plot asset loading/fallback only. Add folder mapping and placeholder/meta files only if real assets are absent; add focused tests proving each growth stage sprite resolves or falls back safely. Run full `pytest` and `ruff check src tests`.
 - [ ] **T323**: Add Vineyard plot to the appropriate build menu only. Add the menu tile/click routing for `VINEYARD`; add focused bottom-bar/input tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T324**: Add Vineyard display labels/descriptions only. Update building display names/descriptions and any placement labels that do not require custom runtime yet. Add focused label tests if existing patterns support them. Run full `pytest` and `ruff check src tests`.

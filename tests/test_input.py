@@ -290,6 +290,18 @@ def test_build_menu_select_cow_farm_sets_pending_type() -> None:
     assert placement.pending_type.type_tag == "COW_FARM"
 
 
+def test_build_menu_select_vineyard_farm_sets_pending_type() -> None:
+    surface = pygame.Surface((640, 480))
+    world = World()
+    registry = BuildingRegistry(world)
+    camera = Camera()
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(), camera)
+    inp.handle(surface, pygame.event.Event(BUILD_MENU_SELECT, building_type="VINEYARD_FARM"))
+    assert placement.pending_type is not None
+    assert placement.pending_type.type_tag == "VINEYARD_FARM"
+
+
 def test_input_processing_menu_cow_farm_click_selects_placement() -> None:
     """T298: bottom bar processing submenu posts COW_FARM; GameInput arms placement."""
     surface = pygame.Surface((1200, 720))

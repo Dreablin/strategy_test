@@ -4,11 +4,12 @@ import pygame
 
 from game.buildings.registry import BuildingRegistry
 from game.buildings.cow_farm import CowFarm
+from game.buildings.vineyard_farm import VineyardFarm
 from game.buildings.forester_hut import ForesterHut
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.stone_mine import StoneMine
 from game.config import TILE_H, TILE_W
-from game.iso import screen_to_world, world_to_screen
+from game.iso import screen_to_tile, world_to_screen
 from game.render import Renderer
 from game.ui.placement import PlacementController
 from game.ui.placement import (
@@ -35,6 +36,26 @@ def _cell_center_screen(surface: pygame.Surface, world: World, gx: int, gy: int)
     ox, oy = Renderer.map_origin(surface, world)
     sx, sy = world_to_screen(gx, gy)
     return ox + sx + TILE_W // 2, oy + sy + TILE_H // 2
+
+
+def test_place_vineyard_farm_requires_town_hall_gate_and_starts_construction() -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    placement = PlacementController(world, registry)
+    placement.select("VINEYARD_FARM")
+    cx, cy = _cell_center_screen(surface, world, 12, 12)
+    assert placement.try_place(surface, (cx, cy))
+    farms = [b for b in registry.all() if b.type_tag == "VINEYARD_FARM"]
+    assert len(farms) == 1
+    assert isinstance(farms[0], VineyardFarm)
+    assert farms[0].is_under_construction
+    site = farms[0].construction_site
+    assert site is not None
+    spec = CONSTRUCTION_REQUIREMENTS["VINEYARD_FARM"][1]
+    assert site.required_resources == dict(spec.cost)
+    assert site.build_time_ms == spec.build_time_ms
 
 
 def test_place_cow_farm_requires_town_hall_gate_and_starts_construction() -> None:
@@ -92,7 +113,7 @@ def test_placement_does_not_require_wallet_resources() -> None:
 
 
 def test_update_hover_uses_renderer_map_origin() -> None:
-    """Hover cell must match `screen_to_world` with the same offset as `Renderer.draw_world`."""
+    """Hover cell must match visual tile picking with the same offset as `Renderer.draw_world`."""
     surface = pygame.Surface((1280, 720))
     world = World(world_seed=2)
     registry = BuildingRegistry(world)
@@ -101,8 +122,22 @@ def test_update_hover_uses_renderer_map_origin() -> None:
     ox, oy = Renderer.map_origin(surface, world)
     mx, my = 512, 360
     placement.update_hover(surface, (mx, my))
-    exp = screen_to_world(mx - ox, my - oy)
+    exp = screen_to_tile(mx - ox, my - oy)
     assert placement.hover_grid == exp
+
+
+def test_update_hover_keeps_cursor_inside_right_half_of_same_tile() -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    placement = PlacementController(world, registry)
+    placement.select("LUMBER_CAMP")
+    gx, gy = 12, 12
+    center_x, center_y = _cell_center_screen(surface, world, gx, gy)
+
+    placement.update_hover(surface, (center_x + TILE_W // 2 - 1, center_y))
+
+    assert placement.hover_grid == (gx, gy)
 
 
 def test_building_range_border_tiles_uses_farmer_anchor_and_radius() -> None:

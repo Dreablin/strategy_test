@@ -16,6 +16,7 @@ _RESOURCE_BUTTONS: tuple[tuple[str, str, str], ...] = (
     ("iron_mine", "Iron", "IRON_MINE"),
     ("farm", "Farm", "FARM"),
     ("field", "Field", "FIELD"),
+    ("vineyard", "Vineyard", "VINEYARD"),
     ("forester_hut", "Forester", "FORESTER_HUT"),
     ("well", "Well", "WELL"),
 )

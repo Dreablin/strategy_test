@@ -143,3 +143,17 @@ def test_bottom_bar_processing_vineyard_farm_posts_build_event() -> None:
     events = [e for e in pygame.event.get() if e.type == BUILD_MENU_SELECT]
     assert events
     assert events[-1].building_type == "VINEYARD_FARM"
+
+
+def test_bottom_bar_resource_vineyard_posts_build_event() -> None:
+    """T323: Resource submenu includes Vineyard plot; click posts VINEYARD."""
+    surface = pygame.Surface((1400, 720))
+    BottomBar._menu = "resource"  # noqa: SLF001
+    pygame.event.clear()
+    # Layout: back + 8 resource tiles; Vineyard is column index 6 (0-based).
+    col_w = surface.get_width() // 9
+    x = 6 * col_w + col_w // 2
+    BottomBar.handle_click(surface, (x, 700))
+    events = [e for e in pygame.event.get() if e.type == BUILD_MENU_SELECT]
+    assert events
+    assert events[-1].building_type == "VINEYARD"

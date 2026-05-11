@@ -354,6 +354,28 @@ def test_input_processing_menu_vineyard_farm_click_selects_placement() -> None:
     BottomBar._menu = "main"  # noqa: SLF001
 
 
+def test_input_resource_menu_vineyard_click_selects_placement() -> None:
+    """T323: Resource submenu posts VINEYARD; GameInput arms placement."""
+    surface = pygame.Surface((1400, 720))
+    world = World()
+    registry = BuildingRegistry(world)
+    camera = Camera()
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(), camera)
+    BottomBar._menu = "resource"  # noqa: SLF001
+    pygame.event.clear()
+    col_w = surface.get_width() // 9
+    x = 6 * col_w + col_w // 2
+    BottomBar.handle_click(surface, (x, 700))
+    ev = pygame.event.poll()
+    assert ev.type == BUILD_MENU_SELECT
+    assert ev.building_type == "VINEYARD"
+    inp.handle(surface, ev)
+    assert placement.pending_type is not None
+    assert placement.pending_type.type_tag == "VINEYARD"
+    BottomBar._menu = "main"  # noqa: SLF001
+
+
 def test_under_construction_building_uses_construction_panel_draw(monkeypatch) -> None:
     surface = pygame.Surface((1280, 720))
     world = World(world_seed=2)

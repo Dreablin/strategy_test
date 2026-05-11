@@ -201,6 +201,20 @@ def production_status_for_building(manager: Any, building: Building) -> str:
         if worker.state == "processing":
             return "Processing"
         return "Ready"
+    if building.type_tag == "WINERY":
+        if worker.state == "resting":
+            return "Resting"
+        if int(getattr(building, "output_amount", lambda: 0)()) >= int(
+            getattr(building, "output_capacity", lambda: 0)()
+        ):
+            return "Output full"
+        if int(getattr(building, "input_amount", lambda: 0)()) < int(
+            getattr(building, "recipe_input_count", lambda: 1)()
+        ):
+            return "No grapes"
+        if worker.state == "processing":
+            return "Processing"
+        return "Ready"
     if building.type_tag == "IRON_MINE":
         if worker.state == "resting":
             return "Resting"

@@ -11,6 +11,7 @@ PROCESSOR_INPUT_ADD_METHOD_BY_RESOURCE: dict[str, str] = {
     "wheat": "add_wheat_in",
     "wood": "add_wood_in",
     "flour": "add_flour_in",
+    "grapes": "add_grapes",
 }
 
 
@@ -189,6 +190,11 @@ def mill_output_transport_tasks(registry: Any) -> list[TransportTask]:
 def bakery_input_transport_tasks(registry: Any) -> list[TransportTask]:
     """Build low-priority flour refill tasks from Town Hall to active bakeries."""
     return processor_input_transport_tasks(registry, "flour")
+
+
+def winery_input_transport_tasks(registry: Any) -> list[TransportTask]:
+    """Build low-priority grape refill tasks from Town Hall to active wineries."""
+    return processor_input_transport_tasks(registry, "grapes")
 
 
 def canteen_input_transport_tasks(registry: Any) -> list[TransportTask]:
@@ -508,4 +514,28 @@ def vineyard_farm_grape_output_transport_tasks(registry: Any) -> list[TransportT
             continue
         for _ in range(amount):
             tasks.append(TransportTask(resource="grapes", source=building, target=town_hall, priority=0))
+    return tasks
+
+
+def winery_output_transport_tasks(registry: Any) -> list[TransportTask]:
+    """Build low-priority wine export tasks from Wineries to Town Hall."""
+    if registry is None:
+        return []
+    buildings = list(registry.all())
+    town_hall = next((b for b in buildings if b.type_tag == "TOWN_HALL"), None)
+    if town_hall is None:
+        return []
+    tasks: list[TransportTask] = []
+    for building in buildings:
+        if building.type_tag != "WINERY":
+            continue
+        if getattr(building, "is_under_construction", False):
+            continue
+        if not getattr(building, "active", True):
+            continue
+        amount = int(building.output_amount())
+        if amount <= 0:
+            continue
+        for _ in range(amount):
+            tasks.append(TransportTask(resource="wine", source=building, target=town_hall, priority=0))
     return tasks

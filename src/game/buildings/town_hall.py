@@ -25,6 +25,7 @@ class TownHall(Building):
             "beef": 0,
             "hide": 0,
             "grapes": 0,
+            "wine": 0,
         }
 
     @classmethod

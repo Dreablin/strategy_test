@@ -112,6 +112,29 @@ logic.
   `assigned_worker` effects from the source or target building of a transport
   task.
 
+## Worker Tiers
+
+Workers belong to one of two tiers: `basic` or `advanced`. Tier metadata is
+centralized in `src/game/worker_tiers.py`:
+
+- `worker_tier(worker_type)` → `"basic"` or `"advanced"`.
+- `workers_of_tier(tier)` → list of worker types in that tier.
+- `register_worker_tier(worker_type, tier)` → register new workers at runtime.
+- `ALL_TIERS = ("basic", "advanced")`.
+
+All pre-Phase-26 workers are `basic`. `WINEMAKER` is the first `advanced`
+worker.
+
+### School Hire Tabs
+
+The School panel (`src/game/ui/school_panel.py`) shows **Basic** and
+**Advanced** tabs. Each tab lists workers whose tier matches via
+`worker_tier()`. Adding a new worker to a tier automatically makes it appear
+in the matching School tab—no hard-coded UI branches needed.
+
+Tab state is tracked in `GameInput._school_tier` and passed through layout,
+draw, and click methods.
+
 ## One worker type, multiple staffable buildings
 
 Some hired workers can work at more than one building type. The canonical

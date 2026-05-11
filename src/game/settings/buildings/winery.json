@@ -1,0 +1,66 @@
+{
+  "building_type": "WINERY",
+  "footprint": [2, 2],
+  "input_storage": {
+    "capacity_by_level": {
+      "1": 5,
+      "2": 6,
+      "3": 7,
+      "4": 8,
+      "5": 9,
+      "6": 10,
+      "7": 11,
+      "8": 12,
+      "9": 13,
+      "10": 15
+    }
+  },
+  "output_storage": {
+    "capacity_by_level": {
+      "1": 3,
+      "2": 4,
+      "3": 5,
+      "4": 6,
+      "5": 7,
+      "6": 8,
+      "7": 9,
+      "8": 10,
+      "9": 11,
+      "10": 12
+    }
+  },
+  "recipe": {
+    "input": {"grapes": 5},
+    "output": {"wine": 1}
+  },
+  "production": {
+    "cycle_ms": 60000,
+    "rest_ms": 10000
+  },
+  "worker_effects": {
+    "by_level": {
+      "1": {"assigned_worker": {}},
+      "2": {"assigned_worker": {"move_speed_mult": 0.05, "gather_speed_mult": 0.05}},
+      "3": {"assigned_worker": {"move_speed_mult": 0.1, "gather_speed_mult": 0.1}},
+      "4": {"assigned_worker": {"move_speed_mult": 0.15, "gather_speed_mult": 0.15}},
+      "5": {"assigned_worker": {"move_speed_mult": 0.2, "gather_speed_mult": 0.2}},
+      "6": {"assigned_worker": {"move_speed_mult": 0.25, "gather_speed_mult": 0.25}},
+      "7": {"assigned_worker": {"move_speed_mult": 0.3, "gather_speed_mult": 0.3}},
+      "8": {"assigned_worker": {"move_speed_mult": 0.35, "gather_speed_mult": 0.35}},
+      "9": {"assigned_worker": {"move_speed_mult": 0.4, "gather_speed_mult": 0.4}},
+      "10": {"assigned_worker": {"move_speed_mult": 0.45, "gather_speed_mult": 0.45}}
+    }
+  },
+  "levels": {
+    "1": {"cost": {"wood": 3, "stone": 2}, "build_time_ms": 45000},
+    "2": {"cost": {"boards": 3, "stone": 2}, "build_time_ms": 45000},
+    "3": {"cost": {"boards": 4, "stone": 3}, "build_time_ms": 45000},
+    "4": {"cost": {"boards": 5, "stone": 4, "iron": 1}, "build_time_ms": 45000},
+    "5": {"cost": {"boards": 6, "stone": 5, "iron": 2}, "build_time_ms": 45000},
+    "6": {"cost": {"boards": 7, "stone": 6, "iron": 3}, "build_time_ms": 45000},
+    "7": {"cost": {"boards": 8, "stone": 7, "iron": 4}, "build_time_ms": 45000},
+    "8": {"cost": {"boards": 9, "stone": 8, "iron": 5}, "build_time_ms": 45000},
+    "9": {"cost": {"boards": 10, "stone": 9, "iron": 6}, "build_time_ms": 45000},
+    "10": {"cost": {"boards": 11, "stone": 10, "iron": 7}, "build_time_ms": 45000}
+  }
+}

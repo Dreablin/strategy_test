@@ -21,6 +21,7 @@ from game.buildings.sawmill import Sawmill
 from game.buildings.town_hall import TownHall
 from game.buildings.vineyard_farm import VineyardFarm
 from game.buildings.well import Well
+from game.buildings.winery import Winery
 from game.camera import Camera
 from game.iso import screen_to_tile
 from game.render import Renderer
@@ -45,6 +46,7 @@ from game.ui.town_hall_panel import TownHallPanel
 from game.ui.top_bar import TopBar
 from game.ui.vineyard_farm_panel import VineyardFarmPanel
 from game.ui.well_panel import WellPanel
+from game.ui.winery_panel import WineryPanel
 from game.ui.worker_panel import WorkerPanel
 from game.world import World
 from game.config import TILE_H, TILE_W
@@ -96,6 +98,7 @@ class GameInput:
         "_rmb_dragging",
         "_rmb_moved",
         "_rmb_press_pos",
+        "_school_tier",
         "_worker_manager",
         "_worker_panel",
         "_world",
@@ -119,6 +122,7 @@ class GameInput:
         self._population_filter: str | None = None
         self._population_panel_open = False
         self._population_scroll = 0
+        self._school_tier: str = "basic"
         self._rmb_down = False
         self._rmb_dragging = False
         self._rmb_moved = False
@@ -398,6 +402,7 @@ class GameInput:
                 self._panel,
                 worker_assigned=worker_status != "empty",
                 worker_manager=self._worker_manager,
+                tier=self._school_tier,
             )
             return
         if SawmillPanel.supports_building(self._panel):
@@ -470,6 +475,19 @@ class GameInput:
             worker_status = self._panel_worker_status()
             production_status = self._panel_production_status()
             CowFarmPanel.draw(
+                surface,
+                self._panel,
+                worker_assigned=worker_status != "empty",
+                worker_status=worker_status,
+                production_status=production_status,
+                now_ms=pygame.time.get_ticks(),
+            )
+            return
+        if WineryPanel.supports_building(self._panel):
+            assert isinstance(self._panel, Winery)
+            worker_status = self._panel_worker_status()
+            production_status = self._panel_production_status()
+            WineryPanel.draw(
                 surface,
                 self._panel,
                 worker_assigned=worker_status != "empty",
@@ -726,6 +744,7 @@ class GameInput:
                     self._panel,
                     worker_assigned=wa,
                     worker_manager=self._worker_manager,
+                    tier=self._school_tier,
                 )
                 if layout.frame.collidepoint(pos):
                     action = SchoolPanel.click_action(
@@ -734,8 +753,11 @@ class GameInput:
                         self._panel,
                         worker_assigned=wa,
                         worker_manager=self._worker_manager,
+                        tier=self._school_tier,
                     )
-                    if action == "close":
+                    if action is not None and action.startswith("tab:"):
+                        self._school_tier = action.split(":", 1)[1]
+                    elif action == "close":
                         self._panel = None
                     elif action == "upgrade" and self._panel is not None:
                         if self._registry.upgrade_building(self._panel):
@@ -923,6 +945,37 @@ class GameInput:
                 )
                 if layout.frame.collidepoint(pos):
                     action = CowFarmPanel.click_action(
+                        surface,
+                        pos,
+                        self._panel,
+                        worker_assigned=worker_status != "empty",
+                        production_status=production_status,
+                    )
+                    if action == "close":
+                        self._panel = None
+                    elif action == "upgrade" and self._panel is not None:
+                        if self._registry.upgrade_building(self._panel):
+                            self._sync_assignments()
+                    elif action == "demolish" and self._panel is not None:
+                        b = self._panel
+                        self._registry.demolish(b, self._worker_manager)
+                        self._panel = None
+                        self._sync_assignments()
+                    elif action == "toggle_active" and self._panel is not None:
+                        self._panel.set_active(not self._panel.active)
+                    return
+            if WineryPanel.supports_building(self._panel):
+                assert isinstance(self._panel, Winery)
+                worker_status = self._panel_worker_status()
+                production_status = self._panel_production_status()
+                layout = WineryPanel.layout(
+                    surface,
+                    self._panel,
+                    worker_assigned=worker_status != "empty",
+                    production_status=production_status,
+                )
+                if layout.frame.collidepoint(pos):
+                    action = WineryPanel.click_action(
                         surface,
                         pos,
                         self._panel,

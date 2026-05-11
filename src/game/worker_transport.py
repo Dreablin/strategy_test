@@ -26,6 +26,8 @@ from game.transport_tasks import (
     sawmill_input_transport_tasks,
     sawmill_output_transport_tasks,
     water_input_transport_tasks,
+    winery_input_transport_tasks,
+    winery_output_transport_tasks,
 )
 from game.worker_constants import CARRIER_INTERACT_MS
 from game.worker_geometry import building_center_tile
@@ -227,6 +229,8 @@ class WorkerTransportMixin:
                 has_storage_source = int(task.source.beef_amount()) > 0  # type: ignore[attr-defined]
             elif task.resource == "hide" and hasattr(task.source, "hide_amount"):
                 has_storage_source = int(task.source.hide_amount()) > 0  # type: ignore[attr-defined]
+            elif task.resource == "wine" and hasattr(task.source, "output_amount"):
+                has_storage_source = int(task.source.output_amount()) > 0  # type: ignore[attr-defined]
             elif task.resource == "water" and task.source.type_tag == "WELL":
                 has_storage_source = _water_amount(task.source) > 0
             if task.resource == "beef" and getattr(task.source, "type_tag", "") == "COW_FARM":
@@ -459,6 +463,12 @@ class WorkerTransportMixin:
                     except ValueError:
                         self._drop_failed_pickup(worker, task)
                         return
+                elif task.resource == "wine" and hasattr(task.source, "take_wine"):
+                    try:
+                        task.source.take_wine(1)  # type: ignore[attr-defined]
+                    except ValueError:
+                        self._drop_failed_pickup(worker, task)
+                        return
                 elif not hasattr(task.source, "take_from_warehouse"):
                     worker.transport_task = None
                     worker.state = "idle"
@@ -563,6 +573,16 @@ class WorkerTransportMixin:
         elif task.resource == "flour" and hasattr(task.target, "add_flour_in"):
             if int(task.target.input_amount()) < int(task.target.input_capacity()):  # type: ignore[attr-defined]
                 task.target.add_flour_in(1)  # type: ignore[attr-defined]
+            else:
+                town_hall = self._primary_town_hall()
+                if town_hall is not None:
+                    town_hall.add_to_warehouse(task.resource, 1)
+                    delivered_target = town_hall
+                elif hasattr(task.target, "add_to_warehouse"):
+                    task.target.add_to_warehouse(task.resource, 1)  # type: ignore[attr-defined]
+        elif task.resource == "grapes" and hasattr(task.target, "add_grapes"):
+            if int(task.target.input_amount()) < int(task.target.input_capacity()):  # type: ignore[attr-defined]
+                task.target.add_grapes(1)  # type: ignore[attr-defined]
             else:
                 town_hall = self._primary_town_hall()
                 if town_hall is not None:
@@ -710,6 +730,16 @@ class WorkerTransportMixin:
         if self._registry is None:  # type: ignore[attr-defined]
             return
         self._enqueue_desired_transport_tasks(bakery_input_transport_tasks(self._registry))  # type: ignore[attr-defined]
+
+    def _enqueue_winery_input_tasks(self) -> None:
+        if self._registry is None:  # type: ignore[attr-defined]
+            return
+        self._enqueue_desired_transport_tasks(winery_input_transport_tasks(self._registry))  # type: ignore[attr-defined]
+
+    def _enqueue_winery_output_tasks(self) -> None:
+        if self._registry is None:  # type: ignore[attr-defined]
+            return
+        self._enqueue_desired_transport_tasks(winery_output_transport_tasks(self._registry))  # type: ignore[attr-defined]
 
     def _enqueue_canteen_input_tasks(self) -> None:
         if self._registry is None:  # type: ignore[attr-defined]

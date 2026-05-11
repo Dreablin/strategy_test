@@ -152,6 +152,29 @@ transport tasks.
    - Demolition must release world occupancy and notify workers through the
      registry/worker manager flow.
 
+## Winery (`WINERY`)
+
+The Winery is a standard indoor processor building:
+
+- **Worker:** `WINEMAKER` (advanced tier, one per winery).
+- **Recipe:** 3 grapes → 1 wine (60 s cycle, 10 s rest).
+- **Input storage:** `grapes` — capacity starts at 3, +1 per level.
+- **Output storage:** `wine` — capacity starts at 3, +1 per level.
+- **Settings source:** `src/game/settings/buildings/winery.json` (single source
+  of truth for all balance constants including storage capacity by level,
+  production timings, and construction costs).
+- **Panel:** `src/game/ui/winery_panel.py` with grape/wine storage rows,
+  progress bar, and active toggle.
+- **Transport:**
+  - Input: `winery_input_transport_tasks` delivers grapes from Town Hall.
+  - Output: `winery_output_transport_tasks` exports wine to Town Hall.
+  - Carrier pickup uses `take_wine` on the Winery source.
+  - Carrier deposit uses `add_grapes` on the Winery target.
+- **Production runtime:** uses `WINERY_PROCESSOR` ProcessorSpec in
+  `worker_processing.py`.
+- **Status:** `worker_status.py` has a `WINERY` block reporting No worker,
+  Inactive, No grapes, Output full, Processing, and Resting.
+
 ## Vineyard Farm (`VINEYARD_FARM`) and Vineyard plot (`VINEYARD`)
 
 This is the **farm + separate plots** pattern: one staffed building holds local

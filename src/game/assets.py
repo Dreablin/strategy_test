@@ -38,6 +38,7 @@ _BUILDING_FOLDER: dict[str, str] = {
     "VINEYARD_FARM": "vineyard_farm",
     "VINEYARD": "vineyard",
     "WELL": "well",
+    "WINERY": "winery",
 }
 
 _WORKER_FOLDER: dict[str, str] = {
@@ -54,6 +55,7 @@ _WORKER_FOLDER: dict[str, str] = {
     "BAKER": "baker",
     "COOK": "cook",
     "WATERMAN": "waterman",
+    "WINEMAKER": "winemaker",
 }
 
 
@@ -304,6 +306,7 @@ def _building_palette(b_type: str) -> tuple[tuple[int, int, int], tuple[int, int
         "vineyard_farm": ((118, 92, 140), (62, 48, 78)),
         "vineyard": ((96, 130, 72), (52, 78, 44)),
         "well": ((104, 128, 152), (48, 70, 92)),
+        "winery": ((140, 60, 90), (82, 34, 56)),
         "school": ((120, 124, 168), (62, 66, 108)),
         "house": ((172, 142, 126), (110, 86, 76)),
         "canteen": ((168, 132, 102), (92, 68, 48)),
@@ -795,6 +798,7 @@ def _worker_color(w_type: str) -> tuple[int, int, int]:
         "BAKER": (232, 184, 132),
         "COOK": (200, 120, 88),
         "WATERMAN": (72, 148, 210),
+        "WINEMAKER": (128, 48, 96),
     }
     return colors.get(t, (200, 200, 220))
 

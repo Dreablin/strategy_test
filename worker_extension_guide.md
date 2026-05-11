@@ -125,6 +125,26 @@ Example: `ANIMAL_HERDER` staffs both `CHICKEN_FARM` and `COW_FARM`. Adding
 another animal building should extend the frozenset and any placement or school
 labels that list compatible sites, without introducing a second worker type
 unless design explicitly requires it.
+
+Example: **`FARMER`** staffs both **`FARM`** (wheat + `FIELD` reservations and
+return-to-camp deposit) and **`VINEYARD_FARM`** (ripe `VINEYARD` selection,
+per-plot reservations, walk to plot, harvest into farm grape storage). All of
+that runtime lives in `worker_farming.py` behind `_update_farmer` dispatch by
+`assigned_building.type_tag`. Extend compatibility via
+`worker_compatible_building_types("FARMER")` and keep wheat and grape paths
+separate—never fold grape harvest into wheat field tile logic.
+
+**Vineyard plot reservations** are tracked on `WorkerManager` (see
+`_vineyard_plot_reservations` / `_release_vineyard_plot_reservations_for` in
+`workers.py` and helpers in `worker_farming.py`). Release claims on harvest
+completion, storage-full abort, reassignment, and demolition of either the
+farm or the plot. Pathfinding to a plot targets **orthogonal neighbors** of the
+occupied `VINEYARD` tile, not the center cell.
+
+Panel-facing strings for the staffed farm use `worker_status.py` (shared
+`FARM` / `VINEYARD_FARM` buckets where appropriate and a dedicated production
+branch for `VINEYARD_FARM`).
+
 - If a task cannot be assigned because a temporary source is busy, do not block
   unrelated tasks behind it. Requeue or skip it so other eligible deliveries can
   proceed.
@@ -169,5 +189,6 @@ $env:PYTHONPATH='src'
 - Reintroducing passive wallet income or direct Town Hall hiring.
 - Hard-coding one consumer for a resource if more consumers are expected.
 - Mixing carrier queue decisions into production worker code.
-- Reusing special-case logic for `FIELD`, `WELL`, or `TOWN_HALL` as if they
-  were normal buildings.
+- Reusing special-case logic for `FIELD`, `VINEYARD`, `WELL`, or `TOWN_HALL` as
+  if they were normal buildings (including opening a map panel on plots that
+  intentionally skip `BuildingPanel`).

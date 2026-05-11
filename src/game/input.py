@@ -1030,7 +1030,7 @@ class GameInput:
                 self._worker_panel = worker
                 return
             target = self._registry.at(gx, gy)
-            if target is not None:
+            if target is not None and target.type_tag not in {"FIELD", "VINEYARD"}:
                 self._panel = target
             return
 
@@ -1041,6 +1041,6 @@ class GameInput:
 
         hit = self._registry.at(gx, gy)
         if hit is not None:
-            # FIELD acts as a terrain/work tile; it does not open a building panel.
-            if hit.type_tag != "FIELD":
+            # FIELD and VINEYARD act as terrain/work plots; they do not open a building panel.
+            if hit.type_tag not in {"FIELD", "VINEYARD"}:
                 self._panel = hit

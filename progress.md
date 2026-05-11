@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 25 - Vineyard Farm and Vineyards (**active**)
-- **Next Task:** T335 - Vineyard plot panel or terrain-click behavior
-- **Last Completed:** T334 - Vineyard Farm panel storage/status rows
-- **Total Progress:** 334 / 338 (Phase 25: 23 / 27 done)
+- **Next Task:** T336 - Extension documentation for Vineyard systems
+- **Last Completed:** T335 - Vineyard plot terrain click (no panel)
+- **Total Progress:** 335 / 338 (Phase 25: 24 / 27 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -74,11 +74,11 @@
 - [x] **T332**: Add Vineyard Farm grape output export planning only. Carriers should export grapes from Vineyard Farm local storage to Town Hall, accounting for queued/in-flight grape exports and Town Hall capacity. Add demolition/invalid-task coverage for grapes if not already covered generically. Run full `pytest` and `ruff check src tests`.
 - [x] **T333**: Add Vineyard Farm panel shell only. Create/route a panel that shows title, worker status, upgrade, demolish, active toggle if the domain supports it, and close action, without custom storage/growth details yet. Add click/layout tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T334**: Add Vineyard Farm panel storage/status rows only. Show local grape storage and farmer status/production status in the panel without overlapping actions at level 10. Add draw/layout tests. Run full `pytest` and `ruff check src tests`.
-- [~] **T335**: Add Vineyard plot panel or terrain-click behavior only. Decide based on existing field behavior: either make `VINEYARD` behave like terrain/no panel or show a minimal panel with growth stage. Add tests for the chosen click behavior. Run full `pytest` and `ruff check src tests`.
+- [x] **T335**: Add Vineyard plot panel or terrain-click behavior only. Decide based on existing field behavior: either make `VINEYARD` behave like terrain/no panel or show a minimal panel with growth stage. Add tests for the chosen click behavior. Run full `pytest` and `ruff check src tests`.
 
 ### 25.5 Documentation and Smoke Coverage
 
-- [ ] **T336**: Update extension documentation only. Document Vineyard Farm/Vineyard patterns in `building_extension_guide.md` and worker guidance as needed: farm-with-plots, shared FARMER compatibility, plot growth JSON, asset metadata expectations, and carrier export expectations. Avoid hard-coding balance numbers in PRD-style docs except where the JSON is the source of truth. Run full `pytest` and `ruff check src tests`.
+- [~] **T336**: Update extension documentation only. Document Vineyard Farm/Vineyard patterns in `building_extension_guide.md` and worker guidance as needed: farm-with-plots, shared FARMER compatibility, plot growth JSON, asset metadata expectations, and carrier export expectations. Avoid hard-coding balance numbers in PRD-style docs except where the JSON is the source of truth. Run full `pytest` and `ruff check src tests`.
 - [ ] **T337**: Add one focused integration test for Vineyard Farm + Vineyards. Cover constructing a Vineyard Farm and one Vineyard, growth to ripe, farmer harvest into farm storage, growth reset, and carrier export of grapes to Town Hall. Run full `pytest` and `ruff check src tests`.
 - [ ] **T338**: Close Phase 25. Run final full `pytest` plus `ruff check src tests`; update Current Status, Last Completed, Total Progress, Decisions Log, and Notes; mark Phase 25 complete only when all tasks are `[x]`.
 

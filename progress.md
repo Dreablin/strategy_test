@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 26 - Wine, Winery, and Worker Tiers (**active**)
-- **Next Task:** T356 - Add Winery panel shell
-- **Last Completed:** T355 - Add Winery production/worker status helpers
-- **Total Progress:** 355 / 360 (Phase 26: 17 / 22 done)
+- **Next Task:** T357 - Add Winery panel storage and progress rows
+- **Last Completed:** T356 - Add Winery panel shell
+- **Total Progress:** 356 / 360 (Phase 26: 18 / 22 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -77,7 +77,7 @@
 
 ### 26.4 Winery UI and Integration
 
-- [ ] **T356**: Add Winery panel shell only. Route a custom panel for `WINERY` with title, worker status, close, upgrade, demolish, and active toggle actions. Do not add custom storage/progress rows yet. Add focused panel routing/click tests. Run full `pytest` and `ruff check src tests`.
+- [x] **T356**: Add Winery panel shell only. Route a custom panel for `WINERY` with title, worker status, close, upgrade, demolish, and active toggle actions. Do not add custom storage/progress rows yet. Add focused panel routing/click tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T357**: Add Winery panel storage and progress rows only. Show grape input storage, wine output storage, production status, blocked reason/progress bar, and ensure level 10 actions do not overlap. Add focused draw/layout tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T358**: Add one focused integration test for the wine chain. Cover grapes reaching a built Winery, Winemaker production of wine, and carrier export of wine to Town Hall. Keep the test bounded and deterministic. Run full `pytest` and `ruff check src tests`.
 

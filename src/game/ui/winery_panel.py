@@ -14,6 +14,8 @@ _BTN_H = 32
 _ROW_H = 22
 _BAR_H = 12
 _EXTRA_BOTTOM = _ROW_H * 3 + _BAR_H + 24 + _BTN_H + 8
+_DETAILS_GAP = 12
+_DETAILS_H = _ROW_H * 3 + 4 + _BAR_H
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,6 +42,15 @@ class WineryPanel:
         grapes_line = f"Grapes: {winery.input_amount()} / {winery.input_capacity()}"
         wine_line = f"Wine: {winery.output_amount()} / {winery.output_capacity()}"
         return grapes_line, wine_line
+
+    @staticmethod
+    def details_top(layout: WineryPanelLayout) -> int:
+        action_tops = [layout.toggle.top]
+        if layout.upgrade is not None:
+            action_tops.append(layout.upgrade.top)
+        if layout.demolish is not None:
+            action_tops.append(layout.demolish.top)
+        return min(action_tops) - _DETAILS_GAP - _DETAILS_H
 
     @staticmethod
     def layout(
@@ -98,7 +109,7 @@ class WineryPanel:
         font = pygame.font.Font(None, 22)
 
         grapes_line, wine_line = WineryPanel.storage_lines(winery)
-        y = layout.toggle.top - 8 - _BAR_H - 8 - _ROW_H * 3
+        y = WineryPanel.details_top(layout)
         surface.blit(font.render(grapes_line, True, (200, 204, 214)), (layout.frame.left + _PANEL_PAD, y))
         y += _ROW_H
         surface.blit(font.render(wine_line, True, (200, 204, 214)), (layout.frame.left + _PANEL_PAD, y))

@@ -43,6 +43,27 @@ def test_winery_panel_layout_has_toggle() -> None:
     pygame.quit()
 
 
+def test_winery_panel_details_do_not_overlap_action_buttons() -> None:
+    pygame.init()
+    surface = pygame.Surface((800, 600))
+    winery = _make_winery()
+    layout = WineryPanel.layout(
+        surface,
+        winery,
+        worker_assigned=True,
+        production_status="Processing",
+    )
+    details_top = WineryPanel.details_top(layout)
+    details_bottom = details_top + 22 * 3 + 4 + 12
+    action_tops = [layout.toggle.top]
+    assert layout.upgrade is not None
+    assert layout.demolish is not None
+    action_tops.extend([layout.upgrade.top, layout.demolish.top])
+
+    assert details_bottom < min(action_tops)
+    pygame.quit()
+
+
 def test_winery_panel_click_close() -> None:
     pygame.init()
     surface = pygame.Surface((800, 600))

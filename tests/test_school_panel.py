@@ -174,6 +174,18 @@ def test_school_panel_active_tier_advanced_layout() -> None:
     assert "WINEMAKER" in worker_types
 
 
+def test_school_panel_frame_size_stays_fixed_between_hire_tiers() -> None:
+    surface = pygame.Surface((900, 700))
+    school = School(level=1, grid_pos=(10, 10))
+
+    basic = SchoolPanel.layout(surface, school, worker_assigned=False, tier="basic")
+    advanced = SchoolPanel.layout(surface, school, worker_assigned=False, tier="advanced")
+
+    assert basic.frame.size == advanced.frame.size
+    assert basic.frame.topleft == advanced.frame.topleft
+    assert len(basic.hire_buttons) > len(advanced.hire_buttons)
+
+
 def test_game_input_school_tier_switches_on_tab_click() -> None:
     from game.camera import Camera
 

@@ -59,6 +59,19 @@ _TAB_H = 28
 _TAB_GAP = 6
 
 
+def _hire_rows_for_tier(tier: str) -> tuple[str, ...]:
+    return tuple(w for w in _HIRE_ROWS if worker_tier(w) == tier)
+
+
+def _hire_grid_rows_for(count: int) -> int:
+    return max(1, (count + _TILE_COLS - 1) // _TILE_COLS)
+
+
+def _max_hire_grid_rows() -> int:
+    tiers = {worker_tier(w) for w in _HIRE_ROWS}
+    return max(_hire_grid_rows_for(len(_hire_rows_for_tier(tier))) for tier in tiers)
+
+
 @dataclass(frozen=True, slots=True)
 class SchoolPanelLayout:
     frame: pygame.Rect
@@ -87,8 +100,8 @@ class SchoolPanel:
         worker_manager: WorkerManager | None = None,
         tier: str = "basic",
     ) -> SchoolPanelLayout:
-        filtered_rows = tuple(w for w in _HIRE_ROWS if worker_tier(w) == tier)
-        grid_rows = max(1, (len(filtered_rows) + _TILE_COLS - 1) // _TILE_COLS)
+        filtered_rows = _hire_rows_for_tier(tier)
+        grid_rows = _max_hire_grid_rows()
         grid_h = grid_rows * _TILE_H + (grid_rows - 1) * _TILE_GAP
         sw, sh = surface.get_size()
         tab_section_h = _TAB_H + _TAB_GAP

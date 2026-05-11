@@ -4,6 +4,7 @@ import pygame
 
 from game.buildings.registry import BuildingRegistry
 from game.buildings.cow_farm import CowFarm
+from game.buildings.vineyard import Vineyard
 from game.buildings.vineyard_farm import VineyardFarm
 from game.buildings.forester_hut import ForesterHut
 from game.buildings.lumber_camp import LumberCamp
@@ -36,6 +37,27 @@ def _cell_center_screen(surface: pygame.Surface, world: World, gx: int, gy: int)
     ox, oy = Renderer.map_origin(surface, world)
     sx, sy = world_to_screen(gx, gy)
     return ox + sx + TILE_W // 2, oy + sy + TILE_H // 2
+
+
+def test_place_vineyard_requires_town_hall_gate_and_one_board_construction() -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World(world_seed=2)
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    placement = PlacementController(world, registry)
+    placement.select("VINEYARD")
+    cx, cy = _cell_center_screen(surface, world, 14, 14)
+    assert placement.try_place(surface, (cx, cy))
+    plots = [b for b in registry.all() if b.type_tag == "VINEYARD"]
+    assert len(plots) == 1
+    assert isinstance(plots[0], Vineyard)
+    assert plots[0].is_under_construction
+    site = plots[0].construction_site
+    assert site is not None
+    spec = CONSTRUCTION_REQUIREMENTS["VINEYARD"][1]
+    assert site.required_resources == dict(spec.cost)
+    assert site.required_resources == {"boards": 1}
+    assert site.build_time_ms == spec.build_time_ms
 
 
 def test_place_vineyard_farm_requires_town_hall_gate_and_starts_construction() -> None:

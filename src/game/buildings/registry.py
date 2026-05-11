@@ -100,7 +100,11 @@ class BuildingRegistry:
                 continue
             bx, by = pos
             bw, bh = type(b).footprint
-            min_allowed = 1 if cls.type_tag == "FIELD" or b.type_tag == "FIELD" else 2
+            min_allowed = (
+                1
+                if cls.type_tag in {"FIELD", "VINEYARD"} or b.type_tag in {"FIELD", "VINEYARD"}
+                else 2
+            )
             if _min_chebyshev_between_footprints(gx, gy, w, h, bx, by, bw, bh) < min_allowed:
                 return False
         return True

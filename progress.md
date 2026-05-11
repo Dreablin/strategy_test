@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 25 - Vineyard Farm and Vineyards (**active**)
-- **Next Task:** T316 - Vineyard Farm asset loading only
-- **Last Completed:** T315 - VINEYARD_FARM placement and construction
-- **Total Progress:** 315 / 338 (Phase 25: 4 / 27 done)
+- **Next Task:** T317 - Vineyard Farm build menu only
+- **Last Completed:** T316 - Vineyard Farm assets and tests
+- **Total Progress:** 316 / 338 (Phase 25: 5 / 27 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -46,8 +46,8 @@
 - [x] **T313**: Add only `src/game/settings/buildings/vineyard_farm.json`. Include `VINEYARD_FARM`, 10 levels, construction/upgrade costs/times, local grape storage capacity by level, harvest radius, and worker effects if matching current farm-building conventions. Add focused settings tests proving values are loaded from this JSON. Run full `pytest` and `ruff check src tests`.
 - [x] **T314**: Add only the `VineyardFarm` building class shell. It should define `type_tag`, active flag if matching farm-like buildings, progress/storage fields needed later, `set_active` if applicable, `storage_capacity`, `grapes_amount`, `add_grapes_to_storage`, `take_grapes_from_storage`, and max level behavior via settings. Do not register it in menus/runtime yet. Add focused domain tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T315**: Register `VINEYARD_FARM` for placement/construction only. Wire the class into placement maps and input construction selection so it can be placed and built, without adding menu visibility yet. Add focused placement/construction tests. Run full `pytest` and `ruff check src tests`.
-- [~] **T316**: Add Vineyard Farm asset loading/fallback only. Add building folder mapping and placeholder/meta files only if real assets are absent; add focused asset tests proving construction and completed sprites resolve. Run full `pytest` and `ruff check src tests`.
-- [ ] **T317**: Add Vineyard Farm to the appropriate build menu only. Add the menu tile/click routing for `VINEYARD_FARM`; add focused bottom-bar/input tests. Run full `pytest` and `ruff check src tests`.
+- [x] **T316**: Add Vineyard Farm asset loading/fallback only. Add building folder mapping and placeholder/meta files only if real assets are absent; add focused asset tests proving construction and completed sprites resolve. Run full `pytest` and `ruff check src tests`.
+- [~] **T317**: Add Vineyard Farm to the appropriate build menu only. Add the menu tile/click routing for `VINEYARD_FARM`; add focused bottom-bar/input tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T318**: Add Vineyard Farm display labels/descriptions only. Update building display names/descriptions and any placement labels that do not require a custom panel yet. Add focused label tests if existing patterns support them. Run full `pytest` and `ruff check src tests`.
 
 ### 25.2 Vineyard Plot Foundation

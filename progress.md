@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 25 - Vineyard Farm and Vineyards (**active**)
-- **Next Task:** T337 - Vineyard Farm integration test
-- **Last Completed:** T336 - Extension docs for Vineyard systems
-- **Total Progress:** 336 / 338 (Phase 25: 25 / 27 done)
+- **Next Task:** T338 - Close Phase 25
+- **Last Completed:** T337 - Vineyard Farm integration test
+- **Total Progress:** 337 / 338 (Phase 25: 26 / 27 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -79,8 +79,8 @@
 ### 25.5 Documentation and Smoke Coverage
 
 - [x] **T336**: Update extension documentation only. Document Vineyard Farm/Vineyard patterns in `building_extension_guide.md` and worker guidance as needed: farm-with-plots, shared FARMER compatibility, plot growth JSON, asset metadata expectations, and carrier export expectations. Avoid hard-coding balance numbers in PRD-style docs except where the JSON is the source of truth. Run full `pytest` and `ruff check src tests`.
-- [~] **T337**: Add one focused integration test for Vineyard Farm + Vineyards. Cover constructing a Vineyard Farm and one Vineyard, growth to ripe, farmer harvest into farm storage, growth reset, and carrier export of grapes to Town Hall. Run full `pytest` and `ruff check src tests`.
-- [ ] **T338**: Close Phase 25. Run final full `pytest` plus `ruff check src tests`; update Current Status, Last Completed, Total Progress, Decisions Log, and Notes; mark Phase 25 complete only when all tasks are `[x]`.
+- [x] **T337**: Add one focused integration test for Vineyard Farm + Vineyards. Cover constructing a Vineyard Farm and one Vineyard, growth to ripe, farmer harvest into farm storage, growth reset, and carrier export of grapes to Town Hall. Run full `pytest` and `ruff check src tests`.
+- [~] **T338**: Close Phase 25. Run final full `pytest` plus `ruff check src tests`; update Current Status, Last Completed, Total Progress, Decisions Log, and Notes; mark Phase 25 complete only when all tasks are `[x]`.
 
 ---
 
@@ -102,6 +102,7 @@
 | 2026-05-10 | Phase 25 | Model `VINEYARD` as a separate 1x1 buildable plot. | User requested vineyards as separate one-cell buildings built near the farm. |
 | 2026-05-10 | Phase 25 | Store Vineyard Farm and Vineyard constants in per-building JSON files. | Keeps balance/configuration near the building and avoids scattering constants through runtime code. |
 | 2026-05-11 | T336 | Document Vineyard farm/plot split in `building_extension_guide.md` and `worker_extension_guide.md`. | Centralizes onboarding for JSON ownership, transport, UI routing, and `FARMER` dual staffing without duplicating numeric balance in docs. |
+| 2026-05-11 | T337 | After verifying harvest, remove `FARMER` workers from `WorkerManager` before carrier phase. | Keeps the test bounded: otherwise the plot re-ripens and refills the farm while the carrier runs, so `vf.grapes_amount() == 0` may never stabilize within a step cap. |
 
 ## Issues & Blockers
 

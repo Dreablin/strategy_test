@@ -45,6 +45,7 @@ from game.config import building_worker_effects
 from game.worker_geometry import (
     building_center_tile,
     select_farmer_field_target,
+    select_ripe_vineyard_target_tile,
     town_hall_spawn_tile,
 )
 from game.worker_hiring import (
@@ -84,6 +85,7 @@ __all__ = [
     "building_center_tile",
     "town_hall_spawn_tile",
     "select_farmer_field_target",
+    "select_ripe_vineyard_target_tile",
     "construction_transport_tasks",
     "sawmill_input_transport_tasks",
     "sawmill_output_transport_tasks",
@@ -114,6 +116,7 @@ class WorkerManager(
 
     __slots__ = (
         "_field_reservations",
+        "_vineyard_plot_reservations",
         "_now_ms_fn",
         "_registry",
         "_transport_queue",
@@ -133,6 +136,7 @@ class WorkerManager(
         self._workers: list[Worker] = []
         self._transport_queue: list[TransportTask] = []
         self._field_reservations: dict[tuple[int, int], Worker] = {}
+        self._vineyard_plot_reservations: dict[tuple[int, int], Worker] = {}
         self._now_ms_fn = now_ms_fn or (lambda: 0)
         self._updaters: dict[str, Callable[[Worker, int, Any], None]] = {
             "FORESTER": self._update_forester,
@@ -293,6 +297,7 @@ class WorkerManager(
                 if world is not None:
                     world.release_reservations_for(w)
                 self._release_field_reservations_for(w)
+                self._release_vineyard_plot_reservations_for(w)
                 self._clear_building_bonus(w)
                 w.assigned_building = None
                 w.idle = True
@@ -319,6 +324,9 @@ class WorkerManager(
             ]
         if building.type_tag == "FIELD" and building.grid_pos is not None:
             self._field_reservations.pop(tuple(building.grid_pos), None)
+        if building.type_tag == "VINEYARD" and building.grid_pos is not None:
+            gx, gy = int(building.grid_pos[0]), int(building.grid_pos[1])
+            self._vineyard_plot_reservations.pop((gx, gy), None)
 
     def reassign_all(self) -> None:
         """Assign one idle worker per free matching building with path-to-approach."""

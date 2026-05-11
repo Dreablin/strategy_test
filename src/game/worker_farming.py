@@ -22,7 +22,11 @@ from game.worker_constants import (
     FARMER_NO_TARGET_WORKING_STATE_MS,
     FARMER_REST_MS,
 )
-from game.worker_geometry import building_center_tile, select_farmer_field_target
+from game.worker_geometry import (
+    building_center_tile,
+    select_farmer_field_target,
+    select_ripe_vineyard_target_tile,
+)
 from game.worker_hunger import try_hunger_canteen_after_completed_cycle
 from game.worker_models import Worker
 
@@ -226,6 +230,61 @@ class WorkerFarmingMixin:
 
     def _is_field_reserved_by_other(self, tile: tuple[int, int], worker: Worker | None) -> bool:
         owner = self._field_reservations.get((int(tile[0]), int(tile[1])))
+        return owner is not None and owner is not worker
+
+    def _excluded_vineyard_tiles_for_claimer(self, claimer: Worker | None) -> set[tuple[int, int]]:
+        if claimer is None:
+            return set(self._vineyard_plot_reservations.keys())
+        return {t for t, w in self._vineyard_plot_reservations.items() if w is not claimer}
+
+    def select_ripe_vineyard_for_vineyard_farm(
+        self, farm: Building, *, claimer: Worker | None
+    ) -> Vineyard | None:
+        """Pick the nearest ripe ``VINEYARD`` in this farm's harvest radius, excluding other workers' claims."""
+        if self._registry is None:
+            return None
+        if farm.type_tag != "VINEYARD_FARM" or farm.is_under_construction or farm.grid_pos is None:
+            return None
+        if not hasattr(farm, "harvest_radius_cells"):
+            return None
+        home = building_center_tile(farm)
+        radius = int(farm.harvest_radius_cells())
+        ripe_tiles: list[tuple[int, int]] = []
+        for b in self._registry.all():
+            if not isinstance(b, Vineyard):
+                continue
+            if b.is_under_construction or not b.is_ripe() or b.grid_pos is None:
+                continue
+            ripe_tiles.append((int(b.grid_pos[0]), int(b.grid_pos[1])))
+        excluded = self._excluded_vineyard_tiles_for_claimer(claimer)
+        chosen = select_ripe_vineyard_target_tile(
+            farm_home=home,
+            ripe_tiles=ripe_tiles,
+            excluded_tiles=excluded,
+            max_radius=radius,
+        )
+        if chosen is None:
+            return None
+        hit = self._registry.at(chosen[0], chosen[1])
+        return hit if isinstance(hit, Vineyard) else None
+
+    def _reserve_vineyard_plot(self, plot: Building, worker: Worker) -> bool:
+        if not isinstance(plot, Vineyard) or plot.grid_pos is None:
+            return False
+        tile = (int(plot.grid_pos[0]), int(plot.grid_pos[1]))
+        owner = self._vineyard_plot_reservations.get(tile)
+        if owner is None or owner is worker:
+            self._vineyard_plot_reservations[tile] = worker
+            return True
+        return False
+
+    def _release_vineyard_plot_reservations_for(self, worker: Worker) -> None:
+        reserved = [t for t, w in self._vineyard_plot_reservations.items() if w is worker]
+        for tile in reserved:
+            self._vineyard_plot_reservations.pop(tile, None)
+
+    def _is_vineyard_plot_reserved_by_other(self, tile: tuple[int, int], worker: Worker | None) -> bool:
+        owner = self._vineyard_plot_reservations.get((int(tile[0]), int(tile[1])))
         return owner is not None and owner is not worker
 
     def _update_field_growth(self, now_ms: int) -> None:

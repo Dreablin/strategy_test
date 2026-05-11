@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Collection
+
 from game.buildings.base import Building
 from game.buildings.field import WHEAT_EMPTY, WHEAT_PHASE_4
 from game.worker_constants import FARMER_FIELD_RADIUS
@@ -56,6 +58,41 @@ def select_farmer_field_target(
             ),
         )
     return None
+
+
+def select_ripe_vineyard_target_tile(
+    *,
+    farm_home: tuple[int, int],
+    ripe_tiles: Collection[tuple[int, int]],
+    excluded_tiles: Collection[tuple[int, int]],
+    max_radius: int,
+) -> tuple[int, int] | None:
+    """Pick a ripe vineyard plot tile within Chebyshev radius, excluding reserved tiles.
+
+    Tie-break matches ``select_farmer_field_target`` ripe ordering (closest, then stable).
+    """
+    hx, hy = int(farm_home[0]), int(farm_home[1])
+    radius = int(max_radius)
+    blocked = {(int(t[0]), int(t[1])) for t in excluded_tiles}
+    in_range: list[tuple[int, int]] = []
+    for tx, ty in ripe_tiles:
+        tile = (int(tx), int(ty))
+        if tile in blocked:
+            continue
+        if max(abs(tile[0] - hx), abs(tile[1] - hy)) > radius:
+            continue
+        in_range.append(tile)
+    if not in_range:
+        return None
+    return min(
+        in_range,
+        key=lambda t: (
+            max(abs(t[0] - hx), abs(t[1] - hy)),
+            abs(t[0] - hx) + abs(t[1] - hy),
+            t[0],
+            t[1],
+        ),
+    )
 
 
 def town_hall_spawn_tile(building: Building) -> tuple[int, int]:

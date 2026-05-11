@@ -63,7 +63,11 @@ class Vineyard(Building):
     def is_ripe(self) -> bool:
         return self.growth_stage_index() >= self.growth_stage_count() and self.growth_stage_count() > 0
 
-    def reset_growth_after_harvest(self, *, now_ms: int) -> None:
-        """Return to an idle plot; automatic regrowth is wired in T326+."""
-        self.growth_stage = 0
+    def mark_harvested(self, *, now_ms: int) -> None:
+        """Record a completed harvest: must be ripe and built; restarts maturation at stage 1."""
+        if self.is_under_construction:
+            raise ValueError("cannot harvest vineyard under construction")
+        if not self.is_ripe():
+            raise ValueError("vineyard is not ripe for harvest")
+        self.growth_stage = 1
         self.growth_last_change_ms = int(now_ms)

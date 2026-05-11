@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 25 - Vineyard Farm and Vineyards (**active**)
-- **Next Task:** T326 - Vineyard harvest reset
-- **Last Completed:** T325 - Vineyard growth runtime
-- **Total Progress:** 325 / 338 (Phase 25: 14 / 27 done)
+- **Next Task:** T327 - Vineyard Farm harvest radius selection
+- **Last Completed:** T326 - Vineyard harvest reset
+- **Total Progress:** 326 / 338 (Phase 25: 15 / 27 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -62,8 +62,8 @@
 ### 25.3 Growth and Harvest Runtime
 
 - [x] **T325**: Add Vineyard growth runtime only. Built Vineyards should advance through configured growth stages using `vineyard.json` timing and become ripe after the final stage; under-construction Vineyards should not grow. Add focused growth tests. Run full `pytest` and `ruff check src tests`.
-- [~] **T326**: Add Vineyard harvest reset only. When a ripe Vineyard is marked harvested, it should restart growth from the first stage automatically. Add focused domain/runtime tests. Run full `pytest` and `ruff check src tests`.
-- [ ] **T327**: Add Vineyard Farm radius/target selection only. Implement selection of ripe `VINEYARD` plots within the configured Vineyard Farm radius, accounting for reserved/claimed plots so two farmers do not target the same plot. Add focused selection/reservation tests. Run full `pytest` and `ruff check src tests`.
+- [x] **T326**: Add Vineyard harvest reset only. When a ripe Vineyard is marked harvested, it should restart growth from the first stage automatically. Add focused domain/runtime tests. Run full `pytest` and `ruff check src tests`.
+- [~] **T327**: Add Vineyard Farm radius/target selection only. Implement selection of ripe `VINEYARD` plots within the configured Vineyard Farm radius, accounting for reserved/claimed plots so two farmers do not target the same plot. Add focused selection/reservation tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T328**: Add FARMER compatibility with `VINEYARD_FARM` only. Extend worker-building compatibility so existing `FARMER` can be assigned to both normal `FARM` and `VINEYARD_FARM`, without changing wheat farm behavior. Add focused assignment tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T329**: Add farmer movement to ripe Vineyard plots only. A Farmer assigned to Vineyard Farm should walk to a reachable ripe Vineyard in range and enter a harvesting state, without depositing grapes yet. Add focused movement/state tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T330**: Add Vineyard harvest completion into farm local storage only. Completing a Vineyard harvest should add grapes to Vineyard Farm local storage, reset the Vineyard growth cycle, release the plot reservation, and respect full farm storage. Add focused runtime tests. Run full `pytest` and `ruff check src tests`.

@@ -50,11 +50,34 @@ def test_vineyard_set_growth_stage_rejects_out_of_range() -> None:
         v.set_growth_stage(-1)
 
 
-def test_vineyard_reset_after_harvest() -> None:
+def test_vineyard_mark_harvested_restarts_at_stage_one() -> None:
     v = Vineyard(level=1, grid_pos=(2, 2))
     v.set_growth_stage(4, now_ms=5_000)
     assert v.is_ripe()
-    v.reset_growth_after_harvest(now_ms=6_000)
-    assert v.growth_stage_index() == 0
+    v.mark_harvested(now_ms=6_000)
+    assert v.growth_stage_index() == 1
     assert v.growth_last_change_ms == 6_000
     assert not v.is_ripe()
+
+
+def test_vineyard_mark_harvested_requires_ripe() -> None:
+    v = Vineyard(level=1, grid_pos=(2, 2))
+    with pytest.raises(ValueError, match="not ripe"):
+        v.mark_harvested(now_ms=1_000)
+
+
+def test_vineyard_mark_harvested_rejects_under_construction() -> None:
+    from game.construction import ConstructionSite
+
+    v = Vineyard(level=1, grid_pos=(2, 2))
+    v.set_growth_stage(4, now_ms=5_000)
+    v.construction_site = ConstructionSite(
+        required_resources={"boards": 1},
+        delivered_resources={},
+        build_time_ms=10_000,
+        build_started_ms=None,
+        builder=None,
+        target_level=1,
+    )
+    with pytest.raises(ValueError, match="under construction"):
+        v.mark_harvested(now_ms=6_000)

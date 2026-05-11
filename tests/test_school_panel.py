@@ -106,3 +106,33 @@ def test_school_panel_clicking_queue_slot_returns_cancel_action() -> None:
     assert SchoolPanel.click_action(surface, layout.queue_slots[0].center, school, worker_assigned=False) == "cancel:0"
     assert SchoolPanel.click_action(surface, layout.queue_slots[1].center, school, worker_assigned=False) == "cancel:1"
     assert SchoolPanel.click_action(surface, layout.queue_slots[2].center, school, worker_assigned=False) is None
+
+
+def test_school_panel_basic_tier_shows_all_basic_workers() -> None:
+    surface = pygame.Surface((900, 700))
+    school = School(level=1, grid_pos=(10, 10))
+    layout = SchoolPanel.layout(surface, school, worker_assigned=False, tier="basic")
+    worker_types = [wt for wt, _ in layout.hire_buttons]
+    assert "CARRIER" in worker_types
+    assert "BUILDER" in worker_types
+    assert "LUMBERJACK" in worker_types
+    assert "FARMER" in worker_types
+    assert "ANIMAL_HERDER" in worker_types
+    assert len(worker_types) == 13
+
+
+def test_school_panel_advanced_tier_shows_no_workers_initially() -> None:
+    surface = pygame.Surface((900, 700))
+    school = School(level=1, grid_pos=(10, 10))
+    layout = SchoolPanel.layout(surface, school, worker_assigned=False, tier="advanced")
+    assert len(layout.hire_buttons) == 0
+
+
+def test_school_panel_default_tier_is_basic() -> None:
+    surface = pygame.Surface((900, 700))
+    school = School(level=1, grid_pos=(10, 10))
+    layout_default = SchoolPanel.layout(surface, school, worker_assigned=False)
+    layout_basic = SchoolPanel.layout(surface, school, worker_assigned=False, tier="basic")
+    default_types = [wt for wt, _ in layout_default.hire_buttons]
+    basic_types = [wt for wt, _ in layout_basic.hire_buttons]
+    assert default_types == basic_types

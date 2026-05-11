@@ -8,6 +8,7 @@ import pygame
 
 from game.assets import hire_ui_icon, worker_ui_icon
 from game.buildings.school import SCHOOL_TRAINING_MS, School
+from game.worker_tiers import worker_tier
 from game.workers import WorkerManager
 
 _PANEL_W = 420
@@ -50,8 +51,6 @@ _WORKER_LABEL: dict[str, str] = {
     "ANIMAL_HERDER": "Herder",
     "FORESTER": "Forester",
 }
-_GRID_ROWS = (len(_HIRE_ROWS) + _TILE_COLS - 1) // _TILE_COLS
-_GRID_H = _GRID_ROWS * _TILE_H + (_GRID_ROWS - 1) * _TILE_GAP
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,9 +77,13 @@ class SchoolPanel:
         *,
         worker_assigned: bool,
         worker_manager: WorkerManager | None = None,
+        tier: str = "basic",
     ) -> SchoolPanelLayout:
+        filtered_rows = tuple(w for w in _HIRE_ROWS if worker_tier(w) == tier)
+        grid_rows = max(1, (len(filtered_rows) + _TILE_COLS - 1) // _TILE_COLS)
+        grid_h = grid_rows * _TILE_H + (grid_rows - 1) * _TILE_GAP
         sw, sh = surface.get_size()
-        content_h = 26 + 34 + _SECTION_TITLE_GAP + _QUEUE_SLOT + _GAP + _BTN_H + 14 + _GRID_H
+        content_h = 26 + 34 + _SECTION_TITLE_GAP + _QUEUE_SLOT + _GAP + _BTN_H + 14 + grid_h
         frame_h = _PANEL_PAD * 2 + content_h
         frame = pygame.Rect(sw // 2 - _PANEL_W // 2, sh // 2 - frame_h // 2, _PANEL_W, frame_h)
         close = pygame.Rect(
@@ -108,7 +111,7 @@ class SchoolPanel:
         grid_y = action_y + _BTN_H + 14
         grid_x = frame.left + _PANEL_PAD
         buttons: list[tuple[str, pygame.Rect]] = []
-        for idx, worker_type in enumerate(_HIRE_ROWS):
+        for idx, worker_type in enumerate(filtered_rows):
             col = idx % _TILE_COLS
             row = idx // _TILE_COLS
             rect = pygame.Rect(
@@ -143,12 +146,14 @@ class SchoolPanel:
         *,
         worker_assigned: bool,
         worker_manager: WorkerManager | None = None,
+        tier: str = "basic",
     ) -> None:
         layout = SchoolPanel.layout(
             surface,
             school,
             worker_assigned=worker_assigned,
             worker_manager=worker_manager,
+            tier=tier,
         )
         dim = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
         dim.fill((10, 12, 16, 170))
@@ -239,12 +244,14 @@ class SchoolPanel:
         *,
         worker_assigned: bool,
         worker_manager: WorkerManager | None = None,
+        tier: str = "basic",
     ) -> str | None:
         layout = SchoolPanel.layout(
             surface,
             school,
             worker_assigned=worker_assigned,
             worker_manager=worker_manager,
+            tier=tier,
         )
         if layout.close.collidepoint(pos):
             return "close"

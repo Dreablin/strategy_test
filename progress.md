@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 26 - Wine, Winery, and Worker Tiers (**active**)
-- **Next Task:** T350 - Add Winery display labels/descriptions
-- **Last Completed:** T349 - Add Winery to Processing build menu
-- **Total Progress:** 349 / 360 (Phase 26: 11 / 22 done)
+- **Next Task:** T351 - Add Winery grape input transport planning
+- **Last Completed:** T350 - Add Winery display labels/descriptions
+- **Total Progress:** 350 / 360 (Phase 26: 12 / 22 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -65,7 +65,7 @@
 - [x] **T347**: Register `WINERY` for placement/construction only. Wire the class into placement maps and construction config usage so it can be placed and built, without menu visibility or runtime production. Add focused placement/construction tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T348**: Add Winery asset loading/fallback only. Add building folder mapping and placeholder/meta files only if real assets are absent; add focused asset tests proving construction and completed sprites resolve. Run full `pytest` and `ruff check src tests`.
 - [x] **T349**: Add Winery to the Processing build menu only. Add the menu tile/click routing for `WINERY` and focused bottom-bar/input tests that avoid brittle hard-coded per-button coordinate coverage where possible. Run full `pytest` and `ruff check src tests`.
-- [ ] **T350**: Add Winery display labels/descriptions only. Update building display names/descriptions, population/worker building labels if needed, and construction panel display name. Add focused label tests. Run full `pytest` and `ruff check src tests`.
+- [x] **T350**: Add Winery display labels/descriptions only. Update building display names/descriptions, population/worker building labels if needed, and construction panel display name. Add focused label tests. Run full `pytest` and `ruff check src tests`.
 
 ### 26.3 Transport and Runtime
 

@@ -27,6 +27,7 @@ _DISPLAY_NAME: dict[str, str] = {
     "VINEYARD": "Vineyard",
     "CANTEEN": "Canteen",
     "WELL": "Well",
+    "WINERY": "Winery",
 }
 
 _DESCRIPTION: dict[str, str] = {
@@ -44,6 +45,7 @@ _DESCRIPTION: dict[str, str] = {
     "VINEYARD": "Grapes ripen here in stages; a farmer at a Vineyard Farm can harvest nearby ripe plots.",
     "CANTEEN": "Cook prepares simple meals from chicken, bread, and water.",
     "WELL": "Produces water into local storage.",
+    "WINERY": "Winemaker converts grapes into wine; carriers export wine to the Town Hall.",
 }
 
 def _upgrade_label(building: Building) -> str:

@@ -20,6 +20,7 @@ from game.transport_tasks import (
     construction_transport_tasks,
     farm_wheat_output_transport_tasks,
     iron_mine_output_transport_tasks,
+    vineyard_farm_grape_output_transport_tasks,
     mill_input_transport_tasks,
     mill_output_transport_tasks,
     sawmill_input_transport_tasks,
@@ -208,6 +209,10 @@ class WorkerTransportMixin:
             has_storage_source = False
             if hasattr(task.source, "stored") and int(getattr(task.source, "stored", 0)) > 0:
                 has_storage_source = True
+            elif task.resource == "grapes" and getattr(task.source, "type_tag", "") == "VINEYARD_FARM":
+                grapes_amount = getattr(task.source, "grapes_amount", None)
+                if callable(grapes_amount) and int(grapes_amount()) > 0:
+                    has_storage_source = True
             elif task.resource == "wood" and hasattr(task.source, "input_amount"):
                 has_storage_source = int(task.source.input_amount()) > 0  # type: ignore[attr-defined]
             elif task.resource == "boards" and hasattr(task.source, "output_amount"):
@@ -243,6 +248,8 @@ class WorkerTransportMixin:
                     continue
             if not has_storage_source and not has_warehouse_source:
                 if task.resource == "wheat" and task.source.type_tag == "FARM":
+                    stale_indices.append(idx)
+                elif task.resource == "grapes" and getattr(task.source, "type_tag", "") == "VINEYARD_FARM":
                     stale_indices.append(idx)
                 continue
             eligible.append((idx, task))
@@ -404,7 +411,13 @@ class WorkerTransportMixin:
                 worker.idle = True
                 return
             if not hasattr(task.source, "take_from_storage"):
-                if task.resource == "wood" and hasattr(task.source, "take_wood_in"):
+                if task.resource == "grapes" and getattr(task.source, "type_tag", "") == "VINEYARD_FARM":
+                    try:
+                        task.source.take_grapes_from_storage(1)  # type: ignore[attr-defined]
+                    except ValueError:
+                        self._drop_failed_pickup(worker, task)
+                        return
+                elif task.resource == "wood" and hasattr(task.source, "take_wood_in"):
                     try:
                         task.source.take_wood_in(1)  # type: ignore[attr-defined]
                     except ValueError:
@@ -486,6 +499,8 @@ class WorkerTransportMixin:
                     task.source.add_beef_out(1)  # type: ignore[attr-defined]
                 elif task.resource == "hide" and hasattr(task.source, "add_hide_out"):
                     task.source.add_hide_out(1)  # type: ignore[attr-defined]
+                elif task.resource == "grapes" and getattr(task.source, "type_tag", "") == "VINEYARD_FARM":
+                    task.source.add_grapes_to_storage(1)  # type: ignore[attr-defined]
                 elif hasattr(task.source, "add_to_storage"):
                     task.source.add_to_storage(1)  # type: ignore[attr-defined]
                 elif hasattr(task.source, "add_to_warehouse"):
@@ -781,3 +796,10 @@ class WorkerTransportMixin:
                 key = (id(target), task.resource)
                 planned_counts[key] = planned_counts.get(key, 0) + 1
         self._enqueue_desired_transport_tasks(desired)
+
+    def _enqueue_vineyard_farm_grape_output_tasks(self) -> None:
+        if self._registry is None:  # type: ignore[attr-defined]
+            return
+        self._enqueue_desired_transport_tasks(
+            vineyard_farm_grape_output_transport_tasks(self._registry),
+        )

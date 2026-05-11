@@ -32,6 +32,7 @@ VISIBLE_TILE_MARGIN = 2
 WORKER_ACTION_PROGRESS_COLORS = {
     ("FARMER", "sowing"): (110, 220, 120),
     ("FARMER", "harvesting"): (240, 210, 80),
+    ("FARMER", "harvesting_grapes"): (240, 210, 80),
     ("LUMBERJACK", "chopping"): (214, 154, 118),
     ("STONECUTTER", "mining"): (160, 168, 180),
     ("FORESTER", "planting"): (110, 220, 120),
@@ -145,7 +146,10 @@ class Renderer:
             foot_cx = (min_x + max_x) // 2
             foot_by = max_y
             sprite_level = int(b.level)
-            if b.type_tag == "FIELD" and not b.is_under_construction:
+            if b.type_tag == "VINEYARD" and not b.is_under_construction:
+                gs = int(getattr(b, "growth_stage", 0))
+                sprite_level = 1 if gs <= 0 else min(gs, 4)
+            elif b.type_tag == "FIELD" and not b.is_under_construction:
                 phase_lookup = getattr(worker_manager, "_read_field_phase", None)
                 if hasattr(b, "wheat_phase"):
                     phase = str(getattr(b, "wheat_phase")).upper()
@@ -208,6 +212,7 @@ class Renderer:
             "going_to_stone",
             "going_to_plant_tile",
             "going_to_field",
+            "going_to_vineyard",
             "going_to_canteen",
             "returning",
         }

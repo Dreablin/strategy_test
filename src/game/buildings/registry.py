@@ -100,7 +100,11 @@ class BuildingRegistry:
                 continue
             bx, by = pos
             bw, bh = type(b).footprint
-            min_allowed = 1 if cls.type_tag == "FIELD" or b.type_tag == "FIELD" else 2
+            min_allowed = (
+                1
+                if cls.type_tag in {"FIELD", "VINEYARD"} or b.type_tag in {"FIELD", "VINEYARD"}
+                else 2
+            )
             if _min_chebyshev_between_footprints(gx, gy, w, h, bx, by, bw, bh) < min_allowed:
                 return False
         return True
@@ -142,7 +146,7 @@ class BuildingRegistry:
                     builder=None,
                     target_level=1,
                 )
-        if cls.type_tag != "FIELD":
+        if cls.type_tag not in {"FIELD", "VINEYARD"}:
             self._world.mark_occupied(gx, gy, w, h)
         self._buildings.append(inst)
         return inst
@@ -165,7 +169,7 @@ class BuildingRegistry:
             raise ValueError("building has no grid position")
         gx, gy = pos
         w, h = type(building).footprint
-        if building.type_tag != "FIELD":
+        if building.type_tag not in {"FIELD", "VINEYARD"}:
             self._world.free(gx, gy, w, h)
         self._buildings.remove(building)
 

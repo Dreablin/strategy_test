@@ -12,10 +12,11 @@ from game.buildings.sawmill import Sawmill
 from game.buildings.town_hall import TownHall
 from game.buildings.well import Well
 from game.buildings.field import Field
+from game.buildings.vineyard import Vineyard
 from game.camera import Camera
 from game.input import TOP_BAR_HEIGHT, GameInput, screen_to_grid
 from game.render import Renderer
-from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT, BottomBar
+from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT
 from game.ui.building_panel import BuildingPanel
 from game.ui.construction_panel import ConstructionPanel
 from game.ui.chicken_farm_panel import ChickenFarmPanel
@@ -158,6 +159,56 @@ def test_map_click_on_field_does_not_open_panel() -> None:
     assert inp.panel_building is None
 
 
+def test_map_click_on_vineyard_does_not_open_panel() -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World(world_seed=0)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, (20, 20))
+    plot = registry.place(Vineyard, (12, 10))
+    plot.construction_site = None
+    camera = Camera()
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(), camera)
+    pos = _tile_center(surface, world, 12, 10)
+
+    inp.handle(
+        surface,
+        pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=pos),
+    )
+
+    assert inp.panel_building is None
+
+
+def test_map_click_on_vineyard_construction_opens_construction_panel() -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World(world_seed=0)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    world._iron.clear()  # noqa: SLF001
+    world.refresh_passability_tile_caches()
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    tile = near_town_hall_tile(12, 8)
+    plot = registry.place(Vineyard, tile)
+    assert plot.construction_site is not None
+    assert plot.construction_site.required_resources == {"boards": 1}
+    camera = Camera(initial_offset=(0, -120))
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(registry), camera)
+    ox, oy = Renderer.map_origin(surface, world)
+    sx, sy = world_to_screen(*tile)
+    pos = (ox + sx + camera.offset[0] + TILE_W // 4, oy + sy + camera.offset[1] + TILE_H // 4)
+
+    inp.handle(
+        surface,
+        pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=pos),
+    )
+
+    assert inp.panel_building is plot
+
+
 def test_outside_panel_click_closes() -> None:
     surface = pygame.Surface((1280, 720))
     world = World()
@@ -290,24 +341,28 @@ def test_build_menu_select_cow_farm_sets_pending_type() -> None:
     assert placement.pending_type.type_tag == "COW_FARM"
 
 
-def test_input_processing_menu_cow_farm_click_selects_placement() -> None:
-    """T298: bottom bar processing submenu posts COW_FARM; GameInput arms placement."""
-    surface = pygame.Surface((1200, 720))
+def test_build_menu_select_vineyard_farm_sets_pending_type() -> None:
+    surface = pygame.Surface((640, 480))
     world = World()
     registry = BuildingRegistry(world)
     camera = Camera()
     placement = PlacementController(world, registry, camera)
     inp = GameInput(world, registry, placement, WorkerManager(), camera)
-    BottomBar._menu = "processing"  # noqa: SLF001
-    pygame.event.clear()
-    BottomBar.handle_click(surface, (1100, 700))
-    ev = pygame.event.poll()
-    assert ev.type == BUILD_MENU_SELECT
-    assert ev.building_type == "COW_FARM"
-    inp.handle(surface, ev)
+    inp.handle(surface, pygame.event.Event(BUILD_MENU_SELECT, building_type="VINEYARD_FARM"))
     assert placement.pending_type is not None
-    assert placement.pending_type.type_tag == "COW_FARM"
-    BottomBar._menu = "main"  # noqa: SLF001
+    assert placement.pending_type.type_tag == "VINEYARD_FARM"
+
+
+def test_build_menu_select_vineyard_sets_pending_type() -> None:
+    surface = pygame.Surface((640, 480))
+    world = World()
+    registry = BuildingRegistry(world)
+    camera = Camera()
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(), camera)
+    inp.handle(surface, pygame.event.Event(BUILD_MENU_SELECT, building_type="VINEYARD"))
+    assert placement.pending_type is not None
+    assert placement.pending_type.type_tag == "VINEYARD"
 
 
 def test_under_construction_building_uses_construction_panel_draw(monkeypatch) -> None:

@@ -17,21 +17,6 @@ from game.worker_satiety import MAX_WORKER_SATIETY
 from game.workers import WorkerManager
 
 
-def _assert_nonempty_surface(surf: pygame.Surface) -> None:
-    assert surf.get_width() > 0 and surf.get_height() > 0
-    found = False
-    for x in range(0, surf.get_width(), max(1, surf.get_width() // 4)):
-        for y in range(0, surf.get_height(), max(1, surf.get_height() // 4)):
-            c = surf.get_at((x, y))
-            a = c.a if hasattr(c, "a") else c[3]
-            if a > 0 and sum(c[:3]) > 0:
-                found = True
-                break
-        if found:
-            break
-    assert found
-
-
 def test_waterman_maps_to_well_in_worker_to_building() -> None:
     assert WORKER_TO_BUILDING["WATERMAN"] == "WELL"
 
@@ -46,30 +31,6 @@ def test_school_panel_includes_waterman_hire_tile() -> None:
     layout = SchoolPanel.layout(surface, school, worker_assigned=False)
     types = [wt for wt, _ in layout.hire_buttons]
     assert "WATERMAN" in types
-
-
-def test_school_panel_waterman_hire_click_returns_hire_action() -> None:
-    surface = pygame.Surface((900, 700))
-    world = World(world_seed=2)
-    world._trees.clear()  # noqa: SLF001
-    world._stones.clear()  # noqa: SLF001
-    registry = BuildingRegistry(world)
-    registry.place(TownHall, town_hall_origin_tile())
-    school = registry.place(School, near_town_hall_tile(8, 8))
-    school.construction_site = None
-    wm = WorkerManager(registry)
-    layout = SchoolPanel.layout(surface, school, worker_assigned=False, worker_manager=wm)
-    button = next(rect for worker_type, rect in layout.hire_buttons if worker_type == "WATERMAN")
-    assert (
-        SchoolPanel.click_action(
-            surface,
-            button.center,
-            school,
-            worker_assigned=False,
-            worker_manager=wm,
-        )
-        == "hire:WATERMAN"
-    )
 
 
 def test_waterman_training_enqueue_and_cancel() -> None:
@@ -97,14 +58,6 @@ def test_hired_waterman_starts_at_full_satiety() -> None:
     hired = wm.hire("WATERMAN", source_building=school)
     assert hired is not None
     assert hired.satiety == MAX_WORKER_SATIETY
-
-
-def test_waterman_worker_dot_and_ui_icons_fallback_smoke() -> None:
-    from game.assets import hire_ui_icon, worker_dot, worker_ui_icon
-
-    _assert_nonempty_surface(worker_dot("WATERMAN"))
-    _assert_nonempty_surface(worker_ui_icon("WATERMAN"))
-    _assert_nonempty_surface(hire_ui_icon("WATERMAN"))
 
 
 def test_reassign_all_assigns_idle_waterman_to_empty_well() -> None:

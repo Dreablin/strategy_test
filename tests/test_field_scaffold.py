@@ -10,7 +10,7 @@ from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
 from game.buildings.lumber_camp import LumberCamp
 from game.pathfinding import find_path_bfs
-from game.ui.bottom_bar import _RESOURCE_BUTTONS
+from game.ui.bottom_bar import _FOOD_BUTTONS
 from game.world import World
 
 
@@ -32,8 +32,8 @@ def test_field_contract_footprint_and_level_cap() -> None:
     assert field_cls.max_level() == 1
 
 
-def test_field_is_placeable_from_resource_menu() -> None:
-    assert any(tag == "FIELD" for (_asset, _label, tag) in _RESOURCE_BUTTONS)
+def test_field_is_placeable_from_food_menu() -> None:
+    assert any(tag == "FIELD" for (_asset, _label, tag) in _FOOD_BUTTONS)
 
 
 def test_registry_places_field_and_keeps_tile_walkable_for_pathing() -> None:

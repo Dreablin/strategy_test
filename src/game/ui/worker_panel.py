@@ -43,6 +43,8 @@ _BUILDING_LABEL: dict[str, str] = {
     "BAKERY": "Bakery",
     "CHICKEN_FARM": "Chicken Farm",
     "COW_FARM": "Cow Farm",
+    "VINEYARD_FARM": "Vineyard Farm",
+    "VINEYARD": "Vineyard",
     "SCHOOL": "School",
     "WELL": "Well",
     "CANTEEN": "Canteen",
@@ -59,6 +61,7 @@ _RESOURCE_LABEL: dict[str, str] = {
     "chicken": "Chicken",
     "beef": "Beef",
     "hide": "Hide",
+    "grapes": "Grapes",
     "water": "Water",
 }
 
@@ -72,6 +75,16 @@ _STATE_LABEL: dict[str, str] = {
     "going_to_canteen": "Going to canteen",
     "waiting_for_meal": "Waiting for meal",
     "eating": "Eating",
+    "going_to_field": "Going to field",
+    "going_to_vineyard": "Going to vineyard",
+    "arrived_vineyard": "At vineyard",
+    "harvesting_grapes": "Harvesting grapes",
+    "vineyard_harvest_anim_done": "Storing grapes",
+    "working_field": "Waiting for work",
+    "sowing": "Sowing",
+    "harvesting": "Harvesting",
+    "returning": "Returning",
+    "arrived_camp": "At farm",
 }
 
 

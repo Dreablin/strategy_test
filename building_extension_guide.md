@@ -31,7 +31,8 @@ transport tasks.
 - `src/game/input.py`: placement type imports, panel routing, upgrade/demolish
   click handling, and special panel selection.
 - `src/game/ui/*_panel.py`: building-specific panels when the generic
-  `BuildingPanel` is not enough.
+  `BuildingPanel` is not enough (for example `vineyard_farm_panel.py` for
+  `VINEYARD_FARM`).
 - `src/game/transport_tasks.py`: carrier tasks for construction, input refill,
   water input, and output export.
 - `src/game/worker_*.py`: worker runtime when a building needs a staffed worker.
@@ -134,6 +135,12 @@ transport tasks.
      Water should be cleared instead because Town Hall does not store water.
    - Keep priorities explicit: construction is high priority; regular refills
      and output exports are low priority unless gameplay requires otherwise.
+   - **Grape exports:** add a `vineyard_farm_grape_output_transport_tasks` (or
+     similarly named) builder in `transport_tasks.py`, enqueue it from
+     `WorkerManager.update` via `worker_transport.py`, and extend carrier pickup
+     / stale-queue / rollback paths for `grapes` sourced from `VINEYARD_FARM`
+     the same way wheat from `FARM` or boards from a mill are handled. Do not
+     attach export logic to the `VineyardFarm` class itself.
 
 8. Handle lifecycle.
 
@@ -144,6 +151,47 @@ transport tasks.
      completion.
    - Demolition must release world occupancy and notify workers through the
      registry/worker manager flow.
+
+## Vineyard Farm (`VINEYARD_FARM`) and Vineyard plot (`VINEYARD`)
+
+This is the **farm + separate plots** pattern: one staffed building holds local
+output storage and worker AI; many small footprint **plot** buildings provide
+the world-facing growth state. Keep wheat `FIELD` / `FARM` behavior isolated—do
+not route grape growth or harvest through the wheat field pipeline.
+
+### Types and responsibilities
+
+- **`VINEYARD_FARM`**: normal footprint farm building with `active`, local grape
+  counters (`grapes_amount` / `grapes_capacity` / `add_grapes_to_storage` /
+  `take_grapes_from_storage`), harvest radius read from JSON, and a dedicated
+  `VineyardFarmPanel` in `src/game/ui/vineyard_farm_panel.py` routed from
+  `input.py`. Balance and worker-effect tables live in
+  `src/game/settings/buildings/vineyard_farm.json` (single source of truth).
+- **`VINEYARD`**: `1×1` plot building with growth stage fields and
+  `tick_growth` / `mark_harvested` semantics driven by
+  `src/game/settings/buildings/vineyard.json`. Asset loading follows the same
+  disk-first + procedural fallback rules as other buildings; growth-stage
+  filenames and metadata belong with the vineyard asset folder and JSON, not
+  hard-coded in Python.
+
+### Placement and UI
+
+- Register both types in placement maps and the bottom bar like other
+  constructibles. Placement may need radius or gate checks—mirror existing farm
+  patterns in `placement.py` / tests.
+- **Map click:** `VINEYARD` is intentionally **not** a modal panel target (same
+  idea as `FIELD`): see `input.py` where `FIELD` and `VINEYARD` are excluded from
+  `self._panel` assignment. Players still see plot state on the map and in the
+  Vineyard Farm panel’s production copy.
+
+### Workers and transport (pointers only)
+
+- The existing **`FARMER`** staffs both `FARM` and `VINEYARD_FARM`; see
+  `worker_hiring.worker_compatible_building_types` and `worker_farming.py` for
+  the split state machines (`_update_wheat_farm_farmer` vs
+  `_update_vineyard_farm_farmer`), plot reservations, and harvest completion.
+- Carrier grape export is described under **§7 Extend transport** above; keep
+  enqueue/dedupe in the transport layer.
 
 ## Tests to Add or Update
 
@@ -176,7 +224,9 @@ $env:PYTHONPATH='src'
   own them.
 - Adding production directly to `Building.income()`.
 - Hiding transport queue decisions inside a building class.
-- Normalizing `FIELD`, `WELL`, or `TOWN_HALL` into ordinary building behavior.
+- Normalizing `FIELD`, `VINEYARD`, `WELL`, or `TOWN_HALL` into ordinary building
+  behavior (including forcing a map panel on terrain plots that intentionally
+  skip `BuildingPanel`).
 - Adding a custom panel when the generic panel is enough.
 - Hard-coding one consumer for a resource when multiple consumers are expected.
 - Reintroducing Python formulas for per-level worker bonuses that belong in

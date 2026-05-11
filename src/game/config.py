@@ -18,6 +18,7 @@ _RESOURCE_KEYS: tuple[str, ...] = (
     "chicken",
     "beef",
     "hide",
+    "grapes",
 )
 WORKER_EFFECT_STATS: tuple[str, ...] = ("move_speed_mult", "gather_speed_mult")
 GLOBAL_WORKER_EFFECT_SOURCE = ("global", "all_workers")

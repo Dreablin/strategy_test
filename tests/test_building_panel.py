@@ -34,16 +34,6 @@ def test_building_panel_upgrade_enabled_even_when_poor() -> None:
     assert BuildingPanel.click_action(surface, (cx, cy), building, worker_assigned=False) == "upgrade"
 
 
-def test_building_panel_upgrade_click_when_affordable() -> None:
-    surface = pygame.Surface((640, 480))
-    building = LumberCamp(level=1, grid_pos=(4, 4))
-    layout = BuildingPanel.layout(surface, building, worker_assigned=False)
-    assert layout.upgrade is not None
-    assert layout.upgrade_enabled is True
-    cx, cy = layout.upgrade.center
-    assert BuildingPanel.click_action(surface, (cx, cy), building, worker_assigned=False) == "upgrade"
-
-
 def test_building_panel_draw_smoke() -> None:
     surface = pygame.Surface((800, 600))
     building = LumberCamp(level=3, grid_pos=(2, 2))

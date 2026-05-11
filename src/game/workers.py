@@ -21,6 +21,7 @@ from game.transport_tasks import (
     cow_farm_hide_output_transport_tasks,
     construction_transport_tasks,
     farm_wheat_output_transport_tasks,
+    vineyard_farm_grape_output_transport_tasks,
     iron_mine_output_transport_tasks,
     mill_input_transport_tasks,
     mill_output_transport_tasks,
@@ -45,6 +46,7 @@ from game.config import building_worker_effects
 from game.worker_geometry import (
     building_center_tile,
     select_farmer_field_target,
+    select_ripe_vineyard_target_tile,
     town_hall_spawn_tile,
 )
 from game.worker_hiring import (
@@ -84,6 +86,7 @@ __all__ = [
     "building_center_tile",
     "town_hall_spawn_tile",
     "select_farmer_field_target",
+    "select_ripe_vineyard_target_tile",
     "construction_transport_tasks",
     "sawmill_input_transport_tasks",
     "sawmill_output_transport_tasks",
@@ -96,6 +99,7 @@ __all__ = [
     "cow_farm_hide_output_transport_tasks",
     "iron_mine_output_transport_tasks",
     "farm_wheat_output_transport_tasks",
+    "vineyard_farm_grape_output_transport_tasks",
     "processor_input_transport_tasks",
     "water_input_transport_tasks",
     "find_nearest_free_tree",
@@ -114,6 +118,7 @@ class WorkerManager(
 
     __slots__ = (
         "_field_reservations",
+        "_vineyard_plot_reservations",
         "_now_ms_fn",
         "_registry",
         "_transport_queue",
@@ -133,6 +138,7 @@ class WorkerManager(
         self._workers: list[Worker] = []
         self._transport_queue: list[TransportTask] = []
         self._field_reservations: dict[tuple[int, int], Worker] = {}
+        self._vineyard_plot_reservations: dict[tuple[int, int], Worker] = {}
         self._now_ms_fn = now_ms_fn or (lambda: 0)
         self._updaters: dict[str, Callable[[Worker, int, Any], None]] = {
             "FORESTER": self._update_forester,
@@ -293,6 +299,7 @@ class WorkerManager(
                 if world is not None:
                     world.release_reservations_for(w)
                 self._release_field_reservations_for(w)
+                self._release_vineyard_plot_reservations_for(w)
                 self._clear_building_bonus(w)
                 w.assigned_building = None
                 w.idle = True
@@ -319,6 +326,9 @@ class WorkerManager(
             ]
         if building.type_tag == "FIELD" and building.grid_pos is not None:
             self._field_reservations.pop(tuple(building.grid_pos), None)
+        if building.type_tag == "VINEYARD" and building.grid_pos is not None:
+            gx, gy = int(building.grid_pos[0]), int(building.grid_pos[1])
+            self._vineyard_plot_reservations.pop((gx, gy), None)
 
     def reassign_all(self) -> None:
         """Assign one idle worker per free matching building with path-to-approach."""
@@ -480,6 +490,7 @@ class WorkerManager(
         self._enqueue_cow_farm_hide_output_tasks()
         self._enqueue_iron_mine_output_tasks()
         self._enqueue_farm_wheat_output_tasks()
+        self._enqueue_vineyard_farm_grape_output_tasks()
         if self._registry is not None:
             from game.buildings.canteen import Canteen
             from game.worker_dining import assign_diner_meals_for_canteen

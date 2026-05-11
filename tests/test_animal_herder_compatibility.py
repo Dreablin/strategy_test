@@ -8,7 +8,7 @@ from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
 from game.config import near_town_hall_tile, town_hall_origin_tile
 from game.world import World
-from game.worker_hiring import worker_compatible_building_types
+from game.worker_hiring import WORKER_TO_BUILDING, worker_compatible_building_types
 from game.worker_models import Worker
 from game.workers import WorkerManager
 
@@ -16,6 +16,11 @@ from game.workers import WorkerManager
 def test_worker_compatible_building_types_herder_includes_cow_and_chicken() -> None:
     assert worker_compatible_building_types("ANIMAL_HERDER") == frozenset({"CHICKEN_FARM", "COW_FARM"})
     assert worker_compatible_building_types("MILLER") == frozenset({"MILL"})
+
+
+def test_worker_compatible_building_types_farmer_includes_farm_and_vineyard_farm() -> None:
+    assert worker_compatible_building_types("FARMER") == frozenset({"FARM", "VINEYARD_FARM"})
+    assert WORKER_TO_BUILDING["FARMER"] == "FARM"
 
 
 def test_animal_herder_reassigns_to_chicken_farm_when_present() -> None:

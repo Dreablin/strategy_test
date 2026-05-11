@@ -23,6 +23,8 @@ _DISPLAY_NAME: dict[str, str] = {
     "BAKERY": "Bakery",
     "CHICKEN_FARM": "Chicken Farm",
     "COW_FARM": "Cow Farm",
+    "VINEYARD_FARM": "Vineyard Farm",
+    "VINEYARD": "Vineyard",
     "CANTEEN": "Canteen",
     "WELL": "Well",
 }
@@ -38,6 +40,8 @@ _DESCRIPTION: dict[str, str] = {
     "BAKERY": "Bakes flour and water into bread.",
     "CHICKEN_FARM": "Raises chickens from grain and water.",
     "COW_FARM": "Herder raises cattle using wheat and water; produces beef and hide.",
+    "VINEYARD_FARM": "Farmer harvests ripe vineyard plots nearby; carriers move grapes to the Town Hall.",
+    "VINEYARD": "Grapes ripen here in stages; a farmer at a Vineyard Farm can harvest nearby ripe plots.",
     "CANTEEN": "Cook prepares simple meals from chicken, bread, and water.",
     "WELL": "Produces water into local storage.",
 }
@@ -195,8 +199,13 @@ class BuildingPanel:
         surface.blit(body_font.render(desc, True, (200, 204, 214)), (layout.frame.left + _PANEL_PAD, y))
         y += _ROW
         allowed_worker_status = {"empty", "on the way", "assigned"}
-        if building.type_tag == "FARM":
-            allowed_worker_status = allowed_worker_status | {"moving", "resting", "sowing", "harvesting"}
+        if building.type_tag in {"FARM", "VINEYARD_FARM"}:
+            allowed_worker_status = allowed_worker_status | {
+                "moving",
+                "resting",
+                "sowing",
+                "harvesting",
+            }
         if worker_status not in allowed_worker_status:
             worker_status = "assigned" if worker_assigned else "empty"
         wstat = f"Worker: {worker_status}"

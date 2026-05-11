@@ -35,6 +35,8 @@ _BUILDING_FOLDER: dict[str, str] = {
     "BAKERY": "bakery",
     "CHICKEN_FARM": "chicken_farm",
     "COW_FARM": "cow_farm",
+    "VINEYARD_FARM": "vineyard_farm",
+    "VINEYARD": "vineyard",
     "WELL": "well",
 }
 
@@ -299,6 +301,8 @@ def _building_palette(b_type: str) -> tuple[tuple[int, int, int], tuple[int, int
         "bakery": ((214, 154, 118), (126, 72, 58)),
         "chicken_farm": ((186, 170, 110), (96, 82, 54)),
         "cow_farm": ((150, 118, 88), (78, 56, 40)),
+        "vineyard_farm": ((118, 92, 140), (62, 48, 78)),
+        "vineyard": ((96, 130, 72), (52, 78, 44)),
         "well": ((104, 128, 152), (48, 70, 92)),
         "school": ((120, 124, 168), (62, 66, 108)),
         "house": ((172, 142, 126), (110, 86, 76)),
@@ -596,6 +600,38 @@ def _building_construction_candidates(folder: str, lvl: int) -> tuple[Path, ...]
     )
 
 
+def _vineyard_type_tag(b_type: str) -> bool:
+    return b_type.upper().replace(" ", "_") == "VINEYARD"
+
+
+def _vineyard_growth_candidates(folder: str, stage: int) -> tuple[Path, ...]:
+    root = _BUILDINGS_ROOT / folder
+    s = max(1, min(int(stage), 4))
+    return (
+        root / f"growth_{s}.png",
+        root / f"growth_stage_{s:02d}.png",
+        root / f"growth_stage_{s}.png",
+        root / f"level_{s:02d}.png",
+        root / f"level_{s}.png",
+        root / "default.png",
+    )
+
+
+def _procedural_vineyard_sprite(stage: int) -> pygame.Surface:
+    """Single-tile plot fallback; hue shifts with growth stage (1..4)."""
+    w, h = TILE_W, TILE_H
+    surf = pygame.Surface((w, h), pygame.SRCALPHA)
+    s = max(1, min(int(stage), 4))
+    greens = ((86, 140, 74), (72, 128, 68), (100, 118, 92), (120, 92, 140))
+    fill = greens[s - 1]
+    outline = (max(20, fill[0] // 2), max(28, fill[1] // 2), max(20, fill[2] // 2))
+    pts = _diamond_points(w, h)
+    pygame.draw.polygon(surf, fill, pts)
+    pygame.draw.polygon(surf, outline, pts, 2)
+    pygame.draw.circle(surf, (200, 200, 220), (w // 2, h // 2 - 2), 2 + s)
+    return surf
+
+
 def _meta_for_level(meta: dict, lvl: int) -> dict:
     out: dict = {}
     default = meta.get("default")
@@ -666,6 +702,17 @@ def _building_render_spec(b_type: str, level: int) -> tuple[pygame.Surface, tupl
     """Return (surface, anchor_px) where anchor sits on footprint bottom-center."""
     folder = _building_folder_name(b_type)
     requested_level = int(level)
+    if _vineyard_type_tag(b_type):
+        stage = max(1, min(requested_level, 4))
+        src: pygame.Surface | None = None
+        for candidate in _vineyard_growth_candidates(folder, stage):
+            src = _load_png(str(candidate))
+            if src is not None:
+                break
+        if src is None:
+            src = _procedural_vineyard_sprite(stage)
+        meta = _meta_for_variant_level(_load_building_meta(folder), "ready", stage)
+        return _apply_building_meta(src, meta)
     is_field_empty_level = (
         b_type.upper().replace(" ", "_") == "FIELD" and requested_level == 0
     )
@@ -875,6 +922,7 @@ def _resource_colors(name: str) -> tuple[int, int, int]:
         "chicken": (214, 198, 154),
         "beef": (140, 52, 52),
         "hide": (120, 92, 68),
+        "grapes": (112, 48, 140),
         "simple_meal": (210, 150, 95),
     }
     return colors.get(key, (160, 160, 200))

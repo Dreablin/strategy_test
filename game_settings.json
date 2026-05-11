@@ -35,7 +35,8 @@
       "bread": 0,
       "chicken": 0,
       "beef": 0,
-      "hide": 0
+      "hide": 0,
+      "grapes": 0
     }
   },
   "gates": {
@@ -49,6 +50,8 @@
       "BAKERY": 1,
       "CHICKEN_FARM": 1,
       "COW_FARM": 1,
+      "VINEYARD_FARM": 1,
+      "VINEYARD": 1,
       "WELL": 1
     },
     "hire_min_town_hall_level": {

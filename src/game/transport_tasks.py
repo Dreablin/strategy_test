@@ -482,3 +482,30 @@ def farm_wheat_output_transport_tasks(registry: Any) -> list[TransportTask]:
         for _ in range(amount):
             tasks.append(TransportTask(resource="wheat", source=building, target=town_hall, priority=0))
     return tasks
+
+
+def vineyard_farm_grape_output_transport_tasks(registry: Any) -> list[TransportTask]:
+    """Build low-priority grape export tasks from Vineyard Farms to Town Hall."""
+    if registry is None:
+        return []
+    buildings = list(registry.all())
+    town_hall = next((b for b in buildings if b.type_tag == "TOWN_HALL"), None)
+    if town_hall is None:
+        return []
+    tasks: list[TransportTask] = []
+    for building in buildings:
+        if building.type_tag != "VINEYARD_FARM":
+            continue
+        if getattr(building, "is_under_construction", False):
+            continue
+        if not getattr(building, "active", True):
+            continue
+        grapes_amount = getattr(building, "grapes_amount", None)
+        if not callable(grapes_amount):
+            continue
+        amount = int(grapes_amount())
+        if amount <= 0:
+            continue
+        for _ in range(amount):
+            tasks.append(TransportTask(resource="grapes", source=building, target=town_hall, priority=0))
+    return tasks

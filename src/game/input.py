@@ -19,9 +19,10 @@ from game.buildings.registry import BuildingRegistry
 from game.buildings.school import School
 from game.buildings.sawmill import Sawmill
 from game.buildings.town_hall import TownHall
+from game.buildings.vineyard_farm import VineyardFarm
 from game.buildings.well import Well
 from game.camera import Camera
-from game.iso import screen_to_world
+from game.iso import screen_to_tile
 from game.render import Renderer
 from game.housing import current_population, max_population
 from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT, BottomBar
@@ -42,6 +43,7 @@ from game.ui.placement import PlacementController
 from game.ui.population_panel import PopulationPanel
 from game.ui.town_hall_panel import TownHallPanel
 from game.ui.top_bar import TopBar
+from game.ui.vineyard_farm_panel import VineyardFarmPanel
 from game.ui.well_panel import WellPanel
 from game.ui.worker_panel import WorkerPanel
 from game.world import World
@@ -64,13 +66,19 @@ def screen_to_grid(
     """Map screen pixel to isometric grid cell using the same origin as ``Renderer.draw_world``."""
     ox, oy = Renderer.map_origin(surface, world)
     mx, my = screen_pos
-    return screen_to_world(mx - camera.offset[0] - ox, my - camera.offset[1] - oy)
+    return screen_to_tile(mx - camera.offset[0] - ox, my - camera.offset[1] - oy)
 
 
 def _on_map(surface: pygame.Surface, pos: tuple[int, int]) -> bool:
     x, y = pos
     h = surface.get_height()
     return TOP_BAR_HEIGHT <= y < h - BAR_HEIGHT
+
+
+def _opens_map_panel(building: Building) -> bool:
+    if building.is_under_construction:
+        return True
+    return building.type_tag not in {"FIELD", "VINEYARD"}
 
 
 class GameInput:
@@ -167,6 +175,7 @@ class GameInput:
             "going_to_stone",
             "going_to_plant_tile",
             "going_to_field",
+            "going_to_vineyard",
             "returning",
         }
         if worker.state in moving_states and worker.target_tile is not None:
@@ -474,6 +483,19 @@ class GameInput:
             worker_status = self._panel_worker_status()
             production_status = self._panel_production_status()
             WellPanel.draw(
+                surface,
+                self._panel,
+                worker_assigned=worker_status != "empty",
+                worker_status=worker_status,
+                production_status=production_status,
+                now_ms=pygame.time.get_ticks(),
+            )
+            return
+        if VineyardFarmPanel.supports_building(self._panel):
+            assert isinstance(self._panel, VineyardFarm)
+            worker_status = self._panel_worker_status()
+            production_status = self._panel_production_status()
+            VineyardFarmPanel.draw(
                 surface,
                 self._panel,
                 worker_assigned=worker_status != "empty",
@@ -951,6 +973,37 @@ class GameInput:
                     elif action == "toggle_active" and self._panel is not None:
                         self._panel.set_active(not self._panel.active)
                     return
+            if VineyardFarmPanel.supports_building(self._panel):
+                assert isinstance(self._panel, VineyardFarm)
+                worker_status = self._panel_worker_status()
+                production_status = self._panel_production_status()
+                layout = VineyardFarmPanel.layout(
+                    surface,
+                    self._panel,
+                    worker_assigned=worker_status != "empty",
+                    production_status=production_status,
+                )
+                if layout.frame.collidepoint(pos):
+                    action = VineyardFarmPanel.click_action(
+                        surface,
+                        pos,
+                        self._panel,
+                        worker_assigned=worker_status != "empty",
+                        production_status=production_status,
+                    )
+                    if action == "close":
+                        self._panel = None
+                    elif action == "upgrade" and self._panel is not None:
+                        if self._registry.upgrade_building(self._panel):
+                            self._sync_assignments()
+                    elif action == "demolish" and self._panel is not None:
+                        b = self._panel
+                        self._registry.demolish(b, self._worker_manager)
+                        self._panel = None
+                        self._sync_assignments()
+                    elif action == "toggle_active" and self._panel is not None:
+                        self._panel.set_active(not self._panel.active)
+                    return
             layout = BuildingPanel.layout(
                 surface,
                 self._panel,
@@ -983,7 +1036,7 @@ class GameInput:
                 self._worker_panel = worker
                 return
             target = self._registry.at(gx, gy)
-            if target is not None:
+            if target is not None and _opens_map_panel(target):
                 self._panel = target
             return
 
@@ -994,6 +1047,6 @@ class GameInput:
 
         hit = self._registry.at(gx, gy)
         if hit is not None:
-            # FIELD acts as a terrain/work tile; it does not open a building panel.
-            if hit.type_tag != "FIELD":
+            # Completed FIELD/VINEYARD plots act as terrain/work plots; construction sites stay selectable.
+            if _opens_map_panel(hit):
                 self._panel = hit

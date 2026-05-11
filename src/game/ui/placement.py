@@ -22,11 +22,13 @@ from game.buildings.mill import Mill
 from game.buildings.registry import BuildingRegistry
 from game.buildings.school import School
 from game.buildings.sawmill import Sawmill
+from game.buildings.vineyard import Vineyard
+from game.buildings.vineyard_farm import VineyardFarm
 from game.buildings.well import Well
 from game.camera import Camera
 from game.buildings.stone_mine import StoneMine
-from game.config import TILE_H, TILE_W
-from game.iso import screen_to_world, world_to_screen
+from game.config import TILE_H, TILE_W, building_int_setting
+from game.iso import screen_to_tile, world_to_screen
 from game.iron import IronDeposit
 from game.render import Renderer
 from game.stones import Stone
@@ -54,6 +56,8 @@ _TAG_TO_CLASS: dict[str, Type[Building]] = {
     "BAKERY": Bakery,
     "CHICKEN_FARM": ChickenFarm,
     "COW_FARM": CowFarm,
+    "VINEYARD_FARM": VineyardFarm,
+    "VINEYARD": Vineyard,
     "WELL": Well,
 }
 
@@ -113,6 +117,13 @@ def _placement_zones_follow_existing_buildings(cls: Type[Building] | None) -> bo
 def _placement_zone_specs(cls: Type[Building] | None) -> list[tuple[str, int]]:
     if cls is Farm:
         return [("FARM", FARMER_FIELD_RADIUS)]
+    if cls is VineyardFarm:
+        return [
+            (
+                "VINEYARD_FARM",
+                building_int_setting("VINEYARD_FARM", "harvest", "radius_cells"),
+            )
+        ]
     if cls is Field:
         return [("FARM", FARMER_FIELD_RADIUS)]
     if cls is LumberCamp:
@@ -189,7 +200,7 @@ class PlacementController:
         ox, oy = Renderer.map_origin(surface, self._world)
         mx, my = screen_pos
         cam = camera if camera is not None else self._camera
-        gx, gy = screen_to_world(mx - cam.offset[0] - ox, my - cam.offset[1] - oy)
+        gx, gy = screen_to_tile(mx - cam.offset[0] - ox, my - cam.offset[1] - oy)
         self._hover = (gx, gy)
 
     def try_place(

@@ -16,6 +16,7 @@ class Winery(Building):
         "grapes_in",
         "wine_out",
         "processing_started_ms",
+        "processing_duration_ms",
     )
 
     def __init__(self, level: int = 1, grid_pos: tuple[int, int] | None = None) -> None:
@@ -24,6 +25,7 @@ class Winery(Building):
         self.grapes_in = 0
         self.wine_out = 0
         self.processing_started_ms = 0
+        self.processing_duration_ms = 0
 
     def set_active(self, value: bool) -> None:
         self.active = bool(value)

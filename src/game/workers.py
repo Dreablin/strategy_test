@@ -158,6 +158,7 @@ class WorkerManager(
             "WATERMAN": self._update_waterman,
             "ANIMAL_HERDER": self._update_animal_herder,
             "FARMER": self._update_farmer,
+            "WINEMAKER": self._update_winemaker,
         }
         if registry is not None and hasattr(registry, "bind_worker_manager"):
             registry.bind_worker_manager(self)

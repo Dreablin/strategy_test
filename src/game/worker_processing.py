@@ -114,6 +114,9 @@ class WorkerProcessingMixin:
     def _update_waterman(self, worker: Worker, now_ms: int, world: Any) -> None:
         self._update_processor_worker(worker, now_ms, WELL_PROCESSOR, world)
 
+    def _update_winemaker(self, worker: Worker, now_ms: int, world: Any) -> None:
+        self._update_processor_worker(worker, now_ms, WINERY_PROCESSOR, world)
+
     def _update_processor_worker(
         self, worker: Worker, now_ms: int, spec: ProcessorSpec, world: Any
     ) -> None:
@@ -266,4 +269,14 @@ WELL_PROCESSOR = ProcessorSpec(
     consume_inputs=lambda _b: None,
     add_output=lambda b: b.add_water_in(1),
     rest_ms_for=lambda b: max(0, int(getattr(b, "rest_duration_ms", WELL_REST_MS))),
+)
+
+WINERY_PROCESSOR = ProcessorSpec(
+    building_type="WINERY",
+    duration_ms=lambda b: max(1, b.cycle_ms()),
+    rest_ms=0,
+    has_inputs=_multi_input_has_recipe,
+    consume_inputs=lambda winery: winery.take_grapes(winery.recipe_input_count()),
+    add_output=lambda winery: winery.add_wine(winery.recipe_output_count()),
+    rest_ms_for=lambda b: max(0, b.rest_ms()),
 )

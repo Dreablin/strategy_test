@@ -6,7 +6,11 @@ from dataclasses import dataclass
 
 from game.buildings.base import Building
 from game.characteristics import Characteristics
-from game.config import WORKER_TILE_TRAVEL_MS
+from game.config import (
+    WORKER_TILE_TRAVEL_MS,
+    configured_worker_effect_source_keys,
+    configured_worker_effect_sources,
+)
 from game.worker_constants import CHOP_DURATION_MS
 from game.worker_satiety import MAX_WORKER_SATIETY
 
@@ -83,7 +87,15 @@ class Worker:
         self.chop_started_ms = 0
         self.chop_duration_ms = CHOP_DURATION_MS
         self.characteristics = Characteristics()
+        self.refresh_configured_effects()
         self.transport_task: TransportTask | None = None
+
+    def refresh_configured_effects(self) -> None:
+        for source in configured_worker_effect_source_keys(self.type_tag):
+            self.characteristics.remove_source(source)
+        for source, effects in configured_worker_effect_sources(self.type_tag):
+            for stat, delta in effects.items():
+                self.characteristics.add_permanent(source, stat, delta)
 
     def start_move(self, path: list[tuple[int, int]], started_ms: int, *, move_state: str = "moving") -> None:
         if len(path) < 2:
@@ -167,3 +179,6 @@ class Worker:
         if speed <= 0.0:
             return WORKER_TILE_TRAVEL_MS
         return max(1, int(round(WORKER_TILE_TRAVEL_MS / speed)))
+
+    def effective_travel_ms(self) -> int:
+        return self._effective_travel_ms()

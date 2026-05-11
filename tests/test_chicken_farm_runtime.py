@@ -123,25 +123,6 @@ def test_animal_herder_processes_wheat_and_water_into_chicken_and_rests() -> Non
     assert herder.camp_wait_until_ms == 56_000
 
 
-def test_animal_herder_reassigns_only_to_chicken_farm() -> None:
-    world = World(world_seed=0)
-    world._trees.clear()  # noqa: SLF001
-    world._stones.clear()  # noqa: SLF001
-    world._iron.clear()  # noqa: SLF001
-    world._gold.clear()  # noqa: SLF001
-    registry = BuildingRegistry(world)
-    registry.place(TownHall, town_hall_origin_tile())
-    farm = registry.place(ChickenFarm, near_town_hall_tile(14, 8))
-    farm.construction_site = None
-    workers = WorkerManager(registry, now_ms_fn=lambda: 0)
-    herder = Worker("ANIMAL_HERDER")
-    workers.add_worker(herder)
-
-    workers.reassign_all()
-
-    assert herder.assigned_building is farm
-
-
 def test_carrier_refills_chicken_farm_with_wheat_and_water() -> None:
     world = World(world_seed=2)
     world._trees.clear()  # noqa: SLF001

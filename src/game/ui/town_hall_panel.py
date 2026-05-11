@@ -25,6 +25,8 @@ _STORAGE_ROWS: tuple[tuple[str, str], ...] = (
     ("flour", "Flour"),
     ("bread", "Bread"),
     ("chicken", "Chicken"),
+    ("beef", "Beef"),
+    ("hide", "Hide"),
 )
 
 

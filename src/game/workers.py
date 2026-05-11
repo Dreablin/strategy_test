@@ -17,6 +17,8 @@ from game.transport_tasks import (
     bakery_input_transport_tasks,
     bakery_output_transport_tasks,
     chicken_farm_output_transport_tasks,
+    cow_farm_beef_output_transport_tasks,
+    cow_farm_hide_output_transport_tasks,
     construction_transport_tasks,
     farm_wheat_output_transport_tasks,
     iron_mine_output_transport_tasks,
@@ -31,16 +33,15 @@ from game.worker_constants import (
     CHOP_DURATION_MS,
     FARMER_FIELD_RADIUS,
     FORESTER_PLANT_RADIUS,
-    GATHER_SPEED_PER_LEVEL,
     IRON_MINE_CYCLE_MS,
     LUMBER_CAMP_RESOURCE_RADIUS,
     LUMBERJACK_REST_MS,
     MINER_REST_MS,
     MINE_DURATION_MS,
-    MOVE_SPEED_PER_LEVEL,
     STONE_MINE_RESOURCE_RADIUS,
     STONECUTTER_REST_MS,
 )
+from game.config import building_worker_effects
 from game.worker_geometry import (
     building_center_tile,
     select_farmer_field_target,
@@ -52,6 +53,7 @@ from game.worker_hiring import (
     can_hire,
     has_housing_capacity_for,
     hire,
+    worker_compatible_building_types,
 )
 from game.worker_models import TransportTask, Worker
 from game.worker_satiety import apply_satiety_game_time
@@ -90,6 +92,8 @@ __all__ = [
     "bakery_input_transport_tasks",
     "bakery_output_transport_tasks",
     "chicken_farm_output_transport_tasks",
+    "cow_farm_beef_output_transport_tasks",
+    "cow_farm_hide_output_transport_tasks",
     "iron_mine_output_transport_tasks",
     "farm_wheat_output_transport_tasks",
     "processor_input_transport_tasks",
@@ -325,15 +329,15 @@ class WorkerManager(
             return
         now_ms = int(self._now_ms_fn())
         for worker in [w for w in self._workers if w.idle]:
-            want = self._WORKER_TO_BUILDING.get(worker.type_tag)
-            if want is None:
+            want_types = worker_compatible_building_types(worker.type_tag)
+            if not want_types:
                 continue
             # Gather worker already at its camp (e.g., post-deposit with toggle off, then on):
             # resume the gather cycle directly without walking back to the camp.
             if (
                 worker.type_tag in {"LUMBERJACK", "STONECUTTER"}
                 and worker.assigned_building is not None
-                and worker.assigned_building.type_tag == want
+                and worker.assigned_building.type_tag in want_types
                 and not worker.assigned_building.is_under_construction
             ):
                 camp = worker.assigned_building
@@ -341,7 +345,11 @@ class WorkerManager(
                 rest_ms = LUMBERJACK_REST_MS if worker.type_tag == "LUMBERJACK" else STONECUTTER_REST_MS
                 worker.camp_wait_until_ms = max(worker.camp_wait_until_ms, now_ms + rest_ms)
                 continue
-            targets = [b for b in self._registry.all() if b.type_tag == want and not self.is_staffed(b) and not b.is_under_construction]
+            targets = [
+                b
+                for b in self._registry.all()
+                if b.type_tag in want_types and not self.is_staffed(b) and not b.is_under_construction
+            ]
             targets.sort(
                 key=lambda b: (
                     abs(worker.current_tile[0] - building_center_tile(b)[0])
@@ -387,6 +395,11 @@ class WorkerManager(
             self._clear_building_bonus(worker)
             if worker.assigned_building is not None and not worker.idle:
                 self._apply_building_bonus(worker, worker.assigned_building)
+
+    def refresh_configured_worker_effects(self) -> None:
+        """Recompute global and worker-type effects for all existing workers."""
+        for worker in self._workers:
+            worker.refresh_configured_effects()
 
     def refresh_building_bonuses(self, building: Building) -> None:
         """Refresh permanent level bonuses for workers assigned to one building."""
@@ -463,6 +476,8 @@ class WorkerManager(
         self._enqueue_water_input_tasks()
         self._enqueue_bakery_output_tasks()
         self._enqueue_chicken_farm_output_tasks()
+        self._enqueue_cow_farm_beef_output_tasks()
+        self._enqueue_cow_farm_hide_output_tasks()
         self._enqueue_iron_mine_output_tasks()
         self._enqueue_farm_wheat_output_tasks()
         if self._registry is not None:
@@ -572,10 +587,8 @@ class WorkerManager(
         worker.characteristics.remove_source(self._building_bonus_source(building))
 
     def _apply_building_bonus(self, worker: Worker, building: Building) -> None:
-        delta = (building.level - 1) * MOVE_SPEED_PER_LEVEL
         source = self._building_bonus_source(building)
-        worker.characteristics.add_permanent(source, "move_speed_mult", delta)
-        gather_delta = (building.level - 1) * GATHER_SPEED_PER_LEVEL
-        worker.characteristics.add_permanent(source, "gather_speed_mult", gather_delta)
+        for stat, delta in building_worker_effects(building.type_tag, building.level).items():
+            worker.characteristics.add_permanent(source, stat, delta)
 
 

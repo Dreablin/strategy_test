@@ -5,7 +5,7 @@ from __future__ import annotations
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
-from game.config import near_town_hall_tile, town_hall_origin_tile
+from game.config import WORKER_TILE_TRAVEL_MS, near_town_hall_tile, town_hall_origin_tile
 from game.ui.worker_panel import WorkerPanel
 from game.worker_models import TransportTask, Worker
 from game.worker_satiety import MAX_WORKER_SATIETY
@@ -17,6 +17,13 @@ def _find_satiety_line(lines: list[str]) -> str:
         if ln.strip().lower().startswith("satiety:"):
             return ln
     raise AssertionError(f"No Satiety line in {lines!r}")
+
+
+def _find_move_speed_line(lines: list[str]) -> str:
+    for ln in lines:
+        if ln.strip().lower().startswith("move speed:"):
+            return ln
+    raise AssertionError(f"No Move speed line in {lines!r}")
 
 
 def test_worker_panel_body_lines_include_satiety_idle_carrier() -> None:
@@ -80,3 +87,15 @@ def test_worker_panel_body_lines_show_dining_state_labels() -> None:
     lines = WorkerPanel.body_lines(worker)
 
     assert "State: Waiting for meal" in lines
+
+
+def test_worker_panel_body_lines_include_effective_move_speed() -> None:
+    worker = Worker("CARRIER", stand_tile=near_town_hall_tile())
+    worker.characteristics.add_permanent(("test", "speed"), "move_speed_mult", 0.20)
+
+    lines = WorkerPanel.body_lines(worker)
+    speed = _find_move_speed_line(lines)
+    expected_travel_ms = int(round(WORKER_TILE_TRAVEL_MS / 1.20))
+
+    assert "1.20x" in speed
+    assert f"{expected_travel_ms} ms/tile" in speed

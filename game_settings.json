@@ -7,6 +7,10 @@
     "satiety": {
       "max": 10000,
       "drain_per_game_second": 5
+    },
+    "effects": {
+      "global": {},
+      "by_type": {}
     }
   },
   "world": {
@@ -29,7 +33,9 @@
       "boards": 10,
       "flour": 0,
       "bread": 0,
-      "chicken": 0
+      "chicken": 0,
+      "beef": 0,
+      "hide": 0
     }
   },
   "gates": {
@@ -42,6 +48,7 @@
       "CANTEEN": 1,
       "BAKERY": 1,
       "CHICKEN_FARM": 1,
+      "COW_FARM": 1,
       "WELL": 1
     },
     "hire_min_town_hall_level": {

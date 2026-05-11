@@ -43,6 +43,13 @@ def _output_has_space(building: Any) -> bool:
     )()
 
 
+def _recipe_output_space_ok(building: Any) -> bool:
+    """Single-output buildings use ``output_*``; Cow Farm uses ``has_recipe_output_space``."""
+    if hasattr(building, "has_recipe_output_space"):
+        return bool(building.has_recipe_output_space())
+    return _output_has_space(building)
+
+
 def _single_input_has_recipe(building: Any) -> bool:
     return getattr(building, "input_amount", lambda: 0)() > 0
 
@@ -52,7 +59,7 @@ def _multi_input_has_recipe(building: Any) -> bool:
 
 
 def _has_input_and_output_space(building: Any, has_recipe: Callable[[Any], bool]) -> bool:
-    return has_recipe(building) and _output_has_space(building)
+    return has_recipe(building) and _recipe_output_space_ok(building)
 
 
 def _fixed_duration(duration_ms: int) -> Callable[[Any], int]:
@@ -96,7 +103,13 @@ class WorkerProcessingMixin:
         self._update_processor_worker(worker, now_ms, CANTEEN_PROCESSOR, world)
 
     def _update_animal_herder(self, worker: Worker, now_ms: int, world: Any) -> None:
-        self._update_processor_worker(worker, now_ms, CHICKEN_FARM_PROCESSOR, world)
+        building = worker.assigned_building
+        if building is None:
+            return
+        if building.type_tag == "CHICKEN_FARM":
+            self._update_processor_worker(worker, now_ms, CHICKEN_FARM_PROCESSOR, world)
+        elif building.type_tag == "COW_FARM":
+            self._update_processor_worker(worker, now_ms, COW_FARM_PROCESSOR, world)
 
     def _update_waterman(self, worker: Worker, now_ms: int, world: Any) -> None:
         self._update_processor_worker(worker, now_ms, WELL_PROCESSOR, world)
@@ -205,6 +218,31 @@ CHICKEN_FARM_PROCESSOR = ProcessorSpec(
     has_inputs=_multi_input_has_recipe,
     consume_inputs=lambda farm: (farm.take_wheat_in(1), farm.take_water_in(1)),
     add_output=lambda farm: farm.add_chicken_out(1),
+)
+
+
+def _cow_cycle_duration_ms(building: Any) -> int:
+    return max(1, int(getattr(building, "processing_duration_ms", 1)))
+
+
+def _cow_consume_recipe(farm: Any) -> None:
+    farm.take_wheat_in(farm.recipe_wheat_required())
+    farm.take_water_in(farm.recipe_water_required())
+
+
+def _cow_add_recipe_outputs(farm: Any) -> None:
+    farm.add_beef_out(farm.recipe_beef_output())
+    farm.add_hide_out(farm.recipe_hide_output())
+
+
+COW_FARM_PROCESSOR = ProcessorSpec(
+    building_type="COW_FARM",
+    duration_ms=_cow_cycle_duration_ms,
+    rest_ms=0,
+    has_inputs=_multi_input_has_recipe,
+    consume_inputs=_cow_consume_recipe,
+    add_output=_cow_add_recipe_outputs,
+    rest_ms_for=lambda b: max(0, int(b.production_rest_ms())),
 )
 
 CANTEEN_PROCESSOR = ProcessorSpec(

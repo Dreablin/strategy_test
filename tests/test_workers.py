@@ -1,5 +1,7 @@
 """Worker manager: hire, reassign, demolition (PRD F-WORK / F-DEMO)."""
 
+import pytest
+
 from game.buildings.base import Building
 from game.buildings.farm import Farm
 from game.buildings.field import WHEAT_PHASE_2, Field
@@ -12,7 +14,7 @@ from game.buildings.sawmill import Sawmill
 from game.buildings.stone_mine import StoneMine
 from game.buildings.town_hall import TownHall
 from game.characteristics import Characteristics
-from game.config import near_town_hall_tile, town_hall_origin_tile
+from game.config import building_worker_effects, near_town_hall_tile, town_hall_origin_tile
 from game.construction import ConstructionSite
 from game.iron import IronDeposit
 from game.trees import Tree, TreeStage
@@ -477,6 +479,101 @@ def test_hired_worker_has_characteristics_defaults() -> None:
     assert worker.characteristics.gather_speed_mult == 1.0
 
 
+def test_worker_applies_configured_global_and_type_effects(monkeypatch: pytest.MonkeyPatch) -> None:
+    import game.config as config
+
+    settings = {
+        **config.SETTINGS,
+        "workers": {
+            **config.SETTINGS["workers"],
+            "effects": {
+                "global": {"move_speed_mult": 0.05},
+                "by_type": {"CARRIER": {"move_speed_mult": 0.10, "gather_speed_mult": -0.05}},
+            },
+        },
+    }
+    monkeypatch.setattr(config, "SETTINGS", settings)
+
+    worker = Worker("CARRIER")
+
+    assert worker.characteristics.move_speed_mult == pytest.approx(1.15)
+    assert worker.characteristics.gather_speed_mult == pytest.approx(0.95)
+
+
+def test_worker_refresh_configured_effects_removes_deleted_config_stats(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import game.config as config
+
+    settings = {
+        **config.SETTINGS,
+        "workers": {
+            **config.SETTINGS["workers"],
+            "effects": {
+                "global": {"move_speed_mult": 0.05},
+                "by_type": {"CARRIER": {"gather_speed_mult": 0.20}},
+            },
+        },
+    }
+    monkeypatch.setattr(config, "SETTINGS", settings)
+    worker = Worker("CARRIER")
+    assert worker.characteristics.move_speed_mult == pytest.approx(1.05)
+    assert worker.characteristics.gather_speed_mult == pytest.approx(1.20)
+
+    settings = {
+        **config.SETTINGS,
+        "workers": {
+            **config.SETTINGS["workers"],
+            "effects": {
+                "global": {},
+                "by_type": {"CARRIER": {"move_speed_mult": -0.10}},
+            },
+        },
+    }
+    monkeypatch.setattr(config, "SETTINGS", settings)
+    worker.refresh_configured_effects()
+
+    assert worker.characteristics.move_speed_mult == pytest.approx(0.90)
+    assert worker.characteristics.gather_speed_mult == pytest.approx(1.0)
+
+
+def test_worker_manager_refresh_configured_effects_preserves_building_effects(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import game.config as config
+
+    world = World(world_seed=0)
+    registry = BuildingRegistry(world)
+    camp = registry.place(LumberCamp, (10, 10))
+    camp.level = 3
+    wm = WorkerManager(registry)
+    worker = Worker("LUMBERJACK")
+    wm.add_worker(worker)
+    wm.assign_to_building(worker, camp)
+    building_effects = building_worker_effects("LUMBER_CAMP", 3)
+
+    settings = {
+        **config.SETTINGS,
+        "workers": {
+            **config.SETTINGS["workers"],
+            "effects": {
+                "global": {"move_speed_mult": 0.05},
+                "by_type": {"LUMBERJACK": {"gather_speed_mult": 0.15}},
+            },
+        },
+    }
+    monkeypatch.setattr(config, "SETTINGS", settings)
+
+    wm.refresh_configured_worker_effects()
+
+    assert worker.characteristics.move_speed_mult == pytest.approx(
+        1.0 + building_effects["move_speed_mult"] + 0.05
+    )
+    assert worker.characteristics.gather_speed_mult == pytest.approx(
+        1.0 + building_effects["gather_speed_mult"] + 0.15
+    )
+
+
 def test_assign_to_building_applies_level_bonus_source() -> None:
     world = World(world_seed=0)
     registry = BuildingRegistry(world)
@@ -488,8 +585,9 @@ def test_assign_to_building_applies_level_bonus_source() -> None:
 
     wm.assign_to_building(worker, camp)
 
-    assert worker.characteristics.move_speed_mult == 1.10
-    assert worker.characteristics.gather_speed_mult == 1.10
+    effects = building_worker_effects("LUMBER_CAMP", 3)
+    assert worker.characteristics.move_speed_mult == 1.0 + effects["move_speed_mult"]
+    assert worker.characteristics.gather_speed_mult == 1.0 + effects["gather_speed_mult"]
 
 
 def test_notify_demolished_clears_building_level_bonus_source() -> None:
@@ -502,7 +600,8 @@ def test_notify_demolished_clears_building_level_bonus_source() -> None:
     wm.add_worker(worker)
     wm.assign_to_building(worker, camp)
 
-    assert worker.characteristics.move_speed_mult == 1.15
+    effects = building_worker_effects("LUMBER_CAMP", 4)
+    assert worker.characteristics.move_speed_mult == 1.0 + effects["move_speed_mult"]
     wm.notify_demolished(camp)
 
     assert worker.characteristics.move_speed_mult == 1.0
@@ -521,11 +620,31 @@ def test_reassign_to_different_building_swaps_bonus_source() -> None:
     wm.add_worker(worker)
 
     wm.assign_to_building(worker, camp_a)
-    assert worker.characteristics.move_speed_mult == 1.05
+    effects_a = building_worker_effects("LUMBER_CAMP", 2)
+    assert worker.characteristics.move_speed_mult == 1.0 + effects_a["move_speed_mult"]
 
     wm.assign_to_building(worker, camp_b)
-    assert worker.characteristics.move_speed_mult == 1.20
-    assert worker.characteristics.gather_speed_mult == 1.20
+    effects_b = building_worker_effects("LUMBER_CAMP", 5)
+    assert worker.characteristics.move_speed_mult == 1.0 + effects_b["move_speed_mult"]
+    assert worker.characteristics.gather_speed_mult == 1.0 + effects_b["gather_speed_mult"]
+
+
+def test_carrier_transport_task_does_not_apply_source_or_target_building_effects() -> None:
+    world = World(world_seed=0)
+    registry = BuildingRegistry(world)
+    source = registry.place(LumberCamp, near_town_hall_tile(4, 4))
+    target = registry.place(LumberCamp, near_town_hall_tile(14, 8))
+    source.level = 5
+    target.level = 5
+    wm = WorkerManager(registry)
+    carrier = Worker("CARRIER")
+    wm.add_worker(carrier)
+
+    wm.enqueue_transport_task(resource="wood", source=source, target=target, amount=1)
+
+    assert carrier.assigned_building is None
+    assert carrier.characteristics.move_speed_mult == 1.0
+    assert carrier.characteristics.gather_speed_mult == 1.0
 
 
 def test_hire_does_not_consume_warehouse_wheat() -> None:

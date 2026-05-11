@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from game import config
 
 
@@ -47,6 +49,99 @@ def test_building_settings_helpers_read_per_building_json() -> None:
     assert config.building_int_setting("LUMBER_CAMP", "resource_search_radius") == lumber["resource_search_radius"]
     for level, expected in town_hall["housing"]["capacity_by_level"].items():
         assert config.building_level_int_setting("TOWN_HALL", "housing", int(level)) == expected
+
+
+def test_building_worker_effects_read_assigned_worker_effects_from_building_json() -> None:
+    lumber = _building_settings("lumber_camp")
+    expected = lumber["worker_effects"]["by_level"]["5"]["assigned_worker"]
+
+    assert config.building_worker_effects("LUMBER_CAMP", 1) == {}
+    assert config.building_worker_effects("LUMBER_CAMP", 5) == expected
+    assert config.building_worker_effects("TOWN_HALL", 5) == {}
+
+
+def test_configured_worker_effect_sources_read_global_and_worker_type_effects(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = {
+        **config.SETTINGS,
+        "workers": {
+            **config.SETTINGS["workers"],
+            "effects": {
+                "global": {"move_speed_mult": 0.05},
+                "by_type": {"CARRIER": {"gather_speed_mult": -0.10}},
+            },
+        },
+    }
+    monkeypatch.setattr(config, "SETTINGS", settings)
+
+    assert config.configured_worker_effect_sources("carrier") == [
+        (config.GLOBAL_WORKER_EFFECT_SOURCE, {"move_speed_mult": 0.05}),
+        (config.worker_type_effect_source("CARRIER"), {"gather_speed_mult": -0.10}),
+    ]
+    assert config.configured_worker_effect_sources("builder") == [
+        (config.GLOBAL_WORKER_EFFECT_SOURCE, {"move_speed_mult": 0.05}),
+    ]
+    assert config.configured_worker_effect_source_keys("carrier") == (
+        config.GLOBAL_WORKER_EFFECT_SOURCE,
+        config.worker_type_effect_source("CARRIER"),
+    )
+
+
+def test_building_worker_effects_validate_stats_and_values(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setitem(
+        config.BUILDING_SETTINGS,
+        "TEST_BAD_STAT",
+        {
+            "worker_effects": {
+                "by_level": {
+                    "1": {"assigned_worker": {"unknown_stat": 0.1}},
+                }
+            }
+        },
+    )
+    with pytest.raises(ValueError, match="unknown worker effect stat"):
+        config.building_worker_effects("TEST_BAD_STAT", 1)
+
+    monkeypatch.setitem(
+        config.BUILDING_SETTINGS,
+        "TEST_BAD_VALUE",
+        {
+            "worker_effects": {
+                "by_level": {
+                    "1": {"assigned_worker": {"move_speed_mult": "fast"}},
+                }
+            }
+        },
+    )
+    with pytest.raises(ValueError, match="must be numeric"):
+        config.building_worker_effects("TEST_BAD_VALUE", 1)
+
+
+def test_configured_worker_effect_sources_validate_stats_and_values(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = {
+        **config.SETTINGS,
+        "workers": {
+            **config.SETTINGS["workers"],
+            "effects": {"global": {"unknown_stat": 0.05}, "by_type": {}},
+        },
+    }
+    monkeypatch.setattr(config, "SETTINGS", settings)
+    with pytest.raises(ValueError, match="unknown worker effect stat"):
+        config.configured_worker_effect_sources("CARRIER")
+
+    settings = {
+        **config.SETTINGS,
+        "workers": {
+            **config.SETTINGS["workers"],
+            "effects": {"global": {}, "by_type": {"CARRIER": {"move_speed_mult": "fast"}}},
+        },
+    }
+    monkeypatch.setattr(config, "SETTINGS", settings)
+    with pytest.raises(ValueError, match="must be numeric"):
+        config.configured_worker_effect_sources("CARRIER")
 
 
 def test_construction_requirements_are_loaded_from_building_json_levels() -> None:

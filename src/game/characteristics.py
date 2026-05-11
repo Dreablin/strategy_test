@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from collections.abc import Hashable
 
-_KINDS = ("move_speed_mult", "gather_speed_mult")
+from game.config import WORKER_EFFECT_STATS
+
+_KINDS = WORKER_EFFECT_STATS
 _MIN_MULT = 0.10
 
 

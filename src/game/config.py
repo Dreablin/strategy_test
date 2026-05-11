@@ -16,7 +16,11 @@ _RESOURCE_KEYS: tuple[str, ...] = (
     "bread",
     "water",
     "chicken",
+    "beef",
+    "hide",
 )
+WORKER_EFFECT_STATS: tuple[str, ...] = ("move_speed_mult", "gather_speed_mult")
+GLOBAL_WORKER_EFFECT_SOURCE = ("global", "all_workers")
 
 
 @dataclass(frozen=True, slots=True)
@@ -100,6 +104,101 @@ def building_level_int_setting(type_tag: str, section: str, level: int) -> int:
     if key not in by_level:
         raise KeyError(f"Missing level setting for {str(type_tag).upper()}.{section}.level {key}")
     return int(by_level[key])
+
+
+def _validate_worker_effect_mapping(label: str, payload: object) -> dict[str, float]:
+    if payload in ({}, None):
+        return {}
+    if not isinstance(payload, dict):
+        raise ValueError(f"{label} must be an object")
+    result: dict[str, float] = {}
+    for stat, value in payload.items():
+        key = str(stat)
+        if key not in WORKER_EFFECT_STATS:
+            raise ValueError(f"unknown worker effect stat: {key}")
+        if not isinstance(value, (int, float)):
+            raise ValueError(f"worker effect {key} must be numeric")
+        result[key] = float(value)
+    return result
+
+
+def worker_type_effect_source(worker_type: str) -> tuple[str, str]:
+    return ("worker_type", str(worker_type).upper())
+
+
+def configured_worker_effect_source_keys(worker_type: str) -> tuple[tuple[str, str], ...]:
+    return (GLOBAL_WORKER_EFFECT_SOURCE, worker_type_effect_source(worker_type))
+
+
+def configured_worker_effect_sources(worker_type: str) -> list[tuple[tuple[str, str], dict[str, float]]]:
+    """Return global and worker-type effect deltas configured in game settings."""
+    effects = SETTINGS.get("workers", {}).get("effects", {})
+    if effects in ({}, None):
+        return []
+    if not isinstance(effects, dict):
+        raise ValueError("workers.effects must be an object")
+    result: list[tuple[tuple[str, str], dict[str, float]]] = []
+
+    global_effects = _validate_worker_effect_mapping("workers.effects.global", effects.get("global", {}))
+    if global_effects:
+        result.append((GLOBAL_WORKER_EFFECT_SOURCE, global_effects))
+
+    by_type = effects.get("by_type", {})
+    if by_type in ({}, None):
+        return result
+    if not isinstance(by_type, dict):
+        raise ValueError("workers.effects.by_type must be an object")
+    type_tag = str(worker_type).upper()
+    type_effects = _validate_worker_effect_mapping(
+        f"workers.effects.by_type.{type_tag}",
+        by_type.get(type_tag, {}),
+    )
+    if type_effects:
+        result.append((worker_type_effect_source(type_tag), type_effects))
+    return result
+
+
+def building_worker_effects(
+    type_tag: str,
+    level: int,
+    *,
+    scope: str = "assigned_worker",
+) -> dict[str, float]:
+    """Return configured worker stat deltas for a building level/scope.
+
+    Missing ``worker_effects`` sections are valid and mean "no effects".
+    """
+    payload = BUILDING_SETTINGS.get(str(type_tag).upper(), {})
+    if not isinstance(payload, dict):
+        return {}
+    effects = payload.get("worker_effects", {})
+    if effects in ({}, None):
+        return {}
+    if not isinstance(effects, dict):
+        raise ValueError(f"{str(type_tag).upper()}.worker_effects must be an object")
+    by_level = effects.get("by_level", {})
+    if by_level in ({}, None):
+        return {}
+    if not isinstance(by_level, dict):
+        raise ValueError(f"{str(type_tag).upper()}.worker_effects.by_level must be an object")
+    level_payload = by_level.get(str(max(1, int(level))), {})
+    if level_payload in ({}, None):
+        return {}
+    if not isinstance(level_payload, dict):
+        raise ValueError(
+            f"{str(type_tag).upper()}.worker_effects.by_level.{int(level)} must be an object"
+        )
+    scoped = level_payload.get(scope, {})
+    if scoped in ({}, None):
+        return {}
+    if not isinstance(scoped, dict):
+        raise ValueError(
+            f"{str(type_tag).upper()}.worker_effects.by_level.{int(level)}.{scope} must be an object"
+        )
+    return _validate_worker_effect_mapping(
+        f"{str(type_tag).upper()}.worker_effects.by_level.{int(level)}.{scope}",
+        scoped,
+    )
 
 
 def town_hall_origin_tile() -> tuple[int, int]:

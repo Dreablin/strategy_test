@@ -29,6 +29,13 @@ from game.world import World
 from game.workers import WorkerManager, building_center_tile
 
 VISIBLE_TILE_MARGIN = 2
+WORKER_ACTION_PROGRESS_COLORS = {
+    ("FARMER", "sowing"): (110, 220, 120),
+    ("FARMER", "harvesting"): (240, 210, 80),
+    ("LUMBERJACK", "chopping"): (214, 154, 118),
+    ("STONECUTTER", "mining"): (160, 168, 180),
+    ("FORESTER", "planting"): (110, 220, 120),
+}
 
 
 def _world_screen_extents(world: World) -> tuple[int, int, int, int]:
@@ -262,9 +269,8 @@ class Renderer:
                 pygame.draw.rect(surface, (240, 210, 80), (bar_x, bar_y, fill_w, bar_h), border_radius=2)
 
         for worker in worker_manager.workers():
-            if worker.type_tag != "FARMER":
-                continue
-            if worker.state not in {"sowing", "harvesting"}:
+            fill = WORKER_ACTION_PROGRESS_COLORS.get((worker.type_tag, worker.state))
+            if fill is None:
                 continue
             wx, wy = worker.current_tile
             if not (gx_min <= wx <= gx_max and gy_min <= wy <= gy_max):
@@ -281,7 +287,6 @@ class Renderer:
             pygame.draw.rect(surface, (40, 40, 48), (bar_x, bar_y, bar_w, bar_h), border_radius=2)
             fill_w = max(0, min(bar_w, int(round(bar_w * progress))))
             if fill_w > 0:
-                fill = (110, 220, 120) if worker.state == "sowing" else (240, 210, 80)
                 pygame.draw.rect(surface, fill, (bar_x, bar_y, fill_w, bar_h), border_radius=2)
 
     @staticmethod

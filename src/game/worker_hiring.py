@@ -26,6 +26,14 @@ WORKER_TO_BUILDING: dict[str, str] = {
 HIRABLE_WORKERS: set[str] = set(WORKER_TO_BUILDING) | {"CARRIER", "BUILDER", "BAKER", "ANIMAL_HERDER"}
 
 
+def worker_compatible_building_types(worker_type: str) -> frozenset[str]:
+    """Building ``type_tag`` values this worker may staff (auto-assignment)."""
+    if worker_type == "ANIMAL_HERDER":
+        return frozenset({"CHICKEN_FARM", "COW_FARM"})
+    tag = WORKER_TO_BUILDING.get(worker_type)
+    return frozenset({tag}) if tag is not None else frozenset()
+
+
 def hire(
     manager: Any,
     worker_type: str,

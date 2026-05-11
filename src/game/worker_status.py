@@ -163,6 +163,18 @@ def production_status_for_building(manager: Any, building: Building) -> str:
         if worker.state == "processing":
             return "Processing"
         return "Ready"
+    if building.type_tag == "COW_FARM":
+        if worker.state == "resting":
+            return "Resting"
+        if not building.has_recipe_output_space():
+            return "Output full"
+        if building.wheat_amount() < building.recipe_wheat_required():
+            return "No wheat"
+        if building.water_amount() < building.recipe_water_required():
+            return "No water"
+        if worker.state == "processing":
+            return "Processing"
+        return "Ready"
     if building.type_tag == "IRON_MINE":
         if worker.state == "resting":
             return "Resting"

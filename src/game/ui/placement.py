@@ -10,6 +10,7 @@ import pygame
 from game.buildings.base import Building
 from game.buildings.canteen import Canteen
 from game.buildings.chicken_farm import ChickenFarm
+from game.buildings.cow_farm import CowFarm
 from game.buildings.bakery import Bakery
 from game.buildings.field import Field
 from game.buildings.farm import Farm
@@ -52,6 +53,7 @@ _TAG_TO_CLASS: dict[str, Type[Building]] = {
     "MILL": Mill,
     "BAKERY": Bakery,
     "CHICKEN_FARM": ChickenFarm,
+    "COW_FARM": CowFarm,
     "WELL": Well,
 }
 

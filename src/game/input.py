@@ -96,6 +96,7 @@ class GameInput:
         "_rmb_dragging",
         "_rmb_moved",
         "_rmb_press_pos",
+        "_school_tier",
         "_worker_manager",
         "_worker_panel",
         "_world",
@@ -119,6 +120,7 @@ class GameInput:
         self._population_filter: str | None = None
         self._population_panel_open = False
         self._population_scroll = 0
+        self._school_tier: str = "basic"
         self._rmb_down = False
         self._rmb_dragging = False
         self._rmb_moved = False
@@ -398,6 +400,7 @@ class GameInput:
                 self._panel,
                 worker_assigned=worker_status != "empty",
                 worker_manager=self._worker_manager,
+                tier=self._school_tier,
             )
             return
         if SawmillPanel.supports_building(self._panel):
@@ -726,6 +729,7 @@ class GameInput:
                     self._panel,
                     worker_assigned=wa,
                     worker_manager=self._worker_manager,
+                    tier=self._school_tier,
                 )
                 if layout.frame.collidepoint(pos):
                     action = SchoolPanel.click_action(
@@ -734,8 +738,11 @@ class GameInput:
                         self._panel,
                         worker_assigned=wa,
                         worker_manager=self._worker_manager,
+                        tier=self._school_tier,
                     )
-                    if action == "close":
+                    if action is not None and action.startswith("tab:"):
+                        self._school_tier = action.split(":", 1)[1]
+                    elif action == "close":
                         self._panel = None
                     elif action == "upgrade" and self._panel is not None:
                         if self._registry.upgrade_building(self._panel):

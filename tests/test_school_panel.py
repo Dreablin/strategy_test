@@ -4,7 +4,14 @@ import pygame
 
 from game.buildings.school import SCHOOL_QUEUE_CAPACITY, SCHOOL_TRAINING_MS
 from game.buildings.school import School
+from game.buildings.town_hall import TownHall
+from game.buildings.registry import BuildingRegistry
+from game.config import town_hall_origin_tile
+from game.input import GameInput
+from game.ui.placement import PlacementController
 from game.ui.school_panel import SchoolPanel
+from game.workers import WorkerManager
+from game.world import World
 
 
 def test_school_panel_hire_click_returns_worker_action() -> None:
@@ -136,3 +143,59 @@ def test_school_panel_default_tier_is_basic() -> None:
     default_types = [wt for wt, _ in layout_default.hire_buttons]
     basic_types = [wt for wt, _ in layout_basic.hire_buttons]
     assert default_types == basic_types
+
+
+def test_school_panel_layout_has_two_tabs() -> None:
+    surface = pygame.Surface((900, 700))
+    school = School(level=1, grid_pos=(10, 10))
+    layout = SchoolPanel.layout(surface, school, worker_assigned=False, tier="basic")
+    assert len(layout.tabs) == 2
+    tab_tiers = [t for t, _ in layout.tabs]
+    assert tab_tiers == ["basic", "advanced"]
+    assert layout.active_tier == "basic"
+
+
+def test_school_panel_click_tab_returns_tab_action() -> None:
+    surface = pygame.Surface((900, 700))
+    school = School(level=1, grid_pos=(10, 10))
+    layout = SchoolPanel.layout(surface, school, worker_assigned=False, tier="basic")
+    adv_rect = layout.tabs[1][1]
+    action = SchoolPanel.click_action(surface, adv_rect.center, school, worker_assigned=False, tier="basic")
+    assert action == "tab:advanced"
+
+
+def test_school_panel_active_tier_advanced_layout() -> None:
+    surface = pygame.Surface((900, 700))
+    school = School(level=1, grid_pos=(10, 10))
+    layout = SchoolPanel.layout(surface, school, worker_assigned=False, tier="advanced")
+    assert layout.active_tier == "advanced"
+    assert len(layout.hire_buttons) == 0
+
+
+def test_game_input_school_tier_switches_on_tab_click() -> None:
+    from game.camera import Camera
+
+    world = World(world_seed=0)
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    school = registry.place(School, (15, 15))
+    school.construction_site = None
+    workers = WorkerManager(registry, now_ms_fn=lambda: 0)
+    camera = Camera()
+    placement = PlacementController(world, registry)
+    gi = GameInput(world, registry, placement, workers, camera)
+    gi._panel = school  # noqa: SLF001
+    assert gi._school_tier == "basic"  # noqa: SLF001
+
+    surface = pygame.Surface((900, 700))
+    layout = SchoolPanel.layout(surface, school, worker_assigned=False, tier="basic")
+    adv_pos = layout.tabs[1][1].center
+    click_event = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=adv_pos)
+    gi.handle(surface, click_event)
+    assert gi._school_tier == "advanced"  # noqa: SLF001
+
+    layout2 = SchoolPanel.layout(surface, school, worker_assigned=False, tier="advanced")
+    basic_pos = layout2.tabs[0][1].center
+    click_event2 = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=basic_pos)
+    gi.handle(surface, click_event2)
+    assert gi._school_tier == "basic"  # noqa: SLF001

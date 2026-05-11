@@ -53,6 +53,10 @@ _WORKER_LABEL: dict[str, str] = {
 }
 
 
+_TAB_H = 28
+_TAB_GAP = 6
+
+
 @dataclass(frozen=True, slots=True)
 class SchoolPanelLayout:
     frame: pygame.Rect
@@ -63,6 +67,8 @@ class SchoolPanelLayout:
     queue_slots: tuple[pygame.Rect, ...]
     hire_buttons: tuple[tuple[str, pygame.Rect], ...]
     hire_enabled: dict[str, bool]
+    tabs: tuple[tuple[str, pygame.Rect], ...]
+    active_tier: str
 
 
 class SchoolPanel:
@@ -83,7 +89,8 @@ class SchoolPanel:
         grid_rows = max(1, (len(filtered_rows) + _TILE_COLS - 1) // _TILE_COLS)
         grid_h = grid_rows * _TILE_H + (grid_rows - 1) * _TILE_GAP
         sw, sh = surface.get_size()
-        content_h = 26 + 34 + _SECTION_TITLE_GAP + _QUEUE_SLOT + _GAP + _BTN_H + 14 + grid_h
+        tab_section_h = _TAB_H + _TAB_GAP
+        content_h = 26 + 34 + _SECTION_TITLE_GAP + _QUEUE_SLOT + _GAP + _BTN_H + 14 + tab_section_h + grid_h
         frame_h = _PANEL_PAD * 2 + content_h
         frame = pygame.Rect(sw // 2 - _PANEL_W // 2, sh // 2 - frame_h // 2, _PANEL_W, frame_h)
         close = pygame.Rect(
@@ -108,7 +115,12 @@ class SchoolPanel:
         demolish_x = frame.left + _PANEL_PAD if upgrade is None else upgrade.right + _GAP
         demolish_w = frame.width - _PANEL_PAD * 2 if upgrade is None else action_w
         demolish = pygame.Rect(demolish_x, action_y, demolish_w, _BTN_H)
-        grid_y = action_y + _BTN_H + 14
+        tab_y = action_y + _BTN_H + 14
+        tab_w = (frame.width - _PANEL_PAD * 2 - _TAB_GAP) // 2
+        tab_basic = pygame.Rect(frame.left + _PANEL_PAD, tab_y, tab_w, _TAB_H)
+        tab_advanced = pygame.Rect(tab_basic.right + _TAB_GAP, tab_y, tab_w, _TAB_H)
+        tabs: tuple[tuple[str, pygame.Rect], ...] = (("basic", tab_basic), ("advanced", tab_advanced))
+        grid_y = tab_y + _TAB_H + _TAB_GAP
         grid_x = frame.left + _PANEL_PAD
         buttons: list[tuple[str, pygame.Rect]] = []
         for idx, worker_type in enumerate(filtered_rows):
@@ -137,6 +149,8 @@ class SchoolPanel:
             queue_slots=tuple(queue_slots),
             hire_buttons=tuple(buttons),
             hire_enabled=hire_enabled,
+            tabs=tabs,
+            active_tier=tier,
         )
 
     @staticmethod
@@ -217,6 +231,14 @@ class SchoolPanel:
         pygame.draw.rect(surface, (140, 48, 52), layout.demolish, border_radius=6)
         d = font.render("Demolish", True, (255, 240, 240))
         surface.blit(d, (layout.demolish.centerx - d.get_width() // 2, layout.demolish.centery - d.get_height() // 2))
+        tab_labels = {"basic": "Basic", "advanced": "Advanced"}
+        for tab_tier, tab_rect in layout.tabs:
+            active = tab_tier == layout.active_tier
+            tab_bg = (64, 110, 168) if active else (52, 56, 64)
+            tab_fg = (240, 242, 250) if active else (160, 164, 174)
+            pygame.draw.rect(surface, tab_bg, tab_rect, border_radius=5)
+            tab_text = font.render(tab_labels.get(tab_tier, tab_tier.title()), True, tab_fg)
+            surface.blit(tab_text, (tab_rect.centerx - tab_text.get_width() // 2, tab_rect.centery - tab_text.get_height() // 2))
         for worker_type, rect in layout.hire_buttons:
             enabled = layout.hire_enabled.get(worker_type, False)
             bg = (84, 112, 84) if enabled else (56, 60, 66)
@@ -255,6 +277,9 @@ class SchoolPanel:
         )
         if layout.close.collidepoint(pos):
             return "close"
+        for tab_tier, tab_rect in layout.tabs:
+            if tab_rect.collidepoint(pos):
+                return f"tab:{tab_tier}"
         if layout.upgrade is not None and layout.upgrade.collidepoint(pos):
             return "upgrade" if layout.upgrade_enabled else None
         if layout.demolish.collidepoint(pos):

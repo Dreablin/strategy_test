@@ -162,11 +162,12 @@ class WorkerFarmingMixin:
                 )
 
     def _update_vineyard_farm_farmer(self, worker: Worker, farm: Building, now_ms: int, world: Any) -> None:
-        """Grape plot dispatch: walk to ripe ``VINEYARD``, play harvest animation; completion is T330+."""
+        """Grape plot dispatch: walk to ripe ``VINEYARD``, harvest, deposit to farm storage."""
         if farm.is_under_construction:
             self._release_vineyard_plot_reservations_for(worker)
             return
         if worker.state == "vineyard_harvest_anim_done":
+            self._complete_vineyard_farm_harvest(worker, farm, now_ms, world)
             return
         if worker.state == "working":
             self._park_worker_inside_building(worker, farm)
@@ -227,6 +228,49 @@ class WorkerFarmingMixin:
                 return
             worker.state = "vineyard_harvest_anim_done"
             return
+
+    def _complete_vineyard_farm_harvest(self, worker: Worker, farm: Building, now_ms: int, world: Any) -> None:
+        """After harvest animation: store one grape unit if possible, reset plot, release reservation."""
+        self._park_worker_inside_building(worker, farm)
+        tile = worker.target_tree
+        plot: Vineyard | None = None
+        if tile is not None and self._registry is not None:
+            hit = self._registry.at(int(tile[0]), int(tile[1]))
+            if isinstance(hit, Vineyard):
+                plot = hit
+        if plot is None or not plot.is_ripe():
+            self._release_vineyard_plot_reservations_for(worker)
+            worker.target_tree = None
+            worker.chop_started_ms = 0
+            worker.chop_duration_ms = CHOP_DURATION_MS
+            worker.state = "resting"
+            worker.camp_wait_until_ms = now_ms + FARMER_REST_MS
+            return
+        try:
+            farm.add_grapes_to_storage(1)  # type: ignore[attr-defined]
+        except (TypeError, ValueError):
+            self._release_vineyard_plot_reservations_for(worker)
+            worker.target_tree = None
+            worker.chop_started_ms = 0
+            worker.chop_duration_ms = CHOP_DURATION_MS
+            worker.state = "resting"
+            worker.camp_wait_until_ms = now_ms + FARMER_REST_MS
+            return
+        plot.mark_harvested(now_ms=now_ms)
+        self._release_vineyard_plot_reservations_for(worker)
+        worker.target_tree = None
+        worker.chop_started_ms = 0
+        worker.chop_duration_ms = CHOP_DURATION_MS
+        worker.state = "resting"
+        worker.camp_wait_until_ms = now_ms + FARMER_REST_MS
+        if self._registry is not None and world is not None:
+            try_hunger_canteen_after_completed_cycle(
+                worker,
+                world=world,
+                registry=self._registry,
+                worker_manager=self,
+                now_ms=int(now_ms),
+            )
 
     def _builder_destination_tiles(self, building: Building) -> list[tuple[int, int]]:
         """Builder path target tiles for construction entry."""

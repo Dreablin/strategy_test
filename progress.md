@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 25 - Vineyard Farm and Vineyards (**active**)
-- **Next Task:** T330 - Vineyard harvest into farm storage
-- **Last Completed:** T329 - Farmer vineyard movement
-- **Total Progress:** 329 / 338 (Phase 25: 18 / 27 done)
+- **Next Task:** T331 - Vineyard Farm rest/status integration
+- **Last Completed:** T330 - Vineyard harvest into farm storage
+- **Total Progress:** 330 / 338 (Phase 25: 19 / 27 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -66,8 +66,8 @@
 - [x] **T327**: Add Vineyard Farm radius/target selection only. Implement selection of ripe `VINEYARD` plots within the configured Vineyard Farm radius, accounting for reserved/claimed plots so two farmers do not target the same plot. Add focused selection/reservation tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T328**: Add FARMER compatibility with `VINEYARD_FARM` only. Extend worker-building compatibility so existing `FARMER` can be assigned to both normal `FARM` and `VINEYARD_FARM`, without changing wheat farm behavior. Add focused assignment tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T329**: Add farmer movement to ripe Vineyard plots only. A Farmer assigned to Vineyard Farm should walk to a reachable ripe Vineyard in range and enter a harvesting state, without depositing grapes yet. Add focused movement/state tests. Run full `pytest` and `ruff check src tests`.
-- [~] **T330**: Add Vineyard harvest completion into farm local storage only. Completing a Vineyard harvest should add grapes to Vineyard Farm local storage, reset the Vineyard growth cycle, release the plot reservation, and respect full farm storage. Add focused runtime tests. Run full `pytest` and `ruff check src tests`.
-- [ ] **T331**: Add Vineyard Farm worker rest/status integration only. After a grape harvest, the farmer should return/rest according to existing farm-style worker rhythm, and panel/status helpers should report Vineyard Farm states consistently. Add focused status/rest tests. Run full `pytest` and `ruff check src tests`.
+- [x] **T330**: Add Vineyard harvest completion into farm local storage only. Completing a Vineyard harvest should add grapes to Vineyard Farm local storage, reset the Vineyard growth cycle, release the plot reservation, and respect full farm storage. Add focused runtime tests. Run full `pytest` and `ruff check src tests`.
+- [~] **T331**: Add Vineyard Farm worker rest/status integration only. After a grape harvest, the farmer should return/rest according to existing farm-style worker rhythm, and panel/status helpers should report Vineyard Farm states consistently. Add focused status/rest tests. Run full `pytest` and `ruff check src tests`.
 
 ### 25.4 Transport and UI
 

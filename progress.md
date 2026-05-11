@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 25 - Vineyard Farm and Vineyards (**active**)
-- **Next Task:** T332 - Vineyard Farm grape carrier export planning
-- **Last Completed:** T331 - Vineyard Farm rest/status integration
-- **Total Progress:** 331 / 338 (Phase 25: 20 / 27 done)
+- **Next Task:** T333 - Vineyard Farm panel shell
+- **Last Completed:** T332 - Vineyard Farm grape carrier export planning
+- **Total Progress:** 332 / 338 (Phase 25: 21 / 27 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -71,8 +71,8 @@
 
 ### 25.4 Transport and UI
 
-- [~] **T332**: Add Vineyard Farm grape output export planning only. Carriers should export grapes from Vineyard Farm local storage to Town Hall, accounting for queued/in-flight grape exports and Town Hall capacity. Add demolition/invalid-task coverage for grapes if not already covered generically. Run full `pytest` and `ruff check src tests`.
-- [ ] **T333**: Add Vineyard Farm panel shell only. Create/route a panel that shows title, worker status, upgrade, demolish, active toggle if the domain supports it, and close action, without custom storage/growth details yet. Add click/layout tests. Run full `pytest` and `ruff check src tests`.
+- [x] **T332**: Add Vineyard Farm grape output export planning only. Carriers should export grapes from Vineyard Farm local storage to Town Hall, accounting for queued/in-flight grape exports and Town Hall capacity. Add demolition/invalid-task coverage for grapes if not already covered generically. Run full `pytest` and `ruff check src tests`.
+- [~] **T333**: Add Vineyard Farm panel shell only. Create/route a panel that shows title, worker status, upgrade, demolish, active toggle if the domain supports it, and close action, without custom storage/growth details yet. Add click/layout tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T334**: Add Vineyard Farm panel storage/status rows only. Show local grape storage and farmer status/production status in the panel without overlapping actions at level 10. Add draw/layout tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T335**: Add Vineyard plot panel or terrain-click behavior only. Decide based on existing field behavior: either make `VINEYARD` behave like terrain/no panel or show a minimal panel with growth stage. Add tests for the chosen click behavior. Run full `pytest` and `ruff check src tests`.
 

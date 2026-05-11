@@ -21,6 +21,7 @@ from game.transport_tasks import (
     cow_farm_hide_output_transport_tasks,
     construction_transport_tasks,
     farm_wheat_output_transport_tasks,
+    vineyard_farm_grape_output_transport_tasks,
     iron_mine_output_transport_tasks,
     mill_input_transport_tasks,
     mill_output_transport_tasks,
@@ -98,6 +99,7 @@ __all__ = [
     "cow_farm_hide_output_transport_tasks",
     "iron_mine_output_transport_tasks",
     "farm_wheat_output_transport_tasks",
+    "vineyard_farm_grape_output_transport_tasks",
     "processor_input_transport_tasks",
     "water_input_transport_tasks",
     "find_nearest_free_tree",
@@ -488,6 +490,7 @@ class WorkerManager(
         self._enqueue_cow_farm_hide_output_tasks()
         self._enqueue_iron_mine_output_tasks()
         self._enqueue_farm_wheat_output_tasks()
+        self._enqueue_vineyard_farm_grape_output_tasks()
         if self._registry is not None:
             from game.buildings.canteen import Canteen
             from game.worker_dining import assign_diner_meals_for_canteen

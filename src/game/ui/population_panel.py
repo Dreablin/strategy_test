@@ -100,7 +100,7 @@ _STATE_LABEL: dict[str, str] = {
     "harvesting": "Harvesting",
     "harvesting_grapes": "Harvesting grapes",
     "arrived_vineyard": "At vineyard",
-    "vineyard_harvest_anim_done": "Grape harvest pending",
+    "vineyard_harvest_anim_done": "Storing grapes",
     "going_to_canteen": "Going to canteen",
     "waiting_for_meal": "Waiting for meal",
     "eating": "Eating",

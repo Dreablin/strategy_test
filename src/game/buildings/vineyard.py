@@ -1,4 +1,4 @@
-"""Vineyard plot: 1×1 tile; growth timing from ``vineyard.json`` (runtime in later tasks)."""
+"""Vineyard plot: 1×1 tile; growth timing from ``vineyard.json``."""
 
 from __future__ import annotations
 
@@ -25,8 +25,31 @@ class Vineyard(Building):
         return building_int_setting(self.type_tag, "growth", "stage_duration_ms")
 
     def growth_stage_index(self) -> int:
-        """Current maturation stage (0 = not started; 1..N while growing; N when ripe)."""
+        """Current maturation stage (0 = idle; 1..N-1 growing; N when ripe)."""
         return int(self.growth_stage)
+
+    def tick_growth(self, *, now_ms: int) -> None:
+        """Advance grape maturation for a completed building; no-op if under construction or ripe."""
+        if self.is_under_construction:
+            return
+        cap = self.growth_stage_count()
+        if cap <= 0:
+            return
+        if self.growth_stage >= cap:
+            return
+        dur = self.stage_duration_ms()
+        if dur <= 0:
+            return
+        now_ms = int(now_ms)
+        if self.growth_stage == 0:
+            self.growth_stage = 1
+            self.growth_last_change_ms = now_ms
+            return
+        last = int(self.growth_last_change_ms)
+        while self.growth_stage < cap and now_ms - last >= dur:
+            self.growth_stage += 1
+            last += dur
+        self.growth_last_change_ms = last
 
     def set_growth_stage(self, stage: int, *, now_ms: int | None = None) -> None:
         n = int(stage)

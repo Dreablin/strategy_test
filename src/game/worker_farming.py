@@ -13,6 +13,7 @@ from game.buildings.field import (
     is_ready_for_sowing,
     on_field_harvest,
 )
+from game.buildings.vineyard import Vineyard
 from game.pathfinding import find_path_bfs
 from game.worker_constants import (
     CHOP_DURATION_MS,
@@ -233,6 +234,8 @@ class WorkerFarmingMixin:
         for building in self._registry.all():
             if isinstance(building, Field) and not building.is_under_construction:
                 building.update_wheat_growth(now_ms)
+            elif isinstance(building, Vineyard):
+                building.tick_growth(now_ms=int(now_ms))
 
     def _field_at(self, tile: tuple[int, int]) -> Building | None:
         if self._registry is None:

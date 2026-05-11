@@ -10,6 +10,7 @@ from game.config import near_town_hall_tile, town_hall_origin_tile
 from game.buildings.canteen import Canteen
 from game.buildings.field import Field, WHEAT_EMPTY, WHEAT_PHASE_3
 from game.buildings.lumber_camp import LumberCamp
+from game.buildings.vineyard import Vineyard
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
 from game.camera import Camera
@@ -249,3 +250,47 @@ def test_draw_buildings_uses_empty_field_sprite_level(monkeypatch) -> None:
     Renderer.draw_buildings(surface, world, registry, worker_manager)
 
     assert ("FIELD", 0) in normal_calls
+
+
+def test_draw_buildings_uses_growth_stage_for_vineyard_sprite_level(monkeypatch) -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    plot = registry.place(Vineyard, near_town_hall_tile(9, 9))
+    plot.construction_site = None
+    plot.growth_stage = 3
+    surface = pygame.Surface((1280, 720))
+    normal_calls: list[tuple[str, int]] = []
+
+    def _normal_sprite(b_type: str, level: int) -> pygame.Surface:
+        normal_calls.append((b_type, level))
+        return pygame.Surface((16, 16), pygame.SRCALPHA)
+
+    monkeypatch.setattr(render_mod, "building_sprite", _normal_sprite)
+    monkeypatch.setattr(render_mod, "building_sprite_anchor", lambda _t, _l: (8, 16))
+
+    Renderer.draw_buildings(surface, world, registry)
+
+    assert ("VINEYARD", 3) in normal_calls
+
+
+def test_draw_buildings_vineyard_stage_zero_maps_to_sprite_level_one(monkeypatch) -> None:
+    world = World()
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    plot = registry.place(Vineyard, near_town_hall_tile(9, 9))
+    plot.construction_site = None
+    plot.growth_stage = 0
+    surface = pygame.Surface((1280, 720))
+    normal_calls: list[tuple[str, int]] = []
+
+    def _normal_sprite(b_type: str, level: int) -> pygame.Surface:
+        normal_calls.append((b_type, level))
+        return pygame.Surface((16, 16), pygame.SRCALPHA)
+
+    monkeypatch.setattr(render_mod, "building_sprite", _normal_sprite)
+    monkeypatch.setattr(render_mod, "building_sprite_anchor", lambda _t, _l: (8, 16))
+
+    Renderer.draw_buildings(surface, world, registry)
+
+    assert ("VINEYARD", 1) in normal_calls

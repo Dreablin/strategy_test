@@ -1,4 +1,4 @@
-"""Vineyard plot domain shell (T320): footprint, growth fields, accessors; no auto growth."""
+"""Vineyard plot domain (T320+): footprint, growth fields, accessors; growth via ``tick_growth`` (T325)."""
 
 from __future__ import annotations
 

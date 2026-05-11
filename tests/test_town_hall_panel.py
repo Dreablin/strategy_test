@@ -130,6 +130,39 @@ def test_town_hall_panel_draw_includes_grapes_cell_with_quantity() -> None:
     assert before.get_buffer().raw != after.get_buffer().raw
 
 
+def test_wine_is_warehouse_resource_with_display_label() -> None:
+    assert is_town_hall_warehouse_resource("wine")
+    assert resource_display_label("wine") == "Wine"
+
+
+def test_town_hall_storage_rows_include_wine() -> None:
+    keys = [key for key, _label in town_hall_panel._STORAGE_ROWS]  # noqa: SLF001
+    assert "wine" in keys
+    wine_idx = keys.index("wine")
+    assert town_hall_panel._STORAGE_ROWS[wine_idx][1] == "Wine"  # noqa: SLF001
+
+
+def test_town_hall_warehouse_wine_default_zero_and_round_trip() -> None:
+    town_hall = TownHall(level=1, grid_pos=(10, 10))
+    assert town_hall.warehouse_amount("wine") == 0
+    town_hall.add_to_warehouse("wine", 5)
+    assert town_hall.warehouse_amount("wine") == 5
+    town_hall.take_from_warehouse("wine", 2)
+    assert town_hall.warehouse_amount("wine") == 3
+
+
+def test_town_hall_panel_draw_includes_wine_cell_with_quantity() -> None:
+    surface = pygame.Surface((1280, 720))
+    town_hall = TownHall(level=1, grid_pos=(10, 10))
+    town_hall.add_to_warehouse("wine", 7)
+    layout = TownHallPanel.layout(surface, town_hall, worker_assigned=False)
+    before = surface.subsurface(layout.storage_frame).copy()
+    TownHallPanel.draw(surface, town_hall, worker_assigned=False)
+    after = surface.subsurface(layout.storage_frame).copy()
+    assert before.get_bytesize() == after.get_bytesize()
+    assert before.get_buffer().raw != after.get_buffer().raw
+
+
 def test_town_hall_upgrade_button_is_enabled_without_cost_checks() -> None:
     surface = pygame.Surface((800, 600))
     town_hall = TownHall(level=1, grid_pos=(10, 10))

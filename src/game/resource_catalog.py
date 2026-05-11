@@ -15,6 +15,7 @@ TOWN_HALL_WAREHOUSE_KEYS: frozenset[str] = frozenset(
         "beef",
         "hide",
         "grapes",
+        "wine",
     )
 )
 

@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 25 - Vineyard Farm and Vineyards (**active**)
-- **Next Task:** T324 - Vineyard display labels
-- **Last Completed:** T323 - Vineyard plot build menu
-- **Total Progress:** 323 / 338 (Phase 25: 12 / 27 done)
+- **Next Task:** T325 - Vineyard growth runtime
+- **Last Completed:** T324 - Vineyard display labels
+- **Total Progress:** 324 / 338 (Phase 25: 13 / 27 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -57,11 +57,11 @@
 - [x] **T321**: Register `VINEYARD` for placement/construction only. Wire the class into placement maps and input construction selection so plots can be placed and built, without adding menu visibility yet. Add focused placement/construction tests, including the 1-board construction requirement. Run full `pytest` and `ruff check src tests`.
 - [x] **T322**: Add Vineyard plot asset loading/fallback only. Add folder mapping and placeholder/meta files only if real assets are absent; add focused tests proving each growth stage sprite resolves or falls back safely. Run full `pytest` and `ruff check src tests`.
 - [x] **T323**: Add Vineyard plot to the appropriate build menu only. Add the menu tile/click routing for `VINEYARD`; add focused bottom-bar/input tests. Run full `pytest` and `ruff check src tests`.
-- [~] **T324**: Add Vineyard display labels/descriptions only. Update building display names/descriptions and any placement labels that do not require custom runtime yet. Add focused label tests if existing patterns support them. Run full `pytest` and `ruff check src tests`.
+- [x] **T324**: Add Vineyard display labels/descriptions only. Update building display names/descriptions and any placement labels that do not require custom runtime yet. Add focused label tests if existing patterns support them. Run full `pytest` and `ruff check src tests`.
 
 ### 25.3 Growth and Harvest Runtime
 
-- [ ] **T325**: Add Vineyard growth runtime only. Built Vineyards should advance through configured growth stages using `vineyard.json` timing and become ripe after the final stage; under-construction Vineyards should not grow. Add focused growth tests. Run full `pytest` and `ruff check src tests`.
+- [~] **T325**: Add Vineyard growth runtime only. Built Vineyards should advance through configured growth stages using `vineyard.json` timing and become ripe after the final stage; under-construction Vineyards should not grow. Add focused growth tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T326**: Add Vineyard harvest reset only. When a ripe Vineyard is marked harvested, it should restart growth from the first stage automatically. Add focused domain/runtime tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T327**: Add Vineyard Farm radius/target selection only. Implement selection of ripe `VINEYARD` plots within the configured Vineyard Farm radius, accounting for reserved/claimed plots so two farmers do not target the same plot. Add focused selection/reservation tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T328**: Add FARMER compatibility with `VINEYARD_FARM` only. Extend worker-building compatibility so existing `FARMER` can be assigned to both normal `FARM` and `VINEYARD_FARM`, without changing wheat farm behavior. Add focused assignment tests. Run full `pytest` and `ruff check src tests`.

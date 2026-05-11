@@ -24,6 +24,7 @@ _DISPLAY_NAME: dict[str, str] = {
     "CHICKEN_FARM": "Chicken Farm",
     "COW_FARM": "Cow Farm",
     "VINEYARD_FARM": "Vineyard Farm",
+    "VINEYARD": "Vineyard",
     "CANTEEN": "Canteen",
     "WELL": "Well",
 }
@@ -40,6 +41,7 @@ _DESCRIPTION: dict[str, str] = {
     "CHICKEN_FARM": "Raises chickens from grain and water.",
     "COW_FARM": "Herder raises cattle using wheat and water; produces beef and hide.",
     "VINEYARD_FARM": "Farmer harvests ripe vineyard plots nearby; carriers move grapes to the Town Hall.",
+    "VINEYARD": "Grapes ripen here in stages; a farmer at a Vineyard Farm can harvest nearby ripe plots.",
     "CANTEEN": "Cook prepares simple meals from chicken, bread, and water.",
     "WELL": "Produces water into local storage.",
 }

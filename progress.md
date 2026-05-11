@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 26 - Wine, Winery, and Worker Tiers (**active**)
-- **Next Task:** T355 - Add Winery production/worker status helpers
-- **Last Completed:** T354 - Add Winery production runtime
-- **Total Progress:** 354 / 360 (Phase 26: 16 / 22 done)
+- **Next Task:** T356 - Add Winery panel shell
+- **Last Completed:** T355 - Add Winery production/worker status helpers
+- **Total Progress:** 355 / 360 (Phase 26: 17 / 22 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -73,7 +73,7 @@
 - [x] **T352**: Add Winery wine output export planning only. Carriers should export wine from Winery local output storage to Town Hall, accounting for queued/in-flight exports and Town Hall capacity. Add focused transport tests, including stale/demolished task behavior if not covered generically. Run full `pytest` and `ruff check src tests`.
 - [x] **T353**: Add Winemaker-to-Winery compatibility and assignment only. Extend worker-building compatibility so `WINEMAKER` can be assigned to built `WINERY` buildings and no other worker is newly assigned to Winery. Add focused assignment tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T354**: Add Winery production runtime only. With an assigned Winemaker inside, active Winery, enough grapes, and output space, run the configured cycle, consume grapes, produce wine, then put the worker into configured rest. Add focused runtime tests for success and blocked cases. Run full `pytest` and `ruff check src tests`.
-- [ ] **T355**: Add Winery production/worker status helpers only. Report no worker, inactive, no grapes, output full, processing, and resting states consistently with other processing buildings. Add focused status tests. Run full `pytest` and `ruff check src tests`.
+- [x] **T355**: Add Winery production/worker status helpers only. Report no worker, inactive, no grapes, output full, processing, and resting states consistently with other processing buildings. Add focused status tests. Run full `pytest` and `ruff check src tests`.
 
 ### 26.4 Winery UI and Integration
 

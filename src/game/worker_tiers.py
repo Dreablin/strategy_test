@@ -16,6 +16,7 @@ _WORKER_TIERS: dict[str, str] = {
     "WATERMAN": "basic",
     "CARRIER": "basic",
     "BUILDER": "basic",
+    "WINEMAKER": "advanced",
 }
 
 ALL_TIERS: tuple[str, ...] = ("basic", "advanced")

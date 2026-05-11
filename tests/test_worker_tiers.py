@@ -31,8 +31,8 @@ def test_workers_of_tier_basic_returns_known_workers() -> None:
     assert "BUILDER" in basic
 
 
-def test_workers_of_tier_advanced_initially_empty() -> None:
-    assert workers_of_tier("advanced") == []
+def test_workers_of_tier_advanced_contains_winemaker() -> None:
+    assert "WINEMAKER" in workers_of_tier("advanced")
 
 
 def test_register_worker_tier_adds_new_worker() -> None:

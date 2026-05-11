@@ -67,7 +67,8 @@
       "MILLER": 1,
       "BAKER": 1,
       "COOK": 1,
-      "WATERMAN": 1
+      "WATERMAN": 1,
+      "WINEMAKER": 1
     }
   },
   "levels": {

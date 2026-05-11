@@ -128,11 +128,12 @@ def test_school_panel_basic_tier_shows_all_basic_workers() -> None:
     assert len(worker_types) == 13
 
 
-def test_school_panel_advanced_tier_shows_no_workers_initially() -> None:
+def test_school_panel_advanced_tier_shows_winemaker() -> None:
     surface = pygame.Surface((900, 700))
     school = School(level=1, grid_pos=(10, 10))
     layout = SchoolPanel.layout(surface, school, worker_assigned=False, tier="advanced")
-    assert len(layout.hire_buttons) == 0
+    worker_types = [wt for wt, _ in layout.hire_buttons]
+    assert "WINEMAKER" in worker_types
 
 
 def test_school_panel_default_tier_is_basic() -> None:
@@ -169,7 +170,8 @@ def test_school_panel_active_tier_advanced_layout() -> None:
     school = School(level=1, grid_pos=(10, 10))
     layout = SchoolPanel.layout(surface, school, worker_assigned=False, tier="advanced")
     assert layout.active_tier == "advanced"
-    assert len(layout.hire_buttons) == 0
+    worker_types = [wt for wt, _ in layout.hire_buttons]
+    assert "WINEMAKER" in worker_types
 
 
 def test_game_input_school_tier_switches_on_tab_click() -> None:

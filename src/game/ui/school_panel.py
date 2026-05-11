@@ -35,6 +35,7 @@ _HIRE_ROWS: tuple[str, ...] = (
     "FARMER",
     "ANIMAL_HERDER",
     "FORESTER",
+    "WINEMAKER",
 )
 _WORKER_LABEL: dict[str, str] = {
     "CARRIER": "Carrier",
@@ -50,6 +51,7 @@ _WORKER_LABEL: dict[str, str] = {
     "FARMER": "Farmer",
     "ANIMAL_HERDER": "Herder",
     "FORESTER": "Forester",
+    "WINEMAKER": "Winemaker",
 }
 
 

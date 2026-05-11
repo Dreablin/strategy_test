@@ -312,13 +312,33 @@ def test_input_processing_menu_cow_farm_click_selects_placement() -> None:
     inp = GameInput(world, registry, placement, WorkerManager(), camera)
     BottomBar._menu = "processing"  # noqa: SLF001
     pygame.event.clear()
-    BottomBar.handle_click(surface, (1100, 700))
+    BottomBar.handle_click(surface, (940, 700))
     ev = pygame.event.poll()
     assert ev.type == BUILD_MENU_SELECT
     assert ev.building_type == "COW_FARM"
     inp.handle(surface, ev)
     assert placement.pending_type is not None
     assert placement.pending_type.type_tag == "COW_FARM"
+    BottomBar._menu = "main"  # noqa: SLF001
+
+
+def test_input_processing_menu_vineyard_farm_click_selects_placement() -> None:
+    """T317: processing submenu posts VINEYARD_FARM; GameInput arms placement."""
+    surface = pygame.Surface((1200, 720))
+    world = World()
+    registry = BuildingRegistry(world)
+    camera = Camera()
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(), camera)
+    BottomBar._menu = "processing"  # noqa: SLF001
+    pygame.event.clear()
+    BottomBar.handle_click(surface, (1110, 700))
+    ev = pygame.event.poll()
+    assert ev.type == BUILD_MENU_SELECT
+    assert ev.building_type == "VINEYARD_FARM"
+    inp.handle(surface, ev)
+    assert placement.pending_type is not None
+    assert placement.pending_type.type_tag == "VINEYARD_FARM"
     BottomBar._menu = "main"  # noqa: SLF001
 
 

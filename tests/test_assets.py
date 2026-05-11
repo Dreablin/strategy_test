@@ -59,6 +59,7 @@ def test_building_sprite_smoke() -> None:
         "chicken_farm",
         "cow_farm",
         "vineyard_farm",
+        "vineyard",
         "canteen",
     ):
         for level in (1, 5, 10):

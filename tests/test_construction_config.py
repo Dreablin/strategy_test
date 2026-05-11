@@ -18,6 +18,7 @@ def test_construction_requirements_cover_all_building_types() -> None:
         "BAKERY",
         "CHICKEN_FARM",
         "COW_FARM",
+        "VINEYARD_FARM",
         "WELL",
     }
     assert set(config.CONSTRUCTION_REQUIREMENTS) == expected

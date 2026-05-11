@@ -30,6 +30,8 @@ def worker_compatible_building_types(worker_type: str) -> frozenset[str]:
     """Building ``type_tag`` values this worker may staff (auto-assignment)."""
     if worker_type == "ANIMAL_HERDER":
         return frozenset({"CHICKEN_FARM", "COW_FARM"})
+    if worker_type == "FARMER":
+        return frozenset({"FARM", "VINEYARD_FARM"})
     tag = WORKER_TO_BUILDING.get(worker_type)
     return frozenset({tag}) if tag is not None else frozenset()
 

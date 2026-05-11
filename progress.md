@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 26 - Wine, Winery, and Worker Tiers (**active**)
-- **Next Task:** T359 - Update extension documentation
-- **Last Completed:** T358 - Add wine chain integration test
-- **Total Progress:** 358 / 360 (Phase 26: 20 / 22 done)
+- **Next Task:** T360 - Close Phase 26
+- **Last Completed:** T359 - Update extension documentation
+- **Total Progress:** 359 / 360 (Phase 26: 21 / 22 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -83,7 +83,7 @@
 
 ### 26.5 Documentation and Closure
 
-- [ ] **T359**: Update extension documentation only. Document worker tiers, School tab rules, Winery processing/transport expectations, and where Winery constants live. Avoid duplicating balance numbers in PRD-style docs except to point to JSON as source of truth. Run full `pytest` and `ruff check src tests`.
+- [x] **T359**: Update extension documentation only. Document worker tiers, School tab rules, Winery processing/transport expectations, and where Winery constants live. Avoid duplicating balance numbers in PRD-style docs except to point to JSON as source of truth. Run full `pytest` and `ruff check src tests`.
 - [ ] **T360**: Close Phase 26. Run final full `pytest` plus `ruff check src tests`; update Current Status, Last Completed, Total Progress, Decisions Log, and Notes; mark Phase 26 complete only when all tasks are `[x]`.
 
 ---

@@ -1,4 +1,4 @@
-"""Winery panel with title, worker status, close, upgrade, demolish, and active toggle."""
+"""Winery panel with storage rows, progress bar, and active toggle."""
 
 from __future__ import annotations
 
@@ -11,7 +11,9 @@ from game.ui.building_panel import BuildingPanel
 
 _PANEL_PAD = 16
 _BTN_H = 32
-_EXTRA_BOTTOM = 48
+_ROW_H = 22
+_BAR_H = 12
+_EXTRA_BOTTOM = _ROW_H * 3 + _BAR_H + 24 + _BTN_H + 8
 
 
 @dataclass(frozen=True, slots=True)
@@ -32,6 +34,12 @@ class WineryPanel:
     @staticmethod
     def toggle_label(winery: Winery) -> str:
         return "Active" if winery.active else "Inactive"
+
+    @staticmethod
+    def storage_lines(winery: Winery) -> tuple[str, str]:
+        grapes_line = f"Grapes: {winery.input_amount()} / {winery.input_capacity()}"
+        wine_line = f"Wine: {winery.output_amount()} / {winery.output_capacity()}"
+        return grapes_line, wine_line
 
     @staticmethod
     def layout(
@@ -88,6 +96,26 @@ class WineryPanel:
             production_status=production_status,
         )
         font = pygame.font.Font(None, 22)
+
+        grapes_line, wine_line = WineryPanel.storage_lines(winery)
+        y = layout.toggle.top - 8 - _BAR_H - 8 - _ROW_H * 3
+        surface.blit(font.render(grapes_line, True, (200, 204, 214)), (layout.frame.left + _PANEL_PAD, y))
+        y += _ROW_H
+        surface.blit(font.render(wine_line, True, (200, 204, 214)), (layout.frame.left + _PANEL_PAD, y))
+        y += _ROW_H
+
+        status_text = production_status or "Idle"
+        surface.blit(font.render(f"Production: {status_text}", True, (200, 204, 214)), (layout.frame.left + _PANEL_PAD, y))
+        y += _ROW_H + 4
+
+        bar_rect = pygame.Rect(layout.frame.left + _PANEL_PAD, y, layout.frame.width - _PANEL_PAD * 2, _BAR_H)
+        pygame.draw.rect(surface, (52, 58, 66), bar_rect, border_radius=4)
+        progress = max(0.0, min(1.0, float(winery.processing_progress(now_ms))))
+        if progress > 0.0:
+            fill = pygame.Rect(bar_rect.left, bar_rect.top, max(1, int(round(bar_rect.width * progress))), bar_rect.height)
+            pygame.draw.rect(surface, (130, 72, 100), fill, border_radius=4)
+        pygame.draw.rect(surface, (116, 124, 136), bar_rect, width=1, border_radius=4)
+
         active_bg = (84, 112, 84) if winery.active else (92, 64, 64)
         pygame.draw.rect(surface, active_bg, layout.toggle, border_radius=6)
         label = font.render(WineryPanel.toggle_label(winery), True, (240, 242, 250))

@@ -493,6 +493,7 @@ class GameInput:
                 self._panel,
                 worker_assigned=worker_status != "empty",
                 now_ms=pygame.time.get_ticks(),
+                worker_manager=self._worker_manager,
             )
             return
         if WineryPanel.supports_building(self._panel):

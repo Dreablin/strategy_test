@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 27 - Restaurant and Advanced Dining (**active**)
-- **Next Task:** T383 - Add Restaurant panel diner tiles
-- **Last Completed:** T382 - Add Restaurant panel storage and progress rows
-- **Total Progress:** 382 / 386 (Phase 27: 22 / 26 done)
+- **Next Task:** T384 - Add focused Restaurant production integration test
+- **Last Completed:** T383 - Add Restaurant panel diner tiles
+- **Total Progress:** 383 / 386 (Phase 27: 23 / 26 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -84,7 +84,7 @@
 
 - [x] **T381**: Add Restaurant panel shell only. Route a custom panel for `RESTAURANT` with title, worker status, close, upgrade, demolish, and active toggle actions. Do not add custom storage/progress/diner rows yet. Add focused panel routing/click tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T382**: Add Restaurant panel storage and production progress rows only. Show bread, wine, beef, `elite_meal`, production status, blocked reason, and production progress without overlapping buttons. Add focused draw/layout tests. Run full `pytest` and `ruff check src tests`.
-- [ ] **T383**: Add Restaurant panel diner tiles only. Show reserved/arriving/eating advanced diners using the same visual semantics as Canteen: dimmed/partially transparent icon while walking, normal icon while waiting at the restaurant or eating, and progress bar while eating. Add focused panel tests for all three visual states. Run full `pytest` and `ruff check src tests`.
+- [x] **T383**: Add Restaurant panel diner tiles only. Show reserved/arriving/eating advanced diners using the same visual semantics as Canteen: dimmed/partially transparent icon while walking, normal icon while waiting at the restaurant or eating, and progress bar while eating. Add focused panel tests for all three visual states. Run full `pytest` and `ruff check src tests`.
 - [ ] **T384**: Add one focused Restaurant production integration test. Cover inputs reaching a built Restaurant, Cook production of `elite_meal`, and no Town Hall export of the local-only output. Keep the test bounded and deterministic. Run full `pytest` and `ruff check src tests`.
 - [ ] **T385**: Add one focused advanced dining integration test. Cover an advanced worker becoming hungry, reserving a Restaurant meal, walking there, eating, restoring satiety, releasing the slot, and returning to work without teleporting. Keep the test bounded and deterministic. Run full `pytest` and `ruff check src tests`.
 

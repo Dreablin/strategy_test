@@ -100,7 +100,11 @@ class WorkerProcessingMixin:
         self._update_processor_worker(worker, now_ms, BAKERY_PROCESSOR, world)
 
     def _update_cook(self, worker: Worker, now_ms: int, world: Any) -> None:
-        self._update_processor_worker(worker, now_ms, CANTEEN_PROCESSOR, world)
+        building = worker.assigned_building
+        if building is not None and building.type_tag == "RESTAURANT":
+            self._update_processor_worker(worker, now_ms, RESTAURANT_PROCESSOR, world)
+        else:
+            self._update_processor_worker(worker, now_ms, CANTEEN_PROCESSOR, world)
 
     def _update_animal_herder(self, worker: Worker, now_ms: int, world: Any) -> None:
         building = worker.assigned_building
@@ -116,6 +120,9 @@ class WorkerProcessingMixin:
 
     def _update_winemaker(self, worker: Worker, now_ms: int, world: Any) -> None:
         self._update_processor_worker(worker, now_ms, WINERY_PROCESSOR, world)
+
+    def _update_restaurant_cook(self, worker: Worker, now_ms: int, world: Any) -> None:
+        self._update_processor_worker(worker, now_ms, RESTAURANT_PROCESSOR, world)
 
     def _update_processor_worker(
         self, worker: Worker, now_ms: int, spec: ProcessorSpec, world: Any
@@ -278,5 +285,25 @@ WINERY_PROCESSOR = ProcessorSpec(
     has_inputs=_multi_input_has_recipe,
     consume_inputs=lambda winery: winery.take_grapes(winery.recipe_input_count()),
     add_output=lambda winery: winery.add_wine(winery.recipe_output_count()),
+    rest_ms_for=lambda b: max(0, b.rest_ms()),
+)
+
+
+def _consume_restaurant_inputs(building: Any) -> None:
+    for resource, count in building.recipe_input_count().items():
+        building.take_local_storage(resource, count)
+
+
+def _add_restaurant_output(building: Any) -> None:
+    building.add_local_storage("elite_meal", building.recipe_output_count())
+
+
+RESTAURANT_PROCESSOR = ProcessorSpec(
+    building_type="RESTAURANT",
+    duration_ms=lambda b: max(1, b.cycle_ms()),
+    rest_ms=0,
+    has_inputs=_multi_input_has_recipe,
+    consume_inputs=_consume_restaurant_inputs,
+    add_output=_add_restaurant_output,
     rest_ms_for=lambda b: max(0, b.rest_ms()),
 )

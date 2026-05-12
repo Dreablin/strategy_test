@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 27 - Restaurant and Advanced Dining (**active**)
-- **Next Task:** T378 - Add Restaurant to dining selection for advanced workers
-- **Last Completed:** T377 - Prevent local-only elite_meal export
-- **Total Progress:** 377 / 386 (Phase 27: 17 / 26 done)
+- **Next Task:** T379 - Add Restaurant dining runtime integration
+- **Last Completed:** T378 - Add Restaurant to dining selection for advanced workers
+- **Total Progress:** 378 / 386 (Phase 27: 18 / 26 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -76,7 +76,7 @@
 
 ### 27.4 Restaurant Dining Selection
 
-- [ ] **T378**: Add Restaurant to dining selection for advanced workers only. Hungry advanced workers should reserve the nearest reachable Restaurant only when both an available slot and an unreserved `elite_meal` exist; basic workers should continue using Canteen only. Add focused selection tests with both building types present, including one test proving no worker leaves work when Restaurant slots are free but no `elite_meal` is available. Run full `pytest` and `ruff check src tests`.
+- [x] **T378**: Add Restaurant to dining selection for advanced workers only. Hungry advanced workers should reserve the nearest reachable Restaurant only when both an available slot and an unreserved `elite_meal` exist; basic workers should continue using Canteen only. Add focused selection tests with both building types present, including one test proving no worker leaves work when Restaurant slots are free but no `elite_meal` is available. Run full `pytest` and `ruff check src tests`.
 - [ ] **T379**: Add Restaurant dining runtime integration only. WorkerManager should assign reserved meals and update dining runtime for Restaurant occupants using the generic dining loop. Add focused tests proving an advanced worker appears reserved while walking, walks to Restaurant, eats `elite_meal`, releases the slot, and starts walking back to work instead of snapping home. Run full `pytest` and `ruff check src tests`.
 - [ ] **T380**: Add dining fallback behavior tests only with implementation if needed. Prove that a hungry advanced worker keeps working when no Restaurant meal/slot is reservable, and a hungry basic worker keeps working when only Restaurant meals exist. Also prove that reserved meals prevent over-assignment when multiple hungry workers compete for fewer available meals. If the existing code already satisfies this after earlier tasks, this task only adds passing focused tests. Run full `pytest` and `ruff check src tests`.
 

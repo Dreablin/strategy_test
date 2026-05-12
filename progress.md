@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 27 - Restaurant and Advanced Dining (**active**)
-- **Next Task:** T362 - Generalize diner slot reservation helpers
-- **Last Completed:** T361 - Add `elite_meal` as a local-only resource label
-- **Total Progress:** 361 / 386 (Phase 27: 1 / 26 done)
+- **Next Task:** T363 - Generalize dining runtime
+- **Last Completed:** T362 - Generalize diner slot reservation helpers
+- **Total Progress:** 362 / 386 (Phase 27: 2 / 26 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -51,7 +51,7 @@
 ### 27.1 Dining Foundation Refactor
 
 - [x] **T361**: Add `elite_meal` as a local-only resource label only. Update the resource catalog/display label and asset/resource icon fallback color so UI code can render it, but do not add Town Hall storage or any production/transport behavior. Add focused tests proving `elite_meal` has a display label and is not a Town Hall warehouse resource. Run full `pytest` and `ruff check src tests`.
-- [ ] **T362**: Generalize diner slot reservation helpers without changing behavior. Rename or extend the current Canteen-only reservation helpers so they can operate on any dining building with `_diner_occupants`, `_reserved_meal_workers`, `diner_slot_capacity()`, `meal_resource_key()`, and local storage helpers. Keep Canteen behavior identical. Add focused tests around Canteen reservations. Run full `pytest` and `ruff check src tests`.
+- [x] **T362**: Generalize diner slot reservation helpers without changing behavior. Rename or extend the current Canteen-only reservation helpers so they can operate on any dining building with `_diner_occupants`, `_reserved_meal_workers`, `diner_slot_capacity()`, `meal_resource_key()`, and local storage helpers. Keep Canteen behavior identical. Add focused tests around Canteen reservations. Run full `pytest` and `ruff check src tests`.
 - [ ] **T363**: Generalize dining runtime without adding Restaurant. Update `worker_dining.py` so walking, FIFO reserved-meal consumption, eating progress, slot release, and return-to-work use generic dining-building helpers while preserving Canteen behavior and public worker states. Add focused tests proving existing Canteen dining only starts after a slot+meal reservation, still walks to the dining building, eats, releases slots, and starts a real return path instead of snapping home at meal completion. Run full `pytest` and `ruff check src tests`.
 - [ ] **T364**: Add dining tier metadata for existing Canteen only. Give dining buildings a configured eligible worker tier and make Canteen explicitly serve `basic` workers, with no Restaurant yet. Add focused selection tests proving basic workers can reserve Canteen meals and advanced workers do not use Canteen meals. Run full `pytest` and `ruff check src tests`.
 

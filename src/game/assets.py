@@ -39,6 +39,7 @@ _BUILDING_FOLDER: dict[str, str] = {
     "VINEYARD": "vineyard",
     "WELL": "well",
     "WINERY": "winery",
+    "RESTAURANT": "restaurant",
 }
 
 _WORKER_FOLDER: dict[str, str] = {
@@ -307,6 +308,7 @@ def _building_palette(b_type: str) -> tuple[tuple[int, int, int], tuple[int, int
         "vineyard": ((96, 130, 72), (52, 78, 44)),
         "well": ((104, 128, 152), (48, 70, 92)),
         "winery": ((140, 60, 90), (82, 34, 56)),
+        "restaurant": ((180, 100, 60), (120, 56, 32)),
         "school": ((120, 124, 168), (62, 66, 108)),
         "house": ((172, 142, 126), (110, 86, 76)),
         "canteen": ((168, 132, 102), (92, 68, 48)),

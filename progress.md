@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 27 - Restaurant and Advanced Dining (**active**)
-- **Next Task:** T385 - Add focused advanced dining integration test
-- **Last Completed:** T384 - Add focused Restaurant production integration test
-- **Total Progress:** 384 / 386 (Phase 27: 24 / 26 done)
+- **Next Task:** T386 - Update extension documentation and close Phase 27
+- **Last Completed:** T385 - Add focused advanced dining integration test
+- **Total Progress:** 385 / 386 (Phase 27: 25 / 26 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -86,7 +86,7 @@
 - [x] **T382**: Add Restaurant panel storage and production progress rows only. Show bread, wine, beef, `elite_meal`, production status, blocked reason, and production progress without overlapping buttons. Add focused draw/layout tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T383**: Add Restaurant panel diner tiles only. Show reserved/arriving/eating advanced diners using the same visual semantics as Canteen: dimmed/partially transparent icon while walking, normal icon while waiting at the restaurant or eating, and progress bar while eating. Add focused panel tests for all three visual states. Run full `pytest` and `ruff check src tests`.
 - [x] **T384**: Add one focused Restaurant production integration test. Cover inputs reaching a built Restaurant, Cook production of `elite_meal`, and no Town Hall export of the local-only output. Keep the test bounded and deterministic. Run full `pytest` and `ruff check src tests`.
-- [ ] **T385**: Add one focused advanced dining integration test. Cover an advanced worker becoming hungry, reserving a Restaurant meal, walking there, eating, restoring satiety, releasing the slot, and returning to work without teleporting. Keep the test bounded and deterministic. Run full `pytest` and `ruff check src tests`.
+- [x] **T385**: Add one focused advanced dining integration test. Cover an advanced worker becoming hungry, reserving a Restaurant meal, walking there, eating, restoring satiety, releasing the slot, and returning to work without teleporting. Keep the test bounded and deterministic. Run full `pytest` and `ruff check src tests`.
 
 ### 27.6 Documentation and Closure
 

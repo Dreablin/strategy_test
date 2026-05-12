@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 27 - Restaurant and Advanced Dining (**active**)
-- **Next Task:** T370 - Add Restaurant display labels/descriptions
-- **Last Completed:** T369 - Add Restaurant to Social build menu
-- **Total Progress:** 369 / 386 (Phase 27: 9 / 26 done)
+- **Next Task:** T371 - Add Cook-to-Restaurant compatibility
+- **Last Completed:** T370 - Add Restaurant display labels/descriptions
+- **Total Progress:** 370 / 386 (Phase 27: 10 / 26 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -62,7 +62,7 @@
 - [x] **T367**: Register `RESTAURANT` for placement/construction only. Wire the class into placement maps and construction config usage so it can be placed and built, without menu visibility, production, dining selection, or transport. Add focused placement/construction tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T368**: Add Restaurant asset loading/fallback only. Add building folder mapping and placeholder/meta files only if real assets are absent; add focused asset tests proving construction and completed sprites resolve. Run full `pytest` and `ruff check src tests`.
 - [x] **T369**: Add Restaurant to the Social build menu only. Add the Social menu tile/click routing for `RESTAURANT` and focused bottom-bar/input tests that avoid brittle hard-coded per-button coordinate coverage where possible. Run full `pytest` and `ruff check src tests`.
-- [ ] **T370**: Add Restaurant display labels/descriptions only. Update building display names/descriptions, population/worker building labels if needed, and construction panel display name. Add focused label tests. Run full `pytest` and `ruff check src tests`.
+- [x] **T370**: Add Restaurant display labels/descriptions only. Update building display names/descriptions, population/worker building labels if needed, and construction panel display name. Add focused label tests. Run full `pytest` and `ruff check src tests`.
 
 ### 27.3 Restaurant Production and Transport
 

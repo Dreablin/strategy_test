@@ -2,10 +2,10 @@
 
 ## Current Status
 
-- **Phase:** 27 - Restaurant and Advanced Dining (**active**)
-- **Next Task:** T386 - Update extension documentation and close Phase 27
-- **Last Completed:** T385 - Add focused advanced dining integration test
-- **Total Progress:** 385 / 386 (Phase 27: 25 / 26 done)
+- **Phase:** 27 - Restaurant and Advanced Dining (**complete**)
+- **Next Task:** None (all Phase 27 tasks done)
+- **Last Completed:** T386 - Update extension documentation and close Phase 27
+- **Total Progress:** 386 / 386 (Phase 27: 26 / 26 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -90,7 +90,7 @@
 
 ### 27.6 Documentation and Closure
 
-- [ ] **T386**: Update extension documentation and close Phase 27. Document generic dining-building rules, Basic/Canteen vs Advanced/Restaurant selection, local-only meal resources, Restaurant config location, and Cook compatibility expectations. Run final full `pytest` plus `ruff check src tests`; update Current Status, Last Completed, Total Progress, Decisions Log, and Notes; mark Phase 27 complete only when all tasks are `[x]`.
+- [x] **T386**: Update extension documentation and close Phase 27. Document generic dining-building rules, Basic/Canteen vs Advanced/Restaurant selection, local-only meal resources, Restaurant config location, and Cook compatibility expectations. Run final full `pytest` plus `ruff check src tests`; update Current Status, Last Completed, Total Progress, Decisions Log, and Notes; mark Phase 27 complete only when all tasks are `[x]`.
 
 ---
 
@@ -122,7 +122,7 @@
 
 ## Notes
 
-- **2026-05-11:** Phase 27 planned for Restaurant, advanced dining, `elite_meal`, and generic dining-building reuse.
+- **2026-05-11:** Phase 27 complete. Restaurant building, advanced dining, `elite_meal` local-only resource, generic dining-building reuse, Cook compatibility with both Canteen and Restaurant, extension docs updated.
 - Keep old completed phase details in `progress_archive.md`; `progress.md` should stay focused on the current active phase to keep agent context small.
 - Tests run headless via `SDL_VIDEODRIVER=dummy` in `tests/conftest.py`.
 - Pathfinding contract: **4-dir** `find_path_bfs` (no diagonals), aligned with PRD.

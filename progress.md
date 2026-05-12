@@ -2,10 +2,10 @@
 
 ## Current Status
 
-- **Phase:** 26 - Wine, Winery, and Worker Tiers (**complete**)
-- **Next Task:** (none — all phases complete)
-- **Last Completed:** T360 - Close Phase 26
-- **Total Progress:** 360 / 360 (Phase 26: 22 / 22 done)
+- **Phase:** 27 - Restaurant and Advanced Dining (**active**)
+- **Next Task:** T362 - Generalize diner slot reservation helpers
+- **Last Completed:** T361 - Add `elite_meal` as a local-only resource label
+- **Total Progress:** 361 / 386 (Phase 27: 1 / 26 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -13,78 +13,84 @@
 
 ## Task Log
 
-## Phase 26 - Wine, Winery, and Worker Tiers
+## Phase 27 - Restaurant and Advanced Dining
 
-**Goal.** Add `wine` as a Town Hall warehouse resource, add a `WINERY` processing building that turns grapes into wine, add worker tiers (`basic` / `advanced`), add school hire tabs by tier, and add an advanced `WINEMAKER` worker assigned to the Winery.
+**Goal.** Add a `RESTAURANT` social building that mirrors the Canteen dining loop for advanced workers, uses the same `COOK` worker type, produces local-only `elite_meal`, and feeds only advanced-tier workers. Keep Canteen dining for basic-tier workers.
 
 **Design notes.**
 
-- Resource id: `wine`.
-- Town Hall warehouse stores `wine`.
-- Building type: `WINERY`.
-- Worker type: `WINEMAKER`.
-- Worker tier ids: `basic`, `advanced`.
-- Existing worker types are `basic`.
-- `WINEMAKER` is `advanced`.
-- School hire UI must have `Basic` and `Advanced` tabs.
-- A worker appears in the tab matching its configured tier.
-- `WINERY` belongs in the Processing build menu.
-- `WINERY` has 10 levels.
-- `WINERY` local storage:
-  - input: `grapes`
-  - output: `wine`
-  - level 1 capacity: 3 for each local resource
-  - each level adds +1 capacity for both local resources
-- Recipe: 3 grapes -> 1 wine.
-- Production cycle: 60 seconds, then 10 seconds worker rest.
-- Production runs only when:
-  - the Winery is built,
-  - the Winery is active,
-  - a Winemaker is assigned/inside,
-  - enough input grapes are in local storage,
-  - output wine storage has free capacity.
-- Carriers bring grapes into Winery local storage and export wine to Town Hall.
-- Balance/configuration values for Winery belong in `src/game/settings/buildings/winery.json`.
-- Worker tier data should be centralized with worker hiring metadata, not hard-coded in the School panel.
-- Each implementation task must add/update its own focused tests, then end with full `pytest` and `ruff check src tests`.
+- Building type: `RESTAURANT`.
+- Menu category: Social.
+- Worker type: `COOK`.
+- `COOK` can work in both `CANTEEN` and `RESTAURANT`.
+- Dining eligibility is based on worker tier, not workplace:
+  - `basic` workers reserve/eat `simple_meal` in `CANTEEN`.
+  - `advanced` workers reserve/eat `elite_meal` in `RESTAURANT`.
+- `COOK` remains `basic` unless a separate task changes worker tier metadata later; a basic cook assigned to a Restaurant still eats in a Canteen.
+- Local-only resource id: `elite_meal`.
+- `elite_meal` is not stored in the Town Hall warehouse and must not be exported there.
+- Restaurant local storage:
+  - inputs: `bread`, `wine`, `beef`
+  - output: `elite_meal`
+  - values and per-level capacity live in `src/game/settings/buildings/restaurant.json`.
+- Restaurant production:
+  - runs only when built, active, and assigned Cook is inside;
+  - consumes configured inputs and produces configured local output;
+  - cycle/rest values live in `restaurant.json`.
+- Restaurant dining:
+  - uses the same slot reservation, meal reservation, FIFO eating order, walking-to-building, progress bar, slot release, and return-to-work behavior as Canteen.
+  - workers only leave for dining when both a suitable meal and a diner slot can be reserved immediately.
+  - a reserved diner appears in the building panel immediately; while physically walking to the dining building, their tile icon is dimmed/partially transparent.
+  - because a meal is reserved before the worker starts walking, newly implemented Restaurant dining must not rely on workers sitting inside and waiting for food.
+  - if no suitable building/slot/meal is available, the worker continues normal work.
+  - after eating, workers must walk back toward their assigned workplace before resuming work; they must not visually snap home at meal completion.
+- Balance/configuration values for Restaurant belong in `src/game/settings/buildings/restaurant.json`, not in Python constants, except tiny ids/labels where the codebase already uses ids.
+- Each implementation task must add/update focused tests for its change, then end with full `pytest` and `ruff check src tests`.
 - Do not create a task that only adds failing tests. Tests and implementation must land together in the same checked task.
 
-### 26.1 Resource and Worker Tier Foundation
+### 27.1 Dining Foundation Refactor
 
-- [x] **T339**: Add `wine` as a complete Town Hall warehouse resource. Update resource catalog/display label, Town Hall warehouse initialization/settings, Town Hall storage UI, and focused tests proving `wine` exists in Town Hall storage and appears in the warehouse panel. Run full `pytest` and `ruff check src tests`.
-- [x] **T340**: Add worker tier metadata only. Introduce a centralized helper/data source that returns `basic` or `advanced` for a worker type, assign `basic` to every existing worker type, and add focused tests for known existing workers. Do not change the School UI yet. Run full `pytest` and `ruff check src tests`.
-- [x] **T341**: Add School panel tier filtering only. Make the School panel layout able to list hire buttons for a requested tier and prove the `basic` view contains existing basic workers. Do not add clickable tabs yet. Run full `pytest` and `ruff check src tests`.
-- [x] **T342**: Add clickable `Basic` / `Advanced` tabs to the School panel only. Add panel layout/click-action support and GameInput state/routing so tab selection persists while the panel is open. Add focused UI/input tests. Run full `pytest` and `ruff check src tests`.
-- [x] **T343**: Add `WINEMAKER` as an advanced hireable worker only. Register the worker in hiring metadata with tier `advanced`, make it trainable from the School advanced tab, and add focused tests for tier, training queue, and hire selection. Do not assign it to any building yet. Run full `pytest` and `ruff check src tests`.
-- [x] **T344**: Add Winemaker display assets/labels only. Add worker dot/UI/hire icon fallback coverage and player-facing worker labels for `WINEMAKER`, without runtime assignment changes. Run full `pytest` and `ruff check src tests`.
+- [x] **T361**: Add `elite_meal` as a local-only resource label only. Update the resource catalog/display label and asset/resource icon fallback color so UI code can render it, but do not add Town Hall storage or any production/transport behavior. Add focused tests proving `elite_meal` has a display label and is not a Town Hall warehouse resource. Run full `pytest` and `ruff check src tests`.
+- [ ] **T362**: Generalize diner slot reservation helpers without changing behavior. Rename or extend the current Canteen-only reservation helpers so they can operate on any dining building with `_diner_occupants`, `_reserved_meal_workers`, `diner_slot_capacity()`, `meal_resource_key()`, and local storage helpers. Keep Canteen behavior identical. Add focused tests around Canteen reservations. Run full `pytest` and `ruff check src tests`.
+- [ ] **T363**: Generalize dining runtime without adding Restaurant. Update `worker_dining.py` so walking, FIFO reserved-meal consumption, eating progress, slot release, and return-to-work use generic dining-building helpers while preserving Canteen behavior and public worker states. Add focused tests proving existing Canteen dining only starts after a slot+meal reservation, still walks to the dining building, eats, releases slots, and starts a real return path instead of snapping home at meal completion. Run full `pytest` and `ruff check src tests`.
+- [ ] **T364**: Add dining tier metadata for existing Canteen only. Give dining buildings a configured eligible worker tier and make Canteen explicitly serve `basic` workers, with no Restaurant yet. Add focused selection tests proving basic workers can reserve Canteen meals and advanced workers do not use Canteen meals. Run full `pytest` and `ruff check src tests`.
 
-### 26.2 Winery Building Foundation
+### 27.2 Restaurant Building Foundation
 
-- [x] **T345**: Add only `src/game/settings/buildings/winery.json`. Include `WINERY`, footprint, 10 construction/upgrade levels, storage capacity by level, recipe, production cycle/rest timing, active default if used by processing buildings, and asset metadata. Add focused settings tests proving values are loaded from this JSON. Run full `pytest` and `ruff check src tests`.
-- [x] **T346**: Add only the `Winery` building class shell. Define `type_tag`, local grape input storage, local wine output storage, active flag, capacity helpers, add/take helpers, recipe/timing accessors, and progress helpers. Do not register placement or runtime yet. Add focused domain tests. Run full `pytest` and `ruff check src tests`.
-- [x] **T347**: Register `WINERY` for placement/construction only. Wire the class into placement maps and construction config usage so it can be placed and built, without menu visibility or runtime production. Add focused placement/construction tests. Run full `pytest` and `ruff check src tests`.
-- [x] **T348**: Add Winery asset loading/fallback only. Add building folder mapping and placeholder/meta files only if real assets are absent; add focused asset tests proving construction and completed sprites resolve. Run full `pytest` and `ruff check src tests`.
-- [x] **T349**: Add Winery to the Processing build menu only. Add the menu tile/click routing for `WINERY` and focused bottom-bar/input tests that avoid brittle hard-coded per-button coordinate coverage where possible. Run full `pytest` and `ruff check src tests`.
-- [x] **T350**: Add Winery display labels/descriptions only. Update building display names/descriptions, population/worker building labels if needed, and construction panel display name. Add focused label tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T365**: Add only `src/game/settings/buildings/restaurant.json`. Include `RESTAURANT`, footprint, 10 construction/upgrade levels, storage capacity by level, diner slot capacity by level, recipe, production cycle/rest timing, active default if used, worker effects, and asset metadata. Add focused settings tests proving values are loaded from this JSON. Run full `pytest` and `ruff check src tests`.
+- [ ] **T366**: Add only the `Restaurant` building class shell. Define `type_tag`, active flag, local storage resources, local storage helpers, diner slot helpers, meal resource key, dining tier, recipe helpers, timing/progress helpers, and upgrade capacity behavior. Do not register placement, menus, transport, production, or UI yet. Add focused domain tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T367**: Register `RESTAURANT` for placement/construction only. Wire the class into placement maps and construction config usage so it can be placed and built, without menu visibility, production, dining selection, or transport. Add focused placement/construction tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T368**: Add Restaurant asset loading/fallback only. Add building folder mapping and placeholder/meta files only if real assets are absent; add focused asset tests proving construction and completed sprites resolve. Run full `pytest` and `ruff check src tests`.
+- [ ] **T369**: Add Restaurant to the Social build menu only. Add the Social menu tile/click routing for `RESTAURANT` and focused bottom-bar/input tests that avoid brittle hard-coded per-button coordinate coverage where possible. Run full `pytest` and `ruff check src tests`.
+- [ ] **T370**: Add Restaurant display labels/descriptions only. Update building display names/descriptions, population/worker building labels if needed, and construction panel display name. Add focused label tests. Run full `pytest` and `ruff check src tests`.
 
-### 26.3 Transport and Runtime
+### 27.3 Restaurant Production and Transport
 
-- [x] **T351**: Add Winery grape input transport planning only. Carriers should deliver grapes from valid grape sources into Winery local input storage, accounting for queued/in-flight deliveries and local input capacity. Add focused transport planning tests. Run full `pytest` and `ruff check src tests`.
-- [x] **T352**: Add Winery wine output export planning only. Carriers should export wine from Winery local output storage to Town Hall, accounting for queued/in-flight exports and Town Hall capacity. Add focused transport tests, including stale/demolished task behavior if not covered generically. Run full `pytest` and `ruff check src tests`.
-- [x] **T353**: Add Winemaker-to-Winery compatibility and assignment only. Extend worker-building compatibility so `WINEMAKER` can be assigned to built `WINERY` buildings and no other worker is newly assigned to Winery. Add focused assignment tests. Run full `pytest` and `ruff check src tests`.
-- [x] **T354**: Add Winery production runtime only. With an assigned Winemaker inside, active Winery, enough grapes, and output space, run the configured cycle, consume grapes, produce wine, then put the worker into configured rest. Add focused runtime tests for success and blocked cases. Run full `pytest` and `ruff check src tests`.
-- [x] **T355**: Add Winery production/worker status helpers only. Report no worker, inactive, no grapes, output full, processing, and resting states consistently with other processing buildings. Add focused status tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T371**: Add Cook-to-Restaurant compatibility and assignment only. Allow `COOK` to be assigned to built `RESTAURANT` buildings while preserving existing Canteen assignment behavior. Add focused assignment tests for Cook with both buildings. Run full `pytest` and `ruff check src tests`.
+- [ ] **T372**: Add Restaurant bread input transport only. Carriers should deliver `bread` from valid sources into Restaurant local input storage, accounting for queued/in-flight deliveries and local capacity. Add focused transport planning and delivery tests for `bread`. Run full `pytest` and `ruff check src tests`.
+- [ ] **T373**: Add Restaurant wine input transport only. Carriers should deliver `wine` from valid sources into Restaurant local input storage, accounting for queued/in-flight deliveries and local capacity. Add focused transport planning and delivery tests for `wine`. Run full `pytest` and `ruff check src tests`.
+- [ ] **T374**: Add Restaurant beef input transport only. Carriers should deliver `beef` from valid sources into Restaurant local input storage, accounting for queued/in-flight deliveries and local capacity. Add focused transport planning and delivery tests for `beef`. Run full `pytest` and `ruff check src tests`.
+- [ ] **T375**: Add Restaurant production runtime only. With an assigned Cook inside, active Restaurant, enough configured inputs, and output space, run the configured cycle, consume inputs, produce `elite_meal`, then put the Cook into configured rest. Add focused runtime tests for success and blocked cases. Run full `pytest` and `ruff check src tests`.
+- [ ] **T376**: Add Restaurant production/worker status helpers only. Report no worker, inactive, missing input, output full, processing, and resting states consistently with other processing/social producer buildings. Add focused status tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T377**: Prevent local-only `elite_meal` export only. Ensure transport/task planning never exports `elite_meal` to Town Hall and that direct enqueue safeguards treat it as local-only like `simple_meal`. Add focused negative transport tests. Run full `pytest` and `ruff check src tests`.
 
-### 26.4 Winery UI and Integration
+### 27.4 Restaurant Dining Selection
 
-- [x] **T356**: Add Winery panel shell only. Route a custom panel for `WINERY` with title, worker status, close, upgrade, demolish, and active toggle actions. Do not add custom storage/progress rows yet. Add focused panel routing/click tests. Run full `pytest` and `ruff check src tests`.
-- [x] **T357**: Add Winery panel storage and progress rows only. Show grape input storage, wine output storage, production status, blocked reason/progress bar, and ensure level 10 actions do not overlap. Add focused draw/layout tests. Run full `pytest` and `ruff check src tests`.
-- [x] **T358**: Add one focused integration test for the wine chain. Cover grapes reaching a built Winery, Winemaker production of wine, and carrier export of wine to Town Hall. Keep the test bounded and deterministic. Run full `pytest` and `ruff check src tests`.
+- [ ] **T378**: Add Restaurant to dining selection for advanced workers only. Hungry advanced workers should reserve the nearest reachable Restaurant only when both an available slot and an unreserved `elite_meal` exist; basic workers should continue using Canteen only. Add focused selection tests with both building types present, including one test proving no worker leaves work when Restaurant slots are free but no `elite_meal` is available. Run full `pytest` and `ruff check src tests`.
+- [ ] **T379**: Add Restaurant dining runtime integration only. WorkerManager should assign reserved meals and update dining runtime for Restaurant occupants using the generic dining loop. Add focused tests proving an advanced worker appears reserved while walking, walks to Restaurant, eats `elite_meal`, releases the slot, and starts walking back to work instead of snapping home. Run full `pytest` and `ruff check src tests`.
+- [ ] **T380**: Add dining fallback behavior tests only with implementation if needed. Prove that a hungry advanced worker keeps working when no Restaurant meal/slot is reservable, and a hungry basic worker keeps working when only Restaurant meals exist. Also prove that reserved meals prevent over-assignment when multiple hungry workers compete for fewer available meals. If the existing code already satisfies this after earlier tasks, this task only adds passing focused tests. Run full `pytest` and `ruff check src tests`.
 
-### 26.5 Documentation and Closure
+### 27.5 Restaurant UI and Integration
 
-- [x] **T359**: Update extension documentation only. Document worker tiers, School tab rules, Winery processing/transport expectations, and where Winery constants live. Avoid duplicating balance numbers in PRD-style docs except to point to JSON as source of truth. Run full `pytest` and `ruff check src tests`.
-- [x] **T360**: Close Phase 26. Run final full `pytest` plus `ruff check src tests`; update Current Status, Last Completed, Total Progress, Decisions Log, and Notes; mark Phase 26 complete only when all tasks are `[x]`.
+- [ ] **T381**: Add Restaurant panel shell only. Route a custom panel for `RESTAURANT` with title, worker status, close, upgrade, demolish, and active toggle actions. Do not add custom storage/progress/diner rows yet. Add focused panel routing/click tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T382**: Add Restaurant panel storage and production progress rows only. Show bread, wine, beef, `elite_meal`, production status, blocked reason, and production progress without overlapping buttons. Add focused draw/layout tests. Run full `pytest` and `ruff check src tests`.
+- [ ] **T383**: Add Restaurant panel diner tiles only. Show reserved/arriving/eating advanced diners using the same visual semantics as Canteen: dimmed/partially transparent icon while walking, normal icon while waiting at the restaurant or eating, and progress bar while eating. Add focused panel tests for all three visual states. Run full `pytest` and `ruff check src tests`.
+- [ ] **T384**: Add one focused Restaurant production integration test. Cover inputs reaching a built Restaurant, Cook production of `elite_meal`, and no Town Hall export of the local-only output. Keep the test bounded and deterministic. Run full `pytest` and `ruff check src tests`.
+- [ ] **T385**: Add one focused advanced dining integration test. Cover an advanced worker becoming hungry, reserving a Restaurant meal, walking there, eating, restoring satiety, releasing the slot, and returning to work without teleporting. Keep the test bounded and deterministic. Run full `pytest` and `ruff check src tests`.
+
+### 27.6 Documentation and Closure
+
+- [ ] **T386**: Update extension documentation and close Phase 27. Document generic dining-building rules, Basic/Canteen vs Advanced/Restaurant selection, local-only meal resources, Restaurant config location, and Cook compatibility expectations. Run final full `pytest` plus `ruff check src tests`; update Current Status, Last Completed, Total Progress, Decisions Log, and Notes; mark Phase 27 complete only when all tasks are `[x]`.
 
 ---
 
@@ -105,6 +111,8 @@
 | 2026-05-11 | Phase 26 | Add worker tiers as centralized hiring metadata. | School UI must derive tabs from worker type data so future workers are not hard-coded into UI branches. |
 | 2026-05-11 | Phase 26 | Put existing workers in `basic` and `WINEMAKER` in `advanced`. | User requested all existing workers as Basic and the new Winemaker as Advanced. |
 | 2026-05-11 | Phase 26 | Store Winery constants in `winery.json`. | Keeps building balance/configuration with the building and matches current building-extension guidance. |
+| 2026-05-11 | Phase 27 | Dining destination is selected by worker tier, not by assigned workplace. | A worker's food tier should stay predictable and independent from the building they are currently working in. |
+| 2026-05-11 | Phase 27 | Treat `elite_meal` as local-only like `simple_meal`. | Restaurant meals should stay in Restaurant local storage and never become Town Hall warehouse goods. |
 
 ## Issues & Blockers
 
@@ -114,8 +122,7 @@
 
 ## Notes
 
-- **2026-05-11:** Phase 26 complete — wine resource, Winery building, worker tiers (basic/advanced), School hire tabs, Winemaker worker, full transport and production chain.
-- **2026-05-11:** Phase 26 planned for wine, Winery, worker tiers, School hire tabs, and Winemaker.
+- **2026-05-11:** Phase 27 planned for Restaurant, advanced dining, `elite_meal`, and generic dining-building reuse.
 - Keep old completed phase details in `progress_archive.md`; `progress.md` should stay focused on the current active phase to keep agent context small.
 - Tests run headless via `SDL_VIDEODRIVER=dummy` in `tests/conftest.py`.
 - Pathfinding contract: **4-dir** `find_path_bfs` (no diagonals), aligned with PRD.

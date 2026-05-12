@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 27 - Restaurant and Advanced Dining (**active**)
-- **Next Task:** T377 - Prevent local-only elite_meal export
-- **Last Completed:** T376 - Add Restaurant production/worker status helpers
-- **Total Progress:** 376 / 386 (Phase 27: 16 / 26 done)
+- **Next Task:** T378 - Add Restaurant to dining selection for advanced workers
+- **Last Completed:** T377 - Prevent local-only elite_meal export
+- **Total Progress:** 377 / 386 (Phase 27: 17 / 26 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -72,7 +72,7 @@
 - [x] **T374**: Add Restaurant beef input transport only. Carriers should deliver `beef` from valid sources into Restaurant local input storage, accounting for queued/in-flight deliveries and local capacity. Add focused transport planning and delivery tests for `beef`. Run full `pytest` and `ruff check src tests`.
 - [x] **T375**: Add Restaurant production runtime only. With an assigned Cook inside, active Restaurant, enough configured inputs, and output space, run the configured cycle, consume inputs, produce `elite_meal`, then put the Cook into configured rest. Add focused runtime tests for success and blocked cases. Run full `pytest` and `ruff check src tests`.
 - [x] **T376**: Add Restaurant production/worker status helpers only. Report no worker, inactive, missing input, output full, processing, and resting states consistently with other processing/social producer buildings. Add focused status tests. Run full `pytest` and `ruff check src tests`.
-- [ ] **T377**: Prevent local-only `elite_meal` export only. Ensure transport/task planning never exports `elite_meal` to Town Hall and that direct enqueue safeguards treat it as local-only like `simple_meal`. Add focused negative transport tests. Run full `pytest` and `ruff check src tests`.
+- [x] **T377**: Prevent local-only `elite_meal` export only. Ensure transport/task planning never exports `elite_meal` to Town Hall and that direct enqueue safeguards treat it as local-only like `simple_meal`. Add focused negative transport tests. Run full `pytest` and `ruff check src tests`.
 
 ### 27.4 Restaurant Dining Selection
 

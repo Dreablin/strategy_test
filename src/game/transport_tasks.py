@@ -545,6 +545,9 @@ def restaurant_input_transport_tasks(registry: Any, resource: str) -> list[Trans
     """Build low-priority input tasks from Town Hall to active restaurants for a given resource."""
     if registry is None:
         return []
+    from game.resource_catalog import is_local_only_meal
+    if is_local_only_meal(resource):
+        return []
     buildings = list(registry.all())
     town_hall = next((b for b in buildings if b.type_tag == "TOWN_HALL"), None)
     if town_hall is None or not hasattr(town_hall, "warehouse_amount"):

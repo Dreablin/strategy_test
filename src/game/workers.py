@@ -490,6 +490,9 @@ class WorkerManager(
         self._enqueue_winery_input_tasks()
         self._enqueue_winery_output_tasks()
         self._enqueue_canteen_input_tasks()
+        self._enqueue_restaurant_input_tasks("bread")
+        self._enqueue_restaurant_input_tasks("wine")
+        self._enqueue_restaurant_input_tasks("beef")
         self._enqueue_water_input_tasks()
         self._enqueue_bakery_output_tasks()
         self._enqueue_chicken_farm_output_tasks()
@@ -500,10 +503,11 @@ class WorkerManager(
         self._enqueue_vineyard_farm_grape_output_tasks()
         if self._registry is not None:
             from game.buildings.canteen import Canteen
+            from game.buildings.restaurant import Restaurant
             from game.worker_dining import assign_diner_meals_for_canteen
 
             for building in self._registry.all():
-                if isinstance(building, Canteen) and not building.is_under_construction:
+                if isinstance(building, (Canteen, Restaurant)) and not building.is_under_construction:
                     assign_diner_meals_for_canteen(building, now_ms=now_ms)
         completed_buildings: list[Building] = []
         completed_site_builders: dict[int, Worker] = {}
@@ -511,13 +515,14 @@ class WorkerManager(
             self._tick_worker_satiety(worker, now_ms)
             if worker.dining_canteen is not None and self._registry is not None and world is not None:
                 from game.buildings.canteen import Canteen
+                from game.buildings.restaurant import Restaurant
                 from game.worker_dining import update_dining_runtime
 
-                canteen = worker.dining_canteen
-                if isinstance(canteen, Canteen) and canteen in self._registry.all():
+                dining_building = worker.dining_canteen
+                if isinstance(dining_building, (Canteen, Restaurant)) and dining_building in self._registry.all():
                     update_dining_runtime(
                         worker,
-                        canteen=canteen,
+                        canteen=dining_building,
                         world=world,
                         worker_manager=self,
                         registry=self._registry,

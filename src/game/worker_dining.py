@@ -1,8 +1,9 @@
-"""Canteen dining: walk to slot, wait for meal, eat, release slot (independent of carriers/processors)."""
+"""Dining runtime: walk to slot, wait for meal, eat, release slot, return to work."""
 
 from __future__ import annotations
 
-from game.buildings.canteen import Canteen
+from typing import Any
+
 from game.buildings.registry import BuildingRegistry
 from game.canteen_dining import (
     available_meals_for_reservation,
@@ -20,12 +21,12 @@ from game.workers import WorkerManager
 DINING_EAT_DURATION_MS = 20_000
 
 
-def _footprint_adjacent_tiles(canteen: Canteen) -> list[tuple[int, int]]:
-    pos = canteen.grid_pos
+def _footprint_adjacent_tiles(building: Any) -> list[tuple[int, int]]:
+    pos = building.grid_pos
     if pos is None:
         return []
     gx, gy = pos
-    w, h = type(canteen).footprint
+    w, h = type(building).footprint
     raw: list[tuple[int, int]] = []
     for y in range(gy - 1, gy + h + 1):
         for x in range(gx - 1, gx + w + 1):
@@ -37,11 +38,11 @@ def _footprint_adjacent_tiles(canteen: Canteen) -> list[tuple[int, int]]:
     return raw
 
 
-def diner_stand_tile_for(canteen: Canteen, worker: Worker) -> tuple[int, int]:
-    tiles = _footprint_adjacent_tiles(canteen)
+def diner_stand_tile_for(building: Any, worker: Worker) -> tuple[int, int]:
+    tiles = _footprint_adjacent_tiles(building)
     if not tiles:
         return (0, 0)
-    occupants = sorted(canteen._diner_occupants, key=id)
+    occupants = sorted(building._diner_occupants, key=id)
     try:
         idx = occupants.index(worker)
     except ValueError:
@@ -50,15 +51,15 @@ def diner_stand_tile_for(canteen: Canteen, worker: Worker) -> tuple[int, int]:
 
 
 def _reachable_diner_stand_tile_for(
-    canteen: Canteen,
+    building: Any,
     worker: Worker,
     worker_manager: WorkerManager,
 ) -> tuple[int, int] | None:
-    tiles = worker_manager._approach_tiles(canteen)
+    tiles = worker_manager._approach_tiles(building)
     if not tiles:
         return None
     tiles.sort(key=lambda t: (t[1], t[0]))
-    occupants = sorted(canteen._diner_occupants, key=id)
+    occupants = sorted(building._diner_occupants, key=id)
     try:
         idx = occupants.index(worker)
     except ValueError:
@@ -66,12 +67,12 @@ def _reachable_diner_stand_tile_for(
     return tiles[idx % len(tiles)]
 
 
-def _worker_inside_canteen_footprint(worker: Worker, canteen: Canteen) -> bool:
-    pos = canteen.grid_pos
+def _worker_inside_building_footprint(worker: Worker, building: Any) -> bool:
+    pos = building.grid_pos
     if pos is None:
         return False
     gx, gy = pos
-    w, h = type(canteen).footprint
+    w, h = type(building).footprint
     wx, wy = worker.current_tile
     return gx <= wx < gx + w and gy <= wy < gy + h
 
@@ -84,40 +85,41 @@ def dining_eating_started_ms(worker: Worker) -> int:
     return int(worker.dining_eating_started_ms)
 
 
-def assign_diner_meals_for_canteen(canteen: Canteen, *, now_ms: int = 0) -> None:
+def assign_diner_meals_for_canteen(building: Any, *, now_ms: int = 0) -> None:
     _ = now_ms
     waiting = [
         w
-        for w in canteen._diner_occupants
+        for w in building._diner_occupants
         if dining_runtime_phase(w) == "waiting_for_meal"
         and not w.dining_meal_reserved
         and int(w.dining_queue_order) >= 0
     ]
     waiting.sort(key=lambda worker: (int(worker.dining_queue_order), id(worker)))
-    meals = available_meals_for_reservation(canteen)
+    meals = available_meals_for_reservation(building)
     for w in waiting[:meals]:
-        canteen._reserved_meal_workers.add(w)
+        building._reserved_meal_workers.add(w)
         w.dining_meal_reserved = True
 
 
-def _mark_waiting_for_meal(worker: Worker, canteen: Canteen) -> None:
+def _mark_waiting_for_meal(worker: Worker, building: Any) -> None:
     worker.dining_phase = "waiting_for_meal"
     worker.state = "waiting_for_meal"
     worker.idle = False
     if worker.dining_queue_order < 0:
-        worker.dining_queue_order = int(canteen._diner_queue_seq)
-        canteen._diner_queue_seq += 1
+        worker.dining_queue_order = int(building._diner_queue_seq)
+        building._diner_queue_seq += 1
     worker.path = []
     worker.target_tile = None
     worker.segment_progress = 0.0
     worker.stand_tile = worker.current_tile
 
 
-def _try_start_eating(worker: Worker, canteen: Canteen, now_ms: int) -> bool:
-    if not worker.dining_meal_reserved or canteen.local_storage_amount("simple_meal") < 1:
+def _try_start_eating(worker: Worker, building: Any, now_ms: int) -> bool:
+    meal_key = str(building.meal_resource_key())
+    if not worker.dining_meal_reserved or building.local_storage_amount(meal_key) < 1:
         return False
-    canteen.take_local_storage("simple_meal", 1)
-    release_reserved_meal(canteen, worker)
+    building.take_local_storage(meal_key, 1)
+    release_reserved_meal(building, worker)
     worker.dining_eating_started_ms = int(now_ms)
     worker.dining_phase = "eating"
     worker.dining_meal_assigned = False
@@ -151,7 +153,7 @@ def _complete_return_to_work(worker: Worker) -> None:
 def _start_return_to_work(
     worker: Worker,
     *,
-    canteen: Canteen,
+    building: Any,
     world: World,
     worker_manager: WorkerManager,
     now_ms: int,
@@ -159,7 +161,7 @@ def _start_return_to_work(
     assigned = worker.assigned_building
     if assigned is None or assigned.is_under_construction:
         return False
-    if assigned is canteen and _worker_inside_canteen_footprint(worker, canteen):
+    if assigned is building and _worker_inside_building_footprint(worker, building):
         _complete_return_to_work(worker)
         return True
 
@@ -182,7 +184,7 @@ def _start_return_to_work(
 
 def _finish_eating(
     worker: Worker,
-    canteen: Canteen,
+    building: Any,
     *,
     world: World,
     worker_manager: WorkerManager,
@@ -190,7 +192,7 @@ def _finish_eating(
 ) -> None:
     worker.satiety = MAX_WORKER_SATIETY
     worker.blocked_cycle_hunger_try_ms = -1
-    release_diner_slot_after_meal(canteen, worker)
+    release_diner_slot_after_meal(building, worker)
     worker.dining_eating_started_ms = 0
     worker.dining_meal_assigned = False
     worker.dining_meal_reserved = False
@@ -198,8 +200,8 @@ def _finish_eating(
     worker.path = []
     worker.target_tile = None
     worker.segment_progress = 0.0
-    worker.dining_canteen = canteen
-    if _start_return_to_work(worker, canteen=canteen, world=world, worker_manager=worker_manager, now_ms=now_ms):
+    worker.dining_canteen = building
+    if _start_return_to_work(worker, building=building, world=world, worker_manager=worker_manager, now_ms=now_ms):
         return
     worker.dining_canteen = None
     worker.dining_phase = "none"
@@ -217,14 +219,15 @@ def _finish_eating(
 def update_dining_runtime(
     worker: Worker,
     *,
-    canteen: Canteen,
+    canteen: Any,
     world: World,
     worker_manager: WorkerManager,
     registry: BuildingRegistry,
     now_ms: int,
 ) -> None:
     _ = (worker_manager, registry)
-    if worker.dining_canteen is not canteen:
+    building = canteen
+    if worker.dining_canteen is not building:
         return
     now_ms = int(now_ms)
     phase = worker.dining_phase
@@ -233,7 +236,7 @@ def update_dining_runtime(
         worker.state = "eating"
         worker.idle = False
         if now_ms >= worker.dining_eating_started_ms + DINING_EAT_DURATION_MS:
-            _finish_eating(worker, canteen, world=world, worker_manager=worker_manager, now_ms=now_ms)
+            _finish_eating(worker, building, world=world, worker_manager=worker_manager, now_ms=now_ms)
         return
 
     if phase == "returning_to_work":
@@ -246,23 +249,23 @@ def update_dining_runtime(
     if phase == "waiting_for_meal":
         worker.state = "waiting_for_meal"
         worker.idle = False
-        _try_start_eating(worker, canteen, now_ms)
+        _try_start_eating(worker, building, now_ms)
         return
 
     if phase == "walking_to_diner":
         worker.update(now_ms)
         target = worker.dining_target_tile
         if target is not None and worker.current_tile == target:
-            _mark_waiting_for_meal(worker, canteen)
+            _mark_waiting_for_meal(worker, building)
         return
 
     if phase == "none":
-        if worker.assigned_building is canteen and _worker_inside_canteen_footprint(worker, canteen):
+        if worker.assigned_building is building and _worker_inside_building_footprint(worker, building):
             worker.dining_target_tile = worker.current_tile
-            _mark_waiting_for_meal(worker, canteen)
-            _try_start_eating(worker, canteen, now_ms)
+            _mark_waiting_for_meal(worker, building)
+            _try_start_eating(worker, building, now_ms)
             return
-        target = _reachable_diner_stand_tile_for(canteen, worker, worker_manager)
+        target = _reachable_diner_stand_tile_for(building, worker, worker_manager)
         if target is None:
             release_diner_slots_for_worker(worker)
             return

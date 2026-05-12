@@ -149,6 +149,12 @@ another animal building should extend the frozenset and any placement or school
 labels that list compatible sites, without introducing a second worker type
 unless design explicitly requires it.
 
+Example: **`COOK`** staffs both **`CANTEEN`** (basic dining, `simple_meal`) and
+**`RESTAURANT`** (advanced dining, `elite_meal`). When assigned to a Restaurant,
+the cook uses `RESTAURANT_PROCESSOR` in `worker_processing.py`. Dining tier
+selection routes basic-tier workers to Canteens and advanced-tier workers to
+Restaurants, regardless of the Cook's own tier.
+
 Example: **`FARMER`** staffs both **`FARM`** (wheat + `FIELD` reservations and
 return-to-camp deposit) and **`VINEYARD_FARM`** (ripe `VINEYARD` selection,
 per-plot reservations, walk to plot, harvest into farm grape storage). All of

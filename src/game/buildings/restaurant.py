@@ -1,21 +1,18 @@
-"""Canteen building: local meal inputs, meal storage, and diner capacity."""
+"""Restaurant building: advanced dining with elite_meal for advanced-tier workers."""
 
 from __future__ import annotations
 
 from typing import ClassVar
 
 from game.buildings.base import Building
-from game.config import building_level_int_setting
-from game.worker_constants import CANTEEN_CYCLE_MS
+from game.config import building_level_int_setting, building_setting
 from game.worker_models import Worker
 
-CANTEEN_LOCAL_RESOURCES: tuple[str, ...] = ("chicken", "bread", "water", "simple_meal")
-CANTEEN_STORAGE_BASE = building_level_int_setting("CANTEEN", "storage", 1)
-CANTEEN_DINER_SLOTS_BASE = building_level_int_setting("CANTEEN", "diner_slots", 1)
+RESTAURANT_LOCAL_RESOURCES: tuple[str, ...] = ("bread", "wine", "beef", "elite_meal")
 
 
-class Canteen(Building):
-    type_tag: ClassVar[str] = "CANTEEN"
+class Restaurant(Building):
+    type_tag: ClassVar[str] = "RESTAURANT"
 
     __slots__ = (
         "active",
@@ -30,18 +27,18 @@ class Canteen(Building):
     def __init__(self, level: int = 1, grid_pos: tuple[int, int] | None = None) -> None:
         super().__init__(level=level, grid_pos=grid_pos)
         self.active = True
-        self._local_storage = {resource: 0 for resource in CANTEEN_LOCAL_RESOURCES}
+        self._local_storage = {resource: 0 for resource in RESTAURANT_LOCAL_RESOURCES}
         self._diner_occupants: set[Worker] = set()
         self._reserved_meal_workers: set[Worker] = set()
         self._diner_queue_seq = 0
         self.processing_started_ms = 0
-        self.processing_duration_ms = CANTEEN_CYCLE_MS
+        self.processing_duration_ms = 0
 
     def set_active(self, value: bool) -> None:
         self.active = bool(value)
 
     def local_storage_resources(self) -> tuple[str, ...]:
-        return CANTEEN_LOCAL_RESOURCES
+        return RESTAURANT_LOCAL_RESOURCES
 
     def local_storage_capacity(self, resource: str) -> int:
         self._require_local_resource(resource)
@@ -72,18 +69,54 @@ class Canteen(Building):
     def diner_slot_capacity(self) -> int:
         return building_level_int_setting(self.type_tag, "diner_slots", self.level)
 
+    def meal_resource_key(self) -> str:
+        return "elite_meal"
+
+    def dining_tier(self) -> str:
+        return "advanced"
+
+    def recipe_input(self) -> dict[str, int]:
+        raw = building_setting(self.type_tag, "recipe", "input")
+        return {str(k): int(v) for k, v in raw.items()}
+
+    def recipe_output(self) -> dict[str, int]:
+        raw = building_setting(self.type_tag, "recipe", "output")
+        return {str(k): int(v) for k, v in raw.items()}
+
+    def recipe_input_count(self) -> dict[str, int]:
+        return self.recipe_input()
+
+    def recipe_output_count(self) -> int:
+        out = self.recipe_output()
+        return sum(out.values())
+
     def has_recipe_inputs(self) -> bool:
-        return (
-            self.local_storage_amount("chicken") >= 1
-            and self.local_storage_amount("bread") >= 1
-            and self.local_storage_amount("water") >= 1
-        )
+        for resource, needed in self.recipe_input().items():
+            if self.local_storage_amount(resource) < needed:
+                return False
+        return True
 
     def output_amount(self) -> int:
-        return self.local_storage_amount("simple_meal")
+        return self.local_storage_amount("elite_meal")
 
     def output_capacity(self) -> int:
-        return self.local_storage_capacity("simple_meal")
+        return self.local_storage_capacity("elite_meal")
+
+    def input_amount(self, resource: str | None = None) -> int:
+        if resource is not None:
+            return self.local_storage_amount(resource)
+        return sum(self._local_storage[r] for r in self.recipe_input())
+
+    def input_capacity(self, resource: str | None = None) -> int:
+        if resource is not None:
+            return self.local_storage_capacity(resource)
+        return sum(self.local_storage_capacity(r) for r in self.recipe_input())
+
+    def cycle_ms(self) -> int:
+        return int(building_setting(self.type_tag, "production", "cycle_ms"))
+
+    def rest_ms(self) -> int:
+        return int(building_setting(self.type_tag, "production", "rest_ms"))
 
     def processing_progress(self, now_ms: int) -> float:
         if self.processing_started_ms <= 0:
@@ -98,21 +131,6 @@ class Canteen(Building):
             if self.processing_started_ms > 0 and self.processing_progress(now_ms) < 1.0
             else "idle"
         )
-
-    def meal_resource_key(self) -> str:
-        return "simple_meal"
-
-    def dining_tier(self) -> str:
-        return "basic"
-
-    def water_amount(self) -> int:
-        return self.local_storage_amount("water")
-
-    def water_capacity(self) -> int:
-        return self.local_storage_capacity("water")
-
-    def add_water_in(self, amount: int) -> None:
-        self.add_local_storage("water", int(amount))
 
     def _require_local_resource(self, resource: str) -> None:
         if resource not in self._local_storage:

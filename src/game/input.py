@@ -45,6 +45,7 @@ from game.ui.population_panel import PopulationPanel
 from game.ui.town_hall_panel import TownHallPanel
 from game.ui.top_bar import TopBar
 from game.ui.vineyard_farm_panel import VineyardFarmPanel
+from game.ui.restaurant_panel import RestaurantPanel
 from game.ui.well_panel import WellPanel
 from game.ui.winery_panel import WineryPanel
 from game.ui.worker_panel import WorkerPanel
@@ -481,6 +482,18 @@ class GameInput:
                 worker_status=worker_status,
                 production_status=production_status,
                 now_ms=pygame.time.get_ticks(),
+            )
+            return
+        if RestaurantPanel.supports_building(self._panel):
+            from game.buildings.restaurant import Restaurant as _Rst
+            assert isinstance(self._panel, _Rst)
+            worker_status = self._panel_worker_status()
+            RestaurantPanel.draw(
+                surface,
+                self._panel,
+                worker_assigned=worker_status != "empty",
+                now_ms=pygame.time.get_ticks(),
+                worker_manager=self._worker_manager,
             )
             return
         if WineryPanel.supports_building(self._panel):
@@ -951,6 +964,30 @@ class GameInput:
                         worker_assigned=worker_status != "empty",
                         production_status=production_status,
                     )
+                    if action == "close":
+                        self._panel = None
+                    elif action == "upgrade" and self._panel is not None:
+                        if self._registry.upgrade_building(self._panel):
+                            self._sync_assignments()
+                    elif action == "demolish" and self._panel is not None:
+                        b = self._panel
+                        self._registry.demolish(b, self._worker_manager)
+                        self._panel = None
+                        self._sync_assignments()
+                    elif action == "toggle_active" and self._panel is not None:
+                        self._panel.set_active(not self._panel.active)
+                    return
+            if RestaurantPanel.supports_building(self._panel):
+                from game.buildings.restaurant import Restaurant as _Rst
+                assert isinstance(self._panel, _Rst)
+                worker_status = self._panel_worker_status()
+                layout = RestaurantPanel.layout(
+                    surface,
+                    self._panel,
+                    worker_assigned=worker_status != "empty",
+                )
+                if layout.frame.collidepoint(pos):
+                    action = RestaurantPanel.click_action(pos, layout)
                     if action == "close":
                         self._panel = None
                     elif action == "upgrade" and self._panel is not None:

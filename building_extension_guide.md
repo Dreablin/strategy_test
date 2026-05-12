@@ -216,6 +216,60 @@ not route grape growth or harvest through the wheat field pipeline.
 - Carrier grape export is described under **§7 Extend transport** above; keep
   enqueue/dedupe in the transport layer.
 
+## Restaurant (`RESTAURANT`)
+
+The Restaurant is a social dining building for advanced-tier workers:
+
+- **Worker:** `COOK` (basic tier; `COOK` can work in both `CANTEEN` and
+  `RESTAURANT` — see `worker_hiring.worker_compatible_building_types`).
+- **Recipe:** 1 bread + 1 wine + 1 beef → 1 elite_meal (45 s cycle, 8 s rest).
+- **Input storage:** `bread`, `wine`, `beef` — capacity starts at 3, +1 per
+  level.
+- **Output storage:** `elite_meal` (local-only, never exported to Town Hall) —
+  capacity starts at 3, +1 per level.
+- **Settings source:** `src/game/settings/buildings/restaurant.json` (single
+  source of truth for storage capacity, diner slot capacity, production timings,
+  recipe, and construction costs).
+- **Panel:** `src/game/ui/restaurant_panel.py` with storage rows, production
+  progress bar, diner tiles, and active toggle.
+- **Transport:**
+  - Input: `restaurant_input_transport_tasks` delivers bread, wine, and beef
+    from Town Hall.
+  - Output: **none** — `elite_meal` is local-only like `simple_meal` and must
+    never be exported.
+- **Production runtime:** uses `RESTAURANT_PROCESSOR` ProcessorSpec in
+  `worker_processing.py`.
+- **Status:** `worker_status.py` has a `RESTAURANT` block reporting No worker,
+  Inactive, Missing inputs, Output full, Processing, and Resting.
+
+### Generic Dining-Building Rules
+
+Dining selection and dining runtime are generalized so both Canteen and
+Restaurant share the same reservation, walking, eating, slot release, and
+return-to-work code:
+
+- **Worker tier determines dining building.** Basic workers eat at `CANTEEN`;
+  advanced workers eat at `RESTAURANT`. Worker tier is resolved by
+  `worker_tiers.worker_tier(type_tag)`.
+- **Dining buildings implement a duck-typed interface:** `meal_resource_key()`,
+  `dining_tier()`, `_diner_occupants`, `_reserved_meal_workers`,
+  `diner_slot_capacity()`, and local-storage helpers.
+- **`canteen_dining.py`** provides slot/meal reservation helpers that accept any
+  building implementing the dining interface (parameter typed as `Any`).
+- **`canteen_selection.py`** scans `_DINING_BUILDING_TYPES` (currently
+  `{"CANTEEN", "RESTAURANT"}`) and filters by `dining_tier()` versus worker
+  tier.
+- **`worker_dining.py`** runs walking, eating, slot release, and return-to-work
+  for any building implementing the dining interface.
+
+### Local-Only Meal Resources
+
+- `simple_meal` (Canteen) and `elite_meal` (Restaurant) are both local-only.
+- `resource_catalog.is_local_only_meal(key)` returns `True` for both.
+- Transport task builders check `is_local_only_meal` and refuse to create export
+  or inbound tasks for these resources.
+- Town Hall warehouse does not store these resources.
+
 ## Tests to Add or Update
 
 Use focused tests first, then run the full suite.

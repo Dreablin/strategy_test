@@ -1,7 +1,7 @@
 {
-  "building_type": "WINERY",
+  "building_type": "RESTAURANT",
   "footprint": [2, 2],
-  "input_storage": {
+  "storage": {
     "capacity_by_level": {
       "1": 3,
       "2": 4,
@@ -15,27 +15,27 @@
       "10": 12
     }
   },
-  "output_storage": {
+  "diner_slots": {
     "capacity_by_level": {
-      "1": 3,
-      "2": 4,
-      "3": 5,
-      "4": 6,
-      "5": 7,
-      "6": 8,
-      "7": 9,
-      "8": 10,
-      "9": 11,
-      "10": 12
+      "1": 2,
+      "2": 3,
+      "3": 4,
+      "4": 5,
+      "5": 6,
+      "6": 7,
+      "7": 8,
+      "8": 9,
+      "9": 10,
+      "10": 11
     }
   },
   "recipe": {
-    "input": {"grapes": 3},
-    "output": {"wine": 1}
+    "input": {"bread": 1, "wine": 1, "beef": 1},
+    "output": {"elite_meal": 1}
   },
   "production": {
-    "cycle_ms": 60000,
-    "rest_ms": 10000
+    "cycle_ms": 45000,
+    "rest_ms": 8000
   },
   "worker_effects": {
     "by_level": {
@@ -52,15 +52,15 @@
     }
   },
   "levels": {
-    "1": {"cost": {"wood": 3, "stone": 2}, "build_time_ms": 45000},
-    "2": {"cost": {"boards": 3, "stone": 2}, "build_time_ms": 45000},
-    "3": {"cost": {"boards": 4, "stone": 3}, "build_time_ms": 45000},
-    "4": {"cost": {"boards": 5, "stone": 4, "iron": 1}, "build_time_ms": 45000},
-    "5": {"cost": {"boards": 6, "stone": 5, "iron": 2}, "build_time_ms": 45000},
-    "6": {"cost": {"boards": 7, "stone": 6, "iron": 3}, "build_time_ms": 45000},
-    "7": {"cost": {"boards": 8, "stone": 7, "iron": 4}, "build_time_ms": 45000},
-    "8": {"cost": {"boards": 9, "stone": 8, "iron": 5}, "build_time_ms": 45000},
-    "9": {"cost": {"boards": 10, "stone": 9, "iron": 6}, "build_time_ms": 45000},
-    "10": {"cost": {"boards": 11, "stone": 10, "iron": 7}, "build_time_ms": 45000}
+    "1": {"cost": {"boards": 5, "stone": 3, "iron": 1}, "build_time_ms": 45000},
+    "2": {"cost": {"boards": 6, "stone": 4, "iron": 2}, "build_time_ms": 45000},
+    "3": {"cost": {"boards": 7, "stone": 5, "iron": 3}, "build_time_ms": 45000},
+    "4": {"cost": {"boards": 8, "stone": 6, "iron": 4}, "build_time_ms": 45000},
+    "5": {"cost": {"boards": 9, "stone": 7, "iron": 5}, "build_time_ms": 45000},
+    "6": {"cost": {"boards": 10, "stone": 8, "iron": 6}, "build_time_ms": 45000},
+    "7": {"cost": {"boards": 11, "stone": 9, "iron": 7}, "build_time_ms": 45000},
+    "8": {"cost": {"boards": 12, "stone": 10, "iron": 8}, "build_time_ms": 45000},
+    "9": {"cost": {"boards": 13, "stone": 11, "iron": 9}, "build_time_ms": 45000},
+    "10": {"cost": {"boards": 14, "stone": 12, "iron": 10}, "build_time_ms": 45000}
   }
 }

@@ -539,3 +539,33 @@ def winery_output_transport_tasks(registry: Any) -> list[TransportTask]:
         for _ in range(amount):
             tasks.append(TransportTask(resource="wine", source=building, target=town_hall, priority=0))
     return tasks
+
+
+def restaurant_input_transport_tasks(registry: Any, resource: str) -> list[TransportTask]:
+    """Build low-priority input tasks from Town Hall to active restaurants for a given resource."""
+    if registry is None:
+        return []
+    from game.resource_catalog import is_local_only_meal
+    if is_local_only_meal(resource):
+        return []
+    buildings = list(registry.all())
+    town_hall = next((b for b in buildings if b.type_tag == "TOWN_HALL"), None)
+    if town_hall is None or not hasattr(town_hall, "warehouse_amount"):
+        return []
+    remaining = int(town_hall.warehouse_amount(resource))
+    tasks: list[TransportTask] = []
+    for building in buildings:
+        if building.type_tag != "RESTAURANT":
+            continue
+        if getattr(building, "is_under_construction", False):
+            continue
+        if not getattr(building, "active", True):
+            continue
+        cap = int(building.local_storage_capacity(resource))
+        amt = int(building.local_storage_amount(resource))
+        want = max(0, cap - amt)
+        count = min(want, remaining)
+        for _ in range(count):
+            tasks.append(TransportTask(resource=resource, source=town_hall, target=building, priority=0))
+        remaining -= count
+    return tasks

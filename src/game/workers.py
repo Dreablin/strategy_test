@@ -490,6 +490,7 @@ class WorkerManager(
         self._enqueue_winery_input_tasks()
         self._enqueue_winery_output_tasks()
         self._enqueue_canteen_input_tasks()
+        self._enqueue_restaurant_input_tasks("bread")
         self._enqueue_water_input_tasks()
         self._enqueue_bakery_output_tasks()
         self._enqueue_chicken_farm_output_tasks()

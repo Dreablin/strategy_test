@@ -26,6 +26,7 @@ from game.transport_tasks import (
     sawmill_input_transport_tasks,
     sawmill_output_transport_tasks,
     water_input_transport_tasks,
+    restaurant_input_transport_tasks,
     winery_input_transport_tasks,
     winery_output_transport_tasks,
 )
@@ -601,6 +602,16 @@ class WorkerTransportMixin:
                 if town_hall is not None:
                     town_hall.add_to_warehouse(task.resource, 1)
                     delivered_target = town_hall
+        elif task.target.type_tag == "RESTAURANT" and hasattr(task.target, "add_local_storage"):
+            cap = int(task.target.local_storage_capacity(task.resource))
+            amt = int(task.target.local_storage_amount(task.resource))
+            if amt < cap:
+                task.target.add_local_storage(task.resource, 1)
+            else:
+                town_hall = self._primary_town_hall()
+                if town_hall is not None:
+                    town_hall.add_to_warehouse(task.resource, 1)
+                    delivered_target = town_hall
         elif task.resource == "water" and hasattr(task.target, "add_water_in"):
             if _water_amount(task.target) < _water_capacity(task.target):
                 task.target.add_water_in(1)  # type: ignore[attr-defined]
@@ -749,6 +760,26 @@ class WorkerTransportMixin:
         for task in canteen_input_transport_tasks(self._registry):
             if task.resource not in {"chicken", "bread"}:
                 continue
+            target = task.target
+            cap = int(target.local_storage_capacity(task.resource))
+            amt = int(target.local_storage_amount(task.resource))
+            inbound = self._inbound_resource_count(target, task.resource, planned_counts)  # type: ignore[attr-defined]
+            if amt + inbound >= cap:
+                continue
+            desired.append(task)
+            key = (id(target), task.resource)
+            planned_counts[key] = planned_counts.get(key, 0) + 1
+        self._enqueue_desired_transport_tasks(
+            desired,
+            count_carried_town_hall_delivery=False,
+        )
+
+    def _enqueue_restaurant_input_tasks(self, resource: str) -> None:
+        if self._registry is None:  # type: ignore[attr-defined]
+            return
+        desired: list[TransportTask] = []
+        planned_counts: dict[tuple[int, str], int] = {}
+        for task in restaurant_input_transport_tasks(self._registry, resource):
             target = task.target
             cap = int(target.local_storage_capacity(task.resource))
             amt = int(target.local_storage_amount(task.resource))

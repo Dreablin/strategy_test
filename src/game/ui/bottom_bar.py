@@ -86,7 +86,7 @@ class BottomBar:
             return
 
         if menu == "social":
-            entries = (("back", "Back"), ("school", "School"), ("house", "House"), ("canteen", "Canteen"))
+            entries = (("back", "Back"), ("school", "School"), ("house", "House"), ("canteen", "Canteen"), ("restaurant", "Restaurant"))
             rects = _button_rects(surface, len(entries))
             for rect, (key, label) in zip(rects, entries):
                 btn = rect.inflate(-6, -10)
@@ -101,6 +101,9 @@ class BottomBar:
                     surface.blit(spr, (btn.centerx - spr.get_width() // 2, btn.bottom - 40))
                 elif key == "canteen":
                     spr = pygame.transform.smoothscale(building_sprite("canteen", 1), (40, 32))
+                    surface.blit(spr, (btn.centerx - spr.get_width() // 2, btn.bottom - 40))
+                elif key == "restaurant":
+                    spr = pygame.transform.smoothscale(building_sprite("restaurant", 1), (40, 32))
                     surface.blit(spr, (btn.centerx - spr.get_width() // 2, btn.bottom - 40))
             return
 
@@ -203,7 +206,7 @@ class BottomBar:
             return
 
         if menu == "social":
-            entries = ("back", "school", "house", "canteen")
+            entries = ("back", "school", "house", "canteen", "restaurant")
             for rect, key in zip(_button_rects(surface, len(entries)), entries):
                 if not rect.collidepoint(pos):
                     continue
@@ -213,8 +216,10 @@ class BottomBar:
                     pygame.event.post(pygame.event.Event(BUILD_MENU_SELECT, building_type="SCHOOL"))
                 elif key == "house":
                     pygame.event.post(pygame.event.Event(BUILD_MENU_SELECT, building_type="HOUSE"))
-                else:
+                elif key == "canteen":
                     pygame.event.post(pygame.event.Event(BUILD_MENU_SELECT, building_type="CANTEEN"))
+                elif key == "restaurant":
+                    pygame.event.post(pygame.event.Event(BUILD_MENU_SELECT, building_type="RESTAURANT"))
                 return
             return
 

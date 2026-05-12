@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 27 - Restaurant and Advanced Dining (**active**)
-- **Next Task:** T369 - Add Restaurant to Social build menu
-- **Last Completed:** T368 - Add Restaurant asset loading/fallback
-- **Total Progress:** 368 / 386 (Phase 27: 8 / 26 done)
+- **Next Task:** T370 - Add Restaurant display labels/descriptions
+- **Last Completed:** T369 - Add Restaurant to Social build menu
+- **Total Progress:** 369 / 386 (Phase 27: 9 / 26 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -61,7 +61,7 @@
 - [x] **T366**: Add only the `Restaurant` building class shell. Define `type_tag`, active flag, local storage resources, local storage helpers, diner slot helpers, meal resource key, dining tier, recipe helpers, timing/progress helpers, and upgrade capacity behavior. Do not register placement, menus, transport, production, or UI yet. Add focused domain tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T367**: Register `RESTAURANT` for placement/construction only. Wire the class into placement maps and construction config usage so it can be placed and built, without menu visibility, production, dining selection, or transport. Add focused placement/construction tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T368**: Add Restaurant asset loading/fallback only. Add building folder mapping and placeholder/meta files only if real assets are absent; add focused asset tests proving construction and completed sprites resolve. Run full `pytest` and `ruff check src tests`.
-- [ ] **T369**: Add Restaurant to the Social build menu only. Add the Social menu tile/click routing for `RESTAURANT` and focused bottom-bar/input tests that avoid brittle hard-coded per-button coordinate coverage where possible. Run full `pytest` and `ruff check src tests`.
+- [x] **T369**: Add Restaurant to the Social build menu only. Add the Social menu tile/click routing for `RESTAURANT` and focused bottom-bar/input tests that avoid brittle hard-coded per-button coordinate coverage where possible. Run full `pytest` and `ruff check src tests`.
 - [ ] **T370**: Add Restaurant display labels/descriptions only. Update building display names/descriptions, population/worker building labels if needed, and construction panel display name. Add focused label tests. Run full `pytest` and `ruff check src tests`.
 
 ### 27.3 Restaurant Production and Transport

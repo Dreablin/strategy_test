@@ -102,6 +102,9 @@ class Canteen(Building):
     def meal_resource_key(self) -> str:
         return "simple_meal"
 
+    def dining_tier(self) -> str:
+        return "basic"
+
     def water_amount(self) -> int:
         return self.local_storage_amount("water")
 

@@ -11,6 +11,7 @@ from game.canteen_dining import (
 )
 from game.pathfinding import find_path_bfs
 from game.worker_models import Worker
+from game.worker_tiers import worker_tier
 from game.world import World
 from game.workers import WorkerManager
 
@@ -63,11 +64,14 @@ def reserve_nearest_reachable_canteen_if_hungry(
     blocked = world.blocked_tiles()
     blocked.discard(worker.current_tile)
 
+    w_tier = worker_tier(worker.type_tag)
     candidates: list[tuple[int, int, int, Canteen]] = []
     for building in registry.all():
         if not isinstance(building, Canteen):
             continue
         if building.is_under_construction:
+            continue
+        if hasattr(building, "dining_tier") and building.dining_tier() != w_tier:
             continue
         if count_reserved_diner_slots(building) >= building.diner_slot_capacity():
             continue

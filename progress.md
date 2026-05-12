@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 27 - Restaurant and Advanced Dining (**active**)
-- **Next Task:** T373 - Add Restaurant wine input transport
-- **Last Completed:** T372 - Add Restaurant bread input transport
-- **Total Progress:** 372 / 386 (Phase 27: 12 / 26 done)
+- **Next Task:** T374 - Add Restaurant beef input transport
+- **Last Completed:** T373 - Add Restaurant wine input transport
+- **Total Progress:** 373 / 386 (Phase 27: 13 / 26 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -68,7 +68,7 @@
 
 - [x] **T371**: Add Cook-to-Restaurant compatibility and assignment only. Allow `COOK` to be assigned to built `RESTAURANT` buildings while preserving existing Canteen assignment behavior. Add focused assignment tests for Cook with both buildings. Run full `pytest` and `ruff check src tests`.
 - [x] **T372**: Add Restaurant bread input transport only. Carriers should deliver `bread` from valid sources into Restaurant local input storage, accounting for queued/in-flight deliveries and local capacity. Add focused transport planning and delivery tests for `bread`. Run full `pytest` and `ruff check src tests`.
-- [ ] **T373**: Add Restaurant wine input transport only. Carriers should deliver `wine` from valid sources into Restaurant local input storage, accounting for queued/in-flight deliveries and local capacity. Add focused transport planning and delivery tests for `wine`. Run full `pytest` and `ruff check src tests`.
+- [x] **T373**: Add Restaurant wine input transport only. Carriers should deliver `wine` from valid sources into Restaurant local input storage, accounting for queued/in-flight deliveries and local capacity. Add focused transport planning and delivery tests for `wine`. Run full `pytest` and `ruff check src tests`.
 - [ ] **T374**: Add Restaurant beef input transport only. Carriers should deliver `beef` from valid sources into Restaurant local input storage, accounting for queued/in-flight deliveries and local capacity. Add focused transport planning and delivery tests for `beef`. Run full `pytest` and `ruff check src tests`.
 - [ ] **T375**: Add Restaurant production runtime only. With an assigned Cook inside, active Restaurant, enough configured inputs, and output space, run the configured cycle, consume inputs, produce `elite_meal`, then put the Cook into configured rest. Add focused runtime tests for success and blocked cases. Run full `pytest` and `ruff check src tests`.
 - [ ] **T376**: Add Restaurant production/worker status helpers only. Report no worker, inactive, missing input, output full, processing, and resting states consistently with other processing/social producer buildings. Add focused status tests. Run full `pytest` and `ruff check src tests`.

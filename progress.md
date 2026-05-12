@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 27 - Restaurant and Advanced Dining (**active**)
-- **Next Task:** T366 - Add Restaurant building class shell
-- **Last Completed:** T365 - Add restaurant.json settings
-- **Total Progress:** 365 / 386 (Phase 27: 5 / 26 done)
+- **Next Task:** T367 - Register Restaurant for placement/construction
+- **Last Completed:** T366 - Add Restaurant building class shell
+- **Total Progress:** 366 / 386 (Phase 27: 6 / 26 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -58,7 +58,7 @@
 ### 27.2 Restaurant Building Foundation
 
 - [x] **T365**: Add only `src/game/settings/buildings/restaurant.json`. Include `RESTAURANT`, footprint, 10 construction/upgrade levels, storage capacity by level, diner slot capacity by level, recipe, production cycle/rest timing, active default if used, worker effects, and asset metadata. Add focused settings tests proving values are loaded from this JSON. Run full `pytest` and `ruff check src tests`.
-- [ ] **T366**: Add only the `Restaurant` building class shell. Define `type_tag`, active flag, local storage resources, local storage helpers, diner slot helpers, meal resource key, dining tier, recipe helpers, timing/progress helpers, and upgrade capacity behavior. Do not register placement, menus, transport, production, or UI yet. Add focused domain tests. Run full `pytest` and `ruff check src tests`.
+- [x] **T366**: Add only the `Restaurant` building class shell. Define `type_tag`, active flag, local storage resources, local storage helpers, diner slot helpers, meal resource key, dining tier, recipe helpers, timing/progress helpers, and upgrade capacity behavior. Do not register placement, menus, transport, production, or UI yet. Add focused domain tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T367**: Register `RESTAURANT` for placement/construction only. Wire the class into placement maps and construction config usage so it can be placed and built, without menu visibility, production, dining selection, or transport. Add focused placement/construction tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T368**: Add Restaurant asset loading/fallback only. Add building folder mapping and placeholder/meta files only if real assets are absent; add focused asset tests proving construction and completed sprites resolve. Run full `pytest` and `ruff check src tests`.
 - [ ] **T369**: Add Restaurant to the Social build menu only. Add the Social menu tile/click routing for `RESTAURANT` and focused bottom-bar/input tests that avoid brittle hard-coded per-button coordinate coverage where possible. Run full `pytest` and `ruff check src tests`.

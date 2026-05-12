@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 27 - Restaurant and Advanced Dining (**active**)
-- **Next Task:** T371 - Add Cook-to-Restaurant compatibility
-- **Last Completed:** T370 - Add Restaurant display labels/descriptions
-- **Total Progress:** 370 / 386 (Phase 27: 10 / 26 done)
+- **Next Task:** T372 - Add Restaurant bread input transport
+- **Last Completed:** T371 - Add Cook-to-Restaurant compatibility
+- **Total Progress:** 371 / 386 (Phase 27: 11 / 26 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -66,7 +66,7 @@
 
 ### 27.3 Restaurant Production and Transport
 
-- [ ] **T371**: Add Cook-to-Restaurant compatibility and assignment only. Allow `COOK` to be assigned to built `RESTAURANT` buildings while preserving existing Canteen assignment behavior. Add focused assignment tests for Cook with both buildings. Run full `pytest` and `ruff check src tests`.
+- [x] **T371**: Add Cook-to-Restaurant compatibility and assignment only. Allow `COOK` to be assigned to built `RESTAURANT` buildings while preserving existing Canteen assignment behavior. Add focused assignment tests for Cook with both buildings. Run full `pytest` and `ruff check src tests`.
 - [ ] **T372**: Add Restaurant bread input transport only. Carriers should deliver `bread` from valid sources into Restaurant local input storage, accounting for queued/in-flight deliveries and local capacity. Add focused transport planning and delivery tests for `bread`. Run full `pytest` and `ruff check src tests`.
 - [ ] **T373**: Add Restaurant wine input transport only. Carriers should deliver `wine` from valid sources into Restaurant local input storage, accounting for queued/in-flight deliveries and local capacity. Add focused transport planning and delivery tests for `wine`. Run full `pytest` and `ruff check src tests`.
 - [ ] **T374**: Add Restaurant beef input transport only. Carriers should deliver `beef` from valid sources into Restaurant local input storage, accounting for queued/in-flight deliveries and local capacity. Add focused transport planning and delivery tests for `beef`. Run full `pytest` and `ruff check src tests`.

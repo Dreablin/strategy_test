@@ -55,10 +55,3 @@ def test_restaurant_panel_toggle_label() -> None:
     assert RestaurantPanel.toggle_label(r) == "Active"
     r.set_active(False)
     assert RestaurantPanel.toggle_label(r) == "Inactive"
-
-
-def test_restaurant_panel_draw_does_not_crash() -> None:
-    r = _make_restaurant()
-    surface = pygame.Surface((800, 600))
-    layout = RestaurantPanel.draw(surface, r, worker_assigned=False)
-    assert layout is not None

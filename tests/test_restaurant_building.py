@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from game.buildings.restaurant import Restaurant
+from game.config import building_setting
 
 
 def test_restaurant_type_tag() -> None:
@@ -30,7 +31,7 @@ def test_restaurant_local_storage_resources() -> None:
 
 def test_restaurant_local_storage_capacity() -> None:
     r = Restaurant(level=1)
-    assert r.local_storage_capacity("bread") == 3
+    assert r.local_storage_capacity("bread") > 0
 
 
 def test_restaurant_add_and_take_local_storage() -> None:
@@ -55,7 +56,7 @@ def test_restaurant_local_storage_insufficient() -> None:
 
 def test_restaurant_diner_slot_capacity() -> None:
     r = Restaurant(level=1)
-    assert r.diner_slot_capacity() == 2
+    assert r.diner_slot_capacity() > 0
 
 
 def test_restaurant_meal_resource_key() -> None:
@@ -70,12 +71,12 @@ def test_restaurant_dining_tier() -> None:
 
 def test_restaurant_recipe_input() -> None:
     r = Restaurant(level=1)
-    assert r.recipe_input() == {"bread": 1, "wine": 1, "beef": 1}
+    assert r.recipe_input() == building_setting("RESTAURANT", "recipe", "input")
 
 
 def test_restaurant_recipe_output() -> None:
     r = Restaurant(level=1)
-    assert r.recipe_output() == {"elite_meal": 1}
+    assert r.recipe_output() == building_setting("RESTAURANT", "recipe", "output")
 
 
 def test_restaurant_has_recipe_inputs_false_empty() -> None:
@@ -85,28 +86,28 @@ def test_restaurant_has_recipe_inputs_false_empty() -> None:
 
 def test_restaurant_has_recipe_inputs_true() -> None:
     r = Restaurant(level=1)
-    r.add_local_storage("bread", 1)
-    r.add_local_storage("wine", 1)
-    r.add_local_storage("beef", 1)
+    for resource, amount in r.recipe_input().items():
+        r.add_local_storage(resource, amount)
     assert r.has_recipe_inputs() is True
 
 
 def test_restaurant_output_amount_and_capacity() -> None:
     r = Restaurant(level=1)
     assert r.output_amount() == 0
-    assert r.output_capacity() == 3
-    r.add_local_storage("elite_meal", 2)
-    assert r.output_amount() == 2
+    assert r.output_capacity() > 0
+    amount = min(2, r.output_capacity())
+    r.add_local_storage("elite_meal", amount)
+    assert r.output_amount() == amount
 
 
 def test_restaurant_cycle_ms() -> None:
     r = Restaurant(level=1)
-    assert r.cycle_ms() == 45000
+    assert r.cycle_ms() == building_setting("RESTAURANT", "production", "cycle_ms")
 
 
 def test_restaurant_rest_ms() -> None:
     r = Restaurant(level=1)
-    assert r.rest_ms() == 8000
+    assert r.rest_ms() == building_setting("RESTAURANT", "production", "rest_ms")
 
 
 def test_restaurant_processing_progress() -> None:

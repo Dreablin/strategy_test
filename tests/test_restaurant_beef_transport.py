@@ -21,9 +21,9 @@ def _setup():
 
 def test_beef_tasks_generated_for_free_capacity() -> None:
     world, registry, town_hall, restaurant = _setup()
-    town_hall.add_to_warehouse("beef", 5)
+    town_hall.add_to_warehouse("beef", restaurant.local_storage_capacity("beef"))
     tasks = restaurant_input_transport_tasks(registry, "beef")
-    assert len(tasks) == 3
+    assert len(tasks) == restaurant.local_storage_capacity("beef")
     assert all(t.resource == "beef" for t in tasks)
     assert all(t.source is town_hall for t in tasks)
     assert all(t.target is restaurant for t in tasks)
@@ -44,8 +44,8 @@ def test_beef_tasks_empty_when_no_stock() -> None:
 
 def test_beef_tasks_skip_full_restaurant() -> None:
     world, registry, town_hall, restaurant = _setup()
-    town_hall.add_to_warehouse("beef", 5)
-    restaurant.add_local_storage("beef", 3)
+    town_hall.add_to_warehouse("beef", restaurant.local_storage_capacity("beef"))
+    restaurant.add_local_storage("beef", restaurant.local_storage_capacity("beef"))
     tasks = restaurant_input_transport_tasks(registry, "beef")
     assert tasks == []
 

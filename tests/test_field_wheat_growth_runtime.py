@@ -11,25 +11,26 @@ from game.world import World
 from game.workers import WorkerManager
 
 
-def test_wheat_growth_advances_one_phase_every_45_seconds() -> None:
+def test_wheat_growth_advances_one_phase_per_configured_step() -> None:
     state = field_domain.WHEAT_PHASE_1
     last_change_ms = 0
+    step = field_domain.WHEAT_GROWTH_STEP_MS
 
-    state, last_change_ms = field_domain.advance_wheat_growth(state, last_change_ms, now_ms=44_999)
+    state, last_change_ms = field_domain.advance_wheat_growth(state, last_change_ms, now_ms=step - 1)
     assert state == field_domain.WHEAT_PHASE_1
     assert last_change_ms == 0
 
-    state, last_change_ms = field_domain.advance_wheat_growth(state, last_change_ms, now_ms=45_000)
+    state, last_change_ms = field_domain.advance_wheat_growth(state, last_change_ms, now_ms=step)
     assert state == field_domain.WHEAT_PHASE_2
-    assert last_change_ms == 45_000
+    assert last_change_ms == step
 
-    state, last_change_ms = field_domain.advance_wheat_growth(state, last_change_ms, now_ms=90_000)
+    state, last_change_ms = field_domain.advance_wheat_growth(state, last_change_ms, now_ms=step * 2)
     assert state == field_domain.WHEAT_PHASE_3
-    assert last_change_ms == 90_000
+    assert last_change_ms == step * 2
 
-    state, last_change_ms = field_domain.advance_wheat_growth(state, last_change_ms, now_ms=135_000)
+    state, last_change_ms = field_domain.advance_wheat_growth(state, last_change_ms, now_ms=step * 3)
     assert state == field_domain.WHEAT_PHASE_4
-    assert last_change_ms == 135_000
+    assert last_change_ms == step * 3
 
 
 def test_wheat_growth_does_not_progress_when_field_not_sown() -> None:
@@ -42,14 +43,15 @@ def test_wheat_growth_does_not_progress_when_field_not_sown() -> None:
 
 
 def test_wheat_growth_catches_up_after_large_time_jump() -> None:
+    step = field_domain.WHEAT_GROWTH_STEP_MS
     state, last_change_ms = field_domain.advance_wheat_growth(
         field_domain.WHEAT_PHASE_1,
         0,
-        now_ms=135_000,
+        now_ms=step * 3,
     )
 
     assert state == field_domain.WHEAT_PHASE_4
-    assert last_change_ms == 135_000
+    assert last_change_ms == step * 3
 
 
 def test_worker_manager_runtime_advances_field_wheat_growth() -> None:
@@ -64,14 +66,15 @@ def test_worker_manager_runtime_advances_field_wheat_growth() -> None:
     workers = WorkerManager(registry, now_ms_fn=lambda: now_ms["t"])
 
     field.sow(now_ms=0)
-    now_ms["t"] = 44_999
+    step = field_domain.WHEAT_GROWTH_STEP_MS
+    now_ms["t"] = step - 1
     workers.update(now_ms["t"])
     assert field.wheat_phase == field_domain.WHEAT_PHASE_1
 
-    now_ms["t"] = 45_000
+    now_ms["t"] = step
     workers.update(now_ms["t"])
     assert field.wheat_phase == field_domain.WHEAT_PHASE_2
 
-    now_ms["t"] = 135_000
+    now_ms["t"] = step * 3
     workers.update(now_ms["t"])
     assert field.wheat_phase == field_domain.WHEAT_PHASE_4

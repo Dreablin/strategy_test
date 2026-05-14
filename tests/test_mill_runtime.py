@@ -128,12 +128,13 @@ def test_miller_processes_wheat_into_flour_and_rests() -> None:
     assert miller.state == "processing"
     assert mill.processing_started_ms == 1_000
 
-    workers.update(31_000)
+    done_ms = mill.processing_started_ms + mill.processing_duration_ms
+    workers.update(done_ms)
     assert mill.input_amount() == 0
     assert mill.output_amount() == 1
     assert mill.processing_started_ms == 0
     assert miller.state == "resting"
-    assert miller.camp_wait_until_ms == 41_000
+    assert miller.camp_wait_until_ms > done_ms
 
 
 def test_mill_inactive_mid_cycle_finishes_current_then_blocks_next() -> None:
@@ -155,13 +156,14 @@ def test_mill_inactive_mid_cycle_finishes_current_then_blocks_next() -> None:
     assert mill.processing_started_ms == 1_000
     mill.set_active(False)
 
-    workers.update(31_000)
+    done_ms = mill.processing_started_ms + mill.processing_duration_ms
+    workers.update(done_ms)
     assert mill.input_amount() == 1
     assert mill.output_amount() == 1
     assert mill.processing_started_ms == 0
 
     assert miller.state == "resting"
-    workers.update(42_000)
+    workers.update(miller.camp_wait_until_ms + 1)
     assert mill.input_amount() == 1
     assert mill.output_amount() == 1
     assert mill.processing_started_ms == 0

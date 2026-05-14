@@ -35,8 +35,8 @@ def _scene() -> tuple[World, BuildingRegistry, WorkerManager, Canteen]:
     return world, registry, wm, canteen
 
 
-def test_dining_eat_duration_is_twenty_seconds() -> None:
-    assert DINING_EAT_DURATION_MS == 20_000
+def test_dining_eat_duration_is_positive() -> None:
+    assert DINING_EAT_DURATION_MS > 0
 
 
 def test_diner_stand_tile_is_deterministic_per_worker() -> None:

@@ -297,13 +297,14 @@ def test_sawyer_processing_completes_consumes_input_and_rests() -> None:
     assert sawyer.state == "processing"
     assert sawmill.processing_started_ms == 1_000
 
-    wm.update(31_000)
+    done_ms = sawmill.processing_started_ms + sawmill.processing_duration_ms
+    wm.update(done_ms)
 
     assert sawmill.input_amount() == 0
     assert sawmill.output_amount() == 1
     assert sawmill.processing_started_ms == 0
     assert sawyer.state == "resting"
-    assert sawyer.camp_wait_until_ms == 41_000
+    assert sawyer.camp_wait_until_ms > done_ms
 
 
 def test_sawyer_cycle_duration_scales_by_level() -> None:

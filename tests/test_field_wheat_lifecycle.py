@@ -35,19 +35,20 @@ def test_wheat_reset_after_harvest_returns_empty() -> None:
 def test_field_owns_wheat_phase_and_growth_timestamp() -> None:
     field = _field_module()
     crop = field.Field()
+    step = field.WHEAT_GROWTH_STEP_MS
 
     assert crop.wheat_phase == field.WHEAT_EMPTY
     crop.sow(now_ms=1_000)
     assert crop.wheat_phase == field.WHEAT_PHASE_1
     assert crop.wheat_last_change_ms == 1_000
 
-    crop.update_wheat_growth(46_000)
+    crop.update_wheat_growth(1_000 + step)
     assert crop.wheat_phase == field.WHEAT_PHASE_2
-    assert crop.wheat_last_change_ms == 46_000
+    assert crop.wheat_last_change_ms == 1_000 + step
 
-    crop.update_wheat_growth(136_000)
+    crop.update_wheat_growth(1_000 + step * 3)
     assert crop.wheat_phase == field.WHEAT_PHASE_4
-    assert crop.wheat_last_change_ms == 136_000
+    assert crop.wheat_last_change_ms == 1_000 + step * 3
 
     crop.harvest(now_ms=200_000)
     assert crop.wheat_phase == field.WHEAT_EMPTY

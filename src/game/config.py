@@ -95,15 +95,21 @@ def building_int_setting(type_tag: str, *keys: str) -> int:
 
 
 def building_level_int_setting(type_tag: str, section: str, level: int) -> int:
+    return building_level_int_map_setting(type_tag, section, "capacity_by_level", level)
+
+
+def building_level_int_map_setting(type_tag: str, section: str, map_key: str, level: int) -> int:
     payload = building_setting(type_tag, section)
-    if not isinstance(payload, dict) or "capacity_by_level" not in payload:
-        raise KeyError(f"Missing level settings for {str(type_tag).upper()}.{section}")
-    by_level = payload["capacity_by_level"]
+    if not isinstance(payload, dict) or map_key not in payload:
+        raise KeyError(f"Missing level settings for {str(type_tag).upper()}.{section}.{map_key}")
+    by_level = payload[map_key]
     if not isinstance(by_level, dict):
-        raise ValueError(f"{str(type_tag).upper()}.{section}.capacity_by_level must be an object")
+        raise ValueError(f"{str(type_tag).upper()}.{section}.{map_key} must be an object")
     key = str(max(1, int(level)))
     if key not in by_level:
-        raise KeyError(f"Missing level setting for {str(type_tag).upper()}.{section}.level {key}")
+        raise KeyError(
+            f"Missing level setting for {str(type_tag).upper()}.{section}.{map_key}.level {key}"
+        )
     return int(by_level[key])
 
 

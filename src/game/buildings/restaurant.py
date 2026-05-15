@@ -70,10 +70,10 @@ class Restaurant(Building):
         return building_level_int_setting(self.type_tag, "diner_slots", self.level)
 
     def meal_resource_key(self) -> str:
-        return "elite_meal"
+        return str(building_setting(self.type_tag, "dining", "meal_resource"))
 
     def dining_tier(self) -> str:
-        return "advanced"
+        return str(building_setting(self.type_tag, "dining", "tier"))
 
     def recipe_input(self) -> dict[str, int]:
         raw = building_setting(self.type_tag, "recipe", "input")
@@ -97,10 +97,10 @@ class Restaurant(Building):
         return True
 
     def output_amount(self) -> int:
-        return self.local_storage_amount("elite_meal")
+        return self.local_storage_amount(self.meal_resource_key())
 
     def output_capacity(self) -> int:
-        return self.local_storage_capacity("elite_meal")
+        return self.local_storage_capacity(self.meal_resource_key())
 
     def input_amount(self, resource: str | None = None) -> int:
         if resource is not None:

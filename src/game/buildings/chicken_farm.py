@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import ClassVar
 
 from game.buildings.base import Building
-from game.config import building_level_int_setting
+from game.config import building_int_setting, building_level_int_setting, building_setting
 
 
 class ChickenFarm(Building):
@@ -26,7 +26,7 @@ class ChickenFarm(Building):
         self.water_in = 0
         self.chicken_out = 0
         self.processing_started_ms = 0
-        self.processing_duration_ms = 45_000
+        self.processing_duration_ms = self.cycle_ms()
 
     def set_active(self, value: bool) -> None:
         self.active = bool(value)
@@ -52,8 +52,29 @@ class ChickenFarm(Building):
     def output_amount(self) -> int:
         return int(self.chicken_out)
 
+    def recipe_input(self) -> dict[str, int]:
+        raw = building_setting(self.type_tag, "recipe", "input")
+        return {str(k): int(v) for k, v in raw.items()}
+
+    def recipe_output(self) -> dict[str, int]:
+        raw = building_setting(self.type_tag, "recipe", "output")
+        return {str(k): int(v) for k, v in raw.items()}
+
+    def cycle_ms(self) -> int:
+        return building_int_setting(self.type_tag, "production", "cycle_ms")
+
+    def rest_ms(self) -> int:
+        return building_int_setting(self.type_tag, "production", "rest_ms")
+
     def has_recipe_inputs(self) -> bool:
-        return self.wheat_in > 0 and self.water_in > 0
+        return all(self._resource_amount(resource) >= needed for resource, needed in self.recipe_input().items())
+
+    def _resource_amount(self, resource: str) -> int:
+        if resource == "wheat":
+            return self.input_amount()
+        if resource == "water":
+            return self.water_amount()
+        raise KeyError(resource)
 
     def add_wheat_in(self, amount: int) -> None:
         n = int(amount)

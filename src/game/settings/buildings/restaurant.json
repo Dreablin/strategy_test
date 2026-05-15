@@ -37,6 +37,10 @@
     "cycle_ms": 45000,
     "rest_ms": 8000
   },
+  "dining": {
+    "tier": "advanced",
+    "meal_resource": "elite_meal"
+  },
   "worker_effects": {
     "by_level": {
       "1": {"assigned_worker": {}},

@@ -28,6 +28,18 @@
       "10": 12
     }
   },
+  "production": {
+    "cycle_ms": 30000,
+    "rest_ms": 5000
+  },
+  "recipe": {
+    "input": {"chicken": 1, "bread": 1, "water": 1},
+    "output": {"simple_meal": 1}
+  },
+  "dining": {
+    "tier": "basic",
+    "meal_resource": "simple_meal"
+  },
   "worker_effects": {
     "by_level": {
       "1": {"assigned_worker": {}},

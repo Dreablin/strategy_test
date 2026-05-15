@@ -14,10 +14,8 @@ from game.worker_constants import (
     FORESTER_RETURN_RETRY_MS,
     FORESTER_TARGET_RANDOM_TRIES,
     FORESTER_TARGET_RETRY_MS,
-    IRON_MINE_CYCLE_MS,
     LUMBER_CAMP_RESOURCE_RADIUS,
     LUMBERJACK_REST_MS,
-    MINER_REST_MS,
     MINE_DURATION_MS,
     PLANT_DURATION_MS,
     STONE_MINE_RESOURCE_RADIUS,
@@ -283,14 +281,15 @@ class WorkerGatheringMixin:
             if started <= 0:
                 worker.state = "working"
                 return
-            mine.mining_duration_ms = IRON_MINE_CYCLE_MS
-            if now_ms - started < IRON_MINE_CYCLE_MS:
+            duration_ms = max(1, int(mine.cycle_ms()))
+            mine.mining_duration_ms = duration_ms
+            if now_ms - started < duration_ms:
                 return
             if hasattr(mine, "is_storage_full") and not mine.is_storage_full():
-                mine.add_to_storage(1)
+                mine.add_to_storage(mine.output_count())
             mine.mining_started_ms = 0
             worker.state = "resting"
-            worker.camp_wait_until_ms = int(now_ms) + MINER_REST_MS
+            worker.camp_wait_until_ms = int(now_ms) + max(0, int(mine.rest_ms()))
             worker.current_tile = center_tile
             worker.idle = False
             reg = self._registry
@@ -313,7 +312,7 @@ class WorkerGatheringMixin:
             return
         if int(getattr(mine, "mining_started_ms", 0)) <= 0:
             mine.mining_started_ms = int(now_ms)
-        mine.mining_duration_ms = IRON_MINE_CYCLE_MS
+        mine.mining_duration_ms = max(1, int(mine.cycle_ms()))
         worker.state = "mining"
         worker.current_tile = center_tile
         worker.idle = False

@@ -5,13 +5,23 @@ from __future__ import annotations
 from typing import ClassVar
 
 from game.buildings.base import Building
+from game.config import building_int_setting, building_setting
 
 WHEAT_EMPTY = "EMPTY"
 WHEAT_PHASE_1 = "PHASE_1"
 WHEAT_PHASE_2 = "PHASE_2"
 WHEAT_PHASE_3 = "PHASE_3"
 WHEAT_PHASE_4 = "PHASE_4"
-WHEAT_GROWTH_STEP_MS = 45_000
+WHEAT_GROWTH_STEP_MS = building_int_setting("FIELD", "growth", "stage_duration_ms")
+
+
+def _field_footprint() -> tuple[int, int]:
+    raw = building_setting("FIELD", "footprint")
+    if isinstance(raw, dict):
+        return (int(raw["tiles_w"]), int(raw["tiles_h"]))
+    if isinstance(raw, (list, tuple)) and len(raw) == 2:
+        return (int(raw[0]), int(raw[1]))
+    raise ValueError("FIELD.footprint must define two tile dimensions")
 
 _WHEAT_PHASE_ORDER: tuple[str, ...] = (
     WHEAT_EMPTY,
@@ -79,7 +89,7 @@ def advance_wheat_growth(
 
 class Field(Building):
     type_tag: ClassVar[str] = "FIELD"
-    footprint: ClassVar[tuple[int, int]] = (1, 1)
+    footprint: ClassVar[tuple[int, int]] = _field_footprint()
     __slots__ = ("wheat_phase", "wheat_last_change_ms")
 
     def __init__(self, level: int = 1, grid_pos: tuple[int, int] | None = None) -> None:
@@ -89,7 +99,10 @@ class Field(Building):
 
     @classmethod
     def max_level(cls) -> int:
-        return 1
+        return building_int_setting(cls.type_tag, "max_level")
+
+    def wheat_growth_step_ms(self) -> int:
+        return building_int_setting(self.type_tag, "growth", "stage_duration_ms")
 
     def set_wheat_phase(self, phase: str, *, now_ms: int | None = None) -> None:
         normalized = str(phase).upper()
@@ -110,6 +123,7 @@ class Field(Building):
             self.wheat_phase,
             self.wheat_last_change_ms,
             now_ms=int(now_ms),
+            growth_step_ms=self.wheat_growth_step_ms(),
         )
         self.wheat_phase = phase
         self.wheat_last_change_ms = changed_at

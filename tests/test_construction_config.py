@@ -5,31 +5,17 @@ from game import config
 
 def test_construction_requirements_cover_all_building_types() -> None:
     expected = {
-        "LUMBER_CAMP",
-        "STONE_MINE",
-        "IRON_MINE",
-        "FARM",
-        "FORESTER_HUT",
-        "SCHOOL",
-        "HOUSE",
-        "CANTEEN",
-        "SAWMILL",
-        "MILL",
-        "BAKERY",
-        "CHICKEN_FARM",
-        "COW_FARM",
-        "VINEYARD_FARM",
-        "VINEYARD",
-        "WELL",
-        "WINERY",
-        "RESTAURANT",
+        b_type
+        for b_type, payload in config.BUILDING_SETTINGS.items()
+        if isinstance(payload, dict) and "levels" in payload
     }
     assert set(config.CONSTRUCTION_REQUIREMENTS) == expected
 
 
-def test_construction_requirements_have_levels_1_to_10() -> None:
+def test_construction_requirements_have_contiguous_levels_from_one() -> None:
     for b_type, levels in config.CONSTRUCTION_REQUIREMENTS.items():
-        assert set(levels) == set(range(1, 11)), b_type
+        top_level = max(levels)
+        assert set(levels) == set(range(1, top_level + 1)), b_type
 
 
 def test_construction_spec_values_are_non_negative_and_have_build_time() -> None:

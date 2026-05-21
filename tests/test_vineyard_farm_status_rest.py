@@ -16,7 +16,7 @@ from game.workers import WorkerManager
 
 @pytest.fixture
 def fast_farmer(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("game.worker_farming.FARMER_ACTION_MS", 80)
+    monkeypatch.setattr("game.worker_farming.worker_building_action_ms", lambda _type_tag: 80)
     monkeypatch.setattr("game.worker_models.WORKER_TILE_TRAVEL_MS", 40)
 
 
@@ -24,7 +24,7 @@ def test_vineyard_farmer_rest_timer_after_grape_harvest_matches_farmer_rest_ms(
     fast_farmer: None,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr("game.worker_farming.FARMER_REST_MS", 5_000)
+    monkeypatch.setattr("game.worker_farming.worker_building_rest_ms", lambda _type_tag: 5_000)
     now_ms = {"t": 0}
     world = World(world_seed=0)
     world._trees.clear()  # noqa: SLF001

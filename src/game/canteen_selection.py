@@ -10,13 +10,12 @@ from game.canteen_dining import (
     count_reserved_diner_slots,
     try_reserve_diner_slot_and_meal,
 )
+from game.config import HUNGER_SATIETY_THRESHOLD
 from game.pathfinding import find_path_bfs
 from game.worker_models import Worker
 from game.worker_tiers import worker_tier
 from game.world import World
 from game.workers import WorkerManager
-
-HUNGER_SATIETY_THRESHOLD = 2_000
 
 _DINING_BUILDING_TYPES: frozenset[str] = frozenset({"CANTEEN", "RESTAURANT"})
 

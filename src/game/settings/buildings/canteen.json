@@ -38,7 +38,8 @@
   },
   "dining": {
     "tier": "basic",
-    "meal_resource": "simple_meal"
+    "meal_resource": "simple_meal",
+    "eat_duration_ms": 20000
   },
   "worker_effects": {
     "by_level": {

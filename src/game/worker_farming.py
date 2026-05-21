@@ -17,10 +17,10 @@ from game.buildings.vineyard import Vineyard
 from game.pathfinding import find_path_bfs
 from game.worker_constants import (
     CHOP_DURATION_MS,
-    FARMER_ACTION_MS,
     FARMER_FIELD_RADIUS,
     FARMER_NO_TARGET_WORKING_STATE_MS,
-    FARMER_REST_MS,
+    worker_building_action_ms,
+    worker_building_rest_ms,
 )
 from game.worker_geometry import (
     building_center_tile,
@@ -61,7 +61,7 @@ class WorkerFarmingMixin:
             self._park_worker_inside_building(worker, farm)
             worker.state = "resting"
             if worker.camp_wait_until_ms <= now_ms:
-                worker.camp_wait_until_ms = now_ms + FARMER_REST_MS
+                worker.camp_wait_until_ms = now_ms + worker_building_rest_ms(farm.type_tag)
             return
 
         if worker.state == "resting":
@@ -103,7 +103,7 @@ class WorkerFarmingMixin:
             phase = self._read_field_phase(field) if field is not None else WHEAT_PHASE_1
             worker.state = "sowing" if is_ready_for_sowing(phase) else "harvesting"
             worker.chop_started_ms = now_ms
-            worker.chop_duration_ms = FARMER_ACTION_MS
+            worker.chop_duration_ms = worker_building_action_ms(farm.type_tag)
             return
 
         if worker.state == "sowing":
@@ -151,7 +151,7 @@ class WorkerFarmingMixin:
             worker.chop_started_ms = 0
             worker.chop_duration_ms = CHOP_DURATION_MS
             worker.state = "resting"
-            worker.camp_wait_until_ms = now_ms + FARMER_REST_MS
+            worker.camp_wait_until_ms = now_ms + worker_building_rest_ms(farm.type_tag)
             if self._registry is not None and world is not None:
                 try_hunger_canteen_after_completed_cycle(
                     worker,
@@ -182,7 +182,7 @@ class WorkerFarmingMixin:
             self._park_worker_inside_building(worker, farm)
             worker.state = "resting"
             if worker.camp_wait_until_ms <= now_ms:
-                worker.camp_wait_until_ms = now_ms + FARMER_REST_MS
+                worker.camp_wait_until_ms = now_ms + worker_building_rest_ms(farm.type_tag)
             return
         if worker.state == "resting":
             self._park_worker_inside_building(worker, farm)
@@ -230,7 +230,7 @@ class WorkerFarmingMixin:
         if worker.state == "arrived_vineyard":
             worker.state = "harvesting_grapes"
             worker.chop_started_ms = now_ms
-            worker.chop_duration_ms = FARMER_ACTION_MS
+            worker.chop_duration_ms = worker_building_action_ms(farm.type_tag)
             return
         if worker.state == "harvesting_grapes":
             if now_ms - worker.chop_started_ms < worker.chop_duration_ms:
@@ -249,7 +249,7 @@ class WorkerFarmingMixin:
             worker.chop_started_ms = 0
             worker.chop_duration_ms = CHOP_DURATION_MS
             worker.state = "resting"
-            worker.camp_wait_until_ms = now_ms + FARMER_REST_MS
+            worker.camp_wait_until_ms = now_ms + worker_building_rest_ms(farm.type_tag)
             if self._registry is not None and world is not None:
                 try_hunger_canteen_after_completed_cycle(
                     worker,

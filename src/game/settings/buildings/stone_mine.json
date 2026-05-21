@@ -1,6 +1,10 @@
 {
   "building_type": "STONE_MINE",
   "resource_search_radius": 20,
+  "work": {
+    "action_ms": 10000,
+    "rest_ms": 5000
+  },
   "storage": {
     "capacity_by_level": {
       "1": 3,

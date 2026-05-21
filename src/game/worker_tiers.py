@@ -2,29 +2,32 @@
 
 from __future__ import annotations
 
-_WORKER_TIERS: dict[str, str] = {
-    "LUMBERJACK": "basic",
-    "STONECUTTER": "basic",
-    "MINER": "basic",
-    "FARMER": "basic",
-    "ANIMAL_HERDER": "basic",
-    "FORESTER": "basic",
-    "SAWYER": "basic",
-    "MILLER": "basic",
-    "BAKER": "basic",
-    "COOK": "basic",
-    "WATERMAN": "basic",
-    "CARRIER": "basic",
-    "BUILDER": "basic",
-    "WINEMAKER": "advanced",
-}
+from game.config import SETTINGS
 
 ALL_TIERS: tuple[str, ...] = ("basic", "advanced")
 
 
+def _configured_worker_tiers() -> dict[str, str]:
+    payload = SETTINGS.get("workers", {}).get("tiers", {})
+    if not isinstance(payload, dict):
+        raise ValueError("workers.tiers must be an object")
+
+    result: dict[str, str] = {}
+    for worker_type, tier in payload.items():
+        worker_key = str(worker_type).upper()
+        tier_key = str(tier).lower()
+        if tier_key not in ALL_TIERS:
+            raise ValueError(f"unknown tier {tier_key!r} for worker {worker_key!r}; valid: {ALL_TIERS}")
+        result[worker_key] = tier_key
+    return result
+
+
+_WORKER_TIERS: dict[str, str] = _configured_worker_tiers()
+
+
 def worker_tier(worker_type: str) -> str:
     """Return the tier id for *worker_type* (default ``'basic'``)."""
-    return _WORKER_TIERS.get(worker_type, "basic")
+    return _WORKER_TIERS.get(str(worker_type).upper(), "basic")
 
 
 def workers_of_tier(tier: str) -> list[str]:
@@ -34,6 +37,7 @@ def workers_of_tier(tier: str) -> list[str]:
 
 def register_worker_tier(worker_type: str, tier: str) -> None:
     """Register or update the tier for a worker type."""
-    if tier not in ALL_TIERS:
-        raise ValueError(f"unknown tier {tier!r}; valid: {ALL_TIERS}")
-    _WORKER_TIERS[worker_type] = tier
+    tier_key = str(tier).lower()
+    if tier_key not in ALL_TIERS:
+        raise ValueError(f"unknown tier {tier_key!r}; valid: {ALL_TIERS}")
+    _WORKER_TIERS[str(worker_type).upper()] = tier_key

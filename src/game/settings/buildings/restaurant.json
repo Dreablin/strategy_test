@@ -39,7 +39,8 @@
   },
   "dining": {
     "tier": "advanced",
-    "meal_resource": "elite_meal"
+    "meal_resource": "elite_meal",
+    "eat_duration_ms": 20000
   },
   "worker_effects": {
     "by_level": {

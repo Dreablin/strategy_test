@@ -11,15 +11,13 @@ from game.canteen_dining import (
     release_diner_slots_for_worker,
     release_reserved_meal,
 )
+from game.config import building_int_setting
 from game.pathfinding import find_path_bfs
 from game.worker_geometry import building_center_tile
 from game.worker_models import Worker
 from game.worker_satiety import MAX_WORKER_SATIETY
 from game.world import World
 from game.workers import WorkerManager
-
-DINING_EAT_DURATION_MS = 20_000
-
 
 def _footprint_adjacent_tiles(building: Any) -> list[tuple[int, int]]:
     pos = building.grid_pos
@@ -83,6 +81,10 @@ def dining_runtime_phase(worker: Worker) -> str:
 
 def dining_eating_started_ms(worker: Worker) -> int:
     return int(worker.dining_eating_started_ms)
+
+
+def dining_eat_duration_ms(building: Any) -> int:
+    return building_int_setting(str(building.type_tag), "dining", "eat_duration_ms")
 
 
 def assign_diner_meals_for_canteen(building: Any, *, now_ms: int = 0) -> None:
@@ -235,7 +237,7 @@ def update_dining_runtime(
     if phase == "eating":
         worker.state = "eating"
         worker.idle = False
-        if now_ms >= worker.dining_eating_started_ms + DINING_EAT_DURATION_MS:
+        if now_ms >= worker.dining_eating_started_ms + dining_eat_duration_ms(building):
             _finish_eating(worker, building, world=world, worker_manager=worker_manager, now_ms=now_ms)
         return
 

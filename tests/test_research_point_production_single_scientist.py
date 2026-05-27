@@ -111,7 +111,7 @@ def test_worker_manager_accumulates_points_with_one_scientist() -> None:
     _fill_laboratory_inputs(laboratory)
     scientist = workers.hire("SCIENTIST")
     assert scientist is not None
-    workers.reassign_all()
+    workers.assign_to_building(scientist, laboratory)
     assert workers.laboratory_active_scientist_count(laboratory) == 1
 
     workers.update(0)

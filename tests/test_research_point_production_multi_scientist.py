@@ -72,8 +72,9 @@ def test_points_cap_at_laboratory_slot_capacity() -> None:
 def test_worker_manager_two_scientists_double_point_rate() -> None:
     workers, laboratory, state = _setup(level=3)
     _fill_laboratory_inputs(laboratory)
-    _hire_scientists(workers, 2)
-    workers.reassign_all()
+    scientists = _hire_scientists(workers, 2)
+    for scientist in scientists:
+        workers.assign_to_building(scientist, laboratory)
     assert workers.laboratory_active_scientist_count(laboratory) == 2
 
     workers.update(0)
@@ -88,8 +89,9 @@ def test_worker_manager_max_slot_scientists_scale_linearly() -> None:
     _fill_laboratory_inputs(laboratory)
     capacity = laboratory.scientist_slot_capacity()
     assert capacity == 5
-    _hire_scientists(workers, capacity)
-    workers.reassign_all()
+    scientists = _hire_scientists(workers, capacity)
+    for scientist in scientists:
+        workers.assign_to_building(scientist, laboratory)
     assert workers.laboratory_active_scientist_count(laboratory) == capacity
 
     workers.update(0)

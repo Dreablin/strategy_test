@@ -13,7 +13,7 @@ from game.canteen_dining import (
 )
 from game.config import building_int_setting
 from game.pathfinding import find_path_bfs
-from game.worker_geometry import building_center_tile
+from game.worker_geometry import building_center_tile, worker_inside_building_footprint
 from game.worker_models import Worker
 from game.worker_satiety import MAX_WORKER_SATIETY
 from game.world import World
@@ -66,13 +66,7 @@ def _reachable_diner_stand_tile_for(
 
 
 def _worker_inside_building_footprint(worker: Worker, building: Any) -> bool:
-    pos = building.grid_pos
-    if pos is None:
-        return False
-    gx, gy = pos
-    w, h = type(building).footprint
-    wx, wy = worker.current_tile
-    return gx <= wx < gx + w and gy <= wy < gy + h
+    return worker_inside_building_footprint(worker, building)
 
 
 def dining_runtime_phase(worker: Worker) -> str:

@@ -75,6 +75,8 @@ from game.worker_laboratory import (
     building_has_free_staff_slot as _building_has_free_staff_slot,
     laboratory_active_scientist_count as _laboratory_active_scientist_count,
     laboratory_active_scientists as _laboratory_active_scientists,
+    laboratory_research_contributing_scientist_count as _laboratory_research_contributing_scientist_count,
+    laboratory_research_contributing_scientists as _laboratory_research_contributing_scientists,
     laboratory_assigned_scientist_count as _laboratory_assigned_scientist_count,
     laboratory_assigned_scientists as _laboratory_assigned_scientists,
     laboratory_free_scientist_slots as _laboratory_free_scientist_slots,
@@ -269,6 +271,12 @@ class WorkerManager(
 
     def laboratory_active_scientist_count(self, laboratory: Building) -> int:
         return _laboratory_active_scientist_count(self._workers, laboratory)
+
+    def laboratory_research_contributing_scientists(self, laboratory: Building) -> tuple[Worker, ...]:
+        return _laboratory_research_contributing_scientists(self._workers, laboratory)
+
+    def laboratory_research_contributing_scientist_count(self, laboratory: Building) -> int:
+        return _laboratory_research_contributing_scientist_count(self._workers, laboratory)
 
     def pause_laboratory_scientists(self, laboratory: Building) -> None:
         """Release Scientists when the Laboratory enters construction or upgrade."""
@@ -535,6 +543,28 @@ class WorkerManager(
             worker.satiety, last, now_ms
         )
 
+    def _sync_laboratory_scientist_presence(self) -> None:
+        from game.buildings.laboratory import Laboratory
+        from game.worker_geometry import worker_inside_building_footprint
+
+        for worker in self._workers:
+            if worker.type_tag != "SCIENTIST":
+                continue
+            building = worker.assigned_building
+            if not isinstance(building, Laboratory) or building.is_under_construction:
+                continue
+            if worker.dining_phase != "none" or worker.dining_canteen is not None:
+                continue
+            if worker.path:
+                continue
+            if worker_inside_building_footprint(worker, building):
+                worker.state = "working"
+                worker.idle = False
+                continue
+            self._park_worker_inside_building(worker, building)
+            worker.state = "working"
+            worker.idle = False
+
     def _update_laboratory_research_points(self, now_ms: int) -> None:
         if self._research_state is None or self._registry is None:
             return
@@ -549,7 +579,9 @@ class WorkerManager(
             tick_laboratory_research_points(
                 research_state=self._research_state,
                 laboratory=building,
-                active_scientist_count=self.laboratory_active_scientist_count(building),
+                active_scientist_count=self.laboratory_research_contributing_scientist_count(
+                    building
+                ),
                 now_ms=int(now_ms),
                 last_tick_by_laboratory=self._laboratory_research_last_tick_ms,
             )
@@ -577,7 +609,6 @@ class WorkerManager(
         self._update_field_growth(int(now_ms))
         self._enqueue_construction_transport_tasks()
         self._enqueue_laboratory_research_input_tasks()
-        self._update_laboratory_research_points(now_ms)
         self._enqueue_sawmill_refill_tasks()
         self._enqueue_sawmill_output_tasks()
         self._enqueue_mill_refill_tasks()
@@ -629,6 +660,8 @@ class WorkerManager(
             updater = self._updaters.get(worker.type_tag)
             if updater is not None:
                 updater(worker, now_ms, world)
+        self._sync_laboratory_scientist_presence()
+        self._update_laboratory_research_points(now_ms)
         spawned = False
         if self._registry is not None:
             for building in self._registry.all():

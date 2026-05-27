@@ -5,10 +5,12 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from game.buildings.base import Building
+from game.worker_geometry import worker_inside_building_footprint
 from game.worker_models import Worker
 
 _SCIENTIST_TAG = "SCIENTIST"
 _LABORATORY_TAG = "LABORATORY"
+_DINING_STATES = frozenset({"going_to_canteen", "eating", "waiting_for_meal"})
 
 
 def laboratory_assigned_scientists(
@@ -33,6 +35,39 @@ def laboratory_active_scientists(
     if laboratory.is_under_construction:
         return ()
     return laboratory_assigned_scientists(workers, laboratory)
+
+
+def scientist_contributes_to_research_points(worker: Worker, laboratory: Building) -> bool:
+    """True when a Scientist is active inside the Laboratory for point production."""
+    if laboratory.type_tag != _LABORATORY_TAG or laboratory.is_under_construction:
+        return False
+    if worker.type_tag != _SCIENTIST_TAG or worker.assigned_building is not laboratory:
+        return False
+    if worker.dining_phase != "none" or worker.dining_canteen is not None:
+        return False
+    if worker.state in _DINING_STATES:
+        return False
+    if worker.idle or not worker_inside_building_footprint(worker, laboratory):
+        return False
+    return True
+
+
+def laboratory_research_contributing_scientists(
+    workers: Sequence[Worker],
+    laboratory: Building,
+) -> tuple[Worker, ...]:
+    return tuple(
+        worker
+        for worker in laboratory_active_scientists(workers, laboratory)
+        if scientist_contributes_to_research_points(worker, laboratory)
+    )
+
+
+def laboratory_research_contributing_scientist_count(
+    workers: Sequence[Worker],
+    laboratory: Building,
+) -> int:
+    return len(laboratory_research_contributing_scientists(workers, laboratory))
 
 
 def laboratory_active_scientist_count(workers: Sequence[Worker], laboratory: Building) -> int:

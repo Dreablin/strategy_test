@@ -12,6 +12,8 @@ from game.ui.research_screen_layout import ResearchContentLayout, ResearchTierRo
 _TILE_PAD = 6
 _IMAGE_SIZE = 52
 _TITLE_LINE_H = 18
+_START_GAP = 6
+_START_BTN_H = 24
 
 
 @dataclass(frozen=True, slots=True)
@@ -22,6 +24,7 @@ class ResearchTileLayout:
     tile_rect: pygame.Rect
     image_rect: pygame.Rect
     title_rect: pygame.Rect
+    start_button: pygame.Rect
 
 
 def max_configured_column() -> int:
@@ -66,7 +69,8 @@ def layout_tile_for_entry(
     max_col = max_configured_column() if max_column is None else max_column
     row = _tier_row(content, entry.tier)
     slot = column_slot_rect(row, entry.column, max_column=max_col)
-    img_size = min(_IMAGE_SIZE, slot.width - 4, max(16, slot.height - _TITLE_LINE_H - 8))
+    reserved_below_image = _TITLE_LINE_H + _START_GAP + _START_BTN_H + 8
+    img_size = min(_IMAGE_SIZE, slot.width - 4, max(16, slot.height - reserved_below_image))
     image_rect = pygame.Rect(
         slot.left + (slot.width - img_size) // 2,
         slot.top + 4,
@@ -74,6 +78,13 @@ def layout_tile_for_entry(
         img_size,
     )
     title_rect = pygame.Rect(slot.left, image_rect.bottom + 2, slot.width, _TITLE_LINE_H)
+    btn_w = max(48, min(slot.width - 8, slot.width))
+    start_button = pygame.Rect(
+        slot.left + (slot.width - btn_w) // 2,
+        title_rect.bottom + _START_GAP,
+        btn_w,
+        _START_BTN_H,
+    )
     return ResearchTileLayout(
         research_id=entry.id,
         tier=entry.tier,
@@ -81,6 +92,7 @@ def layout_tile_for_entry(
         tile_rect=slot,
         image_rect=image_rect,
         title_rect=title_rect,
+        start_button=start_button,
     )
 
 

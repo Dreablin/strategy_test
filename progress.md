@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 28 - Laboratory and Research (**in progress**)
-- **Next Task:** T423 - Add Laboratory dynamic input storage display only
-- **Last Completed:** T422 - Wire Start button click to domain start only
-- **Total Progress:** 422 / 438 (Phase 28: 36 / 52 done)
+- **Next Task:** T424 - Add Laboratory input-demand planning only
+- **Last Completed:** T423 - Add Laboratory dynamic input storage display only
+- **Total Progress:** 423 / 438 (Phase 28: 37 / 52 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -121,7 +121,7 @@
 - [x] **T420**: Add domain start-active-research behavior only. Starting an eligible research should set the active research id and reject starting any other research while one is active. Do not create dynamic input storage yet. Add focused domain tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T421**: Add dynamic input storage creation on research start only. When research starts, initialize Laboratory dynamic input storage exactly for that research's cost map with zero delivered amounts. Do not wire UI clicks yet. Add focused domain tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T422**: Wire Start button click to domain start only. Clicking an eligible Start button should call the domain start flow and leave the selected research uncancellable. Do not add carrier delivery yet. Add focused input/domain tests. Run full `pytest` and `ruff check src tests`.
-- [ ] **T423**: Add Laboratory dynamic input storage display only. Laboratory panel should show the active research image and one row per required input resource with real delivered amount/capacity. Do not add carrier delivery or point progress yet. Add focused panel tests. Run full `pytest` and `ruff check src tests`.
+- [x] **T423**: Add Laboratory dynamic input storage display only. Laboratory panel should show the active research image and one row per required input resource with real delivered amount/capacity. Do not add carrier delivery or point progress yet. Add focused panel tests. Run full `pytest` and `ruff check src tests`.
 
 ### 28.6 Research Resource Logistics
 

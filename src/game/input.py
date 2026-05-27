@@ -586,6 +586,7 @@ class GameInput:
                 worker_status=worker_status,
                 production_status=production_status,
                 worker_manager=self._worker_manager,
+                research_state=self._research_state,
             )
             return
         if WineryPanel.supports_building(self._panel):
@@ -1103,6 +1104,7 @@ class GameInput:
                     worker_assigned=worker_status != "empty",
                     production_status=production_status,
                     worker_manager=self._worker_manager,
+                    research_state=self._research_state,
                 )
                 if layout.frame.collidepoint(pos):
                     action = LaboratoryPanel.click_action(
@@ -1112,6 +1114,7 @@ class GameInput:
                         worker_assigned=worker_status != "empty",
                         production_status=production_status,
                         worker_manager=self._worker_manager,
+                        research_state=self._research_state,
                     )
                     if action == "close":
                         self._panel = None

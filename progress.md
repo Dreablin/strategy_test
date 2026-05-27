@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 28 - Laboratory and Research (**in progress**)
-- **Next Task:** T432 - Add Technology chain unlock behavior only
-- **Last Completed:** T431 - Add research completion only
-- **Total Progress:** 431 / 438 (Phase 28: 45 / 52 done)
+- **Next Task:** T433 - Add Laboratory active research progress UI only
+- **Last Completed:** T432 - Add Technology chain unlock behavior only
+- **Total Progress:** 432 / 438 (Phase 28: 46 / 52 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -136,7 +136,7 @@
 - [x] **T429**: Add multi-Scientist linear scaling only. Accumulated points should scale linearly with the number of active Scientists inside the Laboratory, up to Laboratory slot capacity. Add focused runtime tests for two and max-capacity Scientists. Run full `pytest` and `ruff check src tests`.
 - [x] **T430**: Exclude absent/dining Scientists from research speed only. Scientists who are dining, walking to eat, returning from dining, idle, unassigned, or otherwise not active inside the Laboratory should not contribute points. Add focused runtime tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T431**: Add research completion only. When accumulated points reach the configured requirement, mark the research complete, clear active research/dynamic input storage/progress, and allow the next eligible research to start. Add focused completion tests. Run full `pytest` and `ruff check src tests`.
-- [ ] **T432**: Add Technology chain unlock behavior only. Completing Technology `1` should allow eligible tier-2 researches when Laboratory level permits, and so on through Technology `4`. Add focused eligibility tests for dependency and Laboratory-level gates. Run full `pytest` and `ruff check src tests`.
+- [x] **T432**: Add Technology chain unlock behavior only. Completing Technology `1` should allow eligible tier-2 researches when Laboratory level permits, and so on through Technology `4`. Add focused eligibility tests for dependency and Laboratory-level gates. Run full `pytest` and `ruff check src tests`.
 
 ### 28.8 Research Progress UI Integration
 

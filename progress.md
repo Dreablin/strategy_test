@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 28 - Laboratory and Research (**in progress**)
-- **Next Task:** T433 - Add Laboratory active research progress UI only
-- **Last Completed:** T432 - Add Technology chain unlock behavior only
-- **Total Progress:** 432 / 438 (Phase 28: 46 / 52 done)
+- **Next Task:** T434 - Add Research screen active progress state only
+- **Last Completed:** T433 - Add Laboratory active research progress UI only
+- **Total Progress:** 433 / 438 (Phase 28: 47 / 52 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -140,7 +140,7 @@
 
 ### 28.8 Research Progress UI Integration
 
-- [ ] **T433**: Add Laboratory active research progress UI only. Laboratory panel should show active research image, progress bar, and numeric points like `350 / 10000` once the research has started. Add focused panel tests. Run full `pytest` and `ruff check src tests`.
+- [x] **T433**: Add Laboratory active research progress UI only. Laboratory panel should show active research image, progress bar, and numeric points like `350 / 10000` once the research has started. Add focused panel tests. Run full `pytest` and `ruff check src tests`. Laboratory panel should show active research image, progress bar, and numeric points like `350 / 10000` once the research has started. Add focused panel tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T434**: Add Research screen active progress state only. The full-screen Research menu should visually mark the currently active research as in-progress. Do not change completed/not-started state from earlier rendering. Add focused UI tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T435**: Add top-bar Research button state refresh only. The button should appear/disappear correctly after Laboratory construction completion, demolition, and rebuild, without requiring restart. Add focused integration tests. Run full `pytest` and `ruff check src tests`.
 

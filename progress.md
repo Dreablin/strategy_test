@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 28 - Laboratory and Research (**in progress**)
-- **Next Task:** T436 - Add one bounded end-to-end Laboratory/Research integration test only
-- **Last Completed:** T435 - Add top-bar Research button state refresh only
-- **Total Progress:** 435 / 438 (Phase 28: 49 / 52 done)
+- **Next Task:** T437 - Update Laboratory/Research documentation only
+- **Last Completed:** T436 - Add bounded Laboratory/Research integration test only
+- **Total Progress:** 436 / 438 (Phase 28: 50 / 52 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -146,7 +146,7 @@
 
 ### 28.9 Integration and Documentation
 
-- [ ] **T436**: Add one bounded end-to-end Laboratory/Research integration test only. Cover building a completed Laboratory, hiring/assigning a Scientist, opening the research screen, starting Technology `1`, delivering its resources, accumulating points, completing it, and unlocking the next Technology according to gates. Do not update documentation or close the phase in this task. Run full `pytest` and `ruff check src tests`.
+- [x] **T436**: Add one bounded end-to-end Laboratory/Research integration test only.
 - [ ] **T437**: Update Laboratory/Research documentation only. Update PRD and extension documentation so future agents know where to add research definitions, Laboratory settings, Scientist staffing rules, research UI behavior, and transport integration rules. Do not change runtime code or tests unless documentation references need path/name corrections. Run full `pytest` and `ruff check src tests` if code changed; otherwise run `ruff check src tests`.
 - [ ] **T438**: Close Phase 28 progress only. After every Phase 28 task is `[x]`, update Current Status, Last Completed, Total Progress, Decisions Log, Notes, and archive/phase-completion wording as needed. Do not add feature code in this task. Run final full `pytest` plus `ruff check src tests`; mark Phase 28 complete only when all checks pass.
 

@@ -45,6 +45,7 @@ from game.ui.school_panel import SchoolPanel
 from game.ui.sawmill_panel import SawmillPanel
 from game.ui.placement import PlacementController
 from game.ui.population_panel import PopulationPanel
+from game.ui.research_screen import ResearchScreen
 from game.ui.town_hall_panel import TownHallPanel
 from game.ui.top_bar import TopBar
 from game.ui.vineyard_farm_panel import VineyardFarmPanel
@@ -95,6 +96,7 @@ class GameInput:
         "_panel",
         "_population_filter",
         "_population_panel_open",
+        "_research_screen_open",
         "_population_scroll",
         "_placement",
         "_registry",
@@ -125,6 +127,7 @@ class GameInput:
         self._worker_panel: Worker | None = None
         self._population_filter: str | None = None
         self._population_panel_open = False
+        self._research_screen_open = False
         self._population_scroll = 0
         self._school_tier: str = "basic"
         self._rmb_down = False
@@ -159,6 +162,11 @@ class GameInput:
     def population_panel_open(self) -> bool:
         """Whether the population list modal is open."""
         return self._population_panel_open
+
+    @property
+    def research_screen_open(self) -> bool:
+        """Whether the full-screen Research menu is open."""
+        return self._research_screen_open
 
     @property
     def population_scroll(self) -> int:
@@ -235,16 +243,23 @@ class GameInput:
             self._panel = None
             self._worker_panel = None
             self._population_panel_open = False
+            self._research_screen_open = False
             if event.building_type in {"DEV_TREE", "DEV_STONE", "DEV_IRON"}:
                 self._placement.select_dev(event.building_type)
             else:
                 self._placement.select(event.building_type)
             return
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-            if self._panel is not None or self._worker_panel is not None or self._population_panel_open:
+            if (
+                self._panel is not None
+                or self._worker_panel is not None
+                or self._population_panel_open
+                or self._research_screen_open
+            ):
                 self._panel = None
                 self._worker_panel = None
                 self._population_panel_open = False
+                self._research_screen_open = False
             else:
                 self._placement.cancel()
             return
@@ -283,11 +298,21 @@ class GameInput:
                 self._panel = None
                 self._worker_panel = None
                 self._population_panel_open = False
+                self._research_screen_open = False
             self._rmb_down = False
             self._rmb_dragging = False
             return
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == pygame.BUTTON_LEFT:
-            if self._panel is not None or self._worker_panel is not None or self._population_panel_open:
+            if self._research_screen_open:
+                action = ResearchScreen.click_action(surface, event.pos)
+                if action == "close":
+                    self._research_screen_open = False
+                return
+            if (
+                self._panel is not None
+                or self._worker_panel is not None
+                or self._population_panel_open
+            ):
                 self._handle_map_left_click(surface, event.pos)
                 return
             if not _on_map(surface, event.pos):
@@ -304,10 +329,15 @@ class GameInput:
                         top_layout.research_button is not None
                         and top_layout.research_button.collidepoint(event.pos)
                     ):
+                        self._panel = None
+                        self._worker_panel = None
+                        self._population_panel_open = False
+                        self._research_screen_open = True
                         return
                     if top_layout.population_button.collidepoint(event.pos):
                         self._panel = None
                         self._worker_panel = None
+                        self._research_screen_open = False
                         self._population_panel_open = not self._population_panel_open
                         self._population_scroll = 0
                         self._population_filter = None
@@ -326,6 +356,9 @@ class GameInput:
 
     def draw_panel(self, surface: pygame.Surface) -> None:
         self._sync_panel_stale()
+        if self._research_screen_open:
+            ResearchScreen.draw(surface)
+            return
         if self._population_panel_open:
             workers = self._worker_manager.workers()
             self._population_scroll = PopulationPanel.clamp_scroll(

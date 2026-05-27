@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 28 - Laboratory and Research (**in progress**)
-- **Next Task:** T414 - Add research requirement tooltip only
-- **Last Completed:** T413 - Add per-tile Start button rendering only
-- **Total Progress:** 413 / 438 (Phase 28: 27 / 52 done)
+- **Next Task:** T415 - Add base research eligibility rules only
+- **Last Completed:** T414 - Add research requirement tooltip only
+- **Total Progress:** 414 / 438 (Phase 28: 28 / 52 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -109,7 +109,7 @@
 - [x] **T411**: Add research tile rendering only. Render configured research tiles at their configured tier/column with image and title. Do not add dim/full-color completion state or clickable start buttons yet. Add focused draw/layout tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T412**: Add research tile completion visual state only. Completed research tiles render full-color; not-started and in-progress tiles render dimmed/partially transparent. Do not add start buttons yet. Add focused rendering tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T413**: Add per-tile Start button rendering only. Render a button directly below each tile with the required spacing, visually enabled/disabled from a supplied eligibility flag. Do not handle clicks yet. Add focused layout tests. Run full `pytest` and `ruff check src tests`.
-- [ ] **T414**: Add research requirement tooltip only. Hovering a research tile should show a compact tooltip with configured cost, required points, dependencies, and lock reason text supplied by eligibility logic. Do not start research from the tooltip. Add focused UI tests. Run full `pytest` and `ruff check src tests`.
+- [x] **T414**: Add research requirement tooltip only. Hovering a research tile should show a compact tooltip with configured cost, required points, dependencies, and lock reason text supplied by eligibility logic. Do not start research from the tooltip. Add focused UI tests. Run full `pytest` and `ruff check src tests`.
 
 ### 28.5 Research Eligibility and Start Flow
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 import pygame
@@ -11,6 +12,7 @@ from game.ui.research_screen_layout import (
     compute_content_layout,
 )
 from game.research_state import ResearchState
+from game.ui.research_tile_tooltip import draw_research_tooltip_at_hover
 from game.ui.research_tiles import draw_research_tiles
 
 _PAD = 16
@@ -46,6 +48,8 @@ class ResearchScreen:
         content: ResearchContentLayout,
         *,
         research_state: ResearchState | None = None,
+        hover_pos: tuple[int, int] | None = None,
+        research_lock_reasons: Mapping[str, str] | None = None,
     ) -> None:
         pygame.draw.rect(surface, (34, 38, 48), content.content, border_radius=8)
         pygame.draw.rect(surface, (48, 54, 66), content.technology_column, border_radius=6)
@@ -77,12 +81,20 @@ class ResearchScreen:
                 ),
             )
         draw_research_tiles(surface, content.tiles, research_state=research_state)
+        draw_research_tooltip_at_hover(
+            surface,
+            content.tiles,
+            hover_pos,
+            lock_reasons=research_lock_reasons,
+        )
 
     @staticmethod
     def draw(
         surface: pygame.Surface,
         *,
         research_state: ResearchState | None = None,
+        hover_pos: tuple[int, int] | None = None,
+        research_lock_reasons: Mapping[str, str] | None = None,
     ) -> ResearchScreenLayout:
         layout = ResearchScreen.layout(surface)
         dim = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
@@ -96,7 +108,13 @@ class ResearchScreen:
         title = title_font.render(_TITLE, True, (238, 240, 248))
         surface.blit(title, (layout.frame.left + _PAD, layout.frame.top + _PAD))
 
-        ResearchScreen._draw_content(surface, layout.content, research_state=research_state)
+        ResearchScreen._draw_content(
+            surface,
+            layout.content,
+            research_state=research_state,
+            hover_pos=hover_pos,
+            research_lock_reasons=research_lock_reasons,
+        )
 
         pygame.draw.line(
             surface,

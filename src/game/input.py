@@ -97,6 +97,7 @@ class GameInput:
         "_panel",
         "_population_filter",
         "_population_panel_open",
+        "_research_lock_reasons",
         "_research_screen_open",
         "_research_state",
         "_population_scroll",
@@ -133,6 +134,7 @@ class GameInput:
         self._population_filter: str | None = None
         self._population_panel_open = False
         self._research_screen_open = False
+        self._research_lock_reasons: dict[str, str] = {}
         self._population_scroll = 0
         self._school_tier: str = "basic"
         self._rmb_down = False
@@ -362,7 +364,12 @@ class GameInput:
     def draw_panel(self, surface: pygame.Surface) -> None:
         self._sync_panel_stale()
         if self._research_screen_open:
-            ResearchScreen.draw(surface, research_state=self._research_state)
+            ResearchScreen.draw(
+                surface,
+                research_state=self._research_state,
+                hover_pos=pygame.mouse.get_pos(),
+                research_lock_reasons=self._research_lock_reasons,
+            )
             return
         if self._population_panel_open:
             workers = self._worker_manager.workers()

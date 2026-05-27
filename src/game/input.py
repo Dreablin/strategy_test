@@ -28,6 +28,7 @@ from game.iso import screen_to_tile
 from game.render import Renderer
 from game.housing import current_population, max_population
 from game.laboratory_visibility import has_completed_laboratory
+from game.research_state import ResearchState
 from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT, BottomBar
 from game.ui.bakery_panel import BakeryPanel
 from game.ui.canteen_panel import CanteenPanel
@@ -97,6 +98,7 @@ class GameInput:
         "_population_filter",
         "_population_panel_open",
         "_research_screen_open",
+        "_research_state",
         "_population_scroll",
         "_placement",
         "_registry",
@@ -117,12 +119,15 @@ class GameInput:
         placement: PlacementController,
         worker_manager: WorkerManager,
         camera: Camera,
+        *,
+        research_state: ResearchState | None = None,
     ) -> None:
         self._world = world
         self._registry = registry
         self._placement = placement
         self._worker_manager = worker_manager
         self._camera = camera
+        self._research_state = research_state if research_state is not None else ResearchState()
         self._panel: Building | None = None
         self._worker_panel: Worker | None = None
         self._population_filter: str | None = None
@@ -357,7 +362,7 @@ class GameInput:
     def draw_panel(self, surface: pygame.Surface) -> None:
         self._sync_panel_stale()
         if self._research_screen_open:
-            ResearchScreen.draw(surface)
+            ResearchScreen.draw(surface, research_state=self._research_state)
             return
         if self._population_panel_open:
             workers = self._worker_manager.workers()

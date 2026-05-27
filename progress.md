@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 28 - Laboratory and Research (**in progress**)
-- **Next Task:** T412 - Add research tile completion visual state only
-- **Last Completed:** T411 - Add research tile rendering only
-- **Total Progress:** 411 / 438 (Phase 28: 25 / 52 done)
+- **Next Task:** T413 - Add per-tile Start button rendering only
+- **Last Completed:** T412 - Add research tile completion visual state only
+- **Total Progress:** 412 / 438 (Phase 28: 26 / 52 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -107,7 +107,7 @@
 - [x] **T409**: Add Research screen open/close shell only. Clicking the top-bar Research button opens a full-screen modal overlay; close/Esc returns to the game. Do not draw research rows or tiles yet. Add focused input/modal tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T410**: Add four-row research screen layout only. Draw four equal-height tier rows and a left static Technology column area using configured row positions. Do not add research tiles, start buttons, or eligibility yet. Add focused layout tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T411**: Add research tile rendering only. Render configured research tiles at their configured tier/column with image and title. Do not add dim/full-color completion state or clickable start buttons yet. Add focused draw/layout tests. Run full `pytest` and `ruff check src tests`.
-- [ ] **T412**: Add research tile completion visual state only. Completed research tiles render full-color; not-started and in-progress tiles render dimmed/partially transparent. Do not add start buttons yet. Add focused rendering tests. Run full `pytest` and `ruff check src tests`.
+- [x] **T412**: Add research tile completion visual state only. Completed research tiles render full-color; not-started and in-progress tiles render dimmed/partially transparent. Do not add start buttons yet. Add focused rendering tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T413**: Add per-tile Start button rendering only. Render a button directly below each tile with the required spacing, visually enabled/disabled from a supplied eligibility flag. Do not handle clicks yet. Add focused layout tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T414**: Add research requirement tooltip only. Hovering a research tile should show a compact tooltip with configured cost, required points, dependencies, and lock reason text supplied by eligibility logic. Do not start research from the tooltip. Add focused UI tests. Run full `pytest` and `ruff check src tests`.
 

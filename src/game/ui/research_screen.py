@@ -10,6 +10,7 @@ from game.ui.research_screen_layout import (
     ResearchContentLayout,
     compute_content_layout,
 )
+from game.research_state import ResearchState
 from game.ui.research_tiles import draw_research_tiles
 
 _PAD = 16
@@ -40,7 +41,12 @@ class ResearchScreen:
         )
 
     @staticmethod
-    def _draw_content(surface: pygame.Surface, content: ResearchContentLayout) -> None:
+    def _draw_content(
+        surface: pygame.Surface,
+        content: ResearchContentLayout,
+        *,
+        research_state: ResearchState | None = None,
+    ) -> None:
         pygame.draw.rect(surface, (34, 38, 48), content.content, border_radius=8)
         pygame.draw.rect(surface, (48, 54, 66), content.technology_column, border_radius=6)
         label_font = pygame.font.Font(None, 20)
@@ -70,10 +76,14 @@ class ResearchScreen:
                     row.row_rect.top + 8,
                 ),
             )
-        draw_research_tiles(surface, content.tiles)
+        draw_research_tiles(surface, content.tiles, research_state=research_state)
 
     @staticmethod
-    def draw(surface: pygame.Surface) -> ResearchScreenLayout:
+    def draw(
+        surface: pygame.Surface,
+        *,
+        research_state: ResearchState | None = None,
+    ) -> ResearchScreenLayout:
         layout = ResearchScreen.layout(surface)
         dim = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
         dim.fill((10, 12, 16, 200))
@@ -86,7 +96,7 @@ class ResearchScreen:
         title = title_font.render(_TITLE, True, (238, 240, 248))
         surface.blit(title, (layout.frame.left + _PAD, layout.frame.top + _PAD))
 
-        ResearchScreen._draw_content(surface, layout.content)
+        ResearchScreen._draw_content(surface, layout.content, research_state=research_state)
 
         pygame.draw.line(
             surface,

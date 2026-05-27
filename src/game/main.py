@@ -15,6 +15,7 @@ from game.ui.bottom_bar import BAR_HEIGHT, BottomBar
 from game.ui.placement import PlacementController
 from game.ui.top_bar import TopBar
 from game.world import World
+from game.research_state import ResearchState
 from game.workers import WorkerManager
 
 
@@ -34,7 +35,15 @@ def main() -> int:
     placement = PlacementController(world, registry, camera)
     worker_manager = WorkerManager(registry, now_ms_fn=pygame.time.get_ticks)
     worker_manager.bootstrap_starting_workers_near_town_hall(town_hall)
-    game_input = GameInput(world, registry, placement, worker_manager, camera)
+    research_state = ResearchState()
+    game_input = GameInput(
+        world,
+        registry,
+        placement,
+        worker_manager,
+        camera,
+        research_state=research_state,
+    )
 
     running = True
     try:

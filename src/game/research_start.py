@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from game.laboratory_visibility import completed_laboratory
+from game.research_config import RESEARCH_BY_ID
 from game.research_eligibility import research_start_eligibility_for_registry
 from game.research_state import ResearchState
 
@@ -29,4 +31,10 @@ def try_start_active_research(
     if not eligibility.can_start:
         reason = eligibility.lock_reason or "Research cannot be started"
         raise ResearchStartError(reason, lock_reason=eligibility.lock_reason)
-    research_state.start_research(research_id)
+    key = str(research_id)
+    research_state.start_research(key)
+    laboratory = completed_laboratory(registry)
+    if laboratory is None:
+        raise ResearchStartError("Laboratory required", lock_reason="Laboratory required")
+    definition = RESEARCH_BY_ID[key]
+    laboratory.initialize_research_input_storage(definition.resource_cost)

@@ -13,6 +13,7 @@ from game.research_eligibility import (
     research_start_eligibility,
     research_start_eligibility_for_registry,
 )
+from game.research_config import RESEARCH_BY_ID
 from game.research_state import ResearchState
 from game.world import World
 
@@ -36,7 +37,12 @@ def test_requires_completed_laboratory() -> None:
 
 def test_eligible_when_laboratory_exists_and_no_blockers() -> None:
     state = ResearchState()
-    result = research_start_eligibility("1", research_state=state, has_completed_laboratory=True)
+    result = research_start_eligibility(
+        "1",
+        research_state=state,
+        has_completed_laboratory=True,
+        laboratory_level=1,
+    )
     assert result.can_start is True
     assert result.lock_reason is None
 
@@ -45,7 +51,12 @@ def test_completed_research_cannot_start() -> None:
     state = ResearchState()
     state.start_research("1")
     state.mark_research_completed("1")
-    result = research_start_eligibility("1", research_state=state, has_completed_laboratory=True)
+    result = research_start_eligibility(
+        "1",
+        research_state=state,
+        has_completed_laboratory=True,
+        laboratory_level=1,
+    )
     assert result.can_start is False
     assert result.lock_reason == "Already completed"
 
@@ -58,6 +69,7 @@ def test_active_research_blocks_all_starts() -> None:
             research_id,
             research_state=state,
             has_completed_laboratory=True,
+            laboratory_level=10,
         )
         assert result.can_start is False
         assert result.lock_reason == "Another research is in progress"
@@ -79,9 +91,78 @@ def test_registry_helper_uses_laboratory_presence() -> None:
 def test_lock_reasons_and_can_start_map() -> None:
     state = ResearchState()
     state.start_research("1")
-    reasons = research_lock_reasons(research_state=state, has_completed_laboratory=True)
+    reasons = research_lock_reasons(
+        research_state=state,
+        has_completed_laboratory=True,
+        laboratory_level=10,
+    )
     assert reasons["1"] == "Another research is in progress"
     assert reasons["2"] == "Another research is in progress"
-    can_start = research_can_start_map(research_state=state, has_completed_laboratory=True)
+    can_start = research_can_start_map(
+        research_state=state,
+        has_completed_laboratory=True,
+        laboratory_level=10,
+    )
     assert can_start["1"] is False
     assert all(not allowed for allowed in can_start.values())
+
+
+def test_tier_gates_at_laboratory_level_1() -> None:
+    state = ResearchState()
+    assert research_start_eligibility(
+        "1", research_state=state, has_completed_laboratory=True, laboratory_level=1
+    ).can_start
+    blocked = research_start_eligibility(
+        "2", research_state=state, has_completed_laboratory=True, laboratory_level=1
+    )
+    assert blocked.can_start is False
+    assert blocked.lock_reason == "Requires Laboratory level 3"
+
+
+def test_tier_gates_at_laboratory_level_3() -> None:
+    state = ResearchState()
+    assert research_start_eligibility(
+        "2", research_state=state, has_completed_laboratory=True, laboratory_level=3
+    ).can_start
+    blocked = research_start_eligibility(
+        "3", research_state=state, has_completed_laboratory=True, laboratory_level=3
+    )
+    assert blocked.can_start is False
+    assert blocked.lock_reason == "Requires Laboratory level 6"
+
+
+def test_tier_gates_at_laboratory_level_6() -> None:
+    state = ResearchState()
+    assert research_start_eligibility(
+        "3", research_state=state, has_completed_laboratory=True, laboratory_level=6
+    ).can_start
+    blocked = research_start_eligibility(
+        "4", research_state=state, has_completed_laboratory=True, laboratory_level=6
+    )
+    assert blocked.can_start is False
+    assert blocked.lock_reason == "Requires Laboratory level 9"
+
+
+def test_tier_gates_at_laboratory_level_9() -> None:
+    state = ResearchState()
+    for research_id in ("1", "2", "3", "4"):
+        assert research_start_eligibility(
+            research_id,
+            research_state=state,
+            has_completed_laboratory=True,
+            laboratory_level=9,
+        ).can_start
+
+
+def test_registry_tier_gate_uses_placed_laboratory_level() -> None:
+    state = ResearchState()
+    registry = _registry(laboratory_completed=True)
+    laboratory = next(b for b in registry.all() if b.type_tag == "LABORATORY")
+    assert laboratory.level == 1
+    assert research_start_eligibility_for_registry(
+        "1", research_state=state, registry=registry
+    ).can_start
+    blocked = research_start_eligibility_for_registry("2", research_state=state, registry=registry)
+    assert blocked.can_start is False
+    assert blocked.lock_reason == "Requires Laboratory level 3"
+    assert RESEARCH_BY_ID["2"].tier == 2

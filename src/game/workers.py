@@ -59,6 +59,7 @@ from game.worker_hiring import (
     hire,
     worker_compatible_building_types,
 )
+from game.research_state import ResearchState
 from game.worker_models import TransportTask, Worker
 from game.worker_satiety import apply_satiety_game_time
 from game.worker_status import (
@@ -133,6 +134,7 @@ class WorkerManager(
         "_vineyard_plot_reservations",
         "_now_ms_fn",
         "_registry",
+        "_research_state",
         "_transport_queue",
         "_updaters",
         "_workers",
@@ -145,8 +147,10 @@ class WorkerManager(
         registry: Any | None = None,
         *,
         now_ms_fn: Callable[[], int] | None = None,
+        research_state: ResearchState | None = None,
     ) -> None:
         self._registry = registry
+        self._research_state = research_state
         self._workers: list[Worker] = []
         self._transport_queue: list[TransportTask] = []
         self._field_reservations: dict[tuple[int, int], Worker] = {}
@@ -364,6 +368,10 @@ class WorkerManager(
         site = building.construction_site
         if building.type_tag == "LABORATORY":
             self.release_laboratory_scientists(building)
+            if hasattr(building, "clear_research_input_storage"):
+                building.clear_research_input_storage()
+            if self._research_state is not None and self._research_state.has_active_research():
+                self._research_state.cancel_active_research()
         for w in self._workers:
             if w.assigned_building is building:
                 self._release_worker_from_demolished_building(w, world=world)
@@ -376,6 +384,16 @@ class WorkerManager(
             self._transport_queue = [
                 t for t in self._transport_queue if t.source is not building and t.target is not building
             ]
+        now_ms = int(self._now_ms_fn())
+        for worker in self._workers:
+            if worker.type_tag != "CARRIER":
+                continue
+            task = worker.transport_task
+            if task is None:
+                continue
+            if task.source is not building and task.target is not building:
+                continue
+            self._reroute_or_cancel_invalid_transport(worker, task, now_ms)
         if building.type_tag == "FIELD" and building.grid_pos is not None:
             self._field_reservations.pop(tuple(building.grid_pos), None)
         if building.type_tag == "VINEYARD" and building.grid_pos is not None:

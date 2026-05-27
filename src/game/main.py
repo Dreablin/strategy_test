@@ -33,9 +33,13 @@ def main() -> int:
     bootstrap_starting_warehouse(town_hall, TOWN_HALL_STARTING_WAREHOUSE)
     camera = Camera()
     placement = PlacementController(world, registry, camera)
-    worker_manager = WorkerManager(registry, now_ms_fn=pygame.time.get_ticks)
-    worker_manager.bootstrap_starting_workers_near_town_hall(town_hall)
     research_state = ResearchState()
+    worker_manager = WorkerManager(
+        registry,
+        now_ms_fn=pygame.time.get_ticks,
+        research_state=research_state,
+    )
+    worker_manager.bootstrap_starting_workers_near_town_hall(town_hall)
     game_input = GameInput(
         world,
         registry,

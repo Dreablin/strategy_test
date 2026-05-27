@@ -34,6 +34,12 @@ class ResearchState:
     def has_active_research(self) -> bool:
         return self._active_id is not None
 
+    def cancel_active_research(self) -> None:
+        """Clear in-progress research without marking it complete."""
+        self._active_id = None
+        self._delivered.clear()
+        self._points = 0
+
     def start_research(self, research_id: str) -> None:
         """Select *research_id* as the only active research."""
         key = str(research_id)

@@ -27,7 +27,8 @@
       "BAKER": "basic",
       "COOK": "basic",
       "WATERMAN": "basic",
-      "WINEMAKER": "advanced"
+      "WINEMAKER": "advanced",
+      "SCIENTIST": "advanced"
     }
   },
   "world": {
@@ -85,7 +86,8 @@
       "BAKER": 1,
       "COOK": 1,
       "WATERMAN": 1,
-      "WINEMAKER": 1
+      "WINEMAKER": 1,
+      "SCIENTIST": 1
     }
   },
   "levels": {

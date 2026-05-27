@@ -310,31 +310,51 @@ class WorkerManager(
     def _has_housing_capacity_for(self, *, incoming: int) -> bool:
         return has_housing_capacity_for(self, incoming=incoming)
 
+    def _release_worker_from_demolished_building(
+        self,
+        worker: Worker,
+        *,
+        world: Any | None,
+    ) -> None:
+        if worker.assigned_building is None:
+            return
+        if world is not None:
+            world.release_reservations_for(worker)
+        self._release_field_reservations_for(worker)
+        self._release_vineyard_plot_reservations_for(worker)
+        self._clear_building_bonus(worker)
+        worker.assigned_building = None
+        worker.idle = True
+        worker.stand_tile = worker.current_tile
+        worker.target_tile = None
+        worker.path = []
+        worker.segment_started_ms = 0
+        worker.segment_progress = 0.0
+        worker.state = "idle"
+        worker.camp_wait_until_ms = 0
+        worker.carrying = None
+        worker.target_tree = None
+        worker.chop_started_ms = 0
+        worker.chop_duration_ms = CHOP_DURATION_MS
+        worker.blocked_cycle_hunger_try_ms = -1
+
+    def release_laboratory_scientists(self, laboratory: Building) -> None:
+        """Idle all Scientists assigned to a Laboratory (e.g. on demolition)."""
+        if laboratory.type_tag != "LABORATORY":
+            return
+        world = getattr(self._registry, "_world", None) if self._registry is not None else None
+        for scientist in self.laboratory_assigned_scientists(laboratory):
+            self._release_worker_from_demolished_building(scientist, world=world)
+
     def notify_demolished(self, building: Building) -> None:
         """Workers targeting this building become idle at their current tile."""
         world = getattr(self._registry, "_world", None) if self._registry is not None else None
         site = building.construction_site
+        if building.type_tag == "LABORATORY":
+            self.release_laboratory_scientists(building)
         for w in self._workers:
             if w.assigned_building is building:
-                if world is not None:
-                    world.release_reservations_for(w)
-                self._release_field_reservations_for(w)
-                self._release_vineyard_plot_reservations_for(w)
-                self._clear_building_bonus(w)
-                w.assigned_building = None
-                w.idle = True
-                w.stand_tile = w.current_tile
-                w.target_tile = None
-                w.path = []
-                w.segment_started_ms = 0
-                w.segment_progress = 0.0
-                w.state = "idle"
-                w.camp_wait_until_ms = 0
-                w.carrying = None
-                w.target_tree = None
-                w.chop_started_ms = 0
-                w.chop_duration_ms = CHOP_DURATION_MS
-                w.blocked_cycle_hunger_try_ms = -1
+                self._release_worker_from_demolished_building(w, world=world)
             if site is not None:
                 if site.builder is w:
                     site.builder = None

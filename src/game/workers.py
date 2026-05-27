@@ -72,6 +72,8 @@ from game.worker_processing import WorkerProcessingMixin
 from game.resource_catalog import is_simple_meal_resource
 from game.worker_laboratory import (
     building_has_free_staff_slot as _building_has_free_staff_slot,
+    laboratory_active_scientist_count as _laboratory_active_scientist_count,
+    laboratory_active_scientists as _laboratory_active_scientists,
     laboratory_assigned_scientist_count as _laboratory_assigned_scientist_count,
     laboratory_assigned_scientists as _laboratory_assigned_scientists,
     laboratory_free_scientist_slots as _laboratory_free_scientist_slots,
@@ -255,6 +257,16 @@ class WorkerManager(
 
     def laboratory_free_scientist_slots(self, laboratory: Building) -> int:
         return _laboratory_free_scientist_slots(self._workers, laboratory)
+
+    def laboratory_active_scientists(self, laboratory: Building) -> tuple[Worker, ...]:
+        return _laboratory_active_scientists(self._workers, laboratory)
+
+    def laboratory_active_scientist_count(self, laboratory: Building) -> int:
+        return _laboratory_active_scientist_count(self._workers, laboratory)
+
+    def pause_laboratory_scientists(self, laboratory: Building) -> None:
+        """Release Scientists when the Laboratory enters construction or upgrade."""
+        self.release_laboratory_scientists(laboratory)
 
     def assign_to_building(self, worker: Worker, building: Building) -> None:
         self._clear_building_bonus(worker)

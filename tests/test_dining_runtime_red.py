@@ -9,9 +9,9 @@ from game.buildings.town_hall import TownHall
 from game.canteen_dining import count_reserved_diner_slots, try_reserve_diner_slot
 from game.config import town_hall_origin_tile
 from game.worker_dining import (
-    DINING_EAT_DURATION_MS,
     assign_diner_meals_for_canteen,
     diner_stand_tile_for,
+    dining_eat_duration_ms,
     dining_eating_started_ms,
     dining_runtime_phase,
     update_dining_runtime,
@@ -35,8 +35,9 @@ def _scene() -> tuple[World, BuildingRegistry, WorkerManager, Canteen]:
     return world, registry, wm, canteen
 
 
-def test_dining_eat_duration_is_twenty_seconds() -> None:
-    assert DINING_EAT_DURATION_MS == 20_000
+def test_dining_eat_duration_is_positive() -> None:
+    _, _, _, c = _scene()
+    assert dining_eat_duration_ms(c) > 0
 
 
 def test_diner_stand_tile_is_deterministic_per_worker() -> None:
@@ -170,7 +171,7 @@ def test_after_eating_duration_satiety_max_slot_released_idle() -> None:
     )
     started = dining_eating_started_ms(w)
     assert started > 0
-    end_ms = started + DINING_EAT_DURATION_MS + 50
+    end_ms = started + dining_eat_duration_ms(c) + 50
     update_dining_runtime(
         w,
         canteen=c,
@@ -203,14 +204,14 @@ def test_assigned_worker_walks_back_to_work_after_eating_instead_of_teleporting(
     c._diner_occupants.add(w)  # noqa: SLF001
     wm.add_worker(w)
 
-    wm.update(1_000 + DINING_EAT_DURATION_MS)
+    wm.update(1_000 + dining_eat_duration_ms(c))
 
     assert count_reserved_diner_slots(c) == 0
     assert dining_runtime_phase(w) == "returning_to_work"
     assert w.state == "returning"
     assert w.current_tile != building_center_tile(bakery)
 
-    now = 1_000 + DINING_EAT_DURATION_MS
+    now = 1_000 + dining_eat_duration_ms(c)
     for _ in range(300):
         now += 500
         wm.update(now)

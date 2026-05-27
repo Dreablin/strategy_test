@@ -29,7 +29,9 @@ def _setup():
 
 def test_winery_production_consumes_grapes_produces_wine() -> None:
     winery, workers, winemaker = _setup()
-    winery.add_grapes(3)
+    input_count = winery.recipe_input_count()
+    output_count = winery.recipe_output_count()
+    winery.add_grapes(input_count)
 
     now_ms = 0
     for _ in range(200):
@@ -40,15 +42,15 @@ def test_winery_production_consumes_grapes_produces_wine() -> None:
     assert winemaker.state == "processing"
     assert winery.processing_started_ms > 0
 
-    now_ms += 60_000
+    now_ms += winery.cycle_ms()
     workers.update(now_ms)
-    assert winery.output_amount() == 1
+    assert winery.output_amount() == output_count
     assert winery.input_amount() == 0
 
 
 def test_winery_production_enters_rest_after_cycle() -> None:
     winery, workers, winemaker = _setup()
-    winery.add_grapes(3)
+    winery.add_grapes(winery.recipe_input_count())
 
     now_ms = 0
     for _ in range(200):
@@ -57,7 +59,7 @@ def test_winery_production_enters_rest_after_cycle() -> None:
         if winemaker.state == "processing":
             break
 
-    now_ms += 60_000
+    now_ms += winery.cycle_ms()
     workers.update(now_ms)
     assert winemaker.state == "resting"
     assert winemaker.camp_wait_until_ms > 0
@@ -77,8 +79,8 @@ def test_winery_production_blocked_without_grapes() -> None:
 
 def test_winery_production_blocked_when_output_full() -> None:
     winery, workers, winemaker = _setup()
-    winery.add_grapes(3)
-    winery.add_wine(3)
+    winery.add_grapes(winery.recipe_input_count())
+    winery.add_wine(winery.output_capacity())
 
     now_ms = 0
     for _ in range(100):
@@ -91,7 +93,7 @@ def test_winery_production_blocked_when_output_full() -> None:
 
 def test_winery_production_blocked_when_inactive() -> None:
     winery, workers, winemaker = _setup()
-    winery.add_grapes(3)
+    winery.add_grapes(winery.recipe_input_count())
     winery.set_active(False)
 
     now_ms = 0

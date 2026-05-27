@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from game.config import HUNGER_SATIETY_THRESHOLD
 from game.worker_models import Worker
 from game.world import World
 
@@ -21,10 +22,7 @@ def _try_hunger_reservation(
     registry: BuildingRegistry,
     worker_manager: WorkerManager,
 ) -> bool:
-    from game.canteen_selection import (
-        HUNGER_SATIETY_THRESHOLD,
-        reserve_nearest_reachable_canteen_if_hungry,
-    )
+    from game.canteen_selection import reserve_nearest_reachable_canteen_if_hungry
 
     if worker.carrying is not None:
         return False
@@ -43,8 +41,6 @@ def try_blocked_cycle_hunger_check(
     now_ms: int,
 ) -> bool:
     """While a new work cycle cannot start, try canteen reservation on a throttled schedule."""
-    from game.canteen_selection import HUNGER_SATIETY_THRESHOLD
-
     now_ms = int(now_ms)
     if worker.carrying is not None:
         return False

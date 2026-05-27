@@ -125,15 +125,6 @@ class BuildingRegistry:
             for tx in range(gx, gx + w):
                 self._world.remove_tree(tx, ty)
         inst = cls(level=1, grid_pos=grid_pos)
-        if cls.type_tag == "FIELD":
-            inst.construction_site = ConstructionSite(
-                required_resources={},
-                delivered_resources={},
-                build_time_ms=10_000,
-                build_started_ms=None,
-                builder=None,
-                target_level=1,
-            )
         req_by_level = CONSTRUCTION_REQUIREMENTS.get(cls.type_tag)
         if req_by_level is not None:
             level1 = req_by_level.get(1)

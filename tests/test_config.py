@@ -30,6 +30,7 @@ def test_global_config_values_are_loaded_from_game_settings_json() -> None:
     assert config.WORKER_TILE_TRAVEL_MS == settings["timing"]["worker_tile_travel_ms"]
     assert config.MAX_WORKER_SATIETY == settings["workers"]["satiety"]["max"]
     assert config.SATIETY_DRAIN_PER_GAME_SECOND == settings["workers"]["satiety"]["drain_per_game_second"]
+    assert config.HUNGER_SATIETY_THRESHOLD == settings["workers"]["satiety"]["hunger_threshold"]
     assert config.TILE_W == settings["world"]["tile_w"]
     assert config.TILE_H == settings["world"]["tile_h"]
     assert config.GRID_SIZE == settings["world"]["grid_size"]
@@ -46,7 +47,9 @@ def test_building_settings_helpers_read_per_building_json() -> None:
     town_hall = _building_settings("town_hall")
 
     assert config.building_int_setting("FARM", "work_radius") == farm["work_radius"]
+    assert config.building_int_setting("FARM", "work", "action_ms") == farm["work"]["action_ms"]
     assert config.building_int_setting("LUMBER_CAMP", "resource_search_radius") == lumber["resource_search_radius"]
+    assert config.building_int_setting("LUMBER_CAMP", "work", "rest_ms") == lumber["work"]["rest_ms"]
     for level, expected in town_hall["housing"]["capacity_by_level"].items():
         assert config.building_level_int_setting("TOWN_HALL", "housing", int(level)) == expected
 

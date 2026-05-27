@@ -15,12 +15,12 @@ def test_winery_input_tasks_one_per_unit_of_free_capacity() -> None:
     world = World(world_seed=0)
     registry = BuildingRegistry(world)
     town_hall = registry.place(TownHall, town_hall_origin_tile())
-    town_hall.add_to_warehouse("grapes", 5)
     winery = registry.place(Winery, near_town_hall_tile(10, 10))
     winery.construction_site = None
+    town_hall.add_to_warehouse("grapes", winery.input_capacity())
 
     tasks = winery_input_transport_tasks(registry)
-    assert len(tasks) == 3
+    assert len(tasks) == winery.input_capacity()
     assert all(t.resource == "grapes" for t in tasks)
     assert all(t.source is town_hall for t in tasks)
     assert all(t.target is winery for t in tasks)
@@ -42,9 +42,9 @@ def test_winery_input_tasks_skip_inactive_winery() -> None:
     world = World(world_seed=0)
     registry = BuildingRegistry(world)
     town_hall = registry.place(TownHall, town_hall_origin_tile())
-    town_hall.add_to_warehouse("grapes", 5)
     winery = registry.place(Winery, near_town_hall_tile(10, 10))
     winery.construction_site = None
+    town_hall.add_to_warehouse("grapes", winery.input_capacity())
     winery.set_active(False)
 
     tasks = winery_input_transport_tasks(registry)
@@ -55,8 +55,8 @@ def test_winery_input_tasks_skip_under_construction() -> None:
     world = World(world_seed=0)
     registry = BuildingRegistry(world)
     town_hall = registry.place(TownHall, town_hall_origin_tile())
-    town_hall.add_to_warehouse("grapes", 5)
     winery = registry.place(Winery, near_town_hall_tile(10, 10))
+    town_hall.add_to_warehouse("grapes", winery.input_capacity())
     winery.construction_site = ConstructionSite(
         required_resources={"wood": 3, "stone": 2},
         delivered_resources={},
@@ -74,10 +74,10 @@ def test_winery_input_tasks_skip_full_winery() -> None:
     world = World(world_seed=0)
     registry = BuildingRegistry(world)
     town_hall = registry.place(TownHall, town_hall_origin_tile())
-    town_hall.add_to_warehouse("grapes", 5)
     winery = registry.place(Winery, near_town_hall_tile(10, 10))
     winery.construction_site = None
-    winery.add_grapes(3)
+    town_hall.add_to_warehouse("grapes", winery.input_capacity())
+    winery.add_grapes(winery.input_capacity())
 
     tasks = winery_input_transport_tasks(registry)
     assert tasks == []

@@ -27,8 +27,8 @@ def fast_vineyard_growth(monkeypatch: pytest.MonkeyPatch) -> None:
 
 @pytest.fixture
 def fast_workers(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("game.worker_farming.FARMER_ACTION_MS", 80)
-    monkeypatch.setattr("game.worker_farming.FARMER_REST_MS", 0)
+    monkeypatch.setattr("game.worker_farming.worker_building_action_ms", lambda _type_tag: 80)
+    monkeypatch.setattr("game.worker_farming.worker_building_rest_ms", lambda _type_tag: 0)
     monkeypatch.setattr("game.worker_models.WORKER_TILE_TRAVEL_MS", 40)
     monkeypatch.setattr("game.worker_constants.CARRIER_INTERACT_MS", 80)
 

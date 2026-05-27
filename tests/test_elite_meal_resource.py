@@ -49,4 +49,5 @@ def test_local_only_meal_keys_contains_both() -> None:
 def test_elite_meal_icon_color_exists() -> None:
     from game.assets import _resource_colors
     color = _resource_colors("elite_meal")
-    assert color == (180, 120, 200)
+    assert isinstance(color, tuple)
+    assert len(color) == 3

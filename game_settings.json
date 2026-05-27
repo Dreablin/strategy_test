@@ -6,11 +6,28 @@
   "workers": {
     "satiety": {
       "max": 10000,
-      "drain_per_game_second": 5
+      "drain_per_game_second": 5,
+      "hunger_threshold": 2000
     },
     "effects": {
       "global": {},
       "by_type": {}
+    },
+    "tiers": {
+      "LUMBERJACK": "basic",
+      "STONECUTTER": "basic",
+      "MINER": "basic",
+      "FARMER": "basic",
+      "ANIMAL_HERDER": "basic",
+      "FORESTER": "basic",
+      "CARRIER": "basic",
+      "BUILDER": "basic",
+      "SAWYER": "basic",
+      "MILLER": "basic",
+      "BAKER": "basic",
+      "COOK": "basic",
+      "WATERMAN": "basic",
+      "WINEMAKER": "advanced"
     }
   },
   "world": {

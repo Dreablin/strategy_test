@@ -2,17 +2,31 @@
 
 from __future__ import annotations
 
+from game import config
+from game.worker_hiring import HIRABLE_WORKERS
 from game.worker_tiers import ALL_TIERS, register_worker_tier, worker_tier, workers_of_tier
 
 
-def test_all_existing_workers_are_basic() -> None:
-    known_basic = [
-        "LUMBERJACK", "STONECUTTER", "MINER", "FARMER",
-        "ANIMAL_HERDER", "FORESTER", "SAWYER", "MILLER",
-        "BAKER", "COOK", "WATERMAN", "CARRIER", "BUILDER",
-    ]
-    for wt in known_basic:
-        assert worker_tier(wt) == "basic", f"{wt} should be basic"
+def test_worker_tiers_are_loaded_from_game_settings_json() -> None:
+    configured = config.SETTINGS["workers"]["tiers"]
+
+    for worker_type, tier in configured.items():
+        assert worker_tier(worker_type) == tier
+
+
+def test_every_hirable_worker_has_tier_and_hire_gate_settings() -> None:
+    configured_tiers = set(config.SETTINGS["workers"]["tiers"])
+    configured_hire_gates = set(config.SETTINGS["gates"]["hire_min_town_hall_level"])
+
+    assert HIRABLE_WORKERS <= configured_tiers
+    assert HIRABLE_WORKERS <= configured_hire_gates
+
+
+def test_configured_worker_tiers_are_valid() -> None:
+    configured = config.SETTINGS["workers"]["tiers"]
+
+    assert configured
+    assert set(configured.values()) <= set(ALL_TIERS)
 
 
 def test_unknown_worker_defaults_to_basic() -> None:

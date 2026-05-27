@@ -8,9 +8,9 @@ from game.buildings.town_hall import TownHall
 from game.canteen_dining import try_reserve_diner_slot_and_meal
 from game.config import near_town_hall_tile, town_hall_origin_tile
 from game.worker_dining import (
-    DINING_EAT_DURATION_MS,
     _try_start_eating,
     _worker_inside_building_footprint,
+    dining_eat_duration_ms,
     update_dining_runtime,
 )
 from game.workers import WorkerManager
@@ -95,7 +95,7 @@ def test_eating_completes_after_duration() -> None:
             break
     assert baker.dining_phase == "eating"
 
-    now_ms += DINING_EAT_DURATION_MS + 1
+    now_ms += dining_eat_duration_ms(canteen) + 1
     update_dining_runtime(
         baker, canteen=canteen, world=world,
         worker_manager=workers, registry=registry, now_ms=now_ms,

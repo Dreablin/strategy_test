@@ -114,13 +114,14 @@ def test_animal_herder_processes_wheat_and_water_into_chicken_and_rests() -> Non
     assert herder.state == "processing"
     assert farm.processing_started_ms == 1_000
 
-    workers.update(46_000)
+    done_ms = farm.processing_started_ms + farm.processing_duration_ms
+    workers.update(done_ms)
     assert farm.input_amount() == 0
     assert farm.water_amount() == 0
     assert farm.output_amount() == 1
     assert farm.processing_started_ms == 0
     assert herder.state == "resting"
-    assert herder.camp_wait_until_ms == 56_000
+    assert herder.camp_wait_until_ms > done_ms
 
 
 def test_carrier_refills_chicken_farm_with_wheat_and_water() -> None:

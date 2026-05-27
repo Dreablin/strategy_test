@@ -17,8 +17,8 @@ def test_vineyard_growth_settings_match_json() -> None:
     v = Vineyard(level=1, grid_pos=(5, 5))
     assert v.growth_stage_count() == building_int_setting("VINEYARD", "growth", "stage_count")
     assert v.stage_duration_ms() == building_int_setting("VINEYARD", "growth", "stage_duration_ms")
-    assert v.growth_stage_count() == 4
-    assert v.stage_duration_ms() == 45_000
+    assert v.growth_stage_count() > 0
+    assert v.stage_duration_ms() > 0
 
 
 def test_vineyard_max_level_matches_global_cap() -> None:

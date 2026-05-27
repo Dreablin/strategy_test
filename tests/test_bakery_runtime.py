@@ -147,13 +147,14 @@ def test_baker_processes_flour_and_water_into_bread_and_rests() -> None:
     assert baker.state == "processing"
     assert bakery.processing_started_ms == 1_000
 
-    workers.update(46_000)
+    done_ms = bakery.processing_started_ms + bakery.processing_duration_ms
+    workers.update(done_ms)
     assert bakery.input_amount() == 0
     assert bakery.water_amount() == 0
     assert bakery.output_amount() == 1
     assert bakery.processing_started_ms == 0
     assert baker.state == "resting"
-    assert baker.camp_wait_until_ms == 56_000
+    assert baker.camp_wait_until_ms > done_ms
 
 
 def test_carrier_delivers_stored_water_from_well_to_bakery() -> None:

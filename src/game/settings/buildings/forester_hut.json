@@ -1,6 +1,10 @@
 {
   "building_type": "FORESTER_HUT",
   "plant_radius": 15,
+  "work": {
+    "action_ms": 5000,
+    "rest_ms": 5000
+  },
   "worker_effects": {
     "by_level": {
       "1": {"assigned_worker": {}},

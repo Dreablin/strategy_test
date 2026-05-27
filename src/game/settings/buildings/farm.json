@@ -1,6 +1,10 @@
 {
   "building_type": "FARM",
   "work_radius": 10,
+  "work": {
+    "action_ms": 5000,
+    "rest_ms": 5000
+  },
   "storage": {
     "capacity_by_level": {
       "1": 3,

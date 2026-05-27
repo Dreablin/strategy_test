@@ -1,0 +1,14 @@
+{
+  "building_type": "FIELD",
+  "footprint": {
+    "tiles_w": 1,
+    "tiles_h": 1
+  },
+  "max_level": 1,
+  "growth": {
+    "stage_duration_ms": 45000
+  },
+  "levels": {
+    "1": {"cost": {}, "build_time_ms": 10000}
+  }
+}

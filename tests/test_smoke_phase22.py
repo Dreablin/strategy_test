@@ -10,7 +10,7 @@ from game.buildings.well import Well
 from game.canteen_dining import count_reserved_diner_slots
 from game.config import near_town_hall_tile, town_hall_origin_tile
 from game.worker_dining import (
-    DINING_EAT_DURATION_MS,
+    dining_eat_duration_ms,
     dining_runtime_phase,
     update_dining_runtime,
 )
@@ -144,7 +144,7 @@ def test_smoke_phase22_canteen_meal_and_dining_end_to_end() -> None:
             or dining_runtime_phase(diner) == "none"
         ),
         step_ms=500,
-        steps=(DINING_EAT_DURATION_MS // 500) + 50,
+        steps=(dining_eat_duration_ms(canteen) // 500) + 50,
     )
     assert ate_done, "expected diner to finish eating and leave dining state"
     assert diner.satiety == MAX_WORKER_SATIETY

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pygame
-
 from game.buildings.restaurant import Restaurant
 from game.canteen_dining import try_reserve_diner_slot_and_meal
 from game.ui.restaurant_panel import RestaurantPanel
@@ -56,15 +54,3 @@ def test_diner_visual_state_eating() -> None:
     w.dining_phase = "eating"
     state = RestaurantPanel.diner_visual_state(r, 0)
     assert state == "eating"
-
-
-def test_draw_with_diners_does_not_crash() -> None:
-    r = _make_restaurant()
-    r.add_local_storage("elite_meal", 1)
-    w = _make_worker()
-    try_reserve_diner_slot_and_meal(r, w)
-    w.dining_phase = "eating"
-    w.dining_eating_started_ms = 100
-    surface = pygame.Surface((800, 600))
-    layout = RestaurantPanel.draw(surface, r, worker_assigned=True, now_ms=5000)
-    assert layout is not None

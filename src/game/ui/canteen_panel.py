@@ -10,7 +10,7 @@ from game.assets import worker_ui_icon
 from game.buildings.canteen import Canteen
 from game.resource_catalog import resource_display_label
 from game.ui.building_panel import BuildingPanel
-from game.worker_dining import DINING_EAT_DURATION_MS
+from game.worker_dining import dining_eat_duration_ms
 
 _PANEL_PAD = 16
 _BTN_H = 32
@@ -193,7 +193,7 @@ class CanteenPanel:
                 started = int(getattr(diner, "dining_eating_started_ms", 0))
                 t = 0.0 if started <= 0 else max(
                     0.0,
-                    min(1.0, (int(now_ms) - started) / float(DINING_EAT_DURATION_MS)),
+                    min(1.0, (int(now_ms) - started) / float(dining_eat_duration_ms(canteen))),
                 )
                 progress_bg = pygame.Rect(tile.left, tile.bottom - 4, tile.width, 3)
                 pygame.draw.rect(surface, (44, 48, 56), progress_bg, border_radius=2)

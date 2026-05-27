@@ -28,10 +28,12 @@ def test_grapes_to_winery_production_to_town_hall(fast_workers: None) -> None:
 
     registry = BuildingRegistry(world)
     town_hall = registry.place(TownHall, town_hall_origin_tile())
-    town_hall.add_to_warehouse("grapes", 3)
 
     winery = registry.place(Winery, near_town_hall_tile(5, 5))
     winery.construction_site = None
+    recipe_input = winery.recipe_input_count()
+    recipe_output = winery.recipe_output_count()
+    town_hall.add_to_warehouse("grapes", recipe_input)
 
     workers = WorkerManager(registry, now_ms_fn=lambda: 0)
     winemaker = workers.hire("WINEMAKER")
@@ -46,7 +48,7 @@ def test_grapes_to_winery_production_to_town_hall(fast_workers: None) -> None:
     for _ in range(4000):
         now_ms += 100
         workers.update(now_ms)
-        if winery.input_amount() >= 3:
+        if winery.input_amount() >= recipe_input:
             grapes_arrived = True
             break
     assert grapes_arrived, f"Grapes did not arrive at winery; input={winery.input_amount()}"
@@ -56,7 +58,7 @@ def test_grapes_to_winery_production_to_town_hall(fast_workers: None) -> None:
     for _ in range(4000):
         now_ms += 100
         workers.update(now_ms)
-        if winery.output_amount() >= 1:
+        if winery.output_amount() >= recipe_output:
             production_done = True
             break
     assert production_done, f"Winemaker did not produce wine; output={winery.output_amount()}"

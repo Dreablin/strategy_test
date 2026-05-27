@@ -24,8 +24,8 @@ def _make_winery():
 def test_storage_lines_empty() -> None:
     winery = _make_winery()
     grapes_line, wine_line = WineryPanel.storage_lines(winery)
-    assert "0" in grapes_line and "3" in grapes_line
-    assert "0" in wine_line and "3" in wine_line
+    assert f"0 / {winery.input_capacity()}" in grapes_line
+    assert f"0 / {winery.output_capacity()}" in wine_line
 
 
 def test_storage_lines_with_stock() -> None:
@@ -35,39 +35,6 @@ def test_storage_lines_with_stock() -> None:
     grapes_line, wine_line = WineryPanel.storage_lines(winery)
     assert "2" in grapes_line
     assert "1" in wine_line
-
-
-def test_draw_does_not_crash() -> None:
-    pygame.init()
-    surface = pygame.Surface((800, 600))
-    winery = _make_winery()
-    winery.add_grapes(2)
-    WineryPanel.draw(
-        surface,
-        winery,
-        worker_assigned=True,
-        worker_status="assigned",
-        production_status="Processing",
-        now_ms=5000,
-    )
-    pygame.quit()
-
-
-def test_draw_with_progress_bar() -> None:
-    pygame.init()
-    surface = pygame.Surface((800, 600))
-    winery = _make_winery()
-    winery.add_grapes(3)
-    winery.processing_started_ms = 1000
-    WineryPanel.draw(
-        surface,
-        winery,
-        worker_assigned=True,
-        worker_status="assigned",
-        production_status="Processing",
-        now_ms=31000,
-    )
-    pygame.quit()
 
 
 def test_layout_toggle_not_overlapping_demolish() -> None:

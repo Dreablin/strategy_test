@@ -14,10 +14,6 @@ from game.world import World
 from game.worker_models import Worker
 from game.workers import WorkerManager, building_center_tile
 
-# Phase 22 PRD cook cycle (matches planned `worker_constants` in T255).
-CANTEEN_CYCLE_MS = 30_000
-COOK_REST_MS = 5_000
-
 
 def _registry_with_canteen() -> tuple[World, BuildingRegistry, Canteen]:
     world = World(world_seed=0)
@@ -138,7 +134,7 @@ def test_inactive_mid_cycle_finishes_current_then_blocks_next_like_other_process
 
     canteen.set_active(False)
 
-    t_done = t0 + CANTEEN_CYCLE_MS
+    t_done = t0 + canteen.processing_duration_ms
     wm.update(t_done)
     assert canteen.local_storage_amount("simple_meal") == 1
     assert canteen.local_storage_amount("chicken") == 1
@@ -147,7 +143,7 @@ def test_inactive_mid_cycle_finishes_current_then_blocks_next_like_other_process
     assert canteen.processing_started_ms == 0
     assert cook.state == "resting"
 
-    t_after_rest = t_done + COOK_REST_MS + 1
+    t_after_rest = cook.camp_wait_until_ms + 1
     wm.update(t_after_rest)
     assert canteen.processing_started_ms == 0
     assert canteen.local_storage_amount("simple_meal") == 1

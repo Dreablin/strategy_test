@@ -21,9 +21,9 @@ def _setup():
 
 def test_wine_tasks_generated_for_free_capacity() -> None:
     world, registry, town_hall, restaurant = _setup()
-    town_hall.add_to_warehouse("wine", 5)
+    town_hall.add_to_warehouse("wine", restaurant.local_storage_capacity("wine"))
     tasks = restaurant_input_transport_tasks(registry, "wine")
-    assert len(tasks) == 3
+    assert len(tasks) == restaurant.local_storage_capacity("wine")
     assert all(t.resource == "wine" for t in tasks)
     assert all(t.source is town_hall for t in tasks)
     assert all(t.target is restaurant for t in tasks)
@@ -44,8 +44,8 @@ def test_wine_tasks_empty_when_no_stock() -> None:
 
 def test_wine_tasks_skip_full_restaurant() -> None:
     world, registry, town_hall, restaurant = _setup()
-    town_hall.add_to_warehouse("wine", 5)
-    restaurant.add_local_storage("wine", 3)
+    town_hall.add_to_warehouse("wine", restaurant.local_storage_capacity("wine"))
+    restaurant.add_local_storage("wine", restaurant.local_storage_capacity("wine"))
     tasks = restaurant_input_transport_tasks(registry, "wine")
     assert tasks == []
 

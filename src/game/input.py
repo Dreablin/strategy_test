@@ -27,6 +27,7 @@ from game.camera import Camera
 from game.iso import screen_to_tile
 from game.render import Renderer
 from game.housing import current_population, max_population
+from game.laboratory_visibility import has_completed_laboratory
 from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT, BottomBar
 from game.ui.bakery_panel import BakeryPanel
 from game.ui.canteen_panel import CanteenPanel
@@ -297,7 +298,13 @@ class GameInput:
                         max_population=max_population(self._registry, self._worker_manager),
                         delivery_queue_size=self._worker_manager.transport_queue_size(),
                         active_delivery_count=self._worker_manager.active_transport_count(),
+                        show_research_button=has_completed_laboratory(self._registry),
                     )
+                    if (
+                        top_layout.research_button is not None
+                        and top_layout.research_button.collidepoint(event.pos)
+                    ):
+                        return
                     if top_layout.population_button.collidepoint(event.pos):
                         self._panel = None
                         self._worker_panel = None

@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 28 - Laboratory and Research (**in progress**)
-- **Next Task:** T408 - Add top-bar Research button visibility only
-- **Last Completed:** T407 - Add Laboratory panel Scientist slot display only
-- **Total Progress:** 407 / 438 (Phase 28: 21 / 52 done)
+- **Next Task:** T409 - Add Research screen open/close shell only
+- **Last Completed:** T408 - Add top-bar Research button visibility only
+- **Total Progress:** 408 / 438 (Phase 28: 22 / 52 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -103,7 +103,7 @@
 
 ### 28.4 Top Bar and Research Screen Shell
 
-- [ ] **T408**: Add top-bar Research button visibility only. Show the "Research" button only when a completed Laboratory exists; hide it while no Laboratory exists or the Laboratory is under construction. Do not open a screen yet. Add focused top-bar tests. Run full `pytest` and `ruff check src tests`.
+- [x] **T408**: Add top-bar Research button visibility only. Show the "Research" button only when a completed Laboratory exists; hide it while no Laboratory exists or the Laboratory is under construction. Do not open a screen yet. Add focused top-bar tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T409**: Add Research screen open/close shell only. Clicking the top-bar Research button opens a full-screen modal overlay; close/Esc returns to the game. Do not draw research rows or tiles yet. Add focused input/modal tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T410**: Add four-row research screen layout only. Draw four equal-height tier rows and a left static Technology column area using configured row positions. Do not add research tiles, start buttons, or eligibility yet. Add focused layout tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T411**: Add research tile rendering only. Render configured research tiles at their configured tier/column with image and title. Do not add dim/full-color completion state or clickable start buttons yet. Add focused draw/layout tests. Run full `pytest` and `ruff check src tests`.

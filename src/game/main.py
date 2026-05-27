@@ -10,6 +10,7 @@ from game.config import TOWN_HALL_STARTING_WAREHOUSE, WINDOW_SIZE, town_hall_ori
 from game.input import TOP_BAR_HEIGHT, GameInput
 from game.render import Renderer
 from game.housing import current_population, max_population
+from game.laboratory_visibility import has_completed_laboratory
 from game.ui.bottom_bar import BAR_HEIGHT, BottomBar
 from game.ui.placement import PlacementController
 from game.ui.top_bar import TopBar
@@ -83,6 +84,7 @@ def main() -> int:
                 max_population=max_population(registry, worker_manager),
                 delivery_queue_size=worker_manager.transport_queue_size(),
                 active_delivery_count=worker_manager.active_transport_count(),
+                show_research_button=has_completed_laboratory(registry),
             )
             BottomBar.draw(screen)
             placement.draw(screen, camera)

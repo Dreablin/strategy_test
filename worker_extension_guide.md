@@ -122,8 +122,8 @@ centralized in `src/game/worker_tiers.py`:
 - `register_worker_tier(worker_type, tier)` → register new workers at runtime.
 - `ALL_TIERS = ("basic", "advanced")`.
 
-All pre-Phase-26 workers are `basic`. `WINEMAKER` is the first `advanced`
-worker.
+All pre-Phase-26 workers are `basic`. `WINEMAKER` and `SCIENTIST` are
+`advanced` (see `game_settings.json` `workers.tiers`).
 
 ### School Hire Tabs
 
@@ -154,6 +154,14 @@ Example: **`COOK`** staffs both **`CANTEEN`** (basic dining, `simple_meal`) and
 the cook uses `RESTAURANT_PROCESSOR` in `worker_processing.py`. Dining tier
 selection routes basic-tier workers to Canteens and advanced-tier workers to
 Restaurants, regardless of the Cook's own tier.
+
+Example: **`SCIENTIST`** staffs **`LABORATORY`** only. The Laboratory uses
+**multi-slot** assignment (not the normal one-worker-per-building rule):
+`WorkerManager.reassign_all()` fills up to `scientist_slot_capacity()` from
+`laboratory.json`. Only Scientists **inside the footprint** who are not dining,
+idle, or away contribute research points (`worker_laboratory.py`). Runtime
+coordination and research ticks live in `workers.py` (`_update_laboratory_research_points`,
+`_sync_laboratory_scientist_presence`). See **`research_extension_guide.md`**.
 
 Example: **`FARMER`** staffs both **`FARM`** (wheat + `FIELD` reservations and
 return-to-camp deposit) and **`VINEYARD_FARM`** (ripe `VINEYARD` selection,

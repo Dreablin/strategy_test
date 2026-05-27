@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 28 - Laboratory and Research (**in progress**)
-- **Next Task:** T437 - Update Laboratory/Research documentation only
-- **Last Completed:** T436 - Add bounded Laboratory/Research integration test only
-- **Total Progress:** 436 / 438 (Phase 28: 50 / 52 done)
+- **Next Task:** T438 - Close Phase 28 progress only
+- **Last Completed:** T437 - Update Laboratory/Research documentation only
+- **Total Progress:** 437 / 438 (Phase 28: 51 / 52 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -147,7 +147,7 @@
 ### 28.9 Integration and Documentation
 
 - [x] **T436**: Add one bounded end-to-end Laboratory/Research integration test only.
-- [ ] **T437**: Update Laboratory/Research documentation only. Update PRD and extension documentation so future agents know where to add research definitions, Laboratory settings, Scientist staffing rules, research UI behavior, and transport integration rules. Do not change runtime code or tests unless documentation references need path/name corrections. Run full `pytest` and `ruff check src tests` if code changed; otherwise run `ruff check src tests`.
+- [x] **T437**: Update Laboratory/Research documentation only.
 - [ ] **T438**: Close Phase 28 progress only. After every Phase 28 task is `[x]`, update Current Status, Last Completed, Total Progress, Decisions Log, Notes, and archive/phase-completion wording as needed. Do not add feature code in this task. Run final full `pytest` plus `ruff check src tests`; mark Phase 28 complete only when all checks pass.
 
 ---
@@ -189,5 +189,6 @@
 - Pathfinding contract: **4-dir** `find_path_bfs` (no diagonals), aligned with PRD.
 - Worker extension rules: **`worker_extension_guide.md`**.
 - Building extension rules: **`building_extension_guide.md`**.
+- Laboratory / Research extension rules: **`research_extension_guide.md`**.
 - Worker effects rules: **`worker_effects_guide.md`**.
 - Ralph-loop contract: leave exactly one `[~]` task, otherwise the next agent starts the first `[ ]` task.

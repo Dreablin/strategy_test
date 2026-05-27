@@ -27,7 +27,7 @@ from game.camera import Camera
 from game.iso import screen_to_tile
 from game.render import Renderer
 from game.housing import current_population, max_population
-from game.laboratory_visibility import has_completed_laboratory
+from game.ui.top_bar import research_button_visible
 from game.research_eligibility import research_ui_eligibility
 from game.research_start import try_start_active_research
 from game.research_state import ResearchState
@@ -190,11 +190,16 @@ class GameInput:
         """Current worker type filter in the population panel, or None for all."""
         return self._population_filter
 
+    def _sync_research_ui_state(self) -> None:
+        if self._research_screen_open and not research_button_visible(self._registry):
+            self._research_screen_open = False
+
     def _sync_panel_stale(self) -> None:
         if self._panel is not None and self._panel not in self._registry.all():
             self._panel = None
         if self._worker_panel is not None and self._worker_panel not in self._worker_manager.workers():
             self._worker_panel = None
+        self._sync_research_ui_state()
 
     def _worker_screen_pos(self, surface: pygame.Surface, worker: Worker) -> tuple[int, int]:
         moving_states = {
@@ -350,7 +355,7 @@ class GameInput:
                         max_population=max_population(self._registry, self._worker_manager),
                         delivery_queue_size=self._worker_manager.transport_queue_size(),
                         active_delivery_count=self._worker_manager.active_transport_count(),
-                        show_research_button=has_completed_laboratory(self._registry),
+                        show_research_button=research_button_visible(self._registry),
                     )
                     if (
                         top_layout.research_button is not None

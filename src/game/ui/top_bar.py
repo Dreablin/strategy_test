@@ -15,6 +15,15 @@ _RESEARCH_BTN_LABEL = "Research"
 _RESEARCH_GAP = 18
 
 
+def research_button_visible(registry: object | None) -> bool:
+    """Whether the top-bar Research control should be shown for *registry*."""
+    if registry is None:
+        return False
+    from game.laboratory_visibility import has_completed_laboratory
+
+    return has_completed_laboratory(registry)
+
+
 @dataclass(frozen=True, slots=True)
 class TopBarLayout:
     bar_rect: pygame.Rect

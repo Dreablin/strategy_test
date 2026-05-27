@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 28 - Laboratory and Research (**in progress**)
-- **Next Task:** T435 - Add top-bar Research button state refresh only
-- **Last Completed:** T434 - Add Research screen active progress state only
-- **Total Progress:** 434 / 438 (Phase 28: 48 / 52 done)
+- **Next Task:** T436 - Add one bounded end-to-end Laboratory/Research integration test only
+- **Last Completed:** T435 - Add top-bar Research button state refresh only
+- **Total Progress:** 435 / 438 (Phase 28: 49 / 52 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -142,7 +142,7 @@
 
 - [x] **T433**: Add Laboratory active research progress UI only. Laboratory panel should show active research image, progress bar, and numeric points like `350 / 10000` once the research has started. Add focused panel tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T434**: Add Research screen active progress state only. The full-screen Research menu should visually mark the currently active research as in-progress. Do not change completed/not-started state from earlier rendering. Add focused UI tests. Run full `pytest` and `ruff check src tests`.
-- [ ] **T435**: Add top-bar Research button state refresh only. The button should appear/disappear correctly after Laboratory construction completion, demolition, and rebuild, without requiring restart. Add focused integration tests. Run full `pytest` and `ruff check src tests`.
+- [x] **T435**: Add top-bar Research button state refresh only. The button should appear/disappear correctly after Laboratory construction completion, demolition, and rebuild, without requiring restart. Add focused integration tests. Run full `pytest` and `ruff check src tests`. The button should appear/disappear correctly after Laboratory construction completion, demolition, and rebuild, without requiring restart. Add focused integration tests. Run full `pytest` and `ruff check src tests`.
 
 ### 28.9 Integration and Documentation
 

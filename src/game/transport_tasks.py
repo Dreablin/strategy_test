@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from game.buildings.base import Building
+from game.resource_catalog import is_town_hall_warehouse_resource
 from game.worker_models import TransportTask
 
 PROCESSOR_INPUT_ADD_METHOD_BY_RESOURCE: dict[str, str] = {
@@ -568,4 +569,58 @@ def restaurant_input_transport_tasks(registry: Any, resource: str) -> list[Trans
         for _ in range(count):
             tasks.append(TransportTask(resource=resource, source=town_hall, target=building, priority=0))
         remaining -= count
+    return tasks
+
+
+def laboratory_input_transport_tasks(
+    registry: Any,
+    inbound_counts: dict[tuple[int, str], int] | None = None,
+) -> list[TransportTask]:
+    """Plan Town Hall → Laboratory deliveries for active research warehouse inputs."""
+    if registry is None:
+        return []
+    buildings = list(registry.all())
+    town_hall = next((b for b in buildings if b.type_tag == "TOWN_HALL"), None)
+    if town_hall is None or not hasattr(town_hall, "warehouse_amount"):
+        return []
+    laboratory: Building | None = None
+    for building in buildings:
+        if building.type_tag != "LABORATORY":
+            continue
+        if getattr(building, "is_under_construction", False):
+            continue
+        has_storage = getattr(building, "has_research_input_storage", None)
+        if not callable(has_storage) or not has_storage():
+            continue
+        laboratory = building
+        break
+    if laboratory is None:
+        return []
+    tasks: list[TransportTask] = []
+    available_by_resource: dict[str, int] = {}
+    for resource in laboratory.research_input_resources():
+        key = str(resource).lower()
+        if not is_town_hall_warehouse_resource(key):
+            continue
+        capacity = int(laboratory.research_input_capacity(resource))
+        delivered = int(laboratory.research_input_amount(resource))
+        inbound = int((inbound_counts or {}).get((id(laboratory), key), 0))
+        want = max(0, capacity - delivered - inbound)
+        if want <= 0:
+            continue
+        if key not in available_by_resource:
+            available_by_resource[key] = max(0, int(town_hall.warehouse_amount(resource)))
+        available = available_by_resource[key]
+        count = min(want, available)
+        available_by_resource[key] = max(0, available - count)
+        for _ in range(count):
+            tasks.append(
+                TransportTask(
+                    resource=key,
+                    source=town_hall,
+                    target=laboratory,
+                    priority=0,
+                    purpose="laboratory_research",
+                )
+            )
     return tasks

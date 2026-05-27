@@ -20,6 +20,7 @@ from game.transport_tasks import (
     construction_transport_tasks,
     farm_wheat_output_transport_tasks,
     iron_mine_output_transport_tasks,
+    laboratory_input_transport_tasks,
     vineyard_farm_grape_output_transport_tasks,
     mill_input_transport_tasks,
     mill_output_transport_tasks,
@@ -165,6 +166,21 @@ class WorkerTransportMixin:
                 continue
             wid = id(t.source)
             counts[wid] = counts.get(wid, 0) + 1
+        return counts
+
+    def _laboratory_research_inbound_counts(self) -> dict[tuple[int, str], int]:
+        counts: dict[tuple[int, str], int] = {}
+        for task in self._transport_queue:  # type: ignore[attr-defined]
+            if task.purpose != "laboratory_research":
+                continue
+            key = (id(task.target), str(task.resource).lower())
+            counts[key] = counts.get(key, 0) + 1
+        for worker in self._workers:  # type: ignore[attr-defined]
+            task = worker.transport_task
+            if task is None or task.purpose != "laboratory_research":
+                continue
+            key = (id(task.target), str(task.resource).lower())
+            counts[key] = counts.get(key, 0) + 1
         return counts
 
     def _water_inbound_counts_by_target_id(self) -> dict[int, int]:
@@ -676,6 +692,16 @@ class WorkerTransportMixin:
                 purpose=task.purpose,
             )
             existing_counts[key] = existing_counts.get(key, 0) + 1
+
+    def _enqueue_laboratory_research_input_tasks(self) -> None:
+        if self._registry is None:  # type: ignore[attr-defined]
+            return
+        self._enqueue_desired_transport_tasks(  # type: ignore[attr-defined]
+            laboratory_input_transport_tasks(
+                self._registry,
+                inbound_counts=self._laboratory_research_inbound_counts(),
+            ),
+        )
 
     def _enqueue_construction_transport_tasks(self) -> None:
         if self._registry is None:  # type: ignore[attr-defined]

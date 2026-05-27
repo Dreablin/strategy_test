@@ -113,6 +113,7 @@ __all__ = [
     "winery_input_transport_tasks",
     "winery_output_transport_tasks",
     "processor_input_transport_tasks",
+    "laboratory_input_transport_tasks",
     "water_input_transport_tasks",
     "find_nearest_free_tree",
     "find_nearest_free_stone",
@@ -536,6 +537,7 @@ class WorkerManager(
         now_ms = int(now_ms)
         self._update_field_growth(int(now_ms))
         self._enqueue_construction_transport_tasks()
+        self._enqueue_laboratory_research_input_tasks()
         self._enqueue_sawmill_refill_tasks()
         self._enqueue_sawmill_output_tasks()
         self._enqueue_mill_refill_tasks()

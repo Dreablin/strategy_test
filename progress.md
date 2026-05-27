@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 28 - Laboratory and Research (**in progress**)
-- **Next Task:** T424 - Add Laboratory input-demand planning only
-- **Last Completed:** T423 - Add Laboratory dynamic input storage display only
-- **Total Progress:** 423 / 438 (Phase 28: 37 / 52 done)
+- **Next Task:** T425 - Add carrier delivery into Laboratory dynamic storage only
+- **Last Completed:** T424 - Add Laboratory input-demand planning only
+- **Total Progress:** 424 / 438 (Phase 28: 38 / 52 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -125,7 +125,7 @@
 
 ### 28.6 Research Resource Logistics
 
-- [ ] **T424**: Add Laboratory input-demand planning only. For the active research, carriers should create tasks from Town Hall to Laboratory for required warehouse resources, accounting for already delivered, queued, and in-flight amounts. Do not deliver resources yet. Add focused transport planning tests. Run full `pytest` and `ruff check src tests`.
+- [x] **T424**: Add Laboratory input-demand planning only. For the active research, carriers should create tasks from Town Hall to Laboratory for required warehouse resources, accounting for already delivered, queued, and in-flight amounts. Do not deliver resources yet. Add focused transport planning tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T425**: Add carrier delivery into Laboratory dynamic storage only. Carriers should deliver research input resources into the Laboratory's active research storage and reject overfill/irrelevant resources. Add focused delivery tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T426**: Add invalidation handling for active research deliveries only. If the Laboratory is demolished while research inputs are queued or in-flight, normal carried resources should return to Town Hall using existing invalid-delivery semantics, and the active research should not trap carriers. Add focused edge-case tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T427**: Add "resources delivered" gate only. Research point production must not start until every required resource amount for the active research has been delivered. Add focused domain/runtime tests with no Scientist timing behavior beyond stubs. Run full `pytest` and `ruff check src tests`.

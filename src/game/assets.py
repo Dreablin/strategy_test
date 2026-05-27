@@ -967,6 +967,8 @@ def population_icon(size: int = 24) -> pygame.Surface:
 
 def clear_asset_caches() -> None:
     """Clear all in-memory asset caches (used by dev reload button)."""
+    from game.research_assets import clear_research_asset_caches
+
     grass_tile.cache_clear()
     _load_png_by_mtime.cache_clear()
     _load_tree_meta.cache_clear()
@@ -982,3 +984,4 @@ def clear_asset_caches() -> None:
     _worker_dot_by_mtime.cache_clear()
     resource_icon.cache_clear()
     population_icon.cache_clear()
+    clear_research_asset_caches()

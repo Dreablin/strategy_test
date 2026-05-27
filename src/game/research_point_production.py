@@ -35,6 +35,53 @@ def research_points_may_accumulate(
     return laboratory.all_research_inputs_delivered()
 
 
+def research_points_for_elapsed_ms(
+    *,
+    laboratory: Laboratory,
+    active_scientist_count: int,
+    elapsed_ms: int,
+) -> int:
+    """Points earned over *elapsed_ms* with at most one contributing Scientist (T428)."""
+    if active_scientist_count <= 0 or elapsed_ms <= 0:
+        return 0
+    contributing = min(1, active_scientist_count)
+    rate = laboratory.research_points_per_scientist_per_second()
+    return (rate * contributing * int(elapsed_ms)) // 1000
+
+
+def tick_laboratory_research_points(
+    *,
+    research_state: ResearchState,
+    laboratory: Laboratory,
+    active_scientist_count: int,
+    now_ms: int,
+    last_tick_by_laboratory: dict[int, int],
+) -> None:
+    """Advance research points for one Laboratory timestep."""
+    if not research_state.has_active_research():
+        return
+    lab_id = id(laboratory)
+    last_ms = last_tick_by_laboratory.get(lab_id)
+    last_tick_by_laboratory[lab_id] = int(now_ms)
+    if last_ms is None:
+        return
+    elapsed_ms = int(now_ms) - int(last_ms)
+    if elapsed_ms <= 0:
+        return
+    points = research_points_for_elapsed_ms(
+        laboratory=laboratory,
+        active_scientist_count=active_scientist_count,
+        elapsed_ms=elapsed_ms,
+    )
+    if points <= 0:
+        return
+    try_accumulate_research_points(
+        research_state=research_state,
+        laboratory=laboratory,
+        points=points,
+    )
+
+
 def try_accumulate_research_points(
     *,
     research_state: ResearchState,

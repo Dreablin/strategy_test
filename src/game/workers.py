@@ -131,6 +131,7 @@ class WorkerManager(
 
     __slots__ = (
         "_field_reservations",
+        "_laboratory_research_last_tick_ms",
         "_vineyard_plot_reservations",
         "_now_ms_fn",
         "_registry",
@@ -153,6 +154,7 @@ class WorkerManager(
         self._research_state = research_state
         self._workers: list[Worker] = []
         self._transport_queue: list[TransportTask] = []
+        self._laboratory_research_last_tick_ms: dict[int, int] = {}
         self._field_reservations: dict[tuple[int, int], Worker] = {}
         self._vineyard_plot_reservations: dict[tuple[int, int], Worker] = {}
         self._now_ms_fn = now_ms_fn or (lambda: 0)
@@ -368,6 +370,7 @@ class WorkerManager(
         site = building.construction_site
         if building.type_tag == "LABORATORY":
             self.release_laboratory_scientists(building)
+            self._laboratory_research_last_tick_ms.pop(id(building), None)
             if hasattr(building, "clear_research_input_storage"):
                 building.clear_research_input_storage()
             if self._research_state is not None and self._research_state.has_active_research():
@@ -532,6 +535,25 @@ class WorkerManager(
             worker.satiety, last, now_ms
         )
 
+    def _update_laboratory_research_points(self, now_ms: int) -> None:
+        if self._research_state is None or self._registry is None:
+            return
+        if not self._research_state.has_active_research():
+            return
+        from game.buildings.laboratory import Laboratory
+        from game.research_point_production import tick_laboratory_research_points
+
+        for building in self._registry.all():
+            if not isinstance(building, Laboratory) or building.is_under_construction:
+                continue
+            tick_laboratory_research_points(
+                research_state=self._research_state,
+                laboratory=building,
+                active_scientist_count=self.laboratory_active_scientist_count(building),
+                now_ms=int(now_ms),
+                last_tick_by_laboratory=self._laboratory_research_last_tick_ms,
+            )
+
     def _try_blocked_cycle_hunger(self, worker: Worker, now_ms: int) -> None:
         if self._registry is None:
             return
@@ -555,6 +577,7 @@ class WorkerManager(
         self._update_field_growth(int(now_ms))
         self._enqueue_construction_transport_tasks()
         self._enqueue_laboratory_research_input_tasks()
+        self._update_laboratory_research_points(now_ms)
         self._enqueue_sawmill_refill_tasks()
         self._enqueue_sawmill_output_tasks()
         self._enqueue_mill_refill_tasks()

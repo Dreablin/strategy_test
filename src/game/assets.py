@@ -40,6 +40,7 @@ _BUILDING_FOLDER: dict[str, str] = {
     "WELL": "well",
     "WINERY": "winery",
     "RESTAURANT": "restaurant",
+    "LABORATORY": "laboratory",
 }
 
 _WORKER_FOLDER: dict[str, str] = {

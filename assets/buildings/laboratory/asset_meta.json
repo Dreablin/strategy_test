@@ -1,0 +1,8 @@
+{
+  "default": {
+    "scale": 1.0,
+    "anchor_norm": [0.5, 1.0],
+    "offset_px": [0, 0]
+  },
+  "levels": {}
+}

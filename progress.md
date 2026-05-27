@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 28 - Laboratory and Research (**in progress**)
-- **Next Task:** T396 - Add Laboratory building asset loading/fallback only
-- **Last Completed:** T395 - Enforce Laboratory uniqueness only
-- **Total Progress:** 395 / 438 (Phase 28: 9 / 52 done)
+- **Next Task:** T397 - Add Laboratory to the Social build menu only
+- **Last Completed:** T396 - Add Laboratory building asset loading/fallback only
+- **Total Progress:** 396 / 438 (Phase 28: 10 / 52 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -85,8 +85,8 @@
 - [x] **T393**: Add only the `Laboratory` building class shell. Define `type_tag`, normal `Building` contract, scientist slot capacity helper, research-point-rate helper, tech-tier unlock helper, and empty dynamic research-storage helpers. Do not register placement, menu, UI, workers, transport, or research runtime yet. Add focused domain tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T394**: Register `LABORATORY` for placement and construction only. Wire the class into placement maps and construction config usage so it can be placed and built. Do not add menu visibility, worker assignment, top-bar button, research UI, or transport. Add focused placement/construction tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T395**: Enforce Laboratory uniqueness only. Prevent placing a second Laboratory while one exists or is under construction, while preserving normal placement for other buildings. Add focused placement/registry tests. Run full `pytest` and `ruff check src tests`.
-- [~] **T396**: Add Laboratory building asset loading/fallback only. Add building folder mapping and placeholder/meta files only if real assets are absent; add focused asset tests proving construction and completed sprites resolve. Run full `pytest` and `ruff check src tests`.
-- [ ] **T397**: Add Laboratory to the Social build menu only. Add the Social menu tile/click routing for `LABORATORY` and focused bottom-bar/input tests that avoid brittle coordinate assertions where possible. Run full `pytest` and `ruff check src tests`.
+- [x] **T396**: Add Laboratory building asset loading/fallback only. Add building folder mapping and placeholder/meta files only if real assets are absent; add focused asset tests proving construction and completed sprites resolve. Run full `pytest` and `ruff check src tests`.
+- [~] **T397**: Add Laboratory to the Social build menu only. Add the Social menu tile/click routing for `LABORATORY` and focused bottom-bar/input tests that avoid brittle coordinate assertions where possible. Run full `pytest` and `ruff check src tests`.
 - [ ] **T398**: Add Laboratory display labels/descriptions only. Update building display names/descriptions and construction panel display name. Add focused label tests. Run full `pytest` and `ruff check src tests`.
 
 ### 28.3 Scientist Worker and Laboratory Staffing

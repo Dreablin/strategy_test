@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 28 - Laboratory and Research (**in progress**)
-- **Next Task:** T419 - Wire Research screen button enabled state to eligibility only
-- **Last Completed:** T418 - Add research config validity checks to eligibility only
-- **Total Progress:** 418 / 438 (Phase 28: 32 / 52 done)
+- **Next Task:** T420 - Add domain start-active-research behavior only
+- **Last Completed:** T419 - Wire Research screen button enabled state to eligibility only
+- **Total Progress:** 419 / 438 (Phase 28: 33 / 52 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -117,7 +117,7 @@
 - [x] **T416**: Add Laboratory level tier gates only. Extend eligibility so Laboratory level unlocks research tiers according to Laboratory settings. Do not add dependency gates yet. Add focused eligibility tests for levels 1, 3, 6, and 9. Run full `pytest` and `ruff check src tests`.
 - [x] **T417**: Add research dependency gates only. Extend eligibility so configured dependency ids must be completed before a research can start. Do not add UI button wiring yet. Add focused dependency tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T418**: Add research config validity checks to eligibility only. Ensure researches with invalid/empty cost shape or non-positive point requirements are treated as non-startable with a clear lock reason, even if the loader normally prevents them. Add focused defensive tests. Run full `pytest` and `ruff check src tests`.
-- [ ] **T419**: Wire Research screen button enabled state to eligibility only. Disabled buttons should be grey/transparent and non-startable; enabled buttons should look active. Do not mutate active research on click yet. Add focused UI tests. Run full `pytest` and `ruff check src tests`.
+- [x] **T419**: Wire Research screen button enabled state to eligibility only. Disabled buttons should be grey/transparent and non-startable; enabled buttons should look active. Do not mutate active research on click yet. Add focused UI tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T420**: Add domain start-active-research behavior only. Starting an eligible research should set the active research id and reject starting any other research while one is active. Do not create dynamic input storage yet. Add focused domain tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T421**: Add dynamic input storage creation on research start only. When research starts, initialize Laboratory dynamic input storage exactly for that research's cost map with zero delivered amounts. Do not wire UI clicks yet. Add focused domain tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T422**: Wire Start button click to domain start only. Clicking an eligible Start button should call the domain start flow and leave the selected research uncancellable. Do not add carrier delivery yet. Add focused input/domain tests. Run full `pytest` and `ruff check src tests`.

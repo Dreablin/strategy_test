@@ -50,6 +50,7 @@ class ResearchScreen:
         research_state: ResearchState | None = None,
         hover_pos: tuple[int, int] | None = None,
         research_lock_reasons: Mapping[str, str] | None = None,
+        research_can_start: Mapping[str, bool] | None = None,
     ) -> None:
         pygame.draw.rect(surface, (34, 38, 48), content.content, border_radius=8)
         pygame.draw.rect(surface, (48, 54, 66), content.technology_column, border_radius=6)
@@ -80,7 +81,12 @@ class ResearchScreen:
                     row.row_rect.top + 8,
                 ),
             )
-        draw_research_tiles(surface, content.tiles, research_state=research_state)
+        draw_research_tiles(
+            surface,
+            content.tiles,
+            research_state=research_state,
+            research_can_start=research_can_start,
+        )
         draw_research_tooltip_at_hover(
             surface,
             content.tiles,
@@ -95,6 +101,7 @@ class ResearchScreen:
         research_state: ResearchState | None = None,
         hover_pos: tuple[int, int] | None = None,
         research_lock_reasons: Mapping[str, str] | None = None,
+        research_can_start: Mapping[str, bool] | None = None,
     ) -> ResearchScreenLayout:
         layout = ResearchScreen.layout(surface)
         dim = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
@@ -114,6 +121,7 @@ class ResearchScreen:
             research_state=research_state,
             hover_pos=hover_pos,
             research_lock_reasons=research_lock_reasons,
+            research_can_start=research_can_start,
         )
 
         pygame.draw.line(

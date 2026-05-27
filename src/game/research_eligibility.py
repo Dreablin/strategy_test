@@ -156,3 +156,19 @@ def research_lock_reasons(
         if result.lock_reason:
             reasons[entry.id] = result.lock_reason
     return reasons
+
+
+def research_ui_eligibility(
+    *,
+    research_state: ResearchState,
+    registry: object,
+) -> tuple[dict[str, bool], dict[str, str]]:
+    """Start-button flags and tooltip lock reasons for the Research screen."""
+    has_lab = has_completed_laboratory(registry)
+    level = completed_laboratory_level(registry) if has_lab else None
+    kwargs = {
+        "research_state": research_state,
+        "has_completed_laboratory": has_lab,
+        "laboratory_level": level,
+    }
+    return research_can_start_map(**kwargs), research_lock_reasons(**kwargs)

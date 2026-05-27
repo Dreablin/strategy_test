@@ -225,6 +225,22 @@ class WorkerTransportMixin:
                 if remaining <= 0:
                     stale_indices.append(idx)
                     continue
+            if task.purpose == "laboratory_research":
+                if task.target.type_tag != "LABORATORY":
+                    stale_indices.append(idx)
+                    continue
+                laboratory = task.target
+                if not laboratory.has_research_input_storage():
+                    stale_indices.append(idx)
+                    continue
+                if not laboratory.accepts_research_input(task.resource):
+                    stale_indices.append(idx)
+                    continue
+                if laboratory.research_input_amount(task.resource) >= laboratory.research_input_capacity(
+                    task.resource
+                ):
+                    stale_indices.append(idx)
+                    continue
             has_storage_source = False
             if hasattr(task.source, "stored") and int(getattr(task.source, "stored", 0)) > 0:
                 has_storage_source = True
@@ -346,6 +362,19 @@ class WorkerTransportMixin:
             if site is None:
                 return True
             return int(site.remaining_resources().get(str(task.resource).lower(), 0)) <= 0
+        if task.purpose == "laboratory_research":
+            if task.target.type_tag != "LABORATORY":
+                return True
+            laboratory = task.target
+            if not laboratory.has_research_input_storage():
+                return True
+            if not laboratory.accepts_research_input(task.resource):
+                return True
+            if laboratory.research_input_amount(task.resource) >= laboratory.research_input_capacity(
+                task.resource
+            ):
+                return True
+            return False
         if not task.returning_to_town_hall and (
             bool(getattr(task.target, "is_under_construction", False))
         ):
@@ -631,6 +660,17 @@ class WorkerTransportMixin:
         elif task.resource == "water" and hasattr(task.target, "add_water_in"):
             if _water_amount(task.target) < _water_capacity(task.target):
                 task.target.add_water_in(1)  # type: ignore[attr-defined]
+        elif task.purpose == "laboratory_research" and task.target.type_tag == "LABORATORY":
+            laboratory = task.target
+            if laboratory.research_input_amount(task.resource) < laboratory.research_input_capacity(
+                task.resource
+            ):
+                laboratory.add_research_input(task.resource, 1)
+            else:
+                town_hall = self._primary_town_hall()
+                if town_hall is not None:
+                    town_hall.add_to_warehouse(task.resource, 1)
+                    delivered_target = town_hall
         elif task.resource == "boards" and hasattr(task.target, "add_to_warehouse"):
             task.target.add_to_warehouse(task.resource, 1)  # type: ignore[attr-defined]
         elif hasattr(task.target, "add_to_warehouse"):

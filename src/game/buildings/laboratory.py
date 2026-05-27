@@ -77,3 +77,19 @@ class Laboratory(Building):
 
     def research_input_amounts(self) -> dict[str, int]:
         return dict(self._research_input_delivered)
+
+    def accepts_research_input(self, resource: str) -> bool:
+        return str(resource) in self._research_input_capacities
+
+    def add_research_input(self, resource: str, amount: int = 1) -> None:
+        """Deliver units into active research local input storage."""
+        key = str(resource)
+        if key not in self._research_input_capacities:
+            raise ValueError(f"resource {key!r} is not required for active research")
+        if amount <= 0:
+            raise ValueError("amount must be positive")
+        capacity = self._research_input_capacities[key]
+        current = self._research_input_delivered.get(key, 0)
+        if current >= capacity:
+            raise ValueError(f"resource {key!r} is already fully delivered")
+        self._research_input_delivered[key] = min(current + int(amount), capacity)

@@ -10,6 +10,7 @@ from game.ui.research_screen_layout import (
     ResearchContentLayout,
     compute_content_layout,
 )
+from game.ui.research_tiles import draw_research_tiles
 
 _PAD = 16
 _CLOSE = 28
@@ -69,6 +70,7 @@ class ResearchScreen:
                     row.row_rect.top + 8,
                 ),
             )
+        draw_research_tiles(surface, content.tiles)
 
     @staticmethod
     def draw(surface: pygame.Surface) -> ResearchScreenLayout:

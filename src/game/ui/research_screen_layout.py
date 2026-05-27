@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import pygame
 
 from game.research_config import RESEARCH_DEFINITIONS
+
+if TYPE_CHECKING:
+    from game.ui.research_tile_layout import ResearchTileLayout
 
 _TIER_COUNT = 4
 _SCREEN_PAD = 16
@@ -28,6 +32,7 @@ class ResearchContentLayout:
     content: pygame.Rect
     technology_column: pygame.Rect
     tier_rows: tuple[ResearchTierRowLayout, ...]
+    tiles: tuple[ResearchTileLayout, ...]
 
 
 def configured_tier_count() -> int:
@@ -68,10 +73,20 @@ def compute_content_layout(surface: pygame.Surface) -> ResearchContentLayout:
             )
         )
         y += row_h
+    content_layout = ResearchContentLayout(
+        content=content,
+        technology_column=technology_column,
+        tier_rows=tuple(tier_rows),
+        tiles=(),
+    )
+    from game.ui.research_tile_layout import compute_research_tile_layouts
+
+    tiles = compute_research_tile_layouts(content_layout)
     return ResearchContentLayout(
         content=content,
         technology_column=technology_column,
         tier_rows=tuple(tier_rows),
+        tiles=tiles,
     )
 
 

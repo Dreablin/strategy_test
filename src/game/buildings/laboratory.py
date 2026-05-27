@@ -78,6 +78,14 @@ class Laboratory(Building):
     def research_input_amounts(self) -> dict[str, int]:
         return dict(self._research_input_delivered)
 
+    def all_research_inputs_delivered(self) -> bool:
+        if not self._research_input_capacities:
+            return False
+        return all(
+            self._research_input_delivered.get(resource, 0) >= capacity
+            for resource, capacity in self._research_input_capacities.items()
+        )
+
     def accepts_research_input(self, resource: str) -> bool:
         return str(resource) in self._research_input_capacities
 

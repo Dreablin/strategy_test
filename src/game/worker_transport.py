@@ -168,6 +168,15 @@ class WorkerTransportMixin:
             counts[wid] = counts.get(wid, 0) + 1
         return counts
 
+    def _record_laboratory_research_delivery(self, resource: str, amount: int) -> None:
+        research_state = getattr(self, "_research_state", None)
+        if research_state is None or not research_state.has_active_research():
+            return
+        try:
+            research_state.add_delivered(resource, amount)
+        except ValueError:
+            return
+
     def _laboratory_research_inbound_counts(self) -> dict[tuple[int, str], int]:
         counts: dict[tuple[int, str], int] = {}
         for task in self._transport_queue:  # type: ignore[attr-defined]
@@ -666,6 +675,7 @@ class WorkerTransportMixin:
                 task.resource
             ):
                 laboratory.add_research_input(task.resource, 1)
+                self._record_laboratory_research_delivery(task.resource, 1)
             else:
                 town_hall = self._primary_town_hall()
                 if town_hall is not None:

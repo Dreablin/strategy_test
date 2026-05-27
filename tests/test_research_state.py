@@ -43,7 +43,9 @@ def test_start_research_rejects_unknown_completed_or_second_active() -> None:
 def test_mark_research_completed_updates_completed_and_clears_active() -> None:
     state = ResearchState()
     state.start_research("1")
-    state.add_delivered("wood", 5)
+    definition = RESEARCH_BY_ID["1"]
+    for resource, required in definition.resource_cost.items():
+        state.add_delivered(resource, required)
     state.add_points(100)
     state.mark_research_completed("1")
     assert state.is_completed("1")

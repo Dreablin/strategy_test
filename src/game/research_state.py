@@ -90,6 +90,8 @@ class ResearchState:
             raise ValueError("no active research")
         if amount < 0:
             raise ValueError("amount must be non-negative")
+        if amount > 0 and not self.all_resources_delivered():
+            raise ValueError("resources not fully delivered")
         self._points += amount
 
     def all_resources_delivered(self) -> bool:

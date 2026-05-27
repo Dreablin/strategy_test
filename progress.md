@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 28 - Laboratory and Research (**in progress**)
-- **Next Task:** T392 - Add laboratory building settings JSON only
-- **Last Completed:** T391 - Add research asset resolver only
-- **Total Progress:** 391 / 438 (Phase 28: 5 / 52 done)
+- **Next Task:** T393 - Add Laboratory building class shell only
+- **Last Completed:** T392 - Add laboratory building settings JSON only
+- **Total Progress:** 392 / 438 (Phase 28: 6 / 52 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -81,8 +81,8 @@
 
 ### 28.2 Laboratory Building Foundation
 
-- [~] **T392**: Add only `src/game/settings/buildings/laboratory.json`. Include `LABORATORY`, footprint, 10 construction/upgrade levels, scientist slot capacity by level, research points per Scientist per second, tech-tier unlock level mapping, worker effects if any, and asset metadata. Use JSON for all balance values. Add focused settings tests proving values are loaded from this JSON. Run full `pytest` and `ruff check src tests`.
-- [ ] **T393**: Add only the `Laboratory` building class shell. Define `type_tag`, normal `Building` contract, scientist slot capacity helper, research-point-rate helper, tech-tier unlock helper, and empty dynamic research-storage helpers. Do not register placement, menu, UI, workers, transport, or research runtime yet. Add focused domain tests. Run full `pytest` and `ruff check src tests`.
+- [x] **T392**: Add only `src/game/settings/buildings/laboratory.json`. Include `LABORATORY`, footprint, 10 construction/upgrade levels, scientist slot capacity by level, research points per Scientist per second, tech-tier unlock level mapping, worker effects if any, and asset metadata. Use JSON for all balance values. Add focused settings tests proving values are loaded from this JSON. Run full `pytest` and `ruff check src tests`.
+- [~] **T393**: Add only the `Laboratory` building class shell. Define `type_tag`, normal `Building` contract, scientist slot capacity helper, research-point-rate helper, tech-tier unlock helper, and empty dynamic research-storage helpers. Do not register placement, menu, UI, workers, transport, or research runtime yet. Add focused domain tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T394**: Register `LABORATORY` for placement and construction only. Wire the class into placement maps and construction config usage so it can be placed and built. Do not add menu visibility, worker assignment, top-bar button, research UI, or transport. Add focused placement/construction tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T395**: Enforce Laboratory uniqueness only. Prevent placing a second Laboratory while one exists or is under construction, while preserving normal placement for other buildings. Add focused placement/registry tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T396**: Add Laboratory building asset loading/fallback only. Add building folder mapping and placeholder/meta files only if real assets are absent; add focused asset tests proving construction and completed sprites resolve. Run full `pytest` and `ruff check src tests`.

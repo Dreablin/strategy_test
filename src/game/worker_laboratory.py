@@ -38,3 +38,16 @@ def laboratory_free_scientist_slots(workers: Sequence[Worker], laboratory: Build
     capacity = int(capacity_fn())
     assigned = laboratory_assigned_scientist_count(workers, laboratory)
     return max(0, capacity - assigned)
+
+
+def building_has_free_staff_slot(
+    workers: Sequence[Worker],
+    building: Building,
+    *,
+    worker_type: str,
+    is_staffed: bool,
+) -> bool:
+    """Whether an idle worker of ``worker_type`` may be assigned to ``building``."""
+    if building.type_tag == _LABORATORY_TAG and worker_type == _SCIENTIST_TAG:
+        return laboratory_free_scientist_slots(workers, building) > 0
+    return not is_staffed

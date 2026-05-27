@@ -71,6 +71,7 @@ from game.worker_gathering import WorkerGatheringMixin
 from game.worker_processing import WorkerProcessingMixin
 from game.resource_catalog import is_simple_meal_resource
 from game.worker_laboratory import (
+    building_has_free_staff_slot as _building_has_free_staff_slot,
     laboratory_assigned_scientist_count as _laboratory_assigned_scientist_count,
     laboratory_assigned_scientists as _laboratory_assigned_scientists,
     laboratory_free_scientist_slots as _laboratory_free_scientist_slots,
@@ -377,7 +378,14 @@ class WorkerManager(
             targets = [
                 b
                 for b in self._registry.all()
-                if b.type_tag in want_types and not self.is_staffed(b) and not b.is_under_construction
+                if b.type_tag in want_types
+                and not b.is_under_construction
+                and _building_has_free_staff_slot(
+                    self._workers,
+                    b,
+                    worker_type=worker.type_tag,
+                    is_staffed=self.is_staffed(b),
+                )
             ]
             targets.sort(
                 key=lambda b: (

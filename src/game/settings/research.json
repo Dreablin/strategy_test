@@ -1,0 +1,62 @@
+{
+  "researches": [
+    {
+      "id": "1",
+      "name": "Technology I",
+      "description": "Foundational laboratory techniques that unlock further study.",
+      "tier": 1,
+      "column": 0,
+      "dependencies": [],
+      "resource_cost": {
+        "wood": 20,
+        "boards": 10
+      },
+      "required_points": 5000,
+      "image_key": "technology_1"
+    },
+    {
+      "id": "2",
+      "name": "Technology II",
+      "description": "Intermediate methods building on the first technology tier.",
+      "tier": 2,
+      "column": 0,
+      "dependencies": ["1"],
+      "resource_cost": {
+        "boards": 15,
+        "stone": 10
+      },
+      "required_points": 10000,
+      "image_key": "technology_2"
+    },
+    {
+      "id": "3",
+      "name": "Technology III",
+      "description": "Advanced research practices for the third technology tier.",
+      "tier": 3,
+      "column": 0,
+      "dependencies": ["2"],
+      "resource_cost": {
+        "stone": 20,
+        "iron": 10,
+        "boards": 10
+      },
+      "required_points": 20000,
+      "image_key": "technology_3"
+    },
+    {
+      "id": "4",
+      "name": "Technology IV",
+      "description": "Peak laboratory mastery for the fourth technology tier.",
+      "tier": 4,
+      "column": 0,
+      "dependencies": ["3"],
+      "resource_cost": {
+        "stone": 25,
+        "iron": 20,
+        "boards": 15
+      },
+      "required_points": 40000,
+      "image_key": "technology_4"
+    }
+  ]
+}

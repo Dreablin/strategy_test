@@ -29,6 +29,7 @@ from game.render import Renderer
 from game.housing import current_population, max_population
 from game.laboratory_visibility import has_completed_laboratory
 from game.research_eligibility import research_ui_eligibility
+from game.research_start import try_start_active_research
 from game.research_state import ResearchState
 from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT, BottomBar
 from game.ui.bakery_panel import BakeryPanel
@@ -168,6 +169,11 @@ class GameInput:
     def population_panel_open(self) -> bool:
         """Whether the population list modal is open."""
         return self._population_panel_open
+
+    @property
+    def research_state(self) -> ResearchState:
+        """In-memory research progress for the current run."""
+        return self._research_state
 
     @property
     def research_screen_open(self) -> bool:
@@ -310,9 +316,24 @@ class GameInput:
             return
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == pygame.BUTTON_LEFT:
             if self._research_screen_open:
-                action = ResearchScreen.click_action(surface, event.pos)
-                if action == "close":
+                can_start, _lock_reasons = research_ui_eligibility(
+                    research_state=self._research_state,
+                    registry=self._registry,
+                )
+                if ResearchScreen.click_action(surface, event.pos) == "close":
                     self._research_screen_open = False
+                    return
+                start_id = ResearchScreen.click_start_research_id(
+                    surface,
+                    event.pos,
+                    research_can_start=can_start,
+                )
+                if start_id is not None:
+                    try_start_active_research(
+                        start_id,
+                        research_state=self._research_state,
+                        registry=self._registry,
+                    )
                 return
             if (
                 self._panel is not None

@@ -150,3 +150,20 @@ class ResearchScreen:
         if layout.frame.collidepoint(x, y):
             return "inside"
         return None
+
+    @staticmethod
+    def click_start_research_id(
+        surface: pygame.Surface,
+        pos: tuple[int, int],
+        *,
+        research_can_start: Mapping[str, bool],
+    ) -> str | None:
+        """Return a research id when an enabled Start button is clicked."""
+        layout = ResearchScreen.layout(surface)
+        x, y = pos
+        if layout.close.collidepoint(x, y):
+            return None
+        for tile in layout.content.tiles:
+            if tile.start_button.collidepoint(x, y) and research_can_start.get(tile.research_id, False):
+                return tile.research_id
+        return None

@@ -41,10 +41,11 @@ def research_points_for_elapsed_ms(
     active_scientist_count: int,
     elapsed_ms: int,
 ) -> int:
-    """Points earned over *elapsed_ms* with at most one contributing Scientist (T428)."""
+    """Points earned over *elapsed_ms*, linear in active Scientists up to slot capacity."""
     if active_scientist_count <= 0 or elapsed_ms <= 0:
         return 0
-    contributing = min(1, active_scientist_count)
+    capacity = laboratory.scientist_slot_capacity()
+    contributing = min(active_scientist_count, capacity)
     rate = laboratory.research_points_per_scientist_per_second()
     return (rate * contributing * int(elapsed_ms)) // 1000
 

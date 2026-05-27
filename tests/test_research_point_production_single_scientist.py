@@ -53,8 +53,15 @@ def test_research_points_for_elapsed_ms_uses_configured_rate() -> None:
     ) == 0
 
 
-def test_research_points_cap_at_single_scientist_for_t428() -> None:
-    _, laboratory, _ = _setup()
+def test_research_points_scale_linearly_with_scientist_count() -> None:
+    world = World(world_seed=20)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    laboratory = registry.place(Laboratory, near_town_hall_tile(10, 10))
+    laboratory.level = 3
+    laboratory.construction_site = None
     rate = laboratory.research_points_per_scientist_per_second()
     one = research_points_for_elapsed_ms(
         laboratory=laboratory,
@@ -63,11 +70,11 @@ def test_research_points_cap_at_single_scientist_for_t428() -> None:
     )
     two = research_points_for_elapsed_ms(
         laboratory=laboratory,
-        active_scientist_count=3,
+        active_scientist_count=2,
         elapsed_ms=1_000,
     )
     assert one == rate
-    assert two == rate
+    assert two == rate * 2
 
 
 def test_tick_laboratory_research_points_requires_delivered_inputs() -> None:

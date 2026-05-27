@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 28 - Laboratory and Research (**in progress**)
-- **Next Task:** T407 - Add Laboratory panel Scientist slot display only
-- **Last Completed:** T406 - Add Laboratory upgrade/construction pause behavior for Scientists only
-- **Total Progress:** 406 / 438 (Phase 28: 20 / 52 done)
+- **Next Task:** T408 - Add top-bar Research button visibility only
+- **Last Completed:** T407 - Add Laboratory panel Scientist slot display only
+- **Total Progress:** 407 / 438 (Phase 28: 21 / 52 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -99,7 +99,7 @@
 - [x] **T404**: Add automatic assignment of multiple Scientists to one Laboratory only. `WorkerManager.reassign_all()` should assign idle Scientists into free Laboratory slots up to capacity, while preserving one-worker assignment behavior for normal buildings. Add focused assignment tests for levels with different slot counts. Run full `pytest` and `ruff check src tests`.
 - [x] **T405**: Add Laboratory demolition cleanup for Scientists only. When the Laboratory is demolished, assigned Scientists become idle and do not retain a stale assignment. Do not handle upgrades in this task. Add focused demolition lifecycle tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T406**: Add Laboratory upgrade/construction pause behavior for Scientists only. While the Laboratory is under construction/upgrading, Scientists should not contribute or appear as active workers; after completion, reassignment may fill available slots. Add focused upgrade/construction lifecycle tests. Run full `pytest` and `ruff check src tests`.
-- [ ] **T407**: Add Laboratory panel Scientist slot display only. Show Scientist slots and assigned/empty state in the Laboratory panel without adding active research display yet. Add focused panel layout/draw tests. Run full `pytest` and `ruff check src tests`.
+- [x] **T407**: Add Laboratory panel Scientist slot display only. Show Scientist slots and assigned/empty state in the Laboratory panel without adding active research display yet. Add focused panel layout/draw tests. Run full `pytest` and `ruff check src tests`.
 
 ### 28.4 Top Bar and Research Screen Shell
 

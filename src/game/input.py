@@ -12,6 +12,7 @@ from game.buildings.chicken_farm import ChickenFarm
 from game.buildings.cow_farm import CowFarm
 from game.buildings.forester_hut import ForesterHut
 from game.buildings.iron_mine import IronMine
+from game.buildings.laboratory import Laboratory
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.mill import Mill
 from game.buildings.stone_mine import StoneMine
@@ -35,6 +36,7 @@ from game.ui.building_panel import BuildingPanel
 from game.ui.construction_panel import ConstructionPanel
 from game.ui.forester_hut_panel import ForesterHutPanel
 from game.ui.iron_mine_panel import IronMinePanel
+from game.ui.laboratory_panel import LaboratoryPanel
 from game.ui.lumber_camp_panel import LumberCampPanel
 from game.ui.mill_panel import MillPanel
 from game.ui.stone_mine_panel import StoneMinePanel
@@ -493,6 +495,19 @@ class GameInput:
                 self._panel,
                 worker_assigned=worker_status != "empty",
                 now_ms=pygame.time.get_ticks(),
+                worker_manager=self._worker_manager,
+            )
+            return
+        if LaboratoryPanel.supports_building(self._panel):
+            assert isinstance(self._panel, Laboratory)
+            worker_status = self._panel_worker_status()
+            production_status = self._panel_production_status()
+            LaboratoryPanel.draw(
+                surface,
+                self._panel,
+                worker_assigned=worker_status != "empty",
+                worker_status=worker_status,
+                production_status=production_status,
                 worker_manager=self._worker_manager,
             )
             return
@@ -1000,6 +1015,37 @@ class GameInput:
                         self._sync_assignments()
                     elif action == "toggle_active" and self._panel is not None:
                         self._panel.set_active(not self._panel.active)
+                    return
+            if LaboratoryPanel.supports_building(self._panel):
+                assert isinstance(self._panel, Laboratory)
+                worker_status = self._panel_worker_status()
+                production_status = self._panel_production_status()
+                layout = LaboratoryPanel.layout(
+                    surface,
+                    self._panel,
+                    worker_assigned=worker_status != "empty",
+                    production_status=production_status,
+                    worker_manager=self._worker_manager,
+                )
+                if layout.frame.collidepoint(pos):
+                    action = LaboratoryPanel.click_action(
+                        surface,
+                        pos,
+                        self._panel,
+                        worker_assigned=worker_status != "empty",
+                        production_status=production_status,
+                        worker_manager=self._worker_manager,
+                    )
+                    if action == "close":
+                        self._panel = None
+                    elif action == "upgrade" and self._panel is not None:
+                        if self._registry.upgrade_building(self._panel):
+                            self._sync_assignments()
+                    elif action == "demolish" and self._panel is not None:
+                        b = self._panel
+                        self._registry.demolish(b, self._worker_manager)
+                        self._panel = None
+                        self._sync_assignments()
                     return
             if WineryPanel.supports_building(self._panel):
                 assert isinstance(self._panel, Winery)

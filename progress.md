@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 28 - Laboratory and Research (**in progress**)
-- **Next Task:** T390 - Add research asset placeholder files only
-- **Last Completed:** T389 - Add research domain state only
-- **Total Progress:** 389 / 438 (Phase 28: 3 / 52 done)
+- **Next Task:** T391 - Add research asset resolver only
+- **Last Completed:** T390 - Add research asset placeholder files only
+- **Total Progress:** 390 / 438 (Phase 28: 4 / 52 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -76,8 +76,8 @@
 - [x] **T387**: Add research config JSON only. Create a dedicated research settings file with the four Technology entries (`id` values `1`, `2`, `3`, `4`), tier rows, explicit columns, dependencies, resource cost maps, point requirements, and image keys. Do not add a Python loader yet. Add focused tests that parse the JSON and assert the four Technology entries have the required fields and dependency chain. Run full `pytest` and `ruff check src tests`.
 - [x] **T388**: Add research config loader and validation only. Create a small domain loader for the JSON from T387 that validates unique ids, tier range, column presence, cost shape, positive point requirement, image key presence, and dependency references. Do not add mutable research state yet. Add focused loader/validation tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T389**: Add research domain state only. Create an in-memory state/service that tracks completed research ids, active research id, delivered resource amounts for the active research, and accumulated research points. Do not add UI, transport, building integration, or point production yet. Add focused tests for starting state, completion marking, active research exclusivity, and delivered/progress bookkeeping. Run full `pytest` and `ruff check src tests`.
-- [~] **T390**: Add research asset placeholder files only. Create the research asset folder and placeholder image files for the four Technology researches. Do not add new asset helper code yet. Add focused filesystem/config consistency tests proving configured image keys have placeholder files. Run full `pytest` and `ruff check src tests`.
-- [ ] **T391**: Add research asset resolver only. Add an asset helper that resolves research images disk-first and falls back procedurally when missing. Do not render research UI yet. Add focused asset tests proving configured research image keys resolve without crashing. Run full `pytest` and `ruff check src tests`.
+- [x] **T390**: Add research asset placeholder files only. Create the research asset folder and placeholder image files for the four Technology researches. Do not add new asset helper code yet. Add focused filesystem/config consistency tests proving configured image keys have placeholder files. Run full `pytest` and `ruff check src tests`.
+- [~] **T391**: Add research asset resolver only. Add an asset helper that resolves research images disk-first and falls back procedurally when missing. Do not render research UI yet. Add focused asset tests proving configured research image keys resolve without crashing. Run full `pytest` and `ruff check src tests`.
 
 ### 28.2 Laboratory Building Foundation
 

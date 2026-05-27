@@ -6,13 +6,15 @@ from dataclasses import dataclass
 
 from game.buildings.laboratory import Laboratory
 from game.laboratory_visibility import has_completed_laboratory
-from game.research_config import RESEARCH_BY_ID, RESEARCH_DEFINITIONS
+from game.research_config import RESEARCH_BY_ID, RESEARCH_DEFINITIONS, ResearchDefinition
 from game.research_state import ResearchState
 
 _LABORATORY_TAG = "LABORATORY"
 _REASON_NO_LABORATORY = "Laboratory required"
 _REASON_COMPLETED = "Already completed"
 _REASON_ACTIVE = "Another research is in progress"
+_REASON_INVALID_COST = "Research resource cost is not configured"
+_REASON_INVALID_POINTS = "Research point requirement is invalid"
 
 
 def _dependency_lock_reason(missing_dependency_ids: tuple[str, ...]) -> str:
@@ -20,6 +22,20 @@ def _dependency_lock_reason(missing_dependency_ids: tuple[str, ...]) -> str:
     if len(names) == 1:
         return f"Requires {names[0]}"
     return "Requires " + ", ".join(names)
+
+
+def research_config_lock_reason(definition: ResearchDefinition) -> str | None:
+    """Defensive validity check for cost shape and point requirement."""
+    if definition.required_points <= 0:
+        return _REASON_INVALID_POINTS
+    if not definition.resource_cost:
+        return _REASON_INVALID_COST
+    for resource, amount in definition.resource_cost.items():
+        if not str(resource).strip():
+            return _REASON_INVALID_COST
+        if amount <= 0:
+            return _REASON_INVALID_COST
+    return None
 
 
 def missing_research_dependencies(
@@ -76,6 +92,9 @@ def research_start_eligibility(
     if research_state.has_active_research():
         return ResearchStartEligibility(False, _REASON_ACTIVE)
     definition = RESEARCH_BY_ID[key]
+    config_reason = research_config_lock_reason(definition)
+    if config_reason is not None:
+        return ResearchStartEligibility(False, config_reason)
     if laboratory_level is not None:
         lab = Laboratory(level=laboratory_level)
         if not lab.unlocks_technology_tier(definition.tier):

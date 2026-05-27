@@ -78,6 +78,10 @@ class BuildingRegistry:
             b.type_tag == "TOWN_HALL" for b in self._buildings
         ):
             return False
+        if cls.type_tag == "LABORATORY" and any(
+            b.type_tag == "LABORATORY" for b in self._buildings
+        ):
+            return False
         if self._world_footprint_overlaps_occupied(gx, gy, w, h):
             return False
         if self._world_footprint_overlaps_stones(gx, gy, w, h):

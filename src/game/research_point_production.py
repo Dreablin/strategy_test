@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from game.buildings.laboratory import Laboratory
+from game.research_completion import try_complete_active_research
 from game.research_state import ResearchState
 
 
@@ -102,4 +103,5 @@ def try_accumulate_research_points(
         laboratory=laboratory,
     )
     research_state.add_points(points)
+    try_complete_active_research(research_state=research_state, laboratory=laboratory)
     return points

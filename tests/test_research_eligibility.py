@@ -121,6 +121,8 @@ def test_tier_gates_at_laboratory_level_1() -> None:
 
 def test_tier_gates_at_laboratory_level_3() -> None:
     state = ResearchState()
+    state.start_research("1")
+    state.mark_research_completed("1")
     assert research_start_eligibility(
         "2", research_state=state, has_completed_laboratory=True, laboratory_level=3
     ).can_start
@@ -133,6 +135,9 @@ def test_tier_gates_at_laboratory_level_3() -> None:
 
 def test_tier_gates_at_laboratory_level_6() -> None:
     state = ResearchState()
+    for research_id in ("1", "2"):
+        state.start_research(research_id)
+        state.mark_research_completed(research_id)
     assert research_start_eligibility(
         "3", research_state=state, has_completed_laboratory=True, laboratory_level=6
     ).can_start
@@ -145,13 +150,15 @@ def test_tier_gates_at_laboratory_level_6() -> None:
 
 def test_tier_gates_at_laboratory_level_9() -> None:
     state = ResearchState()
-    for research_id in ("1", "2", "3", "4"):
-        assert research_start_eligibility(
-            research_id,
-            research_state=state,
-            has_completed_laboratory=True,
-            laboratory_level=9,
-        ).can_start
+    for research_id in ("1", "2", "3"):
+        state.start_research(research_id)
+        state.mark_research_completed(research_id)
+    assert research_start_eligibility(
+        "4",
+        research_state=state,
+        has_completed_laboratory=True,
+        laboratory_level=9,
+    ).can_start
 
 
 def test_registry_tier_gate_uses_placed_laboratory_level() -> None:
@@ -166,3 +173,65 @@ def test_registry_tier_gate_uses_placed_laboratory_level() -> None:
     assert blocked.can_start is False
     assert blocked.lock_reason == "Requires Laboratory level 3"
     assert RESEARCH_BY_ID["2"].tier == 2
+
+
+def test_dependency_blocks_research_2_without_research_1() -> None:
+    state = ResearchState()
+    blocked = research_start_eligibility(
+        "2",
+        research_state=state,
+        has_completed_laboratory=True,
+        laboratory_level=3,
+    )
+    assert blocked.can_start is False
+    assert blocked.lock_reason == "Requires Technology I"
+
+
+def test_dependency_allows_research_2_after_research_1_completed() -> None:
+    state = ResearchState()
+    state.start_research("1")
+    state.mark_research_completed("1")
+    allowed = research_start_eligibility(
+        "2",
+        research_state=state,
+        has_completed_laboratory=True,
+        laboratory_level=3,
+    )
+    assert allowed.can_start is True
+    assert allowed.lock_reason is None
+
+
+def test_dependency_blocks_research_4_without_prior_tech_chain() -> None:
+    state = ResearchState()
+    blocked = research_start_eligibility(
+        "4",
+        research_state=state,
+        has_completed_laboratory=True,
+        laboratory_level=9,
+    )
+    assert blocked.can_start is False
+    assert blocked.lock_reason == "Requires Technology III"
+
+
+def test_dependency_allows_research_4_when_chain_completed() -> None:
+    state = ResearchState()
+    for research_id in ("1", "2", "3"):
+        state.start_research(research_id)
+        state.mark_research_completed(research_id)
+    allowed = research_start_eligibility(
+        "4",
+        research_state=state,
+        has_completed_laboratory=True,
+        laboratory_level=9,
+    )
+    assert allowed.can_start is True
+
+
+def test_research_1_has_no_dependency_gate() -> None:
+    state = ResearchState()
+    assert research_start_eligibility(
+        "1",
+        research_state=state,
+        has_completed_laboratory=True,
+        laboratory_level=1,
+    ).can_start

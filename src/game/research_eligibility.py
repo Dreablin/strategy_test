@@ -15,6 +15,23 @@ _REASON_COMPLETED = "Already completed"
 _REASON_ACTIVE = "Another research is in progress"
 
 
+def _dependency_lock_reason(missing_dependency_ids: tuple[str, ...]) -> str:
+    names = [RESEARCH_BY_ID[dep_id].name for dep_id in missing_dependency_ids]
+    if len(names) == 1:
+        return f"Requires {names[0]}"
+    return "Requires " + ", ".join(names)
+
+
+def missing_research_dependencies(
+    research_id: str,
+    *,
+    research_state: ResearchState,
+) -> tuple[str, ...]:
+    """Dependency ids from config that are not yet completed."""
+    definition = RESEARCH_BY_ID[str(research_id)]
+    return tuple(dep for dep in definition.dependencies if not research_state.is_completed(dep))
+
+
 @dataclass(frozen=True, slots=True)
 class ResearchStartEligibility:
     can_start: bool
@@ -58,12 +75,15 @@ def research_start_eligibility(
         return ResearchStartEligibility(False, _REASON_COMPLETED)
     if research_state.has_active_research():
         return ResearchStartEligibility(False, _REASON_ACTIVE)
+    definition = RESEARCH_BY_ID[key]
     if laboratory_level is not None:
-        definition = RESEARCH_BY_ID[key]
         lab = Laboratory(level=laboratory_level)
         if not lab.unlocks_technology_tier(definition.tier):
             required = lab.technology_tier_unlock_level(definition.tier)
             return ResearchStartEligibility(False, _tier_lock_reason(required))
+    missing_deps = missing_research_dependencies(key, research_state=research_state)
+    if missing_deps:
+        return ResearchStartEligibility(False, _dependency_lock_reason(missing_deps))
     return ResearchStartEligibility(True, None)
 
 

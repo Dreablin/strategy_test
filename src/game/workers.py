@@ -113,7 +113,6 @@ __all__ = [
     "winery_input_transport_tasks",
     "winery_output_transport_tasks",
     "processor_input_transport_tasks",
-    "laboratory_input_transport_tasks",
     "water_input_transport_tasks",
     "find_nearest_free_tree",
     "find_nearest_free_stone",

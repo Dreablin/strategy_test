@@ -1,10 +1,15 @@
-"""Full-screen Research menu shell (content added in later tasks)."""
+"""Full-screen Research menu shell."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
 import pygame
+
+from game.ui.research_screen_layout import (
+    ResearchContentLayout,
+    compute_content_layout,
+)
 
 _PAD = 16
 _CLOSE = 28
@@ -16,6 +21,7 @@ class ResearchScreenLayout:
     overlay: pygame.Rect
     frame: pygame.Rect
     close: pygame.Rect
+    content: ResearchContentLayout
 
 
 class ResearchScreen:
@@ -25,7 +31,44 @@ class ResearchScreen:
         overlay = pygame.Rect(0, 0, width, height)
         frame = pygame.Rect(0, 0, width, height)
         close = pygame.Rect(width - _PAD - _CLOSE, _PAD, _CLOSE, _CLOSE)
-        return ResearchScreenLayout(overlay=overlay, frame=frame, close=close)
+        return ResearchScreenLayout(
+            overlay=overlay,
+            frame=frame,
+            close=close,
+            content=compute_content_layout(surface),
+        )
+
+    @staticmethod
+    def _draw_content(surface: pygame.Surface, content: ResearchContentLayout) -> None:
+        pygame.draw.rect(surface, (34, 38, 48), content.content, border_radius=8)
+        pygame.draw.rect(surface, (48, 54, 66), content.technology_column, border_radius=6)
+        label_font = pygame.font.Font(None, 20)
+        tech_label = label_font.render("Technology", True, (190, 196, 208))
+        surface.blit(
+            tech_label,
+            (
+                content.technology_column.left + 10,
+                content.technology_column.top + 8,
+            ),
+        )
+        for row in content.tier_rows:
+            pygame.draw.rect(surface, (40, 44, 54), row.row_rect)
+            pygame.draw.rect(surface, (52, 58, 70), row.technology_slot, border_radius=4)
+            pygame.draw.line(
+                surface,
+                (64, 70, 82),
+                (row.row_rect.left, row.row_rect.bottom - 1),
+                (row.row_rect.right, row.row_rect.bottom - 1),
+                1,
+            )
+            tier_text = label_font.render(f"Tier {row.tier}", True, (150, 156, 168))
+            surface.blit(
+                tier_text,
+                (
+                    row.technology_slot.right + 12,
+                    row.row_rect.top + 8,
+                ),
+            )
 
     @staticmethod
     def draw(surface: pygame.Surface) -> ResearchScreenLayout:
@@ -38,14 +81,10 @@ class ResearchScreen:
         pygame.draw.rect(surface, (56, 60, 68), layout.frame, width=2)
 
         title_font = pygame.font.Font(None, 36)
-        body_font = pygame.font.Font(None, 22)
         title = title_font.render(_TITLE, True, (238, 240, 248))
         surface.blit(title, (layout.frame.left + _PAD, layout.frame.top + _PAD))
-        hint = body_font.render("Research tree — coming soon", True, (160, 166, 178))
-        surface.blit(
-            hint,
-            (layout.frame.left + _PAD, layout.frame.top + _PAD + title.get_height() + 8),
-        )
+
+        ResearchScreen._draw_content(surface, layout.content)
 
         pygame.draw.line(
             surface,

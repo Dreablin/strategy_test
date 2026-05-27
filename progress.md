@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 28 - Laboratory and Research (**in progress**)
-- **Next Task:** T403 - Add Laboratory multi-slot counting helpers only
-- **Last Completed:** T402 - Add Scientist-to-Laboratory compatibility only
-- **Total Progress:** 402 / 438 (Phase 28: 16 / 52 done)
+- **Next Task:** T404 - Add automatic assignment of multiple Scientists to one Laboratory only
+- **Last Completed:** T403 - Add Laboratory multi-slot counting helpers only
+- **Total Progress:** 403 / 438 (Phase 28: 17 / 52 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -95,7 +95,7 @@
 - [x] **T400**: Add Scientist display assets/labels only. Add worker label/icon/procedural fallback coverage needed for UI rendering. Do not change School tab logic or building compatibility. Add focused display/asset tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T401**: Add Scientist to School advanced-tab UI only. Ensure the School advanced hiring tab shows `SCIENTIST` and can enqueue training through existing School queue behavior. Do not assign Scientists to buildings yet. Add focused School panel/queue tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T402**: Add Scientist-to-Laboratory compatibility only. Update worker compatibility rules so `SCIENTIST` is compatible with `LABORATORY`, without changing one-worker assignment semantics yet. Add focused compatibility tests. Run full `pytest` and `ruff check src tests`.
-- [ ] **T403**: Add Laboratory multi-slot counting helpers only. Add WorkerManager helpers that count Scientists assigned to a Laboratory and report free Scientist slots from Laboratory capacity. Do not change automatic assignment yet. Add focused helper tests using manual workers/buildings. Run full `pytest` and `ruff check src tests`.
+- [x] **T403**: Add Laboratory multi-slot counting helpers only. Add WorkerManager helpers that count Scientists assigned to a Laboratory and report free Scientist slots from Laboratory capacity. Do not change automatic assignment yet. Add focused helper tests using manual workers/buildings. Run full `pytest` and `ruff check src tests`.
 - [ ] **T404**: Add automatic assignment of multiple Scientists to one Laboratory only. `WorkerManager.reassign_all()` should assign idle Scientists into free Laboratory slots up to capacity, while preserving one-worker assignment behavior for normal buildings. Add focused assignment tests for levels with different slot counts. Run full `pytest` and `ruff check src tests`.
 - [ ] **T405**: Add Laboratory demolition cleanup for Scientists only. When the Laboratory is demolished, assigned Scientists become idle and do not retain a stale assignment. Do not handle upgrades in this task. Add focused demolition lifecycle tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T406**: Add Laboratory upgrade/construction pause behavior for Scientists only. While the Laboratory is under construction/upgrading, Scientists should not contribute or appear as active workers; after completion, reassignment may fill available slots. Add focused upgrade/construction lifecycle tests. Run full `pytest` and `ruff check src tests`.

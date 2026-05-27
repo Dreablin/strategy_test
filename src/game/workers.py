@@ -70,6 +70,11 @@ from game.worker_farming import WorkerFarmingMixin
 from game.worker_gathering import WorkerGatheringMixin
 from game.worker_processing import WorkerProcessingMixin
 from game.resource_catalog import is_simple_meal_resource
+from game.worker_laboratory import (
+    laboratory_assigned_scientist_count as _laboratory_assigned_scientist_count,
+    laboratory_assigned_scientists as _laboratory_assigned_scientists,
+    laboratory_free_scientist_slots as _laboratory_free_scientist_slots,
+)
 from game.worker_transport import WorkerTransportMixin
 from game.world import find_nearest_free_stone, find_nearest_free_tree
 
@@ -240,6 +245,15 @@ class WorkerManager(
     def idle(self) -> list[Worker]:
         """Idle workers (PRD ``WorkerManager.idle``)."""
         return [w for w in self._workers if w.idle]
+
+    def laboratory_assigned_scientists(self, laboratory: Building) -> tuple[Worker, ...]:
+        return _laboratory_assigned_scientists(self._workers, laboratory)
+
+    def laboratory_assigned_scientist_count(self, laboratory: Building) -> int:
+        return _laboratory_assigned_scientist_count(self._workers, laboratory)
+
+    def laboratory_free_scientist_slots(self, laboratory: Building) -> int:
+        return _laboratory_free_scientist_slots(self._workers, laboratory)
 
     def assign_to_building(self, worker: Worker, building: Building) -> None:
         self._clear_building_bonus(worker)

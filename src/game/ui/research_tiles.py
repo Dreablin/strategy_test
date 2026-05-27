@@ -11,7 +11,11 @@ from game.research_config import RESEARCH_BY_ID
 from game.research_state import ResearchState
 from game.ui.research_start_button import draw_research_start_button
 from game.ui.research_tile_layout import ResearchTileLayout
-from game.ui.research_tile_visual import research_tile_image_alpha, research_tile_title_color
+from game.ui.research_tile_visual import (
+    research_tile_image_alpha,
+    research_tile_is_in_progress,
+    research_tile_title_color,
+)
 
 
 def draw_research_tiles(
@@ -31,6 +35,9 @@ def draw_research_tiles(
             image = image.copy()
             image.set_alpha(alpha)
         surface.blit(image, tile.image_rect.topleft)
+        if research_tile_is_in_progress(tile.research_id, research_state):
+            highlight = tile.image_rect.inflate(6, 6)
+            pygame.draw.rect(surface, (92, 148, 210), highlight, width=2, border_radius=6)
         title_color = research_tile_title_color(tile.research_id, research_state)
         label = title_font.render(entry.name, True, title_color)
         if alpha < 255:

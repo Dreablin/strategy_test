@@ -34,7 +34,7 @@ def test_image_alpha_full_for_completed_dimmed_otherwise() -> None:
     assert research_tile_image_alpha("1", state) == 255
     assert research_tile_image_alpha("2", None) == 140
     state.start_research("2")
-    assert research_tile_image_alpha("2", state) == 140
+    assert research_tile_image_alpha("2", state) == 210
 
 
 def test_draw_completed_tile_brighter_than_active_tile() -> None:

@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 28 - Laboratory and Research (**in progress**)
-- **Next Task:** T398 - Add Laboratory display labels/descriptions only
-- **Last Completed:** T397 - Add Laboratory to the Social build menu only
-- **Total Progress:** 397 / 438 (Phase 28: 11 / 52 done)
+- **Next Task:** T399 - Add SCIENTIST hire metadata only
+- **Last Completed:** T398 - Add Laboratory display labels/descriptions only
+- **Total Progress:** 398 / 438 (Phase 28: 12 / 52 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -87,11 +87,11 @@
 - [x] **T395**: Enforce Laboratory uniqueness only. Prevent placing a second Laboratory while one exists or is under construction, while preserving normal placement for other buildings. Add focused placement/registry tests. Run full `pytest` and `ruff check src tests`.
 - [x] **T396**: Add Laboratory building asset loading/fallback only. Add building folder mapping and placeholder/meta files only if real assets are absent; add focused asset tests proving construction and completed sprites resolve. Run full `pytest` and `ruff check src tests`.
 - [x] **T397**: Add Laboratory to the Social build menu only. Add the Social menu tile/click routing for `LABORATORY` and focused bottom-bar/input tests that avoid brittle coordinate assertions where possible. Run full `pytest` and `ruff check src tests`.
-- [~] **T398**: Add Laboratory display labels/descriptions only. Update building display names/descriptions and construction panel display name. Add focused label tests. Run full `pytest` and `ruff check src tests`.
+- [x] **T398**: Add Laboratory display labels/descriptions only. Update building display names/descriptions and construction panel display name. Add focused label tests. Run full `pytest` and `ruff check src tests`.
 
 ### 28.3 Scientist Worker and Laboratory Staffing
 
-- [ ] **T399**: Add `SCIENTIST` hire metadata only. Update worker tier metadata in `game_settings.json` and Town Hall hire gate metadata so `SCIENTIST` is recognized as an advanced hireable worker. Do not add icons, labels, School UI assertions, or building compatibility yet. Add focused metadata/hiring tests. Run full `pytest` and `ruff check src tests`.
+- [~] **T399**: Add `SCIENTIST` hire metadata only. Update worker tier metadata in `game_settings.json` and Town Hall hire gate metadata so `SCIENTIST` is recognized as an advanced hireable worker. Do not add icons, labels, School UI assertions, or building compatibility yet. Add focused metadata/hiring tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T400**: Add Scientist display assets/labels only. Add worker label/icon/procedural fallback coverage needed for UI rendering. Do not change School tab logic or building compatibility. Add focused display/asset tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T401**: Add Scientist to School advanced-tab UI only. Ensure the School advanced hiring tab shows `SCIENTIST` and can enqueue training through existing School queue behavior. Do not assign Scientists to buildings yet. Add focused School panel/queue tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T402**: Add Scientist-to-Laboratory compatibility only. Update worker compatibility rules so `SCIENTIST` is compatible with `LABORATORY`, without changing one-worker assignment semantics yet. Add focused compatibility tests. Run full `pytest` and `ruff check src tests`.

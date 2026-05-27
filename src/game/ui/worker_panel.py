@@ -51,6 +51,7 @@ _BUILDING_LABEL: dict[str, str] = {
     "CANTEEN": "Canteen",
     "WINERY": "Winery",
     "RESTAURANT": "Restaurant",
+    "LABORATORY": "Laboratory",
 }
 
 _RESOURCE_LABEL: dict[str, str] = {

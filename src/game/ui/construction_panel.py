@@ -29,6 +29,7 @@ _DISPLAY_NAME: dict[str, str] = {
     "CANTEEN": "Canteen",
     "WELL": "Well",
     "VINEYARD": "Vineyard",
+    "LABORATORY": "Laboratory",
 }
 
 

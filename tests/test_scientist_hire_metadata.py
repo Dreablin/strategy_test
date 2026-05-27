@@ -30,8 +30,7 @@ def test_scientist_is_hirable_without_building_assignment_mapping() -> None:
 
 
 def test_scientist_can_be_hired_from_school() -> None:
-    world = World(world_seed=0)
-    registry = BuildingRegistry(world)
+    registry = BuildingRegistry(World(world_seed=0))
     town_hall = registry.place(TownHall, town_hall_origin_tile())
     town_hall.construction_site = None
     school = registry.place(School, near_town_hall_tile(8, 8))

@@ -30,6 +30,7 @@ _WORKER_LABEL: dict[str, str] = {
     "COOK": "Cook",
     "WATERMAN": "Waterman",
     "WINEMAKER": "Winemaker",
+    "SCIENTIST": "Scientist",
 }
 
 _BUILDING_LABEL: dict[str, str] = {

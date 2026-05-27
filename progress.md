@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 28 - Laboratory and Research (**in progress**)
-- **Next Task:** T400 - Add Scientist display assets/labels only
-- **Last Completed:** T399 - Add SCIENTIST hire metadata only
-- **Total Progress:** 399 / 438 (Phase 28: 13 / 52 done)
+- **Next Task:** T401 - Add Scientist to School advanced-tab UI only
+- **Last Completed:** T400 - Add Scientist display assets/labels only
+- **Total Progress:** 400 / 438 (Phase 28: 14 / 52 done)
 
 > **Archive:** Full older phase history is in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -92,8 +92,8 @@
 ### 28.3 Scientist Worker and Laboratory Staffing
 
 - [x] **T399**: Add `SCIENTIST` hire metadata only. Update worker tier metadata in `game_settings.json` and Town Hall hire gate metadata so `SCIENTIST` is recognized as an advanced hireable worker. Do not add icons, labels, School UI assertions, or building compatibility yet. Add focused metadata/hiring tests. Run full `pytest` and `ruff check src tests`.
-- [~] **T400**: Add Scientist display assets/labels only. Add worker label/icon/procedural fallback coverage needed for UI rendering. Do not change School tab logic or building compatibility. Add focused display/asset tests. Run full `pytest` and `ruff check src tests`.
-- [ ] **T401**: Add Scientist to School advanced-tab UI only. Ensure the School advanced hiring tab shows `SCIENTIST` and can enqueue training through existing School queue behavior. Do not assign Scientists to buildings yet. Add focused School panel/queue tests. Run full `pytest` and `ruff check src tests`.
+- [x] **T400**: Add Scientist display assets/labels only. Add worker label/icon/procedural fallback coverage needed for UI rendering. Do not change School tab logic or building compatibility. Add focused display/asset tests. Run full `pytest` and `ruff check src tests`.
+- [~] **T401**: Add Scientist to School advanced-tab UI only. Ensure the School advanced hiring tab shows `SCIENTIST` and can enqueue training through existing School queue behavior. Do not assign Scientists to buildings yet. Add focused School panel/queue tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T402**: Add Scientist-to-Laboratory compatibility only. Update worker compatibility rules so `SCIENTIST` is compatible with `LABORATORY`, without changing one-worker assignment semantics yet. Add focused compatibility tests. Run full `pytest` and `ruff check src tests`.
 - [ ] **T403**: Add Laboratory multi-slot counting helpers only. Add WorkerManager helpers that count Scientists assigned to a Laboratory and report free Scientist slots from Laboratory capacity. Do not change automatic assignment yet. Add focused helper tests using manual workers/buildings. Run full `pytest` and `ruff check src tests`.
 - [ ] **T404**: Add automatic assignment of multiple Scientists to one Laboratory only. `WorkerManager.reassign_all()` should assign idle Scientists into free Laboratory slots up to capacity, while preserving one-worker assignment behavior for normal buildings. Add focused assignment tests for levels with different slot counts. Run full `pytest` and `ruff check src tests`.

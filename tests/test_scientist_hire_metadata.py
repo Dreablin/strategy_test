@@ -24,9 +24,9 @@ def test_scientist_has_hire_gate_in_settings() -> None:
     assert config.TOWN_HALL_MIN_LEVEL_FOR_HIRE["SCIENTIST"] == 1
 
 
-def test_scientist_is_hirable_without_building_assignment_mapping() -> None:
+def test_scientist_is_hirable() -> None:
     assert "SCIENTIST" in HIRABLE_WORKERS
-    assert "SCIENTIST" not in WORKER_TO_BUILDING
+    assert "SCIENTIST" in WORKER_TO_BUILDING
 
 
 def test_scientist_can_be_hired_from_school() -> None:

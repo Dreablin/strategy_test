@@ -575,14 +575,15 @@ def restaurant_input_transport_tasks(registry: Any, resource: str) -> list[Trans
 def laboratory_input_transport_tasks(
     registry: Any,
     inbound_counts: dict[tuple[int, str], int] | None = None,
+    *,
+    pending_pickups_by_well_id: dict[int, int] | None = None,
 ) -> list[TransportTask]:
-    """Plan Town Hall → Laboratory deliveries for active research warehouse inputs."""
+    """Plan deliveries into active Laboratory research input storage."""
     if registry is None:
         return []
+    pending_water_pickups = pending_pickups_by_well_id or {}
     buildings = list(registry.all())
     town_hall = next((b for b in buildings if b.type_tag == "TOWN_HALL"), None)
-    if town_hall is None or not hasattr(town_hall, "warehouse_amount"):
-        return []
     laboratory: Building | None = None
     for building in buildings:
         if building.type_tag != "LABORATORY":
@@ -598,15 +599,58 @@ def laboratory_input_transport_tasks(
         return []
     tasks: list[TransportTask] = []
     available_by_resource: dict[str, int] = {}
+    well_avail: dict[int, tuple[Building, int]] = {}
+    well_avail_counts: dict[int, int] = {}
     for resource in laboratory.research_input_resources():
         key = str(resource).lower()
-        if not is_town_hall_warehouse_resource(key):
-            continue
         capacity = int(laboratory.research_input_capacity(resource))
         delivered = int(laboratory.research_input_amount(resource))
         inbound = int((inbound_counts or {}).get((id(laboratory), key), 0))
         want = max(0, capacity - delivered - inbound)
         if want <= 0:
+            continue
+        if key == "water":
+            if not well_avail:
+                for building in buildings:
+                    if building.type_tag != "WELL":
+                        continue
+                    if getattr(building, "is_under_construction", False):
+                        continue
+                    if not getattr(building, "active", True):
+                        continue
+                    stored = _water_amount(building)
+                    committed = max(0, int(pending_water_pickups.get(id(building), 0)))
+                    available = max(0, stored - committed)
+                    if available > 0:
+                        well_avail[id(building)] = (building, available)
+                        well_avail_counts[id(building)] = available
+            for _ in range(want):
+                best_id: int | None = None
+                best_dist = 10**9
+                for wid, left in well_avail_counts.items():
+                    if left <= 0:
+                        continue
+                    well = well_avail[wid][0]
+                    dist = _manhattan_building_distance(well, laboratory)
+                    if dist < best_dist or (dist == best_dist and (best_id is None or wid < best_id)):
+                        best_id = wid
+                        best_dist = dist
+                if best_id is None:
+                    break
+                tasks.append(
+                    TransportTask(
+                        resource=key,
+                        source=well_avail[best_id][0],
+                        target=laboratory,
+                        priority=0,
+                        purpose="laboratory_research",
+                    )
+                )
+                well_avail_counts[best_id] -= 1
+            continue
+        if not is_town_hall_warehouse_resource(key):
+            continue
+        if town_hall is None or not hasattr(town_hall, "warehouse_amount"):
             continue
         if key not in available_by_resource:
             available_by_resource[key] = max(0, int(town_hall.warehouse_amount(resource)))

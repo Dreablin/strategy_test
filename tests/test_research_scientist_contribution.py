@@ -5,6 +5,7 @@ from __future__ import annotations
 from game.buildings.canteen import Canteen
 from game.buildings.laboratory import Laboratory
 from game.buildings.registry import BuildingRegistry
+from game.buildings.restaurant import Restaurant
 from game.buildings.town_hall import TownHall
 from game.config import near_town_hall_tile, town_hall_origin_tile
 from game.worker_laboratory import (
@@ -124,3 +125,60 @@ def test_worker_manager_ignores_dining_scientist_for_point_rate() -> None:
     assert workers.laboratory_active_scientist_count(laboratory) == 2
     assert workers.laboratory_research_contributing_scientist_count(laboratory) == 1
     assert state.accumulated_points() == rate
+
+
+def test_hungry_scientist_reserves_restaurant_before_research_points() -> None:
+    world = World(world_seed=31)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    world._iron.clear()  # noqa: SLF001
+    world.refresh_passability_tile_caches()
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    laboratory = registry.place(Laboratory, near_town_hall_tile(10, 10))
+    laboratory.construction_site = None
+    restaurant = registry.place(Restaurant, near_town_hall_tile(14, 10))
+    restaurant.construction_site = None
+    restaurant.add_local_storage("elite_meal", 1)
+    state = ResearchState()
+    try_start_active_research("1", research_state=state, registry=registry)
+    _fill_laboratory_inputs(laboratory)
+    workers = WorkerManager(registry, now_ms_fn=lambda: 0, research_state=state)
+    scientist = workers.hire("SCIENTIST")
+    assert scientist is not None
+    workers.assign_to_building(scientist, laboratory)
+    scientist.satiety = 0
+
+    workers.update(0)
+
+    assert scientist.dining_canteen is restaurant
+    assert scientist.dining_meal_reserved
+    assert workers.laboratory_research_contributing_scientist_count(laboratory) == 0
+    assert state.accumulated_points() == 0
+
+
+def test_hungry_scientist_stays_in_laboratory_without_restaurant_meal() -> None:
+    world = World(world_seed=32)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    world._iron.clear()  # noqa: SLF001
+    world.refresh_passability_tile_caches()
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    laboratory = registry.place(Laboratory, near_town_hall_tile(10, 10))
+    laboratory.construction_site = None
+    restaurant = registry.place(Restaurant, near_town_hall_tile(14, 10))
+    restaurant.construction_site = None
+    state = ResearchState()
+    try_start_active_research("1", research_state=state, registry=registry)
+    _fill_laboratory_inputs(laboratory)
+    workers = WorkerManager(registry, now_ms_fn=lambda: 0, research_state=state)
+    scientist = workers.hire("SCIENTIST")
+    assert scientist is not None
+    workers.assign_to_building(scientist, laboratory)
+    scientist.satiety = 0
+
+    workers.update(0)
+
+    assert scientist.dining_canteen is None
+    assert workers.laboratory_research_contributing_scientist_count(laboratory) == 1

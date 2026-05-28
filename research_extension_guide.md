@@ -21,8 +21,9 @@ updates here when implementation touchpoints change.
   Panel UI shows **real delivered amounts only**—not queued or in-flight cargo.
 - **Research points** accrue only after every required resource is delivered to
   that storage. Carriers use purpose `"laboratory_research"`.
-- **Gameplay effects** for completed researches (beyond Technology tier gates)
-  are out of scope until effects are specified per research id.
+- **Completed research effects** must be schema-driven. Worker characteristic
+  bonuses use `worker_effects.by_type` in `research.json`; other effect families
+  need an explicit schema/design before implementation.
 
 ## Configuration and Assets
 
@@ -30,6 +31,7 @@ updates here when implementation touchpoints change.
 |------|--------|
 | Research definitions | `src/game/settings/research.json` |
 | Loader / `RESEARCH_BY_ID` | `src/game/research_config.py` |
+| Completed worker effects | `worker_effects.by_type` in research JSON + `src/game/research_effects.py` |
 | Laboratory balance | `src/game/settings/buildings/laboratory.json` |
 | Scientist tier / hire cap | `game_settings.json` (`workers.tiers`, hire limits) |
 | Research images (disk) | `assets/research/<image_key>.png` |
@@ -39,8 +41,13 @@ updates here when implementation touchpoints change.
 ### Adding a research entry
 
 1. Add an object to `research.json` `researches` with: `id`, `name`,
-   `description`, `tier` (1–4), `column`, `dependencies`, `resource_cost`,
-   `required_points`, `image_key`.
+   `description`, `effect_text`, `tier` (1–4), `column`, `dependencies`,
+   `resource_cost`, `required_points`, `image_key`.
+   `effect_text` is the player-facing tooltip line after `Effect:`.
+   Optional worker-characteristic effects belong under:
+   `"worker_effects": {"by_type": {"CARRIER": {"move_speed_mult": 0.1}}}`.
+   Supported stat keys are the same worker characteristic keys used by building
+   level effects.
 2. Add a placeholder PNG at `assets/research/<image_key>.png` (or rely on
    procedural fallback from `research_assets.py`).
 3. Loader validation runs at import time in `research_config.py`—fix any
@@ -62,6 +69,7 @@ updates here when implementation touchpoints change.
 | `research_technology_chain.py` | Technology id helpers; delegates eligibility to registry |
 | `research_point_production.py` | Points only when inputs delivered; per-lab tick timestamps |
 | `research_completion.py` | `try_complete_active_research` when points ≥ requirement |
+| `research_effects.py` | Completed research worker-effect source keys and effect lookup |
 | `laboratory_visibility.py` | `has_completed_laboratory` / `completed_laboratory` for gating |
 | `buildings/laboratory.py` | Slot capacity, tier unlock helpers, dynamic input storage API |
 
@@ -73,8 +81,10 @@ updates here when implementation touchpoints change.
 
 1. **Start:** `try_start_active_research` or Research screen Start click →
    `research_state.start_research` + `laboratory.initialize_research_input_storage`.
-2. **Deliver:** `transport_tasks.laboratory_input_transport_tasks` plans Town Hall →
-   Laboratory tasks; `worker_transport` delivers with purpose
+2. **Deliver:** `transport_tasks.laboratory_input_transport_tasks` plans normal
+   carrier tasks into the Laboratory: warehouse resources come from Town Hall,
+   and `water` comes from completed Wells with local stock. `worker_transport`
+   delivers with purpose
    `"laboratory_research"` and calls `_record_laboratory_research_delivery` to
    sync `ResearchState` delivered amounts. Inbound counts prevent overfill.
 3. **Gate:** `laboratory.all_research_inputs_delivered()` before points.
@@ -138,7 +148,7 @@ Eligibility for drawing: `research_ui_eligibility` in `research_eligibility.py`.
 ## Transport Integration
 
 - **Planner:** `transport_tasks.laboratory_input_transport_tasks(registry, inbound_counts=...)`
-  — only Town Hall warehouse resources (`resource_catalog.is_town_hall_warehouse_resource`).
+  — Town Hall warehouse resources plus `water` from Well local storage.
 - **Enqueue:** `WorkerManager.update` → `_enqueue_laboratory_research_input_tasks`
   in `worker_transport.py` (deduped with other transport).
 - **Purpose:** `"laboratory_research"` on `TransportTask`.
@@ -177,4 +187,4 @@ $env:PYTHONPATH='src'
 - Letting `WorkerManager` and `GameInput` use different `ResearchState` instances.
 - Using passive `Building.income()` for research resources or points.
 - Adding a second Laboratory without revisiting registry uniqueness and UI gates.
-- Implementing per-research gameplay bonuses in Phase 28 without a specified effect schema.
+- Implementing ad-hoc per-research gameplay bonuses outside a documented effect schema.

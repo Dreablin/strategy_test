@@ -29,6 +29,7 @@ def test_format_tooltip_includes_cost_points_and_dependencies() -> None:
     assert any("Cost:" in line and "Boards" in line for line in lines)
     assert any("Points: 10000" in line for line in lines)
     assert any("Technology I" in line for line in lines)
+    assert any(line.startswith("Effect:") and "tier 2" in line for line in lines)
 
 
 def test_format_tooltip_shows_lock_reason_when_supplied() -> None:

@@ -201,6 +201,28 @@ def test_dependency_allows_research_2_after_research_1_completed() -> None:
     assert allowed.lock_reason is None
 
 
+def test_carrier_speed_research_requires_technology_1() -> None:
+    state = ResearchState()
+    blocked = research_start_eligibility(
+        "carrier_speed_1",
+        research_state=state,
+        has_completed_laboratory=True,
+        laboratory_level=1,
+    )
+    assert blocked.can_start is False
+    assert blocked.lock_reason == "Requires Technology I"
+
+    state.start_research("1")
+    state.mark_research_completed("1")
+    allowed = research_start_eligibility(
+        "carrier_speed_1",
+        research_state=state,
+        has_completed_laboratory=True,
+        laboratory_level=1,
+    )
+    assert allowed.can_start is True
+
+
 def test_dependency_blocks_research_4_without_prior_tech_chain() -> None:
     state = ResearchState()
     blocked = research_start_eligibility(

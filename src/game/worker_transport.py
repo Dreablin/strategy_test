@@ -287,9 +287,13 @@ class WorkerTransportMixin:
                 task.source.warehouse_amount(task.resource)  # type: ignore[attr-defined]
             ) > 0
             if task.resource == "water":
-                water_capacity = _water_capacity(task.target)
-                water_amount = _water_amount(task.target)
-                if water_amount >= water_capacity:
+                if task.purpose == "laboratory_research" and task.target.type_tag == "LABORATORY":
+                    if task.target.research_input_amount("water") >= task.target.research_input_capacity(  # type: ignore[attr-defined]
+                        "water"
+                    ):
+                        stale_indices.append(idx)
+                        continue
+                elif _water_amount(task.target) >= _water_capacity(task.target):
                     stale_indices.append(idx)
                     continue
             if not has_storage_source and not has_warehouse_source:
@@ -676,7 +680,7 @@ class WorkerTransportMixin:
             ):
                 laboratory.add_research_input(task.resource, 1)
                 self._record_laboratory_research_delivery(task.resource, 1)
-            else:
+            elif task.resource != "water":
                 town_hall = self._primary_town_hall()
                 if town_hall is not None:
                     town_hall.add_to_warehouse(task.resource, 1)
@@ -750,6 +754,7 @@ class WorkerTransportMixin:
             laboratory_input_transport_tasks(
                 self._registry,
                 inbound_counts=self._laboratory_research_inbound_counts(),
+                pending_pickups_by_well_id=self._pending_well_water_pickup_counts(),
             ),
         )
 

@@ -46,10 +46,10 @@
     }
   },
   "levels": {
-    "1": {"cost": {"boards": 6, "stone": 4, "iron": 2}, "build_time_ms": 60000},
-    "2": {"cost": {"boards": 7, "stone": 5, "iron": 3}, "build_time_ms": 60000},
-    "3": {"cost": {"boards": 8, "stone": 6, "iron": 4}, "build_time_ms": 60000},
-    "4": {"cost": {"boards": 9, "stone": 7, "iron": 5}, "build_time_ms": 60000},
+    "1": {"cost": {"wood": 2}, "build_time_ms": 45000},
+    "2": {"cost": {"wood": 3}, "build_time_ms": 45000},
+    "3": {"cost": {"wood": 5}, "build_time_ms": 45000},
+    "4": {"cost": {"wood": 7}, "build_time_ms": 45000},
     "5": {"cost": {"boards": 10, "stone": 8, "iron": 6}, "build_time_ms": 60000},
     "6": {"cost": {"boards": 11, "stone": 9, "iron": 7}, "build_time_ms": 60000},
     "7": {"cost": {"boards": 12, "stone": 10, "iron": 8}, "build_time_ms": 60000},

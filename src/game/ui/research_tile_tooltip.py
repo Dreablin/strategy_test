@@ -25,6 +25,7 @@ class ResearchTileTooltipInfo:
     resource_cost: dict[str, int]
     required_points: int
     dependency_labels: tuple[str, ...]
+    effect_text: str
     lock_reason: str | None = None
 
 
@@ -38,6 +39,7 @@ def research_tooltip_info_from_entry(
         resource_cost=dict(entry.resource_cost),
         required_points=entry.required_points,
         dependency_labels=deps,
+        effect_text=entry.effect_text,
         lock_reason=lock_reason,
     )
 
@@ -61,7 +63,7 @@ def format_research_tooltip_lines(info: ResearchTileTooltipInfo) -> tuple[str, .
         deps_line = "Requires: " + ", ".join(info.dependency_labels)
     else:
         deps_line = "Requires: none"
-    lines: list[str] = [cost_line, points_line, deps_line]
+    lines: list[str] = [cost_line, points_line, deps_line, f"Effect: {info.effect_text}"]
     if info.lock_reason:
         lines.append(f"Locked: {info.lock_reason}")
     return tuple(lines)

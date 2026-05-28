@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import pygame
 
 from game.buildings.base import Building
+from game.ui.worker_labels import building_worker_status_line
 _PANEL_W = 420
 _PANEL_PAD = 16
 _ROW = 26
@@ -49,13 +50,17 @@ _DESCRIPTION: dict[str, str] = {
     "WELL": "Produces water into local storage.",
     "WINERY": "Winemaker converts grapes into wine; carriers export wine to the Town Hall.",
     "RESTAURANT": "Cook prepares elite meals from bread, wine, and beef for advanced workers.",
-    "LABORATORY": "Scientists conduct research here; deliver resources, then earn research points to unlock technologies.",
+    "LABORATORY": "Scientists conduct research and unlock technologies.",
 }
 
 def _upgrade_label(building: Building) -> str:
     nxt = building.level + 1
     _ = building
     return f"Upgrade to Lv {nxt} — Free"
+
+
+def worker_status_line(building: Building, worker_status: str) -> str:
+    return building_worker_status_line(building.type_tag, worker_status)
 
 
 @dataclass(frozen=True, slots=True)
@@ -214,7 +219,7 @@ class BuildingPanel:
             }
         if worker_status not in allowed_worker_status:
             worker_status = "assigned" if worker_assigned else "empty"
-        wstat = f"Worker: {worker_status}"
+        wstat = worker_status_line(building, worker_status)
         surface.blit(body_font.render(wstat, True, (200, 204, 214)), (layout.frame.left + _PANEL_PAD, y))
         if hasattr(building, "storage_capacity") and hasattr(building, "stored"):
             y += _ROW

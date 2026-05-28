@@ -5,6 +5,7 @@ from __future__ import annotations
 import pygame
 
 from game.research_config import RESEARCH_BY_ID, RESEARCH_DEFINITIONS
+from game.research_technology_chain import TECHNOLOGY_IDS
 from game.ui.research_screen import ResearchScreen
 from game.ui.research_screen_layout import compute_content_layout
 from game.ui.research_tile_layout import layout_tile_for_entry
@@ -22,6 +23,8 @@ def test_technology_tiles_use_column_zero_slots() -> None:
     content = compute_content_layout(surface)
     tier_rows = {row.tier: row for row in content.tier_rows}
     for entry in RESEARCH_DEFINITIONS:
+        if entry.id not in TECHNOLOGY_IDS:
+            continue
         tile = next(t for t in content.tiles if t.research_id == entry.id)
         assert tile.tier == entry.tier
         assert tile.column == entry.column

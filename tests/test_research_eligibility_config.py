@@ -22,6 +22,7 @@ def _sample_definition(
         id=research_id,
         name="Sample",
         description="Sample research",
+        effect_text="Sample effect",
         tier=1,
         column=1,
         dependencies=(),

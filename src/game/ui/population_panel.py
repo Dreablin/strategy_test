@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import pygame
 
 from game.assets import worker_ui_icon
+from game.ui.worker_labels import WORKER_LABEL as _WORKER_LABEL
 from game.worker_models import Worker
 
 _PANEL_W = 560
@@ -35,24 +36,6 @@ _FILTER_WORKER_TYPES: tuple[str, ...] = (
     "WINEMAKER",
     "SCIENTIST",
 )
-
-_WORKER_LABEL: dict[str, str] = {
-    "CARRIER": "Carrier",
-    "BUILDER": "Builder",
-    "SAWYER": "Sawyer",
-    "MILLER": "Miller",
-    "BAKER": "Baker",
-    "LUMBERJACK": "Lumberjack",
-    "STONECUTTER": "Stonecutter",
-    "MINER": "Miner",
-    "FARMER": "Farmer",
-    "ANIMAL_HERDER": "Herder",
-    "FORESTER": "Forester",
-    "COOK": "Cook",
-    "WATERMAN": "Waterman",
-    "WINEMAKER": "Winemaker",
-    "SCIENTIST": "Scientist",
-}
 
 _BUILDING_LABEL: dict[str, str] = {
     "TOWN_HALL": "Town Hall",

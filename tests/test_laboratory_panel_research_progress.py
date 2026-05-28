@@ -54,8 +54,8 @@ def test_panel_draws_progress_bar_fill() -> None:
         worker_manager=workers,
         research_state=state,
     )
-    research_h = research_storage_section_height(laboratory, research_state=state)
-    section_top = layout.frame.bottom - 16 - research_h + 8
+    assert layout.research_section is not None
+    section_top = layout.research_section.top
     bar_y = section_top + 48 + 8
     bar_x = layout.frame.left + 24
     fill_pixel = surface.get_at((bar_x + 40, bar_y + 6))

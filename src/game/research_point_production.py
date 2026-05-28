@@ -58,6 +58,7 @@ def tick_laboratory_research_points(
     active_scientist_count: int,
     now_ms: int,
     last_tick_by_laboratory: dict[int, int],
+    point_remainder_by_laboratory: dict[int, int] | None = None,
 ) -> None:
     """Advance research points for one Laboratory timestep."""
     if not research_state.has_active_research():
@@ -70,11 +71,29 @@ def tick_laboratory_research_points(
     elapsed_ms = int(now_ms) - int(last_ms)
     if elapsed_ms <= 0:
         return
-    points = research_points_for_elapsed_ms(
+    if active_scientist_count <= 0:
+        return
+    if not research_points_may_accumulate(
+        research_state=research_state,
         laboratory=laboratory,
-        active_scientist_count=active_scientist_count,
-        elapsed_ms=elapsed_ms,
-    )
+    ):
+        return
+    capacity = laboratory.scientist_slot_capacity()
+    contributing = min(active_scientist_count, capacity)
+    rate = laboratory.research_points_per_scientist_per_second()
+    if point_remainder_by_laboratory is None:
+        points = research_points_for_elapsed_ms(
+            laboratory=laboratory,
+            active_scientist_count=active_scientist_count,
+            elapsed_ms=elapsed_ms,
+        )
+    else:
+        numerator = (
+            rate * contributing * elapsed_ms
+            + point_remainder_by_laboratory.get(lab_id, 0)
+        )
+        points = numerator // 1000
+        point_remainder_by_laboratory[lab_id] = numerator % 1000
     if points <= 0:
         return
     try_accumulate_research_points(

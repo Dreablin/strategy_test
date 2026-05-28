@@ -57,7 +57,34 @@ def test_panel_draws_input_rows_with_delivered_amounts() -> None:
         worker_manager=workers,
         research_state=state,
     )
-    research_h = research_storage_section_height(laboratory)
-    section_top = layout.frame.bottom - 16 - research_h + 8
+    assert layout.research_section is not None
+    section_top = layout.research_section.top
     pixel = surface.get_at((layout.frame.left + 20, section_top + 20))
     assert sum(pixel[:3]) > 40
+
+
+def test_research_and_scientist_content_stays_above_action_buttons() -> None:
+    laboratory, workers = _built_laboratory(level=1)
+    state = ResearchState()
+    registry = _registry_for(laboratory, workers)
+    try_start_active_research("1", research_state=state, registry=registry)
+    surface = pygame.Surface((1280, 720))
+
+    layout = LaboratoryPanel.layout(
+        surface,
+        laboratory,
+        worker_assigned=False,
+        production_status="No worker",
+        worker_manager=workers,
+        research_state=state,
+    )
+
+    action_tops = [
+        rect.top for rect in (layout.upgrade, layout.demolish) if rect is not None
+    ]
+    assert action_tops
+    first_action_top = min(action_tops)
+    assert layout.research_section is not None
+    assert layout.research_section.bottom < first_action_top
+    assert layout.scientist_tiles
+    assert max(tile.bottom for tile in layout.scientist_tiles) < first_action_top

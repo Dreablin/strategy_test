@@ -7,6 +7,10 @@ from dataclasses import dataclass
 import pygame
 
 from game.assets import hire_ui_icon, worker_ui_icon
+from game.ui.worker_labels import (
+    WORKER_LABEL as _WORKER_LABEL,
+    building_worker_status_line,
+)
 from game.buildings.school import SCHOOL_TRAINING_MS, School
 from game.worker_tiers import worker_tier
 from game.workers import WorkerManager
@@ -38,25 +42,6 @@ _HIRE_ROWS: tuple[str, ...] = (
     "WINEMAKER",
     "SCIENTIST",
 )
-_WORKER_LABEL: dict[str, str] = {
-    "CARRIER": "Carrier",
-    "BUILDER": "Builder",
-    "SAWYER": "Sawyer",
-    "MILLER": "Miller",
-    "BAKER": "Baker",
-    "COOK": "Cook",
-    "WATERMAN": "Waterman",
-    "LUMBERJACK": "Lumberjack",
-    "STONECUTTER": "Stonecutter",
-    "MINER": "Miner",
-    "FARMER": "Farmer",
-    "ANIMAL_HERDER": "Herder",
-    "FORESTER": "Forester",
-    "WINEMAKER": "Winemaker",
-    "SCIENTIST": "Scientist",
-}
-
-
 _TAB_H = 28
 _TAB_GAP = 6
 
@@ -213,7 +198,11 @@ class SchoolPanel:
         )
         worker_text = "assigned" if worker_assigned else "empty"
         surface.blit(
-            font.render(f"Worker: {worker_text}", True, (200, 204, 214)),
+            font.render(
+                building_worker_status_line(school.type_tag, worker_text),
+                True,
+                (200, 204, 214),
+            ),
             (layout.frame.left + _PANEL_PAD, layout.frame.top + _PANEL_PAD + 52),
         )
         queue_title = font.render("Queue", True, (220, 228, 236))

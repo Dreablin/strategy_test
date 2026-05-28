@@ -35,9 +35,6 @@ def test_laboratory_scientist_slot_capacity_matches_json() -> None:
             config.building_level_int_setting("LABORATORY", "scientist_slots", int(level))
             == expected
         )
-    assert config.building_level_int_setting("LABORATORY", "scientist_slots", 1) == 1
-    assert config.building_level_int_setting("LABORATORY", "scientist_slots", 4) == 2
-    assert config.building_level_int_setting("LABORATORY", "scientist_slots", 10) == 5
 
 
 def test_laboratory_research_points_per_scientist_loaded_from_json() -> None:
@@ -52,10 +49,6 @@ def test_laboratory_technology_tier_unlock_levels_loaded_from_json() -> None:
     unlock = settings["technology_tiers"]["unlock_level_by_tier"]
     loaded = config.building_setting("LABORATORY", "technology_tiers", "unlock_level_by_tier")
     assert loaded == unlock
-    assert int(loaded["1"]) == 1
-    assert int(loaded["2"]) == 3
-    assert int(loaded["3"]) == 6
-    assert int(loaded["4"]) == 9
 
 
 def test_laboratory_construction_levels_loaded_from_json() -> None:

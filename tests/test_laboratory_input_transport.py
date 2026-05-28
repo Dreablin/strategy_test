@@ -5,7 +5,9 @@ from __future__ import annotations
 from game.buildings.laboratory import Laboratory
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
+from game.buildings.well import Well
 from game.config import near_town_hall_tile, town_hall_origin_tile
+from game.research_config import RESEARCH_BY_ID
 from game.research_start import try_start_active_research
 from game.research_state import ResearchState
 from game.transport_tasks import laboratory_input_transport_tasks
@@ -46,6 +48,30 @@ def test_inbound_counts_prevent_over_planning() -> None:
     tasks = laboratory_input_transport_tasks(registry, inbound_counts=inbound)
     wood_tasks = [t for t in tasks if t.resource == "wood"]
     assert wood_tasks == []
+
+
+def test_laboratory_water_input_tasks_use_well_local_storage() -> None:
+    registry, town_hall, laboratory, state = _setup()
+    state.cancel_active_research()
+    state.start_research("1")
+    state.mark_research_completed("1")
+    state.start_research("carrier_speed_1")
+    laboratory.initialize_research_input_storage(RESEARCH_BY_ID["carrier_speed_1"].resource_cost)
+    town_hall.add_to_warehouse("hide", 4)
+    well = registry.place(Well, near_town_hall_tile(14, 10))
+    well.level = 5
+    well.construction_site = None
+    well.add_water_in(5)
+
+    tasks = laboratory_input_transport_tasks(registry)
+
+    water_tasks = [task for task in tasks if task.resource == "water"]
+    hide_tasks = [task for task in tasks if task.resource == "hide"]
+    assert len(water_tasks) == 5
+    assert all(task.source is well and task.target is laboratory for task in water_tasks)
+    assert all(task.purpose == "laboratory_research" for task in water_tasks)
+    assert len(hide_tasks) == 4
+    assert all(task.source is town_hall and task.target is laboratory for task in hide_tasks)
 
 
 def test_no_tasks_without_active_research_storage() -> None:

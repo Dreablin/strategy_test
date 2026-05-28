@@ -11,6 +11,9 @@ preserving these invariants over literal old phase wording:
 - When adding new buildings, follow `building_extension_guide.md` so building
   class state, construction settings, assets, UI, transport, and worker runtime
   stay in their focused modules.
+- When changing Laboratory, Scientist, or research behavior, follow
+  `research_extension_guide.md`. The PRD below is the product/architecture
+  contract; the guide lists the exact module touchpoints and test templates.
 - Per-building balance belongs in `src/game/settings/buildings/<building>.json`.
   Keep construction requirements, local storage capacities, production/work
   action/rest timings, dining eat duration, work/search radii, school training
@@ -204,6 +207,23 @@ preserving these invariants over literal old phase wording:
 - School hire tabs are driven by worker tier metadata from `game_settings.json` (`basic` / `advanced`). Add a new worker's tier and Town Hall hire gate there; keep workplace compatibility in code.
 - School upgrade is blocked while any queue slot is occupied; completed training and cancellation both can unblock it.
 
+### F-RESEARCH — Laboratory, Scientist, And Research
+
+- **F-RESEARCH-01 (MUST):** `LABORATORY` is a unique Social building. Only one Laboratory may exist or be under construction at a time. A completed Laboratory unlocks the top-bar Research button; demolishing the last completed Laboratory hides/closes the Research screen.
+- **F-RESEARCH-02 (MUST):** Research definitions are data-driven from `src/game/settings/research.json`. Each research entry defines identity/display text, player-facing effect text, tier row, column position, dependency ids, resource cost, point requirement, and image key. Do not hard-code costs, point requirements, layout columns, effect tooltip copy, or normal dependency chains in Python.
+- **F-RESEARCH-03 (MUST):** Technology-tier unlocks are represented as research entries in the same research JSON. Laboratory level gates which technology tiers are startable through `src/game/settings/buildings/laboratory.json`; keep those level gates in the Laboratory settings, not in research JSON or code.
+- **F-RESEARCH-04 (MUST):** Only one research can be active at a time. Player-started research cannot be cancelled through normal UI. Other researches' Start buttons are disabled while a research is active; completed researches cannot be restarted.
+- **F-RESEARCH-05 (MUST):** Starting a research initializes **dynamic local input storage** on the Laboratory matching that research's resource cost. This storage exists only for the active research. The Laboratory panel shows real delivered amounts only; queued or in-flight carrier amounts are planning data and must not be displayed as stored.
+- **F-RESEARCH-06 (MUST):** Research input delivery uses normal carrier logistics with `TransportTask.purpose == "laboratory_research"`. Warehouse resources come from Town Hall; `water` research costs are supplied from Well local storage because water is not warehoused. Planning must count already queued and in-flight research deliveries so Laboratory input capacity is not overpromised. Invalidated research deliveries must not leave carriers or Laboratory storage stuck.
+- **F-RESEARCH-07 (MUST):** Research points begin accumulating only after every active research input resource has been delivered. Point production is not a passive building tick: it comes from contributing `SCIENTIST` workers assigned to the Laboratory.
+- **F-RESEARCH-08 (MUST):** A Scientist contributes research points only while assigned to that Laboratory, physically inside its footprint, in `working` state, not idle, and not dining or walking to/from dining. A Scientist that has merely reserved a Laboratory slot or is still walking there must not appear as working inside or increase research speed.
+- **F-RESEARCH-09 (MUST):** Laboratory staffing is multi-slot, unlike normal one-worker buildings. Slot capacity and per-Scientist point rate are Laboratory balance settings. `WorkerManager.reassign_all()` may assign idle Scientists up to available slots; assigned-but-walking Scientists reserve slots to prevent over-assignment.
+- **F-RESEARCH-10 (MUST):** `SCIENTIST` is an advanced worker trained through the School's Advanced tab. Hungry Scientists use the same dining tier rules as other advanced workers: they go to a reachable `RESTAURANT` only when an unreserved elite meal and diner slot are available, and they stop contributing research while dining.
+- **F-RESEARCH-11 (MUST):** The Laboratory cannot be upgraded while research is active. Starting an upgrade when allowed uses normal construction flow; Scientists are paused/released while the Laboratory is under construction and must walk back before contributing again after completion.
+- **F-RESEARCH-12 (MUST):** Completing a research marks its id completed in `ResearchState`, clears the active research, and clears the Laboratory's dynamic input storage. Demolishing the Laboratory during active research cancels the active research, clears its dynamic input storage, releases Scientists, and invalidates related research deliveries.
+- **F-RESEARCH-13 (MUST):** Research UI is full-screen and driven by the same definitions and `ResearchState`: tier rows, tile images, completed/in-progress visual state, disabled Start buttons, and tooltips with requirements plus `Effect: ...` text from research JSON. Research images are disk-first from `assets/research/<image_key>.png` with procedural fallback.
+- **F-RESEARCH-14 (MUST):** Completed researches may apply worker-characteristic effects through the explicit `worker_effects.by_type` schema in `research.json`. Effects use the same worker characteristic keys as other worker bonuses and are applied by completed research id. Gameplay effects outside worker characteristics still require an explicit schema/design before implementation; do not hide ad-hoc mutations behind research ids.
+
 ### F-HOUSE — House (social)
 
 - **F-HOUSE-01 (MUST):** Building type **`HOUSE`**, **2×2** footprint, levels **1..10**, placed from the **Social** submenu.
@@ -212,7 +232,7 @@ preserving these invariants over literal old phase wording:
 
 ### F-WORK — Workers
 
-- Current worker types include `CARRIER`, `BUILDER`, `LUMBERJACK`, `STONECUTTER`, `MINER`, `FARMER`, `FORESTER`, `SAWYER`, `MILLER`, `BAKER`, `COOK`, `WATERMAN`, `ANIMAL_HERDER`, and `WINEMAKER`. Staffed production workers only work in compatible buildings defined in code; worker tier and hire gate metadata live in `game_settings.json`.
+- Current worker types include `CARRIER`, `BUILDER`, `LUMBERJACK`, `STONECUTTER`, `MINER`, `FARMER`, `FORESTER`, `SAWYER`, `MILLER`, `BAKER`, `COOK`, `WATERMAN`, `ANIMAL_HERDER`, `WINEMAKER`, and `SCIENTIST`. Staffed production workers only work in compatible buildings defined in code; worker tier and hire gate metadata live in `game_settings.json`.
 - Workers are acquired only through School queue, respect housing, move with 4-direction BFS, never step onto blocking footprints, and are rendered with sprite interpolation.
 - `WorkerManager.reassign_all()` runs after relevant state changes (training, construction, demolition, upgrade) to match idle compatible workers to unstaffed buildings.
 - Production only happens when the worker state machine allows it. Town Hall has no worker slot.

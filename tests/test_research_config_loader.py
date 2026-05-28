@@ -36,6 +36,7 @@ def test_technology_entries_are_accessible_by_id() -> None:
         assert entry.resource_cost
         assert entry.required_points > 0
         assert entry.image_key
+        assert entry.effect_text
 
 
 def _write_config(tmp_path: Path, researches: list[dict]) -> Path:
@@ -52,6 +53,7 @@ def test_load_rejects_duplicate_ids(tmp_path: Path) -> None:
                 "id": "a",
                 "name": "A",
                 "description": "A",
+                "effect_text": "A effect",
                 "tier": 1,
                 "column": 0,
                 "dependencies": [],
@@ -63,6 +65,7 @@ def test_load_rejects_duplicate_ids(tmp_path: Path) -> None:
                 "id": "a",
                 "name": "B",
                 "description": "B",
+                "effect_text": "B effect",
                 "tier": 2,
                 "column": 1,
                 "dependencies": [],
@@ -84,6 +87,7 @@ def test_load_rejects_tier_out_of_range(tmp_path: Path) -> None:
                 "id": "x",
                 "name": "X",
                 "description": "X",
+                "effect_text": "X effect",
                 "tier": 5,
                 "column": 0,
                 "dependencies": [],
@@ -105,6 +109,7 @@ def test_load_rejects_missing_column(tmp_path: Path) -> None:
                 "id": "x",
                 "name": "X",
                 "description": "X",
+                "effect_text": "X effect",
                 "tier": 1,
                 "dependencies": [],
                 "resource_cost": {"wood": 1},
@@ -125,6 +130,7 @@ def test_load_rejects_empty_resource_cost(tmp_path: Path) -> None:
                 "id": "x",
                 "name": "X",
                 "description": "X",
+                "effect_text": "X effect",
                 "tier": 1,
                 "column": 0,
                 "dependencies": [],
@@ -146,6 +152,7 @@ def test_load_rejects_non_positive_required_points(tmp_path: Path) -> None:
                 "id": "x",
                 "name": "X",
                 "description": "X",
+                "effect_text": "X effect",
                 "tier": 1,
                 "column": 0,
                 "dependencies": [],
@@ -167,6 +174,7 @@ def test_load_rejects_empty_image_key(tmp_path: Path) -> None:
                 "id": "x",
                 "name": "X",
                 "description": "X",
+                "effect_text": "X effect",
                 "tier": 1,
                 "column": 0,
                 "dependencies": [],
@@ -180,6 +188,28 @@ def test_load_rejects_empty_image_key(tmp_path: Path) -> None:
         load_research_definitions(path)
 
 
+def test_load_rejects_empty_effect_text(tmp_path: Path) -> None:
+    path = _write_config(
+        tmp_path,
+        [
+            {
+                "id": "x",
+                "name": "X",
+                "description": "X",
+                "effect_text": "",
+                "tier": 1,
+                "column": 0,
+                "dependencies": [],
+                "resource_cost": {"wood": 1},
+                "required_points": 10,
+                "image_key": "x",
+            },
+        ],
+    )
+    with pytest.raises(ValueError, match="effect_text must be a non-empty string"):
+        load_research_definitions(path)
+
+
 def test_load_rejects_unknown_dependency_reference(tmp_path: Path) -> None:
     path = _write_config(
         tmp_path,
@@ -188,6 +218,7 @@ def test_load_rejects_unknown_dependency_reference(tmp_path: Path) -> None:
                 "id": "x",
                 "name": "X",
                 "description": "X",
+                "effect_text": "X effect",
                 "tier": 1,
                 "column": 0,
                 "dependencies": ["missing"],
@@ -209,6 +240,7 @@ def test_load_rejects_self_dependency(tmp_path: Path) -> None:
                 "id": "x",
                 "name": "X",
                 "description": "X",
+                "effect_text": "X effect",
                 "tier": 1,
                 "column": 0,
                 "dependencies": ["x"],
@@ -219,4 +251,29 @@ def test_load_rejects_self_dependency(tmp_path: Path) -> None:
         ],
     )
     with pytest.raises(ValueError, match="cannot depend on itself"):
+        load_research_definitions(path)
+
+
+def test_load_rejects_unknown_worker_effect_stat(tmp_path: Path) -> None:
+    path = _write_config(
+        tmp_path,
+        [
+            {
+                "id": "x",
+                "name": "X",
+                "description": "X",
+                "effect_text": "X effect",
+                "tier": 1,
+                "column": 0,
+                "dependencies": [],
+                "resource_cost": {"wood": 1},
+                "required_points": 10,
+                "image_key": "x",
+                "worker_effects": {
+                    "by_type": {"CARRIER": {"not_a_stat": 0.1}},
+                },
+            },
+        ],
+    )
+    with pytest.raises(ValueError, match="unknown worker effect stat"):
         load_research_definitions(path)

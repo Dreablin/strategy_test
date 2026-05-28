@@ -12,6 +12,7 @@ from game.research_point_production import (
 )
 from game.research_start import try_start_active_research
 from game.research_state import ResearchState
+from game.worker_geometry import worker_inside_building_footprint
 from game.world import World
 from game.workers import WorkerManager
 
@@ -106,6 +107,34 @@ def test_tick_laboratory_research_points_requires_delivered_inputs() -> None:
     assert state.accumulated_points() == laboratory.research_points_per_scientist_per_second()
 
 
+def test_tick_laboratory_research_points_accumulates_subsecond_frames() -> None:
+    _, laboratory, state = _setup()
+    _fill_laboratory_inputs(laboratory)
+    last_ticks: dict[int, int] = {}
+    remainders: dict[int, int] = {}
+    tick_laboratory_research_points(
+        research_state=state,
+        laboratory=laboratory,
+        active_scientist_count=1,
+        now_ms=0,
+        last_tick_by_laboratory=last_ticks,
+        point_remainder_by_laboratory=remainders,
+    )
+
+    for frame in range(1, 64):
+        tick_laboratory_research_points(
+            research_state=state,
+            laboratory=laboratory,
+            active_scientist_count=1,
+            now_ms=frame * 16,
+            last_tick_by_laboratory=last_ticks,
+            point_remainder_by_laboratory=remainders,
+        )
+
+    assert state.accumulated_points() > 0
+    assert state.accumulated_points() == 8
+
+
 def test_worker_manager_accumulates_points_with_one_scientist() -> None:
     workers, laboratory, state = _setup()
     _fill_laboratory_inputs(laboratory)
@@ -116,6 +145,68 @@ def test_worker_manager_accumulates_points_with_one_scientist() -> None:
 
     workers.update(0)
     workers.update(1_000)
+
+    assert state.accumulated_points() == laboratory.research_points_per_scientist_per_second()
+
+
+def test_moving_scientist_inside_footprint_does_not_contribute_until_working() -> None:
+    workers, laboratory, _ = _setup()
+    scientist = workers.hire("SCIENTIST")
+    assert scientist is not None
+    workers.assign_to_building(scientist, laboratory)
+    center = scientist.current_tile
+    scientist.start_move([center, (center[0] + 1, center[1])], started_ms=0)
+
+    assert worker_inside_building_footprint(scientist, laboratory)
+    assert workers.laboratory_research_contributing_scientist_count(laboratory) == 0
+
+
+def test_auto_assigned_scientist_enters_laboratory_and_accumulates_points() -> None:
+    world = World(world_seed=20)
+    world._trees.clear()  # noqa: SLF001
+    world._stones.clear()  # noqa: SLF001
+    world._iron.clear()  # noqa: SLF001
+    world.refresh_passability_tile_caches()
+    registry = BuildingRegistry(world)
+    registry.place(TownHall, town_hall_origin_tile())
+    laboratory = registry.place(Laboratory, near_town_hall_tile(10, 10))
+    laboratory.construction_site = None
+    state = ResearchState()
+    try_start_active_research("1", research_state=state, registry=registry)
+    _fill_laboratory_inputs(laboratory)
+    now = {"ms": 0}
+    workers = WorkerManager(registry, now_ms_fn=lambda: now["ms"], research_state=state)
+    scientist = workers.hire("SCIENTIST")
+    assert scientist is not None
+
+    workers.reassign_all()
+    assert workers.laboratory_active_scientist_count(laboratory) == 1
+    assert workers.laboratory_research_contributing_scientist_count(laboratory) == 0
+
+    for now_ms in range(0, 20_000, 500):
+        now["ms"] = now_ms
+        workers.update(now_ms)
+        if workers.laboratory_research_contributing_scientist_count(laboratory) == 1:
+            break
+
+    assert workers.laboratory_research_contributing_scientist_count(laboratory) == 1
+    assert worker_inside_building_footprint(scientist, laboratory)
+
+    before = state.accumulated_points()
+    now["ms"] += 1_000
+    workers.update(now["ms"])
+    assert state.accumulated_points() > before
+
+
+def test_worker_manager_accumulates_points_with_frame_sized_updates() -> None:
+    workers, laboratory, state = _setup()
+    _fill_laboratory_inputs(laboratory)
+    scientist = workers.hire("SCIENTIST")
+    assert scientist is not None
+    workers.assign_to_building(scientist, laboratory)
+
+    for frame in range(64):
+        workers.update(frame * 16)
 
     assert state.accumulated_points() == laboratory.research_points_per_scientist_per_second()
 

@@ -11,7 +11,7 @@ import pygame
 from game.assets import worker_ui_icon
 from game.buildings.laboratory import Laboratory
 from game.research_state import ResearchState
-from game.ui.building_panel import BuildingPanel
+from game.ui.building_panel import BuildingPanel, BuildingPanelLayout
 from game.ui.laboratory_panel_research import (
     SECTION_PAD,
     draw_research_storage_section,
@@ -68,6 +68,7 @@ class LaboratoryPanelLayout:
     upgrade: pygame.Rect | None
     upgrade_enabled: bool
     demolish: pygame.Rect | None
+    research_section: pygame.Rect | None
     scientist_tiles: tuple[pygame.Rect, ...]
     scientist_slot_states: tuple[bool, ...]
 
@@ -79,7 +80,7 @@ class LaboratoryPanel:
 
     @staticmethod
     def _scientist_tiles(
-        base_frame: pygame.Rect,
+        base_layout: BuildingPanelLayout,
         slots: int,
         *,
         laboratory: Laboratory,
@@ -87,6 +88,7 @@ class LaboratoryPanel:
     ) -> tuple[pygame.Rect, ...]:
         if slots <= 0:
             return ()
+        base_frame = base_layout.frame
         width = base_frame.width - _PANEL_PAD * 2
         cols = max(1, (width + _SLOT_GAP) // (_SLOT_TILE_W + _SLOT_GAP))
         left = base_frame.left + _PANEL_PAD
@@ -94,13 +96,13 @@ class LaboratoryPanel:
             laboratory,
             research_state=research_state,
         )
-        top = (
-            base_frame.bottom
-            - _PANEL_PAD
-            - _extra_bottom_px(slots, laboratory, research_state=research_state)
-            + 8
-            + research_h
+        content_top = LaboratoryPanel._extra_content_top(
+            base_layout,
+            slots,
+            laboratory=laboratory,
+            research_state=research_state,
         )
+        top = content_top + research_h + (SECTION_PAD if research_h > 0 else 0)
         tiles: list[pygame.Rect] = []
         for index in range(slots):
             row = index // cols
@@ -109,6 +111,58 @@ class LaboratoryPanel:
             y = top + _HEADER_H + row * (_SLOT_TILE_H + _SLOT_ROW_GAP)
             tiles.append(pygame.Rect(x, y, _SLOT_TILE_W, _SLOT_TILE_H))
         return tuple(tiles)
+
+    @staticmethod
+    def _extra_content_bottom(base_layout: BuildingPanelLayout) -> int:
+        action_tops = [
+            rect.top
+            for rect in (base_layout.upgrade, base_layout.demolish)
+            if rect is not None
+        ]
+        if action_tops:
+            return min(action_tops) - _SLOT_ROW_GAP
+        return base_layout.frame.bottom - _PANEL_PAD
+
+    @staticmethod
+    def _extra_content_top(
+        base_layout: BuildingPanelLayout,
+        slots: int,
+        *,
+        laboratory: Laboratory,
+        research_state: ResearchState | None = None,
+    ) -> int:
+        return LaboratoryPanel._extra_content_bottom(base_layout) - _extra_bottom_px(
+            slots,
+            laboratory,
+            research_state=research_state,
+        )
+
+    @staticmethod
+    def _research_section_rect(
+        base_layout: BuildingPanelLayout,
+        slots: int,
+        *,
+        laboratory: Laboratory,
+        research_state: ResearchState | None = None,
+    ) -> pygame.Rect | None:
+        research_h = research_storage_section_height(
+            laboratory,
+            research_state=research_state,
+        )
+        if research_h <= 0:
+            return None
+        top = LaboratoryPanel._extra_content_top(
+            base_layout,
+            slots,
+            laboratory=laboratory,
+            research_state=research_state,
+        ) + SECTION_PAD
+        return pygame.Rect(
+            base_layout.frame.left,
+            top,
+            base_layout.frame.width,
+            max(0, research_h - SECTION_PAD),
+        )
 
     @staticmethod
     def layout(
@@ -134,16 +188,25 @@ class LaboratoryPanel:
         )
         active: tuple[Worker, ...] = ()
         if worker_manager is not None and not laboratory.is_under_construction:
-            active = worker_manager.laboratory_active_scientists(laboratory)
+            active = worker_manager.laboratory_research_contributing_scientists(laboratory)
         states = scientist_slot_states(capacity, active)
+        upgrade_enabled = base.upgrade_enabled and not (
+            research_state is not None and research_state.has_active_research()
+        )
         return LaboratoryPanelLayout(
             frame=base.frame,
             close=base.close,
             upgrade=base.upgrade,
-            upgrade_enabled=base.upgrade_enabled,
+            upgrade_enabled=upgrade_enabled,
             demolish=base.demolish,
+            research_section=LaboratoryPanel._research_section_rect(
+                base,
+                capacity,
+                laboratory=laboratory,
+                research_state=research_state,
+            ),
             scientist_tiles=LaboratoryPanel._scientist_tiles(
-                base.frame,
+                base,
                 capacity,
                 laboratory=laboratory,
                 research_state=research_state,
@@ -183,23 +246,33 @@ class LaboratoryPanel:
                 research_state=research_state,
             ),
         )
-        research_h = research_storage_section_height(
-            laboratory,
-            research_state=research_state,
-        )
-        if research_h > 0 and research_state is not None:
-            section_top = layout.frame.bottom - _PANEL_PAD - research_h + SECTION_PAD
+        if layout.upgrade is not None and not layout.upgrade_enabled:
+            btn_font = pygame.font.Font(None, 22)
+            pygame.draw.rect(surface, (52, 56, 64), layout.upgrade, border_radius=6)
+            label = btn_font.render(
+                f"Upgrade to Lv {laboratory.level + 1} — Free",
+                True,
+                (130, 134, 142),
+            )
+            surface.blit(
+                label,
+                (
+                    layout.upgrade.centerx - label.get_width() // 2,
+                    layout.upgrade.centery - label.get_height() // 2,
+                ),
+            )
+        if layout.research_section is not None and research_state is not None:
             draw_research_storage_section(
                 surface,
                 layout.frame,
                 laboratory,
                 research_state=research_state,
-                section_top=section_top,
+                section_top=layout.research_section.top,
             )
         body = pygame.font.Font(None, 20)
         active: tuple[Worker, ...] = ()
         if worker_manager is not None and not laboratory.is_under_construction:
-            active = worker_manager.laboratory_active_scientists(laboratory)
+            active = worker_manager.laboratory_research_contributing_scientists(laboratory)
         summary = scientist_slots_summary(active_count=len(active), capacity=capacity)
         header_y = layout.scientist_tiles[0].top - _HEADER_H if layout.scientist_tiles else layout.frame.bottom - 40
         surface.blit(body.render(summary, True, (200, 204, 214)), (layout.frame.left + _PANEL_PAD, header_y))

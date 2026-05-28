@@ -47,7 +47,9 @@ def scientist_contributes_to_research_points(worker: Worker, laboratory: Buildin
         return False
     if worker.state in _DINING_STATES:
         return False
-    if worker.idle or not worker_inside_building_footprint(worker, laboratory):
+    if worker.idle or worker.state != "working":
+        return False
+    if not worker_inside_building_footprint(worker, laboratory):
         return False
     return True
 

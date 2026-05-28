@@ -102,6 +102,22 @@ def test_after_upgrade_completion_reassign_fills_slots() -> None:
     assert scientists[0].assigned_building is laboratory
 
 
+def test_assigned_scientist_reports_on_the_way_until_inside_laboratory() -> None:
+    _, laboratory, workers = _built_laboratory(level=1)
+    scientist = workers.hire("SCIENTIST")
+    assert scientist is not None
+
+    workers.reassign_all()
+    assert scientist.assigned_building is laboratory
+    assert workers.laboratory_active_scientist_count(laboratory) == 1
+    assert workers.laboratory_research_contributing_scientist_count(laboratory) == 0
+    assert worker_status_for_building(workers, laboratory) == "on the way"
+
+    workers.assign_to_building(scientist, laboratory)
+    assert workers.laboratory_research_contributing_scientist_count(laboratory) == 1
+    assert worker_status_for_building(workers, laboratory) == "assigned"
+
+
 def test_level_three_upgrade_refills_two_scientist_slots() -> None:
     registry, laboratory, workers = _built_laboratory(level=3)
     scientists = _hire_and_staff(workers, laboratory, 2)

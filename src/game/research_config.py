@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 _MIN_TIER = 1
@@ -15,12 +15,14 @@ class ResearchDefinition:
     id: str
     name: str
     description: str
+    effect_text: str
     tier: int
     column: int
     dependencies: tuple[str, ...]
     resource_cost: dict[str, int]
     required_points: int
     image_key: str
+    worker_effects_by_type: dict[str, dict[str, float]] = field(default_factory=dict)
 
 
 def _settings_path() -> Path:
@@ -71,6 +73,43 @@ def _parse_dependencies(raw: object, *, research_id: str) -> tuple[str, ...]:
     return tuple(deps)
 
 
+def _parse_worker_effects(raw: object, *, research_id: str) -> dict[str, dict[str, float]]:
+    if raw in ({}, None):
+        return {}
+    if not isinstance(raw, dict):
+        raise ValueError(f"research {research_id!r}: worker_effects must be an object")
+    by_type = raw.get("by_type", {})
+    if by_type in ({}, None):
+        return {}
+    if not isinstance(by_type, dict):
+        raise ValueError(f"research {research_id!r}: worker_effects.by_type must be an object")
+
+    from game.config import WORKER_EFFECT_STATS
+
+    result: dict[str, dict[str, float]] = {}
+    for worker_type, effects in by_type.items():
+        type_key = str(worker_type).upper()
+        if not type_key:
+            raise ValueError(f"research {research_id!r}: worker_effects.by_type keys must be non-empty")
+        if not isinstance(effects, dict):
+            raise ValueError(
+                f"research {research_id!r}: worker_effects.by_type.{type_key} must be an object"
+            )
+        parsed_effects: dict[str, float] = {}
+        for stat, value in effects.items():
+            stat_key = str(stat)
+            if stat_key not in WORKER_EFFECT_STATS:
+                raise ValueError(f"research {research_id!r}: unknown worker effect stat {stat_key!r}")
+            if not isinstance(value, (int, float)) or isinstance(value, bool):
+                raise ValueError(
+                    f"research {research_id!r}: worker effect {stat_key!r} must be numeric"
+                )
+            parsed_effects[stat_key] = float(value)
+        if parsed_effects:
+            result[type_key] = parsed_effects
+    return result
+
+
 def _parse_entry(raw: object) -> ResearchDefinition:
     if not isinstance(raw, dict):
         raise ValueError("each research entry must be an object")
@@ -80,10 +119,13 @@ def _parse_entry(raw: object) -> ResearchDefinition:
 
     name = raw.get("name")
     description = raw.get("description")
+    effect_text = raw.get("effect_text")
     if not isinstance(name, str) or not name.strip():
         raise ValueError(f"research {research_id!r}: name must be a non-empty string")
     if not isinstance(description, str) or not description.strip():
         raise ValueError(f"research {research_id!r}: description must be a non-empty string")
+    if not isinstance(effect_text, str) or not effect_text.strip():
+        raise ValueError(f"research {research_id!r}: effect_text must be a non-empty string")
 
     tier = raw.get("tier")
     if not isinstance(tier, int) or isinstance(tier, bool):
@@ -113,12 +155,14 @@ def _parse_entry(raw: object) -> ResearchDefinition:
         id=research_id,
         name=name.strip(),
         description=description.strip(),
+        effect_text=effect_text.strip(),
         tier=tier,
         column=column,
         dependencies=_parse_dependencies(raw.get("dependencies"), research_id=research_id),
         resource_cost=_parse_resource_cost(raw.get("resource_cost"), research_id=research_id),
         required_points=required_points,
         image_key=image_key.strip(),
+        worker_effects_by_type=_parse_worker_effects(raw.get("worker_effects"), research_id=research_id),
     )
 
 

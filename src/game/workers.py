@@ -59,6 +59,11 @@ from game.worker_hiring import (
     hire,
     worker_compatible_building_types,
 )
+from game.research_state import ResearchState
+from game.research_effects import (
+    completed_research_worker_effect_sources,
+    research_worker_effect_source_keys,
+)
 from game.worker_models import TransportTask, Worker
 from game.worker_satiety import apply_satiety_game_time
 from game.worker_status import (
@@ -70,6 +75,16 @@ from game.worker_farming import WorkerFarmingMixin
 from game.worker_gathering import WorkerGatheringMixin
 from game.worker_processing import WorkerProcessingMixin
 from game.resource_catalog import is_simple_meal_resource
+from game.worker_laboratory import (
+    building_has_free_staff_slot as _building_has_free_staff_slot,
+    laboratory_active_scientist_count as _laboratory_active_scientist_count,
+    laboratory_active_scientists as _laboratory_active_scientists,
+    laboratory_research_contributing_scientist_count as _laboratory_research_contributing_scientist_count,
+    laboratory_research_contributing_scientists as _laboratory_research_contributing_scientists,
+    laboratory_assigned_scientist_count as _laboratory_assigned_scientist_count,
+    laboratory_assigned_scientists as _laboratory_assigned_scientists,
+    laboratory_free_scientist_slots as _laboratory_free_scientist_slots,
+)
 from game.worker_transport import WorkerTransportMixin
 from game.world import find_nearest_free_stone, find_nearest_free_tree
 
@@ -122,9 +137,13 @@ class WorkerManager(
 
     __slots__ = (
         "_field_reservations",
+        "_laboratory_research_last_tick_ms",
+        "_laboratory_research_point_remainder",
+        "_applied_research_effect_ids",
         "_vineyard_plot_reservations",
         "_now_ms_fn",
         "_registry",
+        "_research_state",
         "_transport_queue",
         "_updaters",
         "_workers",
@@ -137,10 +156,15 @@ class WorkerManager(
         registry: Any | None = None,
         *,
         now_ms_fn: Callable[[], int] | None = None,
+        research_state: ResearchState | None = None,
     ) -> None:
         self._registry = registry
+        self._research_state = research_state
         self._workers: list[Worker] = []
         self._transport_queue: list[TransportTask] = []
+        self._laboratory_research_last_tick_ms: dict[int, int] = {}
+        self._laboratory_research_point_remainder: dict[int, int] = {}
+        self._applied_research_effect_ids: frozenset[str] = frozenset()
         self._field_reservations: dict[tuple[int, int], Worker] = {}
         self._vineyard_plot_reservations: dict[tuple[int, int], Worker] = {}
         self._now_ms_fn = now_ms_fn or (lambda: 0)
@@ -241,6 +265,31 @@ class WorkerManager(
         """Idle workers (PRD ``WorkerManager.idle``)."""
         return [w for w in self._workers if w.idle]
 
+    def laboratory_assigned_scientists(self, laboratory: Building) -> tuple[Worker, ...]:
+        return _laboratory_assigned_scientists(self._workers, laboratory)
+
+    def laboratory_assigned_scientist_count(self, laboratory: Building) -> int:
+        return _laboratory_assigned_scientist_count(self._workers, laboratory)
+
+    def laboratory_free_scientist_slots(self, laboratory: Building) -> int:
+        return _laboratory_free_scientist_slots(self._workers, laboratory)
+
+    def laboratory_active_scientists(self, laboratory: Building) -> tuple[Worker, ...]:
+        return _laboratory_active_scientists(self._workers, laboratory)
+
+    def laboratory_active_scientist_count(self, laboratory: Building) -> int:
+        return _laboratory_active_scientist_count(self._workers, laboratory)
+
+    def laboratory_research_contributing_scientists(self, laboratory: Building) -> tuple[Worker, ...]:
+        return _laboratory_research_contributing_scientists(self._workers, laboratory)
+
+    def laboratory_research_contributing_scientist_count(self, laboratory: Building) -> int:
+        return _laboratory_research_contributing_scientist_count(self._workers, laboratory)
+
+    def pause_laboratory_scientists(self, laboratory: Building) -> None:
+        """Release Scientists when the Laboratory enters construction or upgrade."""
+        self.release_laboratory_scientists(laboratory)
+
     def assign_to_building(self, worker: Worker, building: Building) -> None:
         self._clear_building_bonus(worker)
         worker.assigned_building = building
@@ -282,12 +331,15 @@ class WorkerManager(
         source_building: Building | None = None,
         charge_cost: bool = True,
     ) -> Worker | None:
-        return hire(
+        worker = hire(
             self,
             worker_type,
             source_building=source_building,
             charge_cost=charge_cost,
         )
+        if worker is not None:
+            self._apply_research_effects_to_worker(worker)
+        return worker
 
     def can_hire(self, worker_type: str, *, charge_cost: bool = True) -> bool:
         return can_hire(self, worker_type, charge_cost=charge_cost)
@@ -295,31 +347,57 @@ class WorkerManager(
     def _has_housing_capacity_for(self, *, incoming: int) -> bool:
         return has_housing_capacity_for(self, incoming=incoming)
 
+    def _release_worker_from_demolished_building(
+        self,
+        worker: Worker,
+        *,
+        world: Any | None,
+    ) -> None:
+        if worker.assigned_building is None:
+            return
+        if world is not None:
+            world.release_reservations_for(worker)
+        self._release_field_reservations_for(worker)
+        self._release_vineyard_plot_reservations_for(worker)
+        self._clear_building_bonus(worker)
+        worker.assigned_building = None
+        worker.idle = True
+        worker.stand_tile = worker.current_tile
+        worker.target_tile = None
+        worker.path = []
+        worker.segment_started_ms = 0
+        worker.segment_progress = 0.0
+        worker.state = "idle"
+        worker.camp_wait_until_ms = 0
+        worker.carrying = None
+        worker.target_tree = None
+        worker.chop_started_ms = 0
+        worker.chop_duration_ms = CHOP_DURATION_MS
+        worker.blocked_cycle_hunger_try_ms = -1
+
+    def release_laboratory_scientists(self, laboratory: Building) -> None:
+        """Idle all Scientists assigned to a Laboratory (e.g. on demolition)."""
+        if laboratory.type_tag != "LABORATORY":
+            return
+        world = getattr(self._registry, "_world", None) if self._registry is not None else None
+        for scientist in self.laboratory_assigned_scientists(laboratory):
+            self._release_worker_from_demolished_building(scientist, world=world)
+
     def notify_demolished(self, building: Building) -> None:
         """Workers targeting this building become idle at their current tile."""
         world = getattr(self._registry, "_world", None) if self._registry is not None else None
         site = building.construction_site
+        if building.type_tag == "LABORATORY":
+            self.release_laboratory_scientists(building)
+            self._laboratory_research_last_tick_ms.pop(id(building), None)
+            self._laboratory_research_point_remainder.pop(id(building), None)
+            if hasattr(building, "clear_research_input_storage"):
+                building.clear_research_input_storage()
+            if self._research_state is not None and self._research_state.has_active_research():
+                self._research_state.cancel_active_research()
         for w in self._workers:
             if w.assigned_building is building:
-                if world is not None:
-                    world.release_reservations_for(w)
-                self._release_field_reservations_for(w)
-                self._release_vineyard_plot_reservations_for(w)
-                self._clear_building_bonus(w)
-                w.assigned_building = None
-                w.idle = True
-                w.stand_tile = w.current_tile
-                w.target_tile = None
-                w.path = []
-                w.segment_started_ms = 0
-                w.segment_progress = 0.0
-                w.state = "idle"
-                w.camp_wait_until_ms = 0
-                w.carrying = None
-                w.target_tree = None
-                w.chop_started_ms = 0
-                w.chop_duration_ms = CHOP_DURATION_MS
-                w.blocked_cycle_hunger_try_ms = -1
+                self._release_worker_from_demolished_building(w, world=world)
             if site is not None:
                 if site.builder is w:
                     site.builder = None
@@ -329,6 +407,16 @@ class WorkerManager(
             self._transport_queue = [
                 t for t in self._transport_queue if t.source is not building and t.target is not building
             ]
+        now_ms = int(self._now_ms_fn())
+        for worker in self._workers:
+            if worker.type_tag != "CARRIER":
+                continue
+            task = worker.transport_task
+            if task is None:
+                continue
+            if task.source is not building and task.target is not building:
+                continue
+            self._reroute_or_cancel_invalid_transport(worker, task, now_ms)
         if building.type_tag == "FIELD" and building.grid_pos is not None:
             self._field_reservations.pop(tuple(building.grid_pos), None)
         if building.type_tag == "VINEYARD" and building.grid_pos is not None:
@@ -363,7 +451,14 @@ class WorkerManager(
             targets = [
                 b
                 for b in self._registry.all()
-                if b.type_tag in want_types and not self.is_staffed(b) and not b.is_under_construction
+                if b.type_tag in want_types
+                and not b.is_under_construction
+                and _building_has_free_staff_slot(
+                    self._workers,
+                    b,
+                    worker_type=worker.type_tag,
+                    is_staffed=self.is_staffed(b),
+                )
             ]
             targets.sort(
                 key=lambda b: (
@@ -415,6 +510,32 @@ class WorkerManager(
         """Recompute global and worker-type effects for all existing workers."""
         for worker in self._workers:
             worker.refresh_configured_effects()
+            self._apply_research_effects_to_worker(worker)
+
+    def _apply_research_effects_to_worker(self, worker: Worker) -> None:
+        completed = (
+            self._research_state.completed_ids()
+            if self._research_state is not None
+            else frozenset()
+        )
+        for source in research_worker_effect_source_keys(worker.type_tag):
+            worker.characteristics.remove_source(source)
+        for source, effects in completed_research_worker_effect_sources(
+            completed,
+            worker.type_tag,
+        ):
+            for stat, delta in effects.items():
+                worker.characteristics.add_permanent(source, stat, delta)
+
+    def _sync_research_worker_effects(self) -> None:
+        if self._research_state is None:
+            return
+        completed = self._research_state.completed_ids()
+        if completed == self._applied_research_effect_ids:
+            return
+        for worker in self._workers:
+            self._apply_research_effects_to_worker(worker)
+        self._applied_research_effect_ids = completed
 
     def refresh_building_bonuses(self, building: Building) -> None:
         """Refresh permanent level bonuses for workers assigned to one building."""
@@ -460,6 +581,79 @@ class WorkerManager(
             worker.satiety, last, now_ms
         )
 
+    def _sync_laboratory_scientist_presence(self) -> None:
+        from game.buildings.laboratory import Laboratory
+        from game.worker_geometry import worker_inside_building_footprint
+
+        for worker in self._workers:
+            if worker.type_tag != "SCIENTIST":
+                continue
+            building = worker.assigned_building
+            if not isinstance(building, Laboratory) or building.is_under_construction:
+                continue
+            if worker.dining_phase != "none" or worker.dining_canteen is not None:
+                continue
+            if worker.path:
+                movement_finished = (
+                    worker.state == "working"
+                    and worker.target_tile == worker.current_tile
+                )
+                if not movement_finished:
+                    continue
+                worker.path = []
+            if worker_inside_building_footprint(worker, building):
+                worker.state = "working"
+                worker.idle = False
+                continue
+            self._park_worker_inside_building(worker, building)
+            worker.state = "working"
+            worker.idle = False
+
+    def _update_laboratory_research_points(self, now_ms: int) -> None:
+        if self._research_state is None or self._registry is None:
+            return
+        if not self._research_state.has_active_research():
+            return
+        from game.buildings.laboratory import Laboratory
+        from game.research_point_production import tick_laboratory_research_points
+
+        for building in self._registry.all():
+            if not isinstance(building, Laboratory) or building.is_under_construction:
+                continue
+            tick_laboratory_research_points(
+                research_state=self._research_state,
+                laboratory=building,
+                active_scientist_count=self.laboratory_research_contributing_scientist_count(
+                    building
+                ),
+                now_ms=int(now_ms),
+                last_tick_by_laboratory=self._laboratory_research_last_tick_ms,
+                point_remainder_by_laboratory=self._laboratory_research_point_remainder,
+            )
+
+    def _try_laboratory_scientist_hunger(self, now_ms: int, world: Any | None) -> None:
+        if self._registry is None or world is None:
+            return
+        from game.buildings.laboratory import Laboratory
+        from game.worker_hunger import try_blocked_cycle_hunger_check
+        from game.worker_laboratory import scientist_contributes_to_research_points
+
+        for worker in self._workers:
+            if worker.type_tag != "SCIENTIST":
+                continue
+            laboratory = worker.assigned_building
+            if not isinstance(laboratory, Laboratory):
+                continue
+            if not scientist_contributes_to_research_points(worker, laboratory):
+                continue
+            try_blocked_cycle_hunger_check(
+                worker,
+                world=world,
+                registry=self._registry,
+                worker_manager=self,
+                now_ms=int(now_ms),
+            )
+
     def _try_blocked_cycle_hunger(self, worker: Worker, now_ms: int) -> None:
         if self._registry is None:
             return
@@ -482,6 +676,7 @@ class WorkerManager(
         now_ms = int(now_ms)
         self._update_field_growth(int(now_ms))
         self._enqueue_construction_transport_tasks()
+        self._enqueue_laboratory_research_input_tasks()
         self._enqueue_sawmill_refill_tasks()
         self._enqueue_sawmill_output_tasks()
         self._enqueue_mill_refill_tasks()
@@ -533,6 +728,10 @@ class WorkerManager(
             updater = self._updaters.get(worker.type_tag)
             if updater is not None:
                 updater(worker, now_ms, world)
+        self._sync_laboratory_scientist_presence()
+        self._try_laboratory_scientist_hunger(now_ms, world)
+        self._update_laboratory_research_points(now_ms)
+        self._sync_research_worker_effects()
         spawned = False
         if self._registry is not None:
             for building in self._registry.all():

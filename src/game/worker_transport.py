@@ -20,6 +20,7 @@ from game.transport_tasks import (
     construction_transport_tasks,
     farm_wheat_output_transport_tasks,
     iron_mine_output_transport_tasks,
+    laboratory_input_transport_tasks,
     vineyard_farm_grape_output_transport_tasks,
     mill_input_transport_tasks,
     mill_output_transport_tasks,
@@ -167,6 +168,30 @@ class WorkerTransportMixin:
             counts[wid] = counts.get(wid, 0) + 1
         return counts
 
+    def _record_laboratory_research_delivery(self, resource: str, amount: int) -> None:
+        research_state = getattr(self, "_research_state", None)
+        if research_state is None or not research_state.has_active_research():
+            return
+        try:
+            research_state.add_delivered(resource, amount)
+        except ValueError:
+            return
+
+    def _laboratory_research_inbound_counts(self) -> dict[tuple[int, str], int]:
+        counts: dict[tuple[int, str], int] = {}
+        for task in self._transport_queue:  # type: ignore[attr-defined]
+            if task.purpose != "laboratory_research":
+                continue
+            key = (id(task.target), str(task.resource).lower())
+            counts[key] = counts.get(key, 0) + 1
+        for worker in self._workers:  # type: ignore[attr-defined]
+            task = worker.transport_task
+            if task is None or task.purpose != "laboratory_research":
+                continue
+            key = (id(task.target), str(task.resource).lower())
+            counts[key] = counts.get(key, 0) + 1
+        return counts
+
     def _water_inbound_counts_by_target_id(self) -> dict[int, int]:
         """Water deliveries already targeting each building (queue + in-flight)."""
         counts: dict[int, int] = {}
@@ -209,6 +234,22 @@ class WorkerTransportMixin:
                 if remaining <= 0:
                     stale_indices.append(idx)
                     continue
+            if task.purpose == "laboratory_research":
+                if task.target.type_tag != "LABORATORY":
+                    stale_indices.append(idx)
+                    continue
+                laboratory = task.target
+                if not laboratory.has_research_input_storage():
+                    stale_indices.append(idx)
+                    continue
+                if not laboratory.accepts_research_input(task.resource):
+                    stale_indices.append(idx)
+                    continue
+                if laboratory.research_input_amount(task.resource) >= laboratory.research_input_capacity(
+                    task.resource
+                ):
+                    stale_indices.append(idx)
+                    continue
             has_storage_source = False
             if hasattr(task.source, "stored") and int(getattr(task.source, "stored", 0)) > 0:
                 has_storage_source = True
@@ -246,9 +287,13 @@ class WorkerTransportMixin:
                 task.source.warehouse_amount(task.resource)  # type: ignore[attr-defined]
             ) > 0
             if task.resource == "water":
-                water_capacity = _water_capacity(task.target)
-                water_amount = _water_amount(task.target)
-                if water_amount >= water_capacity:
+                if task.purpose == "laboratory_research" and task.target.type_tag == "LABORATORY":
+                    if task.target.research_input_amount("water") >= task.target.research_input_capacity(  # type: ignore[attr-defined]
+                        "water"
+                    ):
+                        stale_indices.append(idx)
+                        continue
+                elif _water_amount(task.target) >= _water_capacity(task.target):
                     stale_indices.append(idx)
                     continue
             if not has_storage_source and not has_warehouse_source:
@@ -330,6 +375,19 @@ class WorkerTransportMixin:
             if site is None:
                 return True
             return int(site.remaining_resources().get(str(task.resource).lower(), 0)) <= 0
+        if task.purpose == "laboratory_research":
+            if task.target.type_tag != "LABORATORY":
+                return True
+            laboratory = task.target
+            if not laboratory.has_research_input_storage():
+                return True
+            if not laboratory.accepts_research_input(task.resource):
+                return True
+            if laboratory.research_input_amount(task.resource) >= laboratory.research_input_capacity(
+                task.resource
+            ):
+                return True
+            return False
         if not task.returning_to_town_hall and (
             bool(getattr(task.target, "is_under_construction", False))
         ):
@@ -615,6 +673,18 @@ class WorkerTransportMixin:
         elif task.resource == "water" and hasattr(task.target, "add_water_in"):
             if _water_amount(task.target) < _water_capacity(task.target):
                 task.target.add_water_in(1)  # type: ignore[attr-defined]
+        elif task.purpose == "laboratory_research" and task.target.type_tag == "LABORATORY":
+            laboratory = task.target
+            if laboratory.research_input_amount(task.resource) < laboratory.research_input_capacity(
+                task.resource
+            ):
+                laboratory.add_research_input(task.resource, 1)
+                self._record_laboratory_research_delivery(task.resource, 1)
+            elif task.resource != "water":
+                town_hall = self._primary_town_hall()
+                if town_hall is not None:
+                    town_hall.add_to_warehouse(task.resource, 1)
+                    delivered_target = town_hall
         elif task.resource == "boards" and hasattr(task.target, "add_to_warehouse"):
             task.target.add_to_warehouse(task.resource, 1)  # type: ignore[attr-defined]
         elif hasattr(task.target, "add_to_warehouse"):
@@ -676,6 +746,17 @@ class WorkerTransportMixin:
                 purpose=task.purpose,
             )
             existing_counts[key] = existing_counts.get(key, 0) + 1
+
+    def _enqueue_laboratory_research_input_tasks(self) -> None:
+        if self._registry is None:  # type: ignore[attr-defined]
+            return
+        self._enqueue_desired_transport_tasks(  # type: ignore[attr-defined]
+            laboratory_input_transport_tasks(
+                self._registry,
+                inbound_counts=self._laboratory_research_inbound_counts(),
+                pending_pickups_by_well_id=self._pending_well_water_pickup_counts(),
+            ),
+        )
 
     def _enqueue_construction_transport_tasks(self) -> None:
         if self._registry is None:  # type: ignore[attr-defined]

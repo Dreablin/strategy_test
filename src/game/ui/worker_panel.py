@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import pygame
 
 from game.resource_catalog import resource_display_label
+from game.ui.worker_labels import WORKER_LABEL as _WORKER_LABEL
 from game.worker_models import Worker
 from game.worker_satiety import MAX_WORKER_SATIETY, clamp_worker_satiety
 
@@ -14,23 +15,6 @@ _PANEL_W = 420
 _PANEL_PAD = 16
 _ROW = 26
 _CLOSE = 28
-
-_WORKER_LABEL: dict[str, str] = {
-    "CARRIER": "Carrier",
-    "BUILDER": "Builder",
-    "SAWYER": "Sawyer",
-    "MILLER": "Miller",
-    "BAKER": "Baker",
-    "LUMBERJACK": "Lumberjack",
-    "STONECUTTER": "Stonecutter",
-    "MINER": "Miner",
-    "FARMER": "Farmer",
-    "ANIMAL_HERDER": "Herder",
-    "FORESTER": "Forester",
-    "COOK": "Cook",
-    "WATERMAN": "Waterman",
-    "WINEMAKER": "Winemaker",
-}
 
 _BUILDING_LABEL: dict[str, str] = {
     "TOWN_HALL": "Town Hall",
@@ -51,6 +35,7 @@ _BUILDING_LABEL: dict[str, str] = {
     "CANTEEN": "Canteen",
     "WINERY": "Winery",
     "RESTAURANT": "Restaurant",
+    "LABORATORY": "Laboratory",
 }
 
 _RESOURCE_LABEL: dict[str, str] = {

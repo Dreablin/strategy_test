@@ -10,10 +10,12 @@ from game.config import TOWN_HALL_STARTING_WAREHOUSE, WINDOW_SIZE, town_hall_ori
 from game.input import TOP_BAR_HEIGHT, GameInput
 from game.render import Renderer
 from game.housing import current_population, max_population
+from game.ui.top_bar import research_button_visible
 from game.ui.bottom_bar import BAR_HEIGHT, BottomBar
 from game.ui.placement import PlacementController
 from game.ui.top_bar import TopBar
 from game.world import World
+from game.research_state import ResearchState
 from game.workers import WorkerManager
 
 
@@ -31,9 +33,21 @@ def main() -> int:
     bootstrap_starting_warehouse(town_hall, TOWN_HALL_STARTING_WAREHOUSE)
     camera = Camera()
     placement = PlacementController(world, registry, camera)
-    worker_manager = WorkerManager(registry, now_ms_fn=pygame.time.get_ticks)
+    research_state = ResearchState()
+    worker_manager = WorkerManager(
+        registry,
+        now_ms_fn=pygame.time.get_ticks,
+        research_state=research_state,
+    )
     worker_manager.bootstrap_starting_workers_near_town_hall(town_hall)
-    game_input = GameInput(world, registry, placement, worker_manager, camera)
+    game_input = GameInput(
+        world,
+        registry,
+        placement,
+        worker_manager,
+        camera,
+        research_state=research_state,
+    )
 
     running = True
     try:
@@ -83,6 +97,7 @@ def main() -> int:
                 max_population=max_population(registry, worker_manager),
                 delivery_queue_size=worker_manager.transport_queue_size(),
                 active_delivery_count=worker_manager.active_transport_count(),
+                show_research_button=research_button_visible(registry),
             )
             BottomBar.draw(screen)
             placement.draw(screen, camera)

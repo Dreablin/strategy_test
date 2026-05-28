@@ -3,8 +3,10 @@
 import pygame
 
 from game.buildings.lumber_camp import LumberCamp
+from game.buildings.school import School
 from game.buildings.town_hall import TownHall
-from game.ui.building_panel import BuildingPanel
+from game.buildings.well import Well
+from game.ui.building_panel import BuildingPanel, worker_status_line
 
 
 def test_building_panel_close_click() -> None:
@@ -65,3 +67,12 @@ def test_layout_grows_when_production_status_line_is_present() -> None:
     )
 
     assert with_status.frame.height > without_status.frame.height
+
+
+def test_worker_status_line_includes_building_worker_name() -> None:
+    assert worker_status_line(Well(level=2, grid_pos=(4, 4)), "assigned") == "Worker (Waterman): assigned"
+    assert worker_status_line(LumberCamp(level=1, grid_pos=(4, 4)), "on the way") == "Worker (Lumberjack): on the way"
+
+
+def test_worker_status_line_omits_name_for_unstaffed_buildings() -> None:
+    assert worker_status_line(School(level=1, grid_pos=(4, 4)), "empty") == "Worker: empty"

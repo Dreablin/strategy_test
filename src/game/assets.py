@@ -40,6 +40,7 @@ _BUILDING_FOLDER: dict[str, str] = {
     "WELL": "well",
     "WINERY": "winery",
     "RESTAURANT": "restaurant",
+    "LABORATORY": "laboratory",
 }
 
 _WORKER_FOLDER: dict[str, str] = {
@@ -57,6 +58,7 @@ _WORKER_FOLDER: dict[str, str] = {
     "COOK": "cook",
     "WATERMAN": "waterman",
     "WINEMAKER": "winemaker",
+    "SCIENTIST": "scientist",
 }
 
 
@@ -801,6 +803,7 @@ def _worker_color(w_type: str) -> tuple[int, int, int]:
         "COOK": (200, 120, 88),
         "WATERMAN": (72, 148, 210),
         "WINEMAKER": (128, 48, 96),
+        "SCIENTIST": (92, 132, 210),
     }
     return colors.get(t, (200, 200, 220))
 
@@ -967,6 +970,8 @@ def population_icon(size: int = 24) -> pygame.Surface:
 
 def clear_asset_caches() -> None:
     """Clear all in-memory asset caches (used by dev reload button)."""
+    from game.research_assets import clear_research_asset_caches
+
     grass_tile.cache_clear()
     _load_png_by_mtime.cache_clear()
     _load_tree_meta.cache_clear()
@@ -982,3 +987,4 @@ def clear_asset_caches() -> None:
     _worker_dot_by_mtime.cache_clear()
     resource_icon.cache_clear()
     population_icon.cache_clear()
+    clear_research_asset_caches()

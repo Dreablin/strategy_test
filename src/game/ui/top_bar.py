@@ -10,6 +10,18 @@ from game import dev_asset_reload
 from game.assets import population_icon
 
 _BAR_HEIGHT = 48
+_RESEARCH_BTN_W = 96
+_RESEARCH_BTN_LABEL = "Research"
+_RESEARCH_GAP = 18
+
+
+def research_button_visible(registry: object | None) -> bool:
+    """Whether the top-bar Research control should be shown for *registry*."""
+    if registry is None:
+        return False
+    from game.laboratory_visibility import has_completed_laboratory
+
+    return has_completed_laboratory(registry)
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,6 +33,7 @@ class TopBarLayout:
     delivery_pos: tuple[int, int]
     label: str
     label_pos: tuple[int, int]
+    research_button: pygame.Rect | None
 
 
 class TopBar:
@@ -34,6 +47,7 @@ class TopBar:
         max_population: int,
         delivery_queue_size: int = 0,
         active_delivery_count: int = 0,
+        show_research_button: bool = False,
     ) -> TopBarLayout:
         width = surface.get_width()
         bar_rect = pygame.Rect(0, 0, width, _BAR_HEIGHT)
@@ -44,7 +58,7 @@ class TopBar:
         label = f"{current_population} (max {max_population})"
         label_pos = (icon_rect.right + 8, (_BAR_HEIGHT - 22) // 2)
         font = pygame.font.Font(None, 22)
-        label_w, label_h = font.size(label)
+        label_w, _label_h = font.size(label)
         population_button = pygame.Rect(
             icon_rect.left - 6,
             6,
@@ -56,6 +70,16 @@ class TopBar:
             f"(in progress {max(0, int(active_delivery_count))})"
         )
         delivery_pos = (population_button.right + 18, label_pos[1])
+        research_button: pygame.Rect | None = None
+        if show_research_button:
+            delivery_w, _ = font.size(delivery_label)
+            research_x = delivery_pos[0] + delivery_w + _RESEARCH_GAP
+            research_button = pygame.Rect(
+                research_x,
+                6,
+                _RESEARCH_BTN_W,
+                _BAR_HEIGHT - 12,
+            )
         return TopBarLayout(
             bar_rect=bar_rect,
             icon_rect=icon_rect,
@@ -64,6 +88,7 @@ class TopBar:
             delivery_pos=delivery_pos,
             label=label,
             label_pos=label_pos,
+            research_button=research_button,
         )
 
     @staticmethod
@@ -74,6 +99,7 @@ class TopBar:
         max_population: int,
         delivery_queue_size: int = 0,
         active_delivery_count: int = 0,
+        show_research_button: bool = False,
     ) -> None:
         layout = TopBar.layout(
             surface,
@@ -81,6 +107,7 @@ class TopBar:
             max_population=max_population,
             delivery_queue_size=delivery_queue_size,
             active_delivery_count=active_delivery_count,
+            show_research_button=show_research_button,
         )
         pygame.draw.rect(surface, (32, 36, 44), layout.bar_rect)
         pygame.draw.line(
@@ -98,6 +125,18 @@ class TopBar:
         surface.blit(text_surf, layout.label_pos)
         delivery_surf = font.render(layout.delivery_label, True, (205, 210, 220))
         surface.blit(delivery_surf, layout.delivery_pos)
+
+        if layout.research_button is not None:
+            pygame.draw.rect(surface, (42, 48, 58), layout.research_button, border_radius=6)
+            pygame.draw.rect(surface, (70, 76, 88), layout.research_button, width=1, border_radius=6)
+            research_surf = font.render(_RESEARCH_BTN_LABEL, True, (228, 230, 238))
+            surface.blit(
+                research_surf,
+                (
+                    layout.research_button.centerx - research_surf.get_width() // 2,
+                    layout.research_button.centery - research_surf.get_height() // 2,
+                ),
+            )
 
         # Temporary dev-only control: force asset cache reload.
         dev_asset_reload.draw_button(surface)

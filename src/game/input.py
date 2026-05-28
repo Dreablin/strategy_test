@@ -12,6 +12,7 @@ from game.buildings.chicken_farm import ChickenFarm
 from game.buildings.cow_farm import CowFarm
 from game.buildings.forester_hut import ForesterHut
 from game.buildings.iron_mine import IronMine
+from game.buildings.laboratory import Laboratory
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.mill import Mill
 from game.buildings.stone_mine import StoneMine
@@ -26,6 +27,10 @@ from game.camera import Camera
 from game.iso import screen_to_tile
 from game.render import Renderer
 from game.housing import current_population, max_population
+from game.ui.top_bar import research_button_visible
+from game.research_eligibility import research_ui_eligibility
+from game.research_start import try_start_active_research
+from game.research_state import ResearchState
 from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT, BottomBar
 from game.ui.bakery_panel import BakeryPanel
 from game.ui.canteen_panel import CanteenPanel
@@ -35,6 +40,7 @@ from game.ui.building_panel import BuildingPanel
 from game.ui.construction_panel import ConstructionPanel
 from game.ui.forester_hut_panel import ForesterHutPanel
 from game.ui.iron_mine_panel import IronMinePanel
+from game.ui.laboratory_panel import LaboratoryPanel
 from game.ui.lumber_camp_panel import LumberCampPanel
 from game.ui.mill_panel import MillPanel
 from game.ui.stone_mine_panel import StoneMinePanel
@@ -42,6 +48,7 @@ from game.ui.school_panel import SchoolPanel
 from game.ui.sawmill_panel import SawmillPanel
 from game.ui.placement import PlacementController
 from game.ui.population_panel import PopulationPanel
+from game.ui.research_screen import ResearchScreen
 from game.ui.town_hall_panel import TownHallPanel
 from game.ui.top_bar import TopBar
 from game.ui.vineyard_farm_panel import VineyardFarmPanel
@@ -92,6 +99,8 @@ class GameInput:
         "_panel",
         "_population_filter",
         "_population_panel_open",
+        "_research_screen_open",
+        "_research_state",
         "_population_scroll",
         "_placement",
         "_registry",
@@ -112,16 +121,20 @@ class GameInput:
         placement: PlacementController,
         worker_manager: WorkerManager,
         camera: Camera,
+        *,
+        research_state: ResearchState | None = None,
     ) -> None:
         self._world = world
         self._registry = registry
         self._placement = placement
         self._worker_manager = worker_manager
         self._camera = camera
+        self._research_state = research_state if research_state is not None else ResearchState()
         self._panel: Building | None = None
         self._worker_panel: Worker | None = None
         self._population_filter: str | None = None
         self._population_panel_open = False
+        self._research_screen_open = False
         self._population_scroll = 0
         self._school_tier: str = "basic"
         self._rmb_down = False
@@ -158,6 +171,16 @@ class GameInput:
         return self._population_panel_open
 
     @property
+    def research_state(self) -> ResearchState:
+        """In-memory research progress for the current run."""
+        return self._research_state
+
+    @property
+    def research_screen_open(self) -> bool:
+        """Whether the full-screen Research menu is open."""
+        return self._research_screen_open
+
+    @property
     def population_scroll(self) -> int:
         """Current population panel scroll offset in pixels."""
         return self._population_scroll
@@ -167,11 +190,16 @@ class GameInput:
         """Current worker type filter in the population panel, or None for all."""
         return self._population_filter
 
+    def _sync_research_ui_state(self) -> None:
+        if self._research_screen_open and not research_button_visible(self._registry):
+            self._research_screen_open = False
+
     def _sync_panel_stale(self) -> None:
         if self._panel is not None and self._panel not in self._registry.all():
             self._panel = None
         if self._worker_panel is not None and self._worker_panel not in self._worker_manager.workers():
             self._worker_panel = None
+        self._sync_research_ui_state()
 
     def _worker_screen_pos(self, surface: pygame.Surface, worker: Worker) -> tuple[int, int]:
         moving_states = {
@@ -232,16 +260,23 @@ class GameInput:
             self._panel = None
             self._worker_panel = None
             self._population_panel_open = False
+            self._research_screen_open = False
             if event.building_type in {"DEV_TREE", "DEV_STONE", "DEV_IRON"}:
                 self._placement.select_dev(event.building_type)
             else:
                 self._placement.select(event.building_type)
             return
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-            if self._panel is not None or self._worker_panel is not None or self._population_panel_open:
+            if (
+                self._panel is not None
+                or self._worker_panel is not None
+                or self._population_panel_open
+                or self._research_screen_open
+            ):
                 self._panel = None
                 self._worker_panel = None
                 self._population_panel_open = False
+                self._research_screen_open = False
             else:
                 self._placement.cancel()
             return
@@ -280,11 +315,36 @@ class GameInput:
                 self._panel = None
                 self._worker_panel = None
                 self._population_panel_open = False
+                self._research_screen_open = False
             self._rmb_down = False
             self._rmb_dragging = False
             return
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == pygame.BUTTON_LEFT:
-            if self._panel is not None or self._worker_panel is not None or self._population_panel_open:
+            if self._research_screen_open:
+                can_start, _lock_reasons = research_ui_eligibility(
+                    research_state=self._research_state,
+                    registry=self._registry,
+                )
+                if ResearchScreen.click_action(surface, event.pos) == "close":
+                    self._research_screen_open = False
+                    return
+                start_id = ResearchScreen.click_start_research_id(
+                    surface,
+                    event.pos,
+                    research_can_start=can_start,
+                )
+                if start_id is not None:
+                    try_start_active_research(
+                        start_id,
+                        research_state=self._research_state,
+                        registry=self._registry,
+                    )
+                return
+            if (
+                self._panel is not None
+                or self._worker_panel is not None
+                or self._population_panel_open
+            ):
                 self._handle_map_left_click(surface, event.pos)
                 return
             if not _on_map(surface, event.pos):
@@ -295,10 +355,21 @@ class GameInput:
                         max_population=max_population(self._registry, self._worker_manager),
                         delivery_queue_size=self._worker_manager.transport_queue_size(),
                         active_delivery_count=self._worker_manager.active_transport_count(),
+                        show_research_button=research_button_visible(self._registry),
                     )
+                    if (
+                        top_layout.research_button is not None
+                        and top_layout.research_button.collidepoint(event.pos)
+                    ):
+                        self._panel = None
+                        self._worker_panel = None
+                        self._population_panel_open = False
+                        self._research_screen_open = True
+                        return
                     if top_layout.population_button.collidepoint(event.pos):
                         self._panel = None
                         self._worker_panel = None
+                        self._research_screen_open = False
                         self._population_panel_open = not self._population_panel_open
                         self._population_scroll = 0
                         self._population_filter = None
@@ -317,6 +388,19 @@ class GameInput:
 
     def draw_panel(self, surface: pygame.Surface) -> None:
         self._sync_panel_stale()
+        if self._research_screen_open:
+            can_start, lock_reasons = research_ui_eligibility(
+                research_state=self._research_state,
+                registry=self._registry,
+            )
+            ResearchScreen.draw(
+                surface,
+                research_state=self._research_state,
+                hover_pos=pygame.mouse.get_pos(),
+                research_can_start=can_start,
+                research_lock_reasons=lock_reasons,
+            )
+            return
         if self._population_panel_open:
             workers = self._worker_manager.workers()
             self._population_scroll = PopulationPanel.clamp_scroll(
@@ -494,6 +578,20 @@ class GameInput:
                 worker_assigned=worker_status != "empty",
                 now_ms=pygame.time.get_ticks(),
                 worker_manager=self._worker_manager,
+            )
+            return
+        if LaboratoryPanel.supports_building(self._panel):
+            assert isinstance(self._panel, Laboratory)
+            worker_status = self._panel_worker_status()
+            production_status = self._panel_production_status()
+            LaboratoryPanel.draw(
+                surface,
+                self._panel,
+                worker_assigned=worker_status != "empty",
+                worker_status=worker_status,
+                production_status=production_status,
+                worker_manager=self._worker_manager,
+                research_state=self._research_state,
             )
             return
         if WineryPanel.supports_building(self._panel):
@@ -1000,6 +1098,39 @@ class GameInput:
                         self._sync_assignments()
                     elif action == "toggle_active" and self._panel is not None:
                         self._panel.set_active(not self._panel.active)
+                    return
+            if LaboratoryPanel.supports_building(self._panel):
+                assert isinstance(self._panel, Laboratory)
+                worker_status = self._panel_worker_status()
+                production_status = self._panel_production_status()
+                layout = LaboratoryPanel.layout(
+                    surface,
+                    self._panel,
+                    worker_assigned=worker_status != "empty",
+                    production_status=production_status,
+                    worker_manager=self._worker_manager,
+                    research_state=self._research_state,
+                )
+                if layout.frame.collidepoint(pos):
+                    action = LaboratoryPanel.click_action(
+                        surface,
+                        pos,
+                        self._panel,
+                        worker_assigned=worker_status != "empty",
+                        production_status=production_status,
+                        worker_manager=self._worker_manager,
+                        research_state=self._research_state,
+                    )
+                    if action == "close":
+                        self._panel = None
+                    elif action == "upgrade" and self._panel is not None:
+                        if self._registry.upgrade_building(self._panel):
+                            self._sync_assignments()
+                    elif action == "demolish" and self._panel is not None:
+                        b = self._panel
+                        self._registry.demolish(b, self._worker_manager)
+                        self._panel = None
+                        self._sync_assignments()
                     return
             if WineryPanel.supports_building(self._panel):
                 assert isinstance(self._panel, Winery)

@@ -5,11 +5,23 @@ from __future__ import annotations
 from typing import Any
 
 from game.buildings.base import Building
+from game.worker_laboratory import (
+    laboratory_active_scientists,
+    laboratory_research_contributing_scientists,
+)
 from game.worker_models import Worker
 
 
 def worker_status_for_building(manager: Any, building: Building) -> str:
     """Return panel-friendly worker status: empty | on the way | assigned."""
+    if building.type_tag == "LABORATORY":
+        if building.is_under_construction:
+            return "empty"
+        if not laboratory_active_scientists(manager._workers, building):
+            return "empty"
+        if not laboratory_research_contributing_scientists(manager._workers, building):
+            return "on the way"
+        return "assigned"
     if building.is_under_construction:
         for worker in manager._workers:
             if worker.assigned_building is building:

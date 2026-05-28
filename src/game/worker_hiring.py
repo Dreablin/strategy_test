@@ -23,8 +23,11 @@ WORKER_TO_BUILDING: dict[str, str] = {
     "COOK": "CANTEEN",
     "WATERMAN": "WELL",
     "WINEMAKER": "WINERY",
+    "SCIENTIST": "LABORATORY",
 }
-HIRABLE_WORKERS: set[str] = set(WORKER_TO_BUILDING) | {"CARRIER", "BUILDER", "BAKER", "ANIMAL_HERDER", "WINEMAKER"}
+HIRABLE_WORKERS: set[str] = (
+    set(WORKER_TO_BUILDING) | {"CARRIER", "BUILDER", "BAKER", "ANIMAL_HERDER", "WINEMAKER", "SCIENTIST"}
+)
 
 
 def worker_compatible_building_types(worker_type: str) -> frozenset[str]:

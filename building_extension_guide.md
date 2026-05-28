@@ -216,6 +216,33 @@ not route grape growth or harvest through the wheat field pipeline.
 - Carrier grape export is described under **§7 Extend transport** above; keep
   enqueue/dedupe in the transport layer.
 
+## Laboratory (`LABORATORY`) and Research
+
+The Laboratory is a unique Social building that hosts the research system. Full
+runtime, UI, transport, and JSON rules are in **`research_extension_guide.md`**.
+This section lists building-specific touchpoints only.
+
+- **Class:** `src/game/buildings/laboratory.py` — scientist slot capacity,
+  technology tier unlock helpers, and **dynamic research input storage** (not
+  normal processor input/output).
+- **Settings:** `src/game/settings/buildings/laboratory.json` — slot counts by
+  level, `research.points_per_scientist_per_second`,
+  `technology_tiers.unlock_level_by_tier`, construction/upgrade costs,
+  `worker_effects`.
+- **Uniqueness:** `src/game/buildings/registry.py` — only one `LABORATORY` may
+  exist or be under construction.
+- **Menu:** Social category in `src/game/ui/bottom_bar.py`.
+- **Panel:** `src/game/ui/laboratory_panel.py` with research sections in
+  `src/game/ui/laboratory_panel_research.py` (Scientist slots, active research
+  image, delivered input lines, points progress).
+- **Visibility:** `src/game/laboratory_visibility.py` — completed lab required
+  for top-bar Research button (`ui/top_bar.py`, `main.py`).
+- **Transport:** `transport_tasks.laboratory_input_transport_tasks` and
+  `worker_transport` purpose `"laboratory_research"` — see research guide §
+  Transport Integration. Do not put carrier logic on the building class.
+- **Demolition:** clears research input storage and cancels active research via
+  `WorkerManager` + `ResearchState` (see `workers.py` Laboratory branch).
+
 ## Restaurant (`RESTAURANT`)
 
 The Restaurant is a social dining building for advanced-tier workers:

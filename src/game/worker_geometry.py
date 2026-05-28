@@ -9,6 +9,17 @@ from game.buildings.field import WHEAT_EMPTY, WHEAT_PHASE_4
 from game.worker_constants import FARMER_FIELD_RADIUS
 
 
+def worker_inside_building_footprint(worker: object, building: Building) -> bool:
+    """True when the worker's current tile lies inside the building footprint."""
+    pos = building.grid_pos
+    if pos is None:
+        return False
+    gx, gy = pos
+    w, h = type(building).footprint
+    wx, wy = getattr(worker, "current_tile", (0, 0))
+    return gx <= wx < gx + w and gy <= wy < gy + h
+
+
 def building_center_tile(building: Building) -> tuple[int, int]:
     """Integer grid cell at the footprint center (for stand / orphan position)."""
     pos = building.grid_pos

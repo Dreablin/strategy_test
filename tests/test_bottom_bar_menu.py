@@ -2,23 +2,26 @@
 
 import pygame
 
+from game import i18n
 from game.ui.bottom_bar import (
     BUILD_MENU_SELECT,
     BottomBar,
-    _FOOD_BUTTONS,
-    _RESOURCE_BUTTONS,
+    _FOOD_BUTTON_SPECS,
+    _RESOURCE_BUTTON_SPECS,
     _button_rects,
     _construction_cost_lines,
     _hovered_building_tag,
+    _labeled_menu_buttons,
 )
+from game.ui.building_panel import building_display_name
 
 
-def _building_tags(entries: tuple[tuple[str, str, str], ...]) -> set[str]:
-    return {tag for _asset, _label, tag in entries}
+def _building_tags(specs: tuple[tuple[str, str], ...]) -> set[str]:
+    return {tag for _asset, tag in specs}
 
 
 def test_bottom_bar_resource_menu_contains_resource_buildings_only() -> None:
-    assert _building_tags(_RESOURCE_BUTTONS) == {
+    assert _building_tags(_RESOURCE_BUTTON_SPECS) == {
         "LUMBER_CAMP",
         "STONE_MINE",
         "IRON_MINE",
@@ -28,7 +31,7 @@ def test_bottom_bar_resource_menu_contains_resource_buildings_only() -> None:
 
 
 def test_bottom_bar_food_menu_contains_food_buildings() -> None:
-    assert _building_tags(_FOOD_BUTTONS) == {
+    assert _building_tags(_FOOD_BUTTON_SPECS) == {
         "FARM",
         "FIELD",
         "VINEYARD_FARM",
@@ -95,14 +98,30 @@ def test_bottom_bar_hover_detects_building_button() -> None:
 
 def test_bottom_bar_cost_tooltip_uses_construction_requirements() -> None:
     lines = _construction_cost_lines("LUMBER_CAMP")
-    assert lines[0] == "Cost:"
-    assert any(line.startswith("Wood:") for line in lines)
+    assert lines[0] == f"{i18n.t('ui.common.cost')}:"
+    assert any(line.startswith(f"{i18n.t('resource.wood')}:") for line in lines)
 
 
 def test_bottom_bar_statue_tooltip_shows_excavation_research_requirement() -> None:
     lines = _construction_cost_lines("STATUE")
 
-    assert "Requires research: Excavation Plans" in lines
+    assert i18n.t("ui.common.requires_research", name="Excavation Plans") in lines
+
+
+def test_bottom_bar_building_labels_use_locale_names_en() -> None:
+    labeled = _labeled_menu_buttons(_RESOURCE_BUTTON_SPECS)
+    lumber = next(label for _asset, label, tag in labeled if tag == "LUMBER_CAMP")
+    assert lumber == building_display_name("LUMBER_CAMP")
+    assert lumber == "Lumber Camp"
+
+
+def test_bottom_bar_building_labels_ru_smoke(use_locale) -> None:
+    with use_locale("ru"):
+        labeled = _labeled_menu_buttons(_RESOURCE_BUTTON_SPECS)
+        lumber = next(label for _asset, label, tag in labeled if tag == "LUMBER_CAMP")
+        assert lumber == "Лагерь лесорубов"
+        lines = _construction_cost_lines("LUMBER_CAMP")
+        assert lines[0] == f"{i18n.t('ui.common.cost')}:"
 
 
 def test_bottom_bar_statue_menu_uses_final_stage_sprite(monkeypatch) -> None:

@@ -12,6 +12,7 @@
   "ui.common.requirements": "Requirements",
   "ui.common.free": "Free",
   "ui.common.unavailable": "Unavailable",
+  "ui.common.requires_research": "Requires research: {name}",
   "ui.common.worker": "Worker",
   "ui.window.caption": "Isometric Strategy",
   "resource.wood": "Wood",
@@ -80,6 +81,10 @@
   "building.LABORATORY.desc": "Scientists conduct research and unlock technologies.",
   "building.STATUE.name": "Statue",
   "building.STATUE.desc": "Final mission monument built in four stages.",
+  "building.FIELD.name": "Field",
+  "building.SCHOOL.name": "School",
+  "building.HOUSE.name": "House",
+  "building.SAWMILL.name": "Sawmill",
   "research.1.name": "Technology I",
   "ui.test.en_only_fallback": "English only",
   "ui.test.labeled_count": "{name}: {count}"

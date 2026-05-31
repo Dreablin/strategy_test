@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 29 - Localization EN/RU (**in progress**)
-- **Next Task:** T448 - Localize bottom build menu + cost tooltip — `src/game/ui/bottom_bar.py`
-- **Last Completed:** T447 - Migrate building names + descriptions (`building.<TYPE>.name/.desc`) — `src/game/ui/building_panel.py`
-- **Total Progress:** 447 / 468 (Phase 29: 9 / 30 done)
+- **Next Task:** T449 - Localize top bar — `src/game/ui/top_bar.py`
+- **Last Completed:** T448 - Localize bottom build menu + cost tooltip — `src/game/ui/bottom_bar.py`
+- **Total Progress:** 448 / 468 (Phase 29: 10 / 30 done)
 
 > **Archive:** Phase 28 task details (T387-T438) are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -94,14 +94,14 @@ Each task runs in a fresh context. Do not assume prior memory; read this block, 
   - Update `tests/test_building_panel.py`; assert localized name/desc for at least `TOWN_HALL`, `LABORATORY`, `STATUE` in `en` and one `ru` smoke.
   - Verify: `pytest -q tests/test_building_panel.py`; then `pytest -q`.
   - Acceptance: all building types resolve a non-empty localized name; tests pass.
-- [~] **T448**: Localize bottom build menu + cost tooltip — `src/game/ui/bottom_bar.py`.
+- [x] **T448**: Localize bottom build menu + cost tooltip — `src/game/ui/bottom_bar.py`.
   - Route category/building button labels (`_RESOURCE_BUTTONS`, `_FOOD_BUTTONS`, and the inline lists `School/House/Canteen/Restaurant/Laboratory/Statue`, `Sawmill/Mill/Bakery/...`) through `building.<TYPE>.name` (T447) so labels are not duplicated.
   - Route the cost tooltip words `Cost:`, `Cost: Free`, `Cost: unavailable` through `ui.common.*` keys; keep `{resource_display_label}: {n}` lines.
   - Localize the statue research requirement line text.
   - Update `tests/test_bottom_bar_menu.py`; assert English defaults and a `ru` lookup smoke.
   - Verify: `pytest -q tests/test_bottom_bar_menu.py`; then `pytest -q`.
   - Acceptance: bottom-bar labels/tooltips come from locales; tests pass.
-- [ ] **T449**: Localize top bar — `src/game/ui/top_bar.py`.
+- [~] **T449**: Localize top bar — `src/game/ui/top_bar.py`.
   - Replace `_RESEARCH_BTN_LABEL = "Research"` with `t("ui.topbar.research")`; template the population label `"{current} (max {max})"` and the deliveries label `"Deliveries: {n} (in progress {k})"` via i18n templates with `{param}` placeholders.
   - Add `ui.topbar.*` keys (research button, population template, deliveries template) to both locales.
   - Update the top-bar layout test (find via `rg "TopBar" tests`); assert layout still computes and `{param}` substitution is exercised in `en` and `ru`.

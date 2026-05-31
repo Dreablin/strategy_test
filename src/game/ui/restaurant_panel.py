@@ -8,6 +8,7 @@ import pygame
 
 from game.buildings.restaurant import Restaurant
 from game.ui.building_panel import BuildingPanel
+from game.ui.panel_i18n import active_toggle_label, production_line, resource_amount_line
 from game.worker_dining import dining_eat_duration_ms
 from game.worker_status import production_status_for_building
 from game.ui.fonts import ui_font
@@ -42,16 +43,20 @@ class RestaurantPanel:
 
     @staticmethod
     def toggle_label(restaurant: Restaurant) -> str:
-        return "Active" if restaurant.active else "Inactive"
+        return active_toggle_label(restaurant.active)
 
     @staticmethod
     def storage_lines(restaurant: Restaurant) -> dict[str, str]:
         cap = restaurant.local_storage_capacity("bread")
         return {
-            "bread": f"Bread: {restaurant.local_storage_amount('bread')} / {cap}",
-            "wine": f"Wine: {restaurant.local_storage_amount('wine')} / {cap}",
-            "beef": f"Beef: {restaurant.local_storage_amount('beef')} / {cap}",
-            "elite_meal": f"Elite meal: {restaurant.output_amount()} / {restaurant.output_capacity()}",
+            "bread": resource_amount_line("bread", restaurant.local_storage_amount("bread"), cap),
+            "wine": resource_amount_line("wine", restaurant.local_storage_amount("wine"), cap),
+            "beef": resource_amount_line("beef", restaurant.local_storage_amount("beef"), cap),
+            "elite_meal": resource_amount_line(
+                "elite_meal",
+                restaurant.output_amount(),
+                restaurant.output_capacity(),
+            ),
         }
 
     @staticmethod
@@ -107,7 +112,7 @@ class RestaurantPanel:
         status = ""
         if worker_manager is not None:
             status = production_status_for_building(worker_manager, restaurant)
-        status_text = font.render(f"Status: {status}", True, (200, 200, 210))
+        status_text = font.render(production_line(status), True, (200, 200, 210))
         surface.blit(status_text, (lay.frame.left + _PANEL_PAD, y))
         y += _ROW_H
 

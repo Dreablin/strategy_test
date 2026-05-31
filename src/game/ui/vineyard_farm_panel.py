@@ -8,6 +8,7 @@ import pygame
 
 from game.buildings.vineyard_farm import VineyardFarm
 from game.ui.building_panel import BuildingPanel
+from game.ui.panel_i18n import active_toggle_label, resource_amount_line
 from game.ui.fonts import ui_font
 
 _PANEL_PAD = 16
@@ -34,7 +35,11 @@ class VineyardFarmPanel:
 
     @staticmethod
     def grape_storage_line(farm: VineyardFarm) -> str:
-        return f"Grapes: {farm.grapes_amount()} / {farm.grapes_capacity()}"
+        return resource_amount_line("grapes", farm.grapes_amount(), farm.grapes_capacity())
+
+    @staticmethod
+    def toggle_label(farm: VineyardFarm) -> str:
+        return active_toggle_label(farm.active)
 
     @staticmethod
     def _grape_label_y(layout: VineyardFarmPanelLayout) -> int:
@@ -46,10 +51,6 @@ class VineyardFarmPanel:
         else:
             anchor_top = layout.toggle.top
         return anchor_top - _ROW - 8
-
-    @staticmethod
-    def toggle_label(farm: VineyardFarm) -> str:
-        return "Active" if farm.active else "Inactive"
 
     @staticmethod
     def layout(

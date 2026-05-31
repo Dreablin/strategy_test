@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pygame
 
+from game import i18n
 from game.buildings.restaurant import Restaurant
 from game.buildings.town_hall import TownHall
 from game.ui.restaurant_panel import RestaurantPanel, RestaurantPanelLayout
@@ -52,6 +53,6 @@ def test_restaurant_panel_click_toggle_active() -> None:
 
 def test_restaurant_panel_toggle_label() -> None:
     r = _make_restaurant()
-    assert RestaurantPanel.toggle_label(r) == "Active"
+    assert RestaurantPanel.toggle_label(r) == i18n.t("ui.common.active")
     r.set_active(False)
-    assert RestaurantPanel.toggle_label(r) == "Inactive"
+    assert RestaurantPanel.toggle_label(r) == i18n.t("ui.common.inactive")

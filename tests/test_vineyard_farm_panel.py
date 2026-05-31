@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import pygame
 
+from game import i18n
 from game.buildings.vineyard_farm import VineyardFarm
 from game.ui.vineyard_farm_panel import VineyardFarmPanel
+from game.ui.panel_i18n import resource_amount_line
 
 
 def test_vineyard_farm_panel_supports_building_toggle_and_close_clicks() -> None:
@@ -55,8 +57,8 @@ def test_grape_storage_line_reflects_amounts() -> None:
     farm = VineyardFarm(level=2, grid_pos=(0, 0))
     farm.grapes_in = 2
     line = VineyardFarmPanel.grape_storage_line(farm)
-    assert "2 /" in line
-    assert str(farm.grapes_capacity()) in line
+    assert line == resource_amount_line("grapes", 2, farm.grapes_capacity())
+    assert i18n.t("resource.grapes") in line
 
 
 def test_max_level_panel_grape_row_clear_of_demolish_and_toggle() -> None:

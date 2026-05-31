@@ -16,6 +16,9 @@ _BLOCKED_REASON_IDS: dict[str, str] = {
     "no wheat": "no_wheat",
     "no flour": "no_flour",
     "no water": "no_water",
+    "no chicken": "no_chicken",
+    "no bread": "no_bread",
+    "no grain": "no_grain",
     "running": "processing",
 }
 

@@ -6,6 +6,7 @@ import pygame
 
 from game.buildings.cow_farm import CowFarm
 from game.ui.cow_farm_panel import CowFarmPanel
+from game.ui.panel_i18n import flow_line
 
 
 def test_cow_farm_panel_supports_building_and_toggle_click() -> None:
@@ -44,10 +45,10 @@ def test_cow_farm_panel_storage_line_texts() -> None:
     farm.add_hide_out(0)
     w, wat, beef, hide = CowFarmPanel.storage_line_texts(farm)
     cap = farm.wheat_capacity()
-    assert w == f"Input wheat: 2 / {cap}"
-    assert wat == f"Input water: 1 / {cap}"
-    assert beef == f"Output beef: 1 / {cap}"
-    assert hide == f"Output hide: 0 / {cap}"
+    assert w == flow_line(role_key="ui.panel.input", resource_key="wheat", amount=2, capacity=cap)
+    assert wat == flow_line(role_key="ui.panel.input", resource_key="water", amount=1, capacity=cap)
+    assert beef == flow_line(role_key="ui.panel.output", resource_key="beef", amount=1, capacity=cap)
+    assert hide == flow_line(role_key="ui.panel.output", resource_key="hide", amount=0, capacity=cap)
 
 
 def test_cow_farm_panel_storage_block_clears_upgrade_and_demolish() -> None:

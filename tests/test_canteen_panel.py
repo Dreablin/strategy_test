@@ -4,10 +4,28 @@ from __future__ import annotations
 
 import pygame
 
+from game import i18n
 from game.buildings.canteen import Canteen
 from game.canteen_dining import try_reserve_diner_slot
 from game.ui.canteen_panel import CanteenPanel
+from game.ui.panel_i18n import resource_amount_line
 from game.worker_models import Worker
+
+
+def test_canteen_panel_storage_lines_use_locale() -> None:
+    canteen = Canteen(level=1, grid_pos=(10, 10))
+    canteen.add_local_storage("chicken", 2)
+    chicken, bread, water, meal = CanteenPanel.storage_lines(canteen)
+    assert chicken == resource_amount_line("chicken", 2, canteen.local_storage_capacity("chicken"))
+    assert i18n.t("resource.simple_meal") in meal
+
+
+def test_canteen_panel_storage_lines_ru(use_locale) -> None:
+    canteen = Canteen(level=1, grid_pos=(10, 10))
+    with use_locale("ru"):
+        _chicken, _bread, _water, meal = CanteenPanel.storage_lines(canteen)
+        assert i18n.t("resource.simple_meal") in meal
+        assert "Простая еда" in meal
 
 
 def test_canteen_panel_supports_building_and_toggle_click() -> None:

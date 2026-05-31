@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 29 - Localization EN/RU (**in progress**)
-- **Next Task:** T457 - Localize food/dining panels
-- **Last Completed:** T456 - Localize Laboratory panels
-- **Total Progress:** 456 / 468 (Phase 29: 18 / 30 done)
+- **Next Task:** T458 - Localize school panel — `src/game/ui/school_panel.py`
+- **Last Completed:** T457 - Localize food/dining panels
+- **Total Progress:** 457 / 468 (Phase 29: 19 / 30 done)
 
 > **Archive:** Phase 28 task details (T387-T438) are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -146,13 +146,13 @@ Each task runs in a fresh context. Do not assume prior memory; read this block, 
   - Update `tests/test_laboratory_panel.py` and `tests/test_laboratory_labels.py`; add a `ru` smoke for the scientists line.
   - Verify: `pytest -q tests/test_laboratory_panel.py tests/test_laboratory_labels.py`; then `pytest -q`.
   - Acceptance: laboratory panel tests pass with localized text.
-- [~] **T457**: Localize food/dining panels.
+- [x] **T457**: Localize food/dining panels.
   - Files: `farm`-related panel, `vineyard_farm_panel.py`, `canteen_panel.py`, `restaurant_panel.py`, `chicken_farm_panel.py`, `cow_farm_panel.py`.
   - Route dining slot/status text, blocked reasons, and meal/resource labels through `status.*`/`resource.*`/`ui.*` keys. Meal labels reuse `resource.simple_meal` / `resource.elite_meal`.
   - Update the relevant panel tests (find via `rg -l "canteen\|restaurant\|chicken_farm\|cow_farm\|vineyard_farm" tests`).
   - Verify: run those test files; then `pytest -q`.
   - Acceptance: relevant panel tests pass; meal/resource labels come from locale paths.
-- [ ] **T458**: Localize school panel — `src/game/ui/school_panel.py`.
+- [~] **T458**: Localize school panel — `src/game/ui/school_panel.py`.
   - Route title, queue, Basic/Advanced tab labels, hire/cancel labels, worker labels (reuse `worker.<TYPE>`), and upgrade/demolish through `ui.*`/`worker.*` keys.
   - Update `tests/test_laboratory_menu.py` / school-panel tests (find via `rg -l school_panel tests`); assert Basic/Advanced tab labels in `en` and `ru`.
   - Verify: run the school-panel test file; then `pytest -q`.

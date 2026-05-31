@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pygame
 
+from game import i18n
 from game.buildings.restaurant import Restaurant
 from game.ui.restaurant_panel import RestaurantPanel
 
@@ -18,6 +19,7 @@ def test_storage_lines_empty() -> None:
     r = _make_restaurant()
     lines = RestaurantPanel.storage_lines(r)
     for resource in ("bread", "wine", "beef", "elite_meal"):
+        assert i18n.t(f"resource.{resource}") in lines[resource]
         assert f"0 / {r.local_storage_capacity(resource)}" in lines[resource]
 
 

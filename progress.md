@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 29 - Localization EN/RU (**in progress**)
-- **Next Task:** T452 - Localize worker panel — `src/game/ui/worker_panel.py`
-- **Last Completed:** T451 - Localize construction panel — `src/game/ui/construction_panel.py`
-- **Total Progress:** 451 / 468 (Phase 29: 13 / 30 done)
+- **Next Task:** T453 - Localize population panel — `src/game/ui/population_panel.py`
+- **Last Completed:** T452 - Localize worker panel — `src/game/ui/worker_panel.py`
+- **Total Progress:** 452 / 468 (Phase 29: 14 / 30 done)
 
 > **Archive:** Phase 28 task details (T387-T438) are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -118,12 +118,12 @@ Each task runs in a fresh context. Do not assume prior memory; read this block, 
   - Update `tests/test_*construction*` (find via `rg -l construction tests`); cover a regular building and statue construction in `en`, plus one `ru` smoke.
   - Verify: run those test files; then `pytest -q`.
   - Acceptance: construction-panel tests pass for regular + statue.
-- [~] **T452**: Localize worker panel — `src/game/ui/worker_panel.py`.
+- [x] **T452**: Localize worker panel — `src/game/ui/worker_panel.py`.
   - Route state labels, satiety, movement speed, assignment, carrying, task, from/to, returning, and resource names through `status.*`/`ui.*`/`resource.*`/`worker.*` keys.
   - Update the worker-panel test (find via `rg -l worker_panel tests`); add a `ru` smoke for one worker.
   - Verify: run the worker-panel test file; then `pytest -q`.
   - Acceptance: worker-panel tests pass; one `ru` smoke included.
-- [ ] **T453**: Localize population panel — `src/game/ui/population_panel.py`.
+- [~] **T453**: Localize population panel — `src/game/ui/population_panel.py`.
   - Route title, filters, worker rows, assignment/task detail labels, and any empty-state text through `ui.*`/`status.*`/`worker.*` keys (note the local `"sowing": "Sowing"` style map at the top of the module).
   - Update the population-panel test (find via `rg -l population_panel tests`); ensure click/scroll behavior tests do not regress.
   - Verify: run the population-panel test file; then `pytest -q`.

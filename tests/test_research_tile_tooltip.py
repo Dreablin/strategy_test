@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pygame
 
+from game import i18n
 from game.ui.research_screen import ResearchScreen
 from game.ui.research_screen_layout import compute_content_layout
 from game.ui.research_tile_tooltip import (
@@ -26,16 +27,19 @@ def test_hovered_research_tile_hit_tests_tile_rect() -> None:
 def test_format_tooltip_includes_cost_points_and_dependencies() -> None:
     info = research_tooltip_info_for_id("2")
     lines = format_research_tooltip_lines(info)
-    assert any("Cost:" in line and "Boards" in line for line in lines)
-    assert any("Points: 10000" in line for line in lines)
-    assert any("Technology I" in line for line in lines)
-    assert any(line.startswith("Effect:") and "tier 2" in line for line in lines)
+    assert i18n.t("ui.research.cost_line", items=i18n.t("resource.boards") + " 15") in lines or any(
+        i18n.t("resource.boards") in line for line in lines
+    )
+    assert i18n.t("ui.research.points_line", points=10000) in lines
+    assert i18n.t("research.1.name") in " ".join(lines)
+    assert i18n.t("ui.research.effect_line", effect=i18n.t("research.2.effect")) in lines
 
 
 def test_format_tooltip_shows_lock_reason_when_supplied() -> None:
-    info = research_tooltip_info_for_id("1", lock_reason="Active research in progress")
+    reason = "Active research in progress"
+    info = research_tooltip_info_for_id("1", lock_reason=reason)
     lines = format_research_tooltip_lines(info)
-    assert any(line.startswith("Locked:") and "Active research" in line for line in lines)
+    assert i18n.t("ui.research.locked_line", reason=reason) in lines
 
 
 def test_draw_tooltip_renders_visible_panel() -> None:

@@ -34,6 +34,19 @@ def _input_with_completed_laboratory() -> tuple[GameInput, pygame.Surface, Build
     return inp, surface, registry
 
 
+def test_research_screen_labels_en() -> None:
+    assert ResearchScreen.screen_title() == "Research"
+    assert ResearchScreen.technology_label() == "Technology"
+    assert ResearchScreen.tier_label(2) == "Tier 2"
+
+
+def test_research_screen_labels_ru(use_locale) -> None:
+    with use_locale("ru"):
+        assert ResearchScreen.screen_title() == "Исследования"
+        assert ResearchScreen.technology_label() == "Технологии"
+        assert ResearchScreen.tier_label(2) == "Уровень 2"
+
+
 def test_research_screen_layout_covers_surface() -> None:
     surface = pygame.Surface((800, 600))
     layout = ResearchScreen.layout(surface)

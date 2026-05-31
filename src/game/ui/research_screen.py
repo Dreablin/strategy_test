@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 import pygame
 
+from game import i18n
 from game.ui.fonts import ui_font
 from game.ui.research_screen_layout import (
     ResearchContentLayout,
@@ -18,7 +19,6 @@ from game.ui.research_tiles import draw_research_tiles
 
 _PAD = 16
 _CLOSE = 28
-_TITLE = "Research"
 
 
 @dataclass(frozen=True, slots=True)
@@ -30,6 +30,18 @@ class ResearchScreenLayout:
 
 
 class ResearchScreen:
+    @staticmethod
+    def screen_title() -> str:
+        return i18n.t("ui.research.title")
+
+    @staticmethod
+    def technology_label() -> str:
+        return i18n.t("ui.research.technology")
+
+    @staticmethod
+    def tier_label(tier: int) -> str:
+        return i18n.t("ui.research.tier", tier=int(tier))
+
     @staticmethod
     def layout(surface: pygame.Surface) -> ResearchScreenLayout:
         width, height = surface.get_size()
@@ -56,7 +68,7 @@ class ResearchScreen:
         pygame.draw.rect(surface, (34, 38, 48), content.content, border_radius=8)
         pygame.draw.rect(surface, (48, 54, 66), content.technology_column, border_radius=6)
         label_font = ui_font(20)
-        tech_label = label_font.render("Technology", True, (190, 196, 208))
+        tech_label = label_font.render(ResearchScreen.technology_label(), True, (190, 196, 208))
         surface.blit(
             tech_label,
             (
@@ -74,7 +86,7 @@ class ResearchScreen:
                 (row.row_rect.right, row.row_rect.bottom - 1),
                 1,
             )
-            tier_text = label_font.render(f"Tier {row.tier}", True, (150, 156, 168))
+            tier_text = label_font.render(ResearchScreen.tier_label(row.tier), True, (150, 156, 168))
             surface.blit(
                 tier_text,
                 (
@@ -113,7 +125,7 @@ class ResearchScreen:
         pygame.draw.rect(surface, (56, 60, 68), layout.frame, width=2)
 
         title_font = ui_font(36)
-        title = title_font.render(_TITLE, True, (238, 240, 248))
+        title = title_font.render(ResearchScreen.screen_title(), True, (238, 240, 248))
         surface.blit(title, (layout.frame.left + _PAD, layout.frame.top + _PAD))
 
         ResearchScreen._draw_content(

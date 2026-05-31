@@ -41,6 +41,7 @@ _BUILDING_FOLDER: dict[str, str] = {
     "WINERY": "winery",
     "RESTAURANT": "restaurant",
     "LABORATORY": "laboratory",
+    "STATUE": "statue",
 }
 
 _WORKER_FOLDER: dict[str, str] = {
@@ -663,7 +664,9 @@ def _meta_for_variant_level(meta: dict, variant: str, lvl: int) -> dict:
     return _meta_for_level(meta, lvl)
 
 
-def _apply_building_meta(src: pygame.Surface, meta: dict) -> tuple[pygame.Surface, tuple[int, int]]:
+def _apply_building_meta(
+    src: pygame.Surface, meta: dict
+) -> tuple[pygame.Surface, tuple[int, int], tuple[int, int]]:
     scale_raw = meta.get("scale", 1.0)
     try:
         scale = float(scale_raw)
@@ -700,13 +703,24 @@ def _apply_building_meta(src: pygame.Surface, meta: dict) -> tuple[pygame.Surfac
             except (TypeError, ValueError):
                 pass
 
+    dx, dy = 0, 0
+    offset_px = meta.get("offset_px")
+    if isinstance(offset_px, (list, tuple)) and len(offset_px) == 2:
+        try:
+            dx = int(round(float(offset_px[0])))
+            dy = int(round(float(offset_px[1])))
+        except (TypeError, ValueError):
+            dx, dy = 0, 0
+
     ax = max(0, min(src.get_width(), ax))
     ay = max(0, min(src.get_height(), ay))
-    return src, (ax, ay)
+    return src, (ax, ay), (dx, dy)
 
 
-def _building_render_spec(b_type: str, level: int) -> tuple[pygame.Surface, tuple[int, int]]:
-    """Return (surface, anchor_px) where anchor sits on footprint bottom-center."""
+def _building_render_spec(
+    b_type: str, level: int
+) -> tuple[pygame.Surface, tuple[int, int], tuple[int, int]]:
+    """Return (surface, anchor_px, offset_px) where anchor sits on footprint bottom-center."""
     folder = _building_folder_name(b_type)
     requested_level = int(level)
     if _vineyard_type_tag(b_type):
@@ -745,6 +759,11 @@ def building_sprite_anchor(b_type: str, level: int) -> tuple[int, int]:
     return _building_render_spec(b_type, level)[1]
 
 
+def building_sprite_offset(b_type: str, level: int) -> tuple[int, int]:
+    """Return render offset in pixels for building sprite (dx,dy)."""
+    return _building_render_spec(b_type, level)[2]
+
+
 def _procedural_building_construction_sprite(b_type: str, target_level: int) -> pygame.Surface:
     base = building_sprite(b_type, target_level).copy()
     base.set_alpha(180)
@@ -761,8 +780,8 @@ def _procedural_building_construction_sprite(b_type: str, target_level: int) -> 
 
 def _building_construction_render_spec(
     b_type: str, target_level: int
-) -> tuple[pygame.Surface, tuple[int, int]]:
-    """Load construction-state sprite + anchor, applying building asset meta transform."""
+) -> tuple[pygame.Surface, tuple[int, int], tuple[int, int]]:
+    """Load construction-state sprite + anchor + offset, applying building asset meta transform."""
     folder = _building_folder_name(b_type)
     lvl = max(1, min(int(target_level), 10))
     src: pygame.Surface | None = None
@@ -784,6 +803,11 @@ def building_sprite_construction(b_type: str, target_level: int) -> pygame.Surfa
 def building_sprite_construction_anchor(b_type: str, target_level: int) -> tuple[int, int]:
     """Return anchor pixel in construction-state building sprite (x,y)."""
     return _building_construction_render_spec(b_type, target_level)[1]
+
+
+def building_sprite_construction_offset(b_type: str, target_level: int) -> tuple[int, int]:
+    """Return render offset in pixels for construction-state building sprite (dx,dy)."""
+    return _building_construction_render_spec(b_type, target_level)[2]
 
 
 def _worker_color(w_type: str) -> tuple[int, int, int]:

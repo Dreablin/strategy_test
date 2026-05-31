@@ -11,7 +11,7 @@ import pygame
 from game.assets import worker_ui_icon
 from game.buildings.laboratory import Laboratory
 from game.research_state import ResearchState
-from game.ui.building_panel import BuildingPanel, BuildingPanelLayout
+from game.ui.building_panel import BuildingPanel, BuildingPanelLayout, draw_upgrade_cost_tooltip
 from game.ui.laboratory_panel_research import (
     SECTION_PAD,
     draw_research_storage_section,
@@ -26,6 +26,8 @@ _SLOT_TILE_H = 42
 _SLOT_GAP = 8
 _SLOT_ROW_GAP = 8
 _HEADER_H = 24
+_TOGGLE_H = 32
+_TOGGLE_GAP = 8
 
 
 def scientist_slot_states(capacity: int, active_scientists: Sequence[Worker]) -> tuple[bool, ...]:
@@ -58,7 +60,7 @@ def _extra_bottom_px(
     return _scientist_section_px(slot_capacity) + research_storage_section_height(
         laboratory,
         research_state=research_state,
-    )
+    ) + _TOGGLE_H + _TOGGLE_GAP
 
 
 @dataclass(frozen=True, slots=True)
@@ -68,6 +70,7 @@ class LaboratoryPanelLayout:
     upgrade: pygame.Rect | None
     upgrade_enabled: bool
     demolish: pygame.Rect | None
+    toggle: pygame.Rect
     research_section: pygame.Rect | None
     scientist_tiles: tuple[pygame.Rect, ...]
     scientist_slot_states: tuple[bool, ...]
@@ -193,12 +196,19 @@ class LaboratoryPanel:
         upgrade_enabled = base.upgrade_enabled and not (
             research_state is not None and research_state.has_active_research()
         )
+        toggle = pygame.Rect(
+            base.frame.left + _PANEL_PAD,
+            base.frame.bottom - _PANEL_PAD - _TOGGLE_H,
+            base.frame.width - _PANEL_PAD * 2,
+            _TOGGLE_H,
+        )
         return LaboratoryPanelLayout(
             frame=base.frame,
             close=base.close,
             upgrade=base.upgrade,
             upgrade_enabled=upgrade_enabled,
             demolish=base.demolish,
+            toggle=toggle,
             research_section=LaboratoryPanel._research_section_rect(
                 base,
                 capacity,
@@ -250,7 +260,7 @@ class LaboratoryPanel:
             btn_font = pygame.font.Font(None, 22)
             pygame.draw.rect(surface, (52, 56, 64), layout.upgrade, border_radius=6)
             label = btn_font.render(
-                f"Upgrade to Lv {laboratory.level + 1} — Free",
+                f"Upgrade to Lv {laboratory.level + 1}",
                 True,
                 (130, 134, 142),
             )
@@ -261,6 +271,7 @@ class LaboratoryPanel:
                     layout.upgrade.centery - label.get_height() // 2,
                 ),
             )
+        draw_upgrade_cost_tooltip(surface, laboratory, layout.upgrade)
         if layout.research_section is not None and research_state is not None:
             draw_research_storage_section(
                 surface,
@@ -302,6 +313,16 @@ class LaboratoryPanel:
                 text,
                 (tile.centerx - text.get_width() // 2, tile.bottom - text.get_height() - 4),
             )
+        active_bg = (84, 112, 84) if laboratory.active else (92, 64, 64)
+        pygame.draw.rect(surface, active_bg, layout.toggle, border_radius=6)
+        toggle_label = body.render("Active" if laboratory.active else "Inactive", True, (240, 242, 250))
+        surface.blit(
+            toggle_label,
+            (
+                layout.toggle.centerx - toggle_label.get_width() // 2,
+                layout.toggle.centery - toggle_label.get_height() // 2,
+            ),
+        )
         return layout
 
     @staticmethod
@@ -330,6 +351,8 @@ class LaboratoryPanel:
             return "upgrade" if layout.upgrade_enabled else None
         if layout.demolish is not None and layout.demolish.collidepoint(x, y):
             return "demolish"
+        if layout.toggle.collidepoint(x, y):
+            return "toggle_active"
         for tile in layout.scientist_tiles:
             if tile.collidepoint(x, y):
                 return None

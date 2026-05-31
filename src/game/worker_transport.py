@@ -124,6 +124,8 @@ class WorkerTransportMixin:
         key = str(resource).lower()
         inbound_counts = self._construction_inbound_counts()
         for building in self._registry.all():
+            if self._construction_deliveries_paused(building):
+                continue
             if not building.is_under_construction:
                 continue
             site = building.construction_site
@@ -192,6 +194,33 @@ class WorkerTransportMixin:
             counts[key] = counts.get(key, 0) + 1
         return counts
 
+    def _construction_deliveries_paused(self, building: Building) -> bool:
+        return (
+            building.type_tag == "STATUE"
+            and not bool(getattr(building, "construction_deliveries_enabled", True))
+        )
+
+    def _remove_queued_paused_construction_tasks(self) -> None:
+        self._transport_queue = [
+            task
+            for task in self._transport_queue  # type: ignore[attr-defined]
+            if not (
+                task.purpose == "construction"
+                and self._construction_deliveries_paused(task.target)
+            )
+        ]
+
+    def _remove_queued_laboratory_research_tasks_for_inactive_labs(self) -> None:
+        self._transport_queue = [
+            task
+            for task in self._transport_queue  # type: ignore[attr-defined]
+            if not (
+                task.purpose == "laboratory_research"
+                and task.target.type_tag == "LABORATORY"
+                and not getattr(task.target, "active", True)
+            )
+        ]
+
     def _water_inbound_counts_by_target_id(self) -> dict[int, int]:
         """Water deliveries already targeting each building (queue + in-flight)."""
         counts: dict[int, int] = {}
@@ -230,12 +259,18 @@ class WorkerTransportMixin:
                 if not bool(getattr(task.target, "is_under_construction", False)) or site is None:
                     stale_indices.append(idx)
                     continue
+                if self._construction_deliveries_paused(task.target):
+                    stale_indices.append(idx)
+                    continue
                 remaining = int(site.remaining_resources().get(str(task.resource).lower(), 0))
                 if remaining <= 0:
                     stale_indices.append(idx)
                     continue
             if task.purpose == "laboratory_research":
                 if task.target.type_tag != "LABORATORY":
+                    stale_indices.append(idx)
+                    continue
+                if not getattr(task.target, "active", True):
                     stale_indices.append(idx)
                     continue
                 laboratory = task.target
@@ -369,6 +404,8 @@ class WorkerTransportMixin:
         if task.source not in known or task.target not in known:
             return True
         if task.purpose == "construction":
+            if self._construction_deliveries_paused(task.target):
+                return True
             if not bool(getattr(task.target, "is_under_construction", False)):
                 return True
             site = getattr(task.target, "construction_site", None)
@@ -395,6 +432,24 @@ class WorkerTransportMixin:
         return False
 
     def _reroute_or_cancel_invalid_transport(self, worker: Worker, task: TransportTask, now_ms: int) -> bool:
+        if task.purpose == "construction" and self._construction_deliveries_paused(task.target):
+            if worker.carrying is not None:
+                return True
+            known = set(self._registry.all()) if self._registry is not None else set()
+            exit_building = task.source if task.source in known else None
+            self._clear_carrier_transport(worker, exit_building=exit_building)
+            return False
+        if (
+            task.purpose == "laboratory_research"
+            and task.target.type_tag == "LABORATORY"
+            and not getattr(task.target, "active", True)
+        ):
+            if worker.carrying is not None:
+                return True
+            known = set(self._registry.all()) if self._registry is not None else set()
+            exit_building = task.source if task.source in known else None
+            self._clear_carrier_transport(worker, exit_building=exit_building)
+            return False
         if not self._transport_task_invalid(task):
             return True
         if worker.carrying is None:
@@ -750,6 +805,7 @@ class WorkerTransportMixin:
     def _enqueue_laboratory_research_input_tasks(self) -> None:
         if self._registry is None:  # type: ignore[attr-defined]
             return
+        self._remove_queued_laboratory_research_tasks_for_inactive_labs()
         self._enqueue_desired_transport_tasks(  # type: ignore[attr-defined]
             laboratory_input_transport_tasks(
                 self._registry,
@@ -761,6 +817,7 @@ class WorkerTransportMixin:
     def _enqueue_construction_transport_tasks(self) -> None:
         if self._registry is None:  # type: ignore[attr-defined]
             return
+        self._remove_queued_paused_construction_tasks()
         for task in construction_transport_tasks(
             self._registry,
             inbound_counts=self._construction_inbound_counts(),

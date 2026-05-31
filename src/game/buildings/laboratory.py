@@ -14,16 +14,20 @@ _MAX_TECH_TIER = 4
 class Laboratory(Building):
     type_tag: ClassVar[str] = "LABORATORY"
     footprint: ClassVar[tuple[int, int]] = (2, 2)
-    __slots__ = ("_research_input_capacities", "_research_input_delivered")
+    __slots__ = ("active", "_research_input_capacities", "_research_input_delivered")
 
     def __init__(self, level: int = 1, grid_pos: tuple[int, int] | None = None) -> None:
         super().__init__(level=level, grid_pos=grid_pos)
+        self.active = True
         self._research_input_capacities: dict[str, int] = {}
         self._research_input_delivered: dict[str, int] = {}
 
     @classmethod
     def max_level(cls) -> int:
         return 10
+
+    def set_active(self, value: bool) -> None:
+        self.active = bool(value)
 
     def scientist_slot_capacity(self) -> int:
         return building_level_int_setting(self.type_tag, "scientist_slots", self.level)

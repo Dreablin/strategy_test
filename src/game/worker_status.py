@@ -81,6 +81,8 @@ def production_status_for_building(manager: Any, building: Building) -> str:
             worker = candidate
             break
     if worker is None:
+        if building.type_tag == "LABORATORY" and hasattr(building, "active"):
+            return "No worker" if getattr(building, "active", True) else "Inactive"
         if building.type_tag == "WELL":
             return "No worker" if getattr(building, "active", True) else "Inactive"
         return "No worker"

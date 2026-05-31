@@ -6,7 +6,13 @@ from game.buildings.lumber_camp import LumberCamp
 from game.buildings.school import School
 from game.buildings.town_hall import TownHall
 from game.buildings.well import Well
-from game.ui.building_panel import BuildingPanel, worker_status_line
+from game.ui.building_panel import (
+    BuildingPanel,
+    _upgrade_cost_lines,
+    _upgrade_label,
+    draw_upgrade_cost_tooltip,
+    worker_status_line,
+)
 
 
 def test_building_panel_close_click() -> None:
@@ -34,6 +40,28 @@ def test_building_panel_upgrade_enabled_even_when_poor() -> None:
     assert layout.upgrade_enabled is True
     cx, cy = layout.upgrade.center
     assert BuildingPanel.click_action(surface, (cx, cy), building, worker_assigned=False) == "upgrade"
+
+
+def test_building_panel_upgrade_label_does_not_claim_free() -> None:
+    building = LumberCamp(level=1, grid_pos=(4, 4))
+    assert _upgrade_label(building) == "Upgrade to Lv 2"
+    assert "Free" not in _upgrade_label(building)
+
+
+def test_building_panel_upgrade_tooltip_uses_next_level_cost() -> None:
+    building = LumberCamp(level=1, grid_pos=(4, 4))
+    lines = _upgrade_cost_lines(building)
+    assert lines[0] == "Upgrade cost:"
+    assert any(line.startswith("Wood:") for line in lines)
+
+
+def test_building_panel_draws_upgrade_cost_tooltip_on_hover() -> None:
+    surface = pygame.Surface((800, 600))
+    building = LumberCamp(level=1, grid_pos=(4, 4))
+    layout = BuildingPanel.layout(surface, building, worker_assigned=False)
+    box = draw_upgrade_cost_tooltip(surface, building, layout.upgrade, hover_pos=layout.upgrade.center)
+    assert box is not None
+    assert surface.get_at(box.center)[:3] != (0, 0, 0)
 
 
 def test_building_panel_draw_smoke() -> None:

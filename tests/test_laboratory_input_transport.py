@@ -11,6 +11,7 @@ from game.research_config import RESEARCH_BY_ID
 from game.research_start import try_start_active_research
 from game.research_state import ResearchState
 from game.transport_tasks import laboratory_input_transport_tasks
+from game.worker_models import TransportTask, Worker
 from game.world import World
 from game.workers import WorkerManager
 
@@ -39,6 +40,15 @@ def test_laboratory_input_tasks_from_town_hall_for_active_research() -> None:
     assert len(board_tasks) == 10
     assert all(t.source is town_hall for t in wood_tasks + board_tasks)
     assert all(t.purpose == "laboratory_research" for t in tasks)
+
+
+def test_laboratory_input_tasks_skip_inactive_laboratory() -> None:
+    registry, town_hall, laboratory, _ = _setup()
+    town_hall.add_to_warehouse("wood", 25)
+    town_hall.add_to_warehouse("boards", 15)
+    laboratory.set_active(False)
+
+    assert laboratory_input_transport_tasks(registry) == []
 
 
 def test_inbound_counts_prevent_over_planning() -> None:
@@ -97,3 +107,59 @@ def test_worker_manager_enqueues_laboratory_research_tasks() -> None:
     ]
     assert len(queued) == 10
     assert {t.resource for t in queued} == {"wood", "boards"}
+
+
+def test_worker_manager_removes_queued_laboratory_tasks_when_laboratory_inactive() -> None:
+    registry, town_hall, laboratory, _ = _setup()
+    town_hall.add_to_warehouse("wood", 5)
+    workers = WorkerManager(registry, now_ms_fn=lambda: 0)
+    workers.enqueue_transport_task(
+        resource="wood",
+        source=town_hall,
+        target=laboratory,
+        priority=0,
+        purpose="laboratory_research",
+    )
+
+    laboratory.set_active(False)
+    workers.update(0)
+
+    assert not [
+        task
+        for task in workers._transport_queue  # noqa: SLF001
+        if task.purpose == "laboratory_research" and task.target is laboratory
+    ]
+
+
+def test_inactive_laboratory_cancels_assigned_research_task_before_pickup() -> None:
+    registry, town_hall, laboratory, _ = _setup()
+    carrier = Worker("CARRIER", stand_tile=town_hall.grid_pos)
+    task = TransportTask("wood", town_hall, laboratory, purpose="laboratory_research")
+    carrier.transport_task = task
+    carrier.carrying = None
+    workers = WorkerManager(registry, now_ms_fn=lambda: 0)
+    workers._workers.append(carrier)  # noqa: SLF001
+
+    laboratory.set_active(False)
+    workers.update(0)
+
+    assert carrier.transport_task is None
+    assert carrier.carrying is None
+    assert carrier.idle is True
+
+
+def test_inactive_laboratory_keeps_carried_research_delivery_assigned() -> None:
+    registry, town_hall, laboratory, _ = _setup()
+    carrier = Worker("CARRIER", stand_tile=town_hall.grid_pos)
+    task = TransportTask("wood", town_hall, laboratory, purpose="laboratory_research")
+    carrier.transport_task = task
+    carrier.carrying = "wood"
+    carrier.state = "moving"
+    workers = WorkerManager(registry, now_ms_fn=lambda: 0)
+    workers._workers.append(carrier)  # noqa: SLF001
+
+    laboratory.set_active(False)
+    workers.update(0)
+
+    assert carrier.transport_task is task
+    assert carrier.carrying == "wood"

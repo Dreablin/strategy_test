@@ -111,9 +111,9 @@ preserving these invariants over literal old phase wording:
 
 ### F-BLD — Buildings (general)
 
-- **F-BLD-01 (MUST):** Current building types include `TOWN_HALL`, `LUMBER_CAMP`, `STONE_MINE`, `IRON_MINE`, `FARM`, `FIELD`, `FORESTER_HUT`, `SAWMILL`, `MILL`, `BAKERY`, `CANTEEN`, `RESTAURANT`, `WELL`, `SCHOOL`, `HOUSE`, `CHICKEN_FARM`, `COW_FARM`, `VINEYARD_FARM`, `VINEYARD`, and `WINERY`. Each type must be registered consistently in building class, config/settings, placement map, assets folder mapping, panels where needed, and bottom-bar menu.
+- **F-BLD-01 (MUST):** Current building types include `TOWN_HALL`, `LUMBER_CAMP`, `STONE_MINE`, `IRON_MINE`, `FARM`, `FIELD`, `FORESTER_HUT`, `SAWMILL`, `MILL`, `BAKERY`, `CANTEEN`, `RESTAURANT`, `WELL`, `SCHOOL`, `HOUSE`, `CHICKEN_FARM`, `COW_FARM`, `VINEYARD_FARM`, `VINEYARD`, `WINERY`, `LABORATORY`, and `STATUE`. Each type must be registered consistently in building class, config/settings, placement map, assets folder mapping, panels where needed, and bottom-bar menu.
 - **F-BLD-02 (MUST):** Standard buildings use a **2×2** footprint unless noted. Exceptions include `TOWN_HALL` as **3×3** and crop/plot tiles such as `FIELD` and `VINEYARD` as **1×1**. If a building has a non-standard footprint, define it through the building class/settings pattern and keep placement, rendering, and tests aligned.
-- **F-BLD-03 (MUST):** Most buildings can reach level **10** when construction requirements exist. Exceptions: `FIELD` and `VINEYARD` are crop/plot-state driven and not upgraded; `TOWN_HALL` is unique, cannot be demolished or built from the menu, and can upgrade levels 1..10. `WELL` follows the same level **1..10** construction/upgrade pattern as other upgradable resource buildings when configured in `well.json`.
+- **F-BLD-03 (MUST):** Most buildings can reach level **10** when construction requirements exist. Exceptions: `FIELD` and `VINEYARD` are crop/plot-state driven and not upgraded; `TOWN_HALL` is unique, cannot be demolished or built from the menu, and can upgrade levels 1..10. `WELL` follows the same level **1..10** construction/upgrade pattern as other upgradable resource buildings when configured in `well.json`. `STATUE` is the unique mission monument and has exactly four named stages backed by levels 1..4.
 - **F-BLD-04 (MUST):** Placement order creates a construction site, not an instant finished building, for configured buildings. There is no wallet-spend gate at click time, but construction/upgrades require resource delivery and build time through `ConstructionSite`.
 - **F-BLD-05 (MUST):** Each new completed work building starts with **no assigned worker**. `WorkerManager.reassign_all()` may assign an idle compatible worker after construction completes.
 - **F-BLD-06 (MUST):** Production model is defined by **F-PROD** (worker-cycle driven, storage-constrained). Do not use `Building.income()` for active resources.
@@ -142,7 +142,7 @@ preserving these invariants over literal old phase wording:
 - Fixed 96px strip with multi-level menu: Main → Resource / Social / Processing / Dev.
 - Resource: `LUMBER_CAMP`, `STONE_MINE`, `IRON_MINE`, `FORESTER_HUT`, `WELL`.
 - Food: food-source buildings and plots such as `FARM`, `FIELD`, `VINEYARD_FARM`, and `VINEYARD`.
-- Processing: `SAWMILL`, `MILL`, `BAKERY`, `CHICKEN_FARM`, `COW_FARM`, `WINERY`. Social: `SCHOOL`, `HOUSE`, `CANTEEN`, `RESTAURANT`. Dev: place tree, stone, iron.
+- Processing: `SAWMILL`, `MILL`, `BAKERY`, `CHICKEN_FARM`, `COW_FARM`, `WINERY`. Social: `SCHOOL`, `HOUSE`, `CANTEEN`, `RESTAURANT`, `LABORATORY`, `STATUE`. Dev: place tree, stone, iron.
 - Leaf clicks post placement intent. Buttons are gated by tech/state, not wallet affordability.
 
 ### F-UI-PANEL — Building Info Panel (modal)
@@ -167,6 +167,13 @@ preserving these invariants over literal old phase wording:
 - **F-UPG-03 (MUST):** Building level effects for staffed workers come from that building's JSON under `worker_effects.by_level`. Effects apply only while the worker is assigned to that building and are additive with other bonuses.
 - **F-UPG-04 (MUST):** Town Hall is **unique** (single instance, no demolish) **and** may **upgrade** levels 1..10 for tech and housing unlocks; only the no-second-TH rule is absolute.
 - **F-UPG-05 (MUST):** `SCHOOL` cannot be upgraded while its training queue is non-empty. The upgrade button becomes enabled again as soon as the queue empties, whether by completed training or cancellation.
+- **F-UPG-06 (MUST):** `STATUE` uses the normal construction/upgrade machinery internally, but player-facing UI must present its levels as named mission stages rather than generic levels. Its stage names live in `statue.json`.
+
+### F-MISSION — Mission Goal
+
+- **F-MISSION-01 (MUST):** The current mission goal is completing the unique `STATUE`. It is built in four named stages: excavation, foundation, pedestal, and statue. Completion means a `STATUE` exists at its final configured stage and is not under construction.
+- **F-MISSION-02 (MUST):** `STATUE` cannot be demolished in construction or completed state. Enforce this in domain logic, not only by hiding UI buttons.
+- **F-MISSION-03 (MUST):** `STATUE` construction deliveries can be paused while the statue is under construction. Pausing prevents new construction delivery tasks and removes queued, unclaimed delivery tasks for the statue. Carriers already carrying resources to the statue should finish their delivery to avoid extra return-resource complexity.
 
 ### F-CHAR — Worker Characteristics
 

@@ -70,7 +70,8 @@
       "COW_FARM": 1,
       "VINEYARD_FARM": 1,
       "VINEYARD": 1,
-      "WELL": 1
+      "WELL": 1,
+      "STATUE": 1
     },
     "hire_min_town_hall_level": {
       "LUMBERJACK": 1,

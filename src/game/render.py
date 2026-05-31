@@ -5,8 +5,10 @@ import pygame
 from game.assets import (
     building_sprite_construction,
     building_sprite_construction_anchor,
+    building_sprite_construction_offset,
     building_sprite,
     building_sprite_anchor,
+    building_sprite_offset,
     gold_sprite,
     gold_sprite_anchor,
     gold_sprite_offset,
@@ -168,11 +170,13 @@ class Renderer:
                 sprite_level = int(b.construction_site.target_level)
                 spr = building_sprite_construction(b.type_tag, sprite_level)
                 anchor_x, anchor_y = building_sprite_construction_anchor(b.type_tag, sprite_level)
+                off_x, off_y = building_sprite_construction_offset(b.type_tag, sprite_level)
             else:
                 spr = building_sprite(b.type_tag, sprite_level)
                 anchor_x, anchor_y = building_sprite_anchor(b.type_tag, sprite_level)
-            dx = ox + cam_x + foot_cx - anchor_x
-            dy = oy + cam_y + foot_by - anchor_y
+                off_x, off_y = building_sprite_offset(b.type_tag, sprite_level)
+            dx = ox + cam_x + foot_cx - anchor_x + off_x
+            dy = oy + cam_y + foot_by - anchor_y + off_y
             surface.blit(spr, (dx, dy))
 
     @staticmethod

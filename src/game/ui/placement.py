@@ -23,6 +23,7 @@ from game.buildings.mill import Mill
 from game.buildings.registry import BuildingRegistry
 from game.buildings.school import School
 from game.buildings.sawmill import Sawmill
+from game.buildings.statue import Statue
 from game.buildings.vineyard import Vineyard
 from game.buildings.vineyard_farm import VineyardFarm
 from game.buildings.well import Well
@@ -65,6 +66,7 @@ _TAG_TO_CLASS: dict[str, Type[Building]] = {
     "WINERY": Winery,
     "RESTAURANT": Restaurant,
     "LABORATORY": Laboratory,
+    "STATUE": Statue,
 }
 
 

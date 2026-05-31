@@ -296,7 +296,7 @@ def test_statue_foundation_requires_excavation_research() -> None:
 
 def test_lock_reasons_ru_locale(use_locale) -> None:
     with use_locale("ru"):
-        assert lock_reason_no_laboratory() == "Требуется лаборатория"
+        assert lock_reason_no_laboratory() == i18n.t("ui.lock.no_laboratory")
         assert lock_reason_requires_research(("1",)) == i18n.t(
             "ui.lock.requires_research_one",
             name=i18n.t("research.1.name"),

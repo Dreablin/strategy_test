@@ -119,14 +119,14 @@ def test_bottom_bar_building_labels_use_locale_names_en() -> None:
     labeled = _labeled_menu_buttons(_RESOURCE_BUTTON_SPECS)
     lumber = next(label for _asset, label, tag in labeled if tag == "LUMBER_CAMP")
     assert lumber == building_display_name("LUMBER_CAMP")
-    assert lumber == "Lumber Camp"
+    assert lumber == i18n.t("building.LUMBER_CAMP.name")
 
 
 def test_bottom_bar_building_labels_ru_smoke(use_locale) -> None:
     with use_locale("ru"):
         labeled = _labeled_menu_buttons(_RESOURCE_BUTTON_SPECS)
         lumber = next(label for _asset, label, tag in labeled if tag == "LUMBER_CAMP")
-        assert lumber == "Лагерь лесорубов"
+        assert lumber == i18n.t("building.LUMBER_CAMP.name")
         lines = _construction_cost_lines("LUMBER_CAMP")
         assert lines[0] == f"{i18n.t('ui.common.cost')}:"
 

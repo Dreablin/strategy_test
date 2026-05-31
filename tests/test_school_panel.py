@@ -16,16 +16,16 @@ from game.world import World
 
 
 def test_school_panel_tab_labels_en() -> None:
-    assert SchoolPanel.tab_label("basic") == "Basic"
-    assert SchoolPanel.tab_label("advanced") == "Advanced"
-    assert SchoolPanel.queue_title() == "Queue"
+    assert SchoolPanel.tab_label("basic") == i18n.t("ui.school.tab.basic")
+    assert SchoolPanel.tab_label("advanced") == i18n.t("ui.school.tab.advanced")
+    assert SchoolPanel.queue_title() == i18n.t("ui.school.queue")
 
 
 def test_school_panel_tab_labels_ru(use_locale) -> None:
     with use_locale("ru"):
-        assert SchoolPanel.tab_label("basic") == "Базовые"
-        assert SchoolPanel.tab_label("advanced") == "Продвинутые"
-        assert SchoolPanel.queue_title() == "Очередь"
+        assert SchoolPanel.tab_label("basic") == i18n.t("ui.school.tab.basic")
+        assert SchoolPanel.tab_label("advanced") == i18n.t("ui.school.tab.advanced")
+        assert SchoolPanel.queue_title() == i18n.t("ui.school.queue")
 
 
 def test_school_panel_title_uses_locale() -> None:

@@ -31,7 +31,7 @@ def test_lumber_camp_toggle_label_reflects_active_state() -> None:
 def test_lumber_camp_toggle_label_ru(use_locale) -> None:
     camp = LumberCamp(level=1, grid_pos=(10, 10))
     with use_locale("ru"):
-        assert LumberCampPanel.toggle_label(camp) == "Активно"
+        assert LumberCampPanel.toggle_label(camp) == i18n.t("ui.common.active")
 
 
 def test_lumber_camp_click_toggle_returns_toggle_action() -> None:

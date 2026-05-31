@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 29 - Localization EN/RU (**in progress**)
-- **Next Task:** T466 - Update tests that still assume English literals
-- **Last Completed:** T465 - Verify RU layout fits panel bounds
-- **Total Progress:** 465 / 468 (Phase 29: 27 / 30 done)
+- **Next Task:** T467 - Finalize localization docs
+- **Last Completed:** T466 - Update tests to use i18n keys
+- **Total Progress:** 466 / 468 (Phase 29: 28 / 30 done)
 
 > **Archive:** Phase 28 task details (T387-T438) are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -196,7 +196,7 @@ Each task runs in a fresh context. Do not assume prior memory; read this block, 
   - Adjust widths/wrapping only where overflow is detected; do not restyle otherwise.
   - Verify: run the new layout test(s); then `pytest -q`.
   - Acceptance: no overflow in tested surfaces under `ru`.
-- [ ] **T466**: Update tests that still assume English literals.
+- [x] **T466**: Update tests that still assume English literals.
   - Sweep the suite for assertions on raw English text that should be key-based or locale-controlled; convert them to assert via `t(key)` or under an explicit `en` harness block.
   - Verify: `pytest -q` (default `en` locale) passes fully.
   - Acceptance: full suite green; no brittle English-literal assertions remain for migrated modules.

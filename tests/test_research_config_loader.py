@@ -54,8 +54,8 @@ def test_all_research_definitions_resolve_locale_copy() -> None:
 def test_research_copy_ru_locale(use_locale) -> None:
     with use_locale("ru"):
         entry = next(e for e in load_research_definitions() if e.id == "1")
-        assert entry.name == "Технология I"
-        assert "1-го уровня" in entry.effect_text
+        assert entry.name == i18n.t("research.1.name")
+        assert i18n.t("research.1.effect") in entry.effect_text
 
 
 def _write_config(tmp_path: Path, researches: list[dict]) -> Path:

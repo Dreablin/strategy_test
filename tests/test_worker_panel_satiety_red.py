@@ -104,7 +104,7 @@ def test_worker_panel_body_lines_ru_smoke(use_locale) -> None:
         worker = Worker("CARRIER", stand_tile=near_town_hall_tile())
         worker.state = "waiting_for_meal"
         lines = WorkerPanel.body_lines(worker)
-        assert worker_display_label("CARRIER") == "Переносчик"
+        assert worker_display_label("CARRIER") == i18n.t("worker.CARRIER")
         assert i18n.t(
             "ui.worker.state",
             state=i18n.t("status.worker.waiting_for_meal"),

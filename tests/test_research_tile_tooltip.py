@@ -5,7 +5,7 @@ from __future__ import annotations
 import pygame
 
 from game import i18n
-from game.lock_reasons import lock_reason_no_laboratory
+from game.lock_reasons import lock_reason_active_research, lock_reason_no_laboratory
 from game.ui.research_screen import ResearchScreen
 from game.ui.research_screen_layout import compute_content_layout
 from game.ui.research_tile_tooltip import (
@@ -37,7 +37,7 @@ def test_format_tooltip_includes_cost_points_and_dependencies() -> None:
 
 
 def test_format_tooltip_shows_lock_reason_when_supplied() -> None:
-    reason = "Active research in progress"
+    reason = lock_reason_active_research()
     info = research_tooltip_info_for_id("1", lock_reason=reason)
     lines = format_research_tooltip_lines(info)
     assert i18n.t("ui.research.locked_line", reason=reason) in lines
@@ -46,7 +46,7 @@ def test_format_tooltip_shows_lock_reason_when_supplied() -> None:
 def test_draw_tooltip_renders_visible_panel() -> None:
     surface = pygame.Surface((400, 200))
     surface.fill((28, 32, 40))
-    info = research_tooltip_info_for_id("1", lock_reason="Need Laboratory")
+    info = research_tooltip_info_for_id("1", lock_reason=lock_reason_no_laboratory())
     anchor = pygame.Rect(10, 20, 80, 120)
     box = draw_research_tile_tooltip(surface, anchor, info)
     assert box.width > 40 and box.height > 30

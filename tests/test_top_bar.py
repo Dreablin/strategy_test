@@ -33,8 +33,8 @@ def test_top_bar_layout_templates_ru(use_locale) -> None:
             active_delivery_count=2,
             show_research_button=True,
         )
-        assert layout.label == "3 (макс. 8)"
-        assert layout.delivery_label == "Поставки: 5 (в пути 2)"
+        assert layout.label == i18n.t("ui.topbar.population", current=3, max=8)
+        assert layout.delivery_label == i18n.t("ui.topbar.deliveries", n=5, k=2)
         assert layout.research_button is not None
 
 

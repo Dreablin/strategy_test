@@ -61,7 +61,7 @@ def test_construction_panel_resource_delivery_line() -> None:
 
 def test_construction_panel_localized_name_ru(use_locale) -> None:
     with use_locale("ru"):
-        assert building_display_name("LUMBER_CAMP") == "Лагерь лесорубов"
+        assert building_display_name("LUMBER_CAMP") == i18n.t("building.LUMBER_CAMP.name")
         camp = LumberCamp(level=1, grid_pos=(0, 0))
         camp.construction_site = _site(delivered=0, required=1)
         assert ConstructionPanel.builder_status(camp) == i18n.t("status.construction.waiting_resources")

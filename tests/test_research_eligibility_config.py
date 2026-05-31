@@ -64,4 +64,4 @@ def test_eligibility_uses_config_lock_reason_for_invalid_entry() -> None:
             laboratory_level=10,
         )
     assert result.can_start is False
-    assert result.lock_reason == "Research resource cost is not configured"
+    assert result.lock_reason == lock_reason_invalid_cost()

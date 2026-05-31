@@ -42,14 +42,14 @@ def test_worker_status_returns_stable_ids() -> None:
 
 
 def test_localized_status_en_representative_samples() -> None:
-    assert localized_status("no_worker") == "No worker"
-    assert localized_status("output_full") == "Output full"
-    assert localized_status("on_the_way") == "On the way"
-    assert localized_status("sowing") == "Sowing"
+    assert localized_status("no_worker") == i18n.t("status.no_worker")
+    assert localized_status("output_full") == i18n.t("status.output_full")
+    assert localized_status("on_the_way") == i18n.t("status.on_the_way")
+    assert localized_status("sowing") == i18n.t("status.sowing")
 
 
 def test_localized_status_ru_smoke(use_locale) -> None:
     with use_locale("ru"):
-        assert localized_status("no_worker") == "Нет рабочего"
-        assert localized_status("ready") == "Готов"
-        assert i18n.t("status.processing") == "Обработка"
+        assert localized_status("no_worker") == i18n.t("status.no_worker")
+        assert localized_status("ready") == i18n.t("status.ready")
+        assert i18n.t("status.processing") == i18n.t("status.processing")

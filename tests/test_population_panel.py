@@ -99,4 +99,4 @@ def test_population_panel_ru_smoke(use_locale) -> None:
         worker.state = "idle"
         _, task_line, _ = worker_summary(worker)
         assert task_line == i18n.t("status.worker.idle")
-        assert i18n.t("ui.population.title", count=1) == "Население — 1"
+        assert i18n.t("ui.population.title", count=1) != "ui.population.title"

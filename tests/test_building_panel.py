@@ -54,7 +54,10 @@ def test_building_panel_upgrade_label_does_not_claim_free() -> None:
 
 def test_building_panel_upgrade_label_for_statue_stage() -> None:
     statue = Statue(level=1, grid_pos=(4, 4))
-    assert _upgrade_label(statue) == i18n.t("ui.statue.start_stage", stage="Foundation")
+    assert _upgrade_label(statue) == i18n.t(
+        "ui.statue.start_stage",
+        stage=i18n.t("statue.stage.2"),
+    )
 
 
 def test_building_panel_upgrade_tooltip_uses_construction_requirements() -> None:
@@ -126,23 +129,23 @@ def test_worker_status_line_omits_name_for_unstaffed_buildings() -> None:
 
 
 def test_town_hall_localized_name_and_description_en() -> None:
-    assert building_display_name("TOWN_HALL") == "Town Hall"
-    assert building_description("TOWN_HALL") == "The heart of your settlement."
+    assert building_display_name("TOWN_HALL") == i18n.t("building.TOWN_HALL.name")
+    assert building_description("TOWN_HALL") == i18n.t("building.TOWN_HALL.desc")
 
 
 def test_laboratory_localized_name_and_description_en() -> None:
-    assert building_display_name("LABORATORY") == "Laboratory"
+    assert building_display_name("LABORATORY") == i18n.t("building.LABORATORY.name")
     description = building_description("LABORATORY")
-    assert description
+    assert description == i18n.t("building.LABORATORY.desc")
     assert "research" in description.lower()
     assert "scientist" in description.lower()
 
 
 def test_statue_localized_name_and_description_en() -> None:
-    assert building_display_name("STATUE") == "Statue"
-    assert "four stages" in building_description("STATUE").lower()
+    assert building_display_name("STATUE") == i18n.t("building.STATUE.name")
+    assert building_description("STATUE") == i18n.t("building.STATUE.desc")
 
 
 def test_town_hall_localized_name_ru(use_locale) -> None:
     with use_locale("ru"):
-        assert building_display_name("TOWN_HALL") == "Ратуша"
+        assert building_display_name("TOWN_HALL") == i18n.t("building.TOWN_HALL.name")

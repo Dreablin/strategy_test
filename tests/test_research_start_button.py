@@ -16,7 +16,7 @@ def test_start_button_label_uses_locale() -> None:
 
 def test_start_button_label_ru(use_locale) -> None:
     with use_locale("ru"):
-        assert start_button_label() == "Начать"
+        assert start_button_label() == i18n.t("ui.button.start")
 
 
 def test_start_button_is_below_title_with_gap() -> None:

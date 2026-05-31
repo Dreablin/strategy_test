@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from game import i18n
 from game.resource_catalog import (
     ELITE_MEAL_KEY,
     LOCAL_ONLY_MEAL_KEYS,
@@ -18,15 +19,15 @@ def test_elite_meal_key_value() -> None:
 
 def test_elite_meal_has_display_label() -> None:
     label = resource_display_label("elite_meal")
-    assert label == "Elite meal"
+    assert label == i18n.t("resource.elite_meal")
 
 
 def test_wood_display_label_en() -> None:
-    assert resource_display_label("wood") == "Wood"
+    assert resource_display_label("wood") == i18n.t("resource.wood")
 
 
 def test_simple_meal_display_label_en() -> None:
-    assert resource_display_label("simple_meal") == "Simple meal"
+    assert resource_display_label("simple_meal") == i18n.t("resource.simple_meal")
 
 
 def test_unknown_resource_falls_back_to_title_case() -> None:
@@ -35,12 +36,12 @@ def test_unknown_resource_falls_back_to_title_case() -> None:
 
 def test_wood_display_label_ru(use_locale) -> None:
     with use_locale("ru"):
-        assert resource_display_label("wood") == "Дерево"
+        assert resource_display_label("wood") == i18n.t("resource.wood")
 
 
 def test_elite_meal_display_label_ru(use_locale) -> None:
     with use_locale("ru"):
-        assert resource_display_label("elite_meal") == "Изысканная еда"
+        assert resource_display_label("elite_meal") == i18n.t("resource.elite_meal")
 
 
 def test_elite_meal_not_in_warehouse_keys() -> None:

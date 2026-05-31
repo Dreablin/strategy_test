@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pygame
 
+from game import i18n
 from game.buildings.laboratory import Laboratory
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
@@ -35,16 +36,16 @@ def _input_with_completed_laboratory() -> tuple[GameInput, pygame.Surface, Build
 
 
 def test_research_screen_labels_en() -> None:
-    assert ResearchScreen.screen_title() == "Research"
-    assert ResearchScreen.technology_label() == "Technology"
-    assert ResearchScreen.tier_label(2) == "Tier 2"
+    assert ResearchScreen.screen_title() == i18n.t("ui.research.title")
+    assert ResearchScreen.technology_label() == i18n.t("ui.research.technology")
+    assert ResearchScreen.tier_label(2) == i18n.t("ui.research.tier", tier=2)
 
 
 def test_research_screen_labels_ru(use_locale) -> None:
     with use_locale("ru"):
-        assert ResearchScreen.screen_title() == "Исследования"
-        assert ResearchScreen.technology_label() == "Технологии"
-        assert ResearchScreen.tier_label(2) == "Уровень 2"
+        assert ResearchScreen.screen_title() == i18n.t("ui.research.title")
+        assert ResearchScreen.technology_label() == i18n.t("ui.research.technology")
+        assert ResearchScreen.tier_label(2) == i18n.t("ui.research.tier", tier=2)
 
 
 def test_research_screen_layout_covers_surface() -> None:

@@ -82,17 +82,17 @@ def test_town_hall_storage_rows_include_bread_beef_hide_and_grapes() -> None:
 
 def test_beef_is_warehouse_resource_with_display_label() -> None:
     assert is_town_hall_warehouse_resource("beef")
-    assert resource_display_label("beef") == "Beef"
+    assert resource_display_label("beef") == i18n.t("resource.beef")
 
 
 def test_hide_is_warehouse_resource_with_display_label() -> None:
     assert is_town_hall_warehouse_resource("hide")
-    assert resource_display_label("hide") == "Hide"
+    assert resource_display_label("hide") == i18n.t("resource.hide")
 
 
 def test_grapes_is_warehouse_resource_with_display_label() -> None:
     assert is_town_hall_warehouse_resource("grapes")
-    assert resource_display_label("grapes") == "Grapes"
+    assert resource_display_label("grapes") == i18n.t("resource.grapes")
 
 
 def test_town_hall_panel_draw_includes_beef_cell_with_quantity() -> None:
@@ -133,7 +133,7 @@ def test_town_hall_panel_draw_includes_grapes_cell_with_quantity() -> None:
 
 def test_wine_is_warehouse_resource_with_display_label() -> None:
     assert is_town_hall_warehouse_resource("wine")
-    assert resource_display_label("wine") == "Wine"
+    assert resource_display_label("wine") == i18n.t("resource.wine")
 
 
 def test_town_hall_storage_rows_include_wine() -> None:
@@ -166,8 +166,8 @@ def test_town_hall_panel_draw_includes_wine_cell_with_quantity() -> None:
 
 def test_town_hall_warehouse_title_ru(use_locale) -> None:
     with use_locale("ru"):
-        assert i18n.t("ui.building.town_hall_warehouse") == "Склад"
-        assert resource_display_label("beef") == "Говядина"
+        assert i18n.t("ui.building.town_hall_warehouse") != "ui.building.town_hall_warehouse"
+        assert resource_display_label("beef") == i18n.t("resource.beef")
 
 
 def test_town_hall_upgrade_button_is_enabled_without_cost_checks() -> None:

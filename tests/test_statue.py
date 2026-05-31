@@ -102,10 +102,10 @@ def test_statue_has_four_named_stages() -> None:
 def test_statue_stage_names_ru(use_locale) -> None:
     statue = Statue(level=1, grid_pos=(4, 4))
     with use_locale("ru"):
-        assert statue.stage_name(1) == "Раскопки"
-        assert statue.stage_name(2) == "Фундамент"
-        assert statue.stage_name(3) == "Постамент"
-        assert statue.stage_name(4) == "Статуя"
+        assert statue.stage_name(1) == i18n.t("statue.stage.1")
+        assert statue.stage_name(2) == i18n.t("statue.stage.2")
+        assert statue.stage_name(3) == i18n.t("statue.stage.3")
+        assert statue.stage_name(4) == i18n.t("statue.stage.4")
 
 
 def test_statue_unique_and_not_demolishable() -> None:

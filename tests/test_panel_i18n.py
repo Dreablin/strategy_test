@@ -44,5 +44,5 @@ def test_winery_storage_lines_localized() -> None:
 
 def test_active_toggle_label_ru(use_locale) -> None:
     with use_locale("ru"):
-        assert active_toggle_label(True) == "Активно"
-        assert active_toggle_label(False) == "Неактивно"
+        assert active_toggle_label(True) == i18n.t("ui.common.active")
+        assert active_toggle_label(False) == i18n.t("ui.common.inactive")

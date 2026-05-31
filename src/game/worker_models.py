@@ -178,10 +178,16 @@ class Worker:
         self.segment_progress = elapsed / travel_ms
 
     def _effective_travel_ms(self) -> int:
-        speed = self.characteristics.move_speed_mult
+        speed = self.effective_move_speed_mult()
         if speed <= 0.0:
             return WORKER_TILE_TRAVEL_MS
         return max(1, int(round(WORKER_TILE_TRAVEL_MS / speed)))
 
     def effective_travel_ms(self) -> int:
         return self._effective_travel_ms()
+
+    def effective_move_speed_mult(self) -> float:
+        speed = self.characteristics.move_speed_mult
+        if int(self.satiety) <= 0:
+            speed *= 0.5
+        return speed

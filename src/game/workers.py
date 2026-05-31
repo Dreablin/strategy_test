@@ -620,6 +620,8 @@ class WorkerManager(
         for building in self._registry.all():
             if not isinstance(building, Laboratory) or building.is_under_construction:
                 continue
+            if not getattr(building, "active", True):
+                continue
             tick_laboratory_research_points(
                 research_state=self._research_state,
                 laboratory=building,

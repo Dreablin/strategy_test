@@ -38,6 +38,9 @@ def _built_laboratory(*, level: int) -> tuple[Laboratory, WorkerManager]:
 def test_laboratory_panel_supports_building() -> None:
     laboratory = Laboratory(level=1, grid_pos=(4, 4))
     assert LaboratoryPanel.supports_building(laboratory) is True
+    assert laboratory.active is True
+    laboratory.set_active(False)
+    assert laboratory.active is False
 
 
 def test_scientist_slot_states_reflect_active_count() -> None:
@@ -152,6 +155,40 @@ def test_panel_close_and_demolish_clicks() -> None:
         )
         == "demolish"
     )
+
+
+def test_laboratory_panel_toggle_click_and_label_pixels() -> None:
+    surface = pygame.Surface((1280, 720))
+    laboratory, workers = _built_laboratory(level=1)
+    layout = LaboratoryPanel.layout(
+        surface,
+        laboratory,
+        worker_assigned=False,
+        production_status="Ready",
+        worker_manager=workers,
+    )
+
+    assert (
+        LaboratoryPanel.click_action(
+            surface,
+            layout.toggle.center,
+            laboratory,
+            worker_assigned=False,
+            production_status="Ready",
+            worker_manager=workers,
+        )
+        == "toggle_active"
+    )
+
+    laboratory.set_active(False)
+    drawn = LaboratoryPanel.draw(
+        surface,
+        laboratory,
+        worker_assigned=False,
+        production_status="Inactive",
+        worker_manager=workers,
+    )
+    assert surface.get_at(drawn.toggle.center)[:3] != (0, 0, 0)
 
 
 def test_click_inside_scientist_tile_does_not_close_panel() -> None:

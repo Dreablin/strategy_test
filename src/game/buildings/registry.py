@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Type
+from typing import TYPE_CHECKING, Type
 
 from game.buildings.base import Building
 from game.construction import ConstructionSite
@@ -10,6 +10,9 @@ from game.config import CONSTRUCTION_REQUIREMENTS, TOWN_HALL_MIN_LEVEL_FOR_BUILD
 from game.housing import current_population, house_contributes_housing, housing_house, max_population
 from game.world import World
 from game.workers import WorkerManager
+
+if TYPE_CHECKING:
+    from game.research_state import ResearchState
 
 
 def _min_chebyshev_between_footprints(
@@ -38,16 +41,26 @@ def _worker_inside_building_footprint(worker, building: Building) -> bool:
 class BuildingRegistry:
     """Owns placed `Building` instances and mirrors their footprints on `World`."""
 
-    __slots__ = ("_buildings", "_world", "_worker_manager")
+    __slots__ = ("_buildings", "_research_state", "_world", "_worker_manager")
 
     def __init__(self, world: World) -> None:
         self._world = world
         self._buildings: list[Building] = []
         self._worker_manager: WorkerManager | None = None
+        self._research_state: ResearchState | None = None
 
     def bind_worker_manager(self, worker_manager: WorkerManager) -> None:
         """Attach worker manager callbacks for upgrade-driven bonus refresh."""
         self._worker_manager = worker_manager
+
+    def bind_research_state(self, research_state: ResearchState) -> None:
+        """Attach current-run research progress for construction gates."""
+        self._research_state = research_state
+
+    def _statue_stage_unlocked(self, target_level: int) -> bool:
+        from game.statue_research import statue_stage_unlocked
+
+        return statue_stage_unlocked(self._research_state, target_level)
 
     def all(self) -> list[Building]:
         return list(self._buildings)
@@ -69,6 +82,8 @@ class BuildingRegistry:
         required = TOWN_HALL_MIN_LEVEL_FOR_BUILDING.get(cls.type_tag)
         if required is not None and th_level < required:
             return False
+        if cls.type_tag == "STATUE" and not self._statue_stage_unlocked(1):
+            return False
 
         gx, gy = grid_pos
         w, h = cls.footprint
@@ -78,8 +93,8 @@ class BuildingRegistry:
             b.type_tag == "TOWN_HALL" for b in self._buildings
         ):
             return False
-        if cls.type_tag == "LABORATORY" and any(
-            b.type_tag == "LABORATORY" for b in self._buildings
+        if cls.type_tag in {"LABORATORY", "STATUE"} and any(
+            b.type_tag == cls.type_tag for b in self._buildings
         ):
             return False
         if self._world_footprint_overlaps_occupied(gx, gy, w, h):
@@ -149,6 +164,8 @@ class BuildingRegistry:
     def demolish(self, building: Building, worker_manager: WorkerManager | None = None) -> None:
         if building not in self._buildings:
             raise ValueError("unknown building")
+        if building.type_tag == "STATUE":
+            return
         if building.type_tag == "HOUSE":
             wm = worker_manager or self._worker_manager
             if house_contributes_housing(building):
@@ -179,6 +196,8 @@ class BuildingRegistry:
         if building.construction_site is not None:
             return False
         next_level = building.level + 1
+        if building.type_tag == "STATUE" and not self._statue_stage_unlocked(next_level):
+            return False
         req_by_level = CONSTRUCTION_REQUIREMENTS.get(cls.type_tag)
         if req_by_level is None or next_level not in req_by_level:
             building.level += 1

@@ -35,6 +35,11 @@ def construction_transport_tasks(
         site = getattr(building, "construction_site", None)
         if site is None:
             continue
+        if (
+            building.type_tag == "STATUE"
+            and not bool(getattr(building, "construction_deliveries_enabled", True))
+        ):
+            continue
         for resource, need in site.remaining_resources().items():
             key = str(resource).lower()
             inbound = int((inbound_counts or {}).get((id(building), key), 0))
@@ -589,6 +594,8 @@ def laboratory_input_transport_tasks(
         if building.type_tag != "LABORATORY":
             continue
         if getattr(building, "is_under_construction", False):
+            continue
+        if not getattr(building, "active", True):
             continue
         has_storage = getattr(building, "has_research_input_storage", None)
         if not callable(has_storage) or not has_storage():

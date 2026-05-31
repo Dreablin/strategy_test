@@ -20,7 +20,7 @@ def test_social_menu_click_restaurant_emits_event() -> None:
     BottomBar.draw(surface)
 
     from game.ui.bottom_bar import _button_rects
-    entries = ("back", "school", "house", "canteen", "restaurant", "laboratory")
+    entries = ("back", "school", "house", "canteen", "restaurant", "laboratory", "statue")
     rects = _button_rects(surface, len(entries))
     restaurant_rect = rects[entries.index("restaurant")]
     center = restaurant_rect.center

@@ -27,7 +27,17 @@ def test_research_assets_directory_exists() -> None:
 
 def test_configured_research_image_keys_have_placeholder_files() -> None:
     keys = {entry.image_key for entry in RESEARCH_DEFINITIONS}
-    assert {"technology_1", "technology_2", "technology_3", "technology_4", "carrier_speed_1"} <= keys
+    assert {
+        "technology_1",
+        "technology_2",
+        "technology_3",
+        "technology_4",
+        "carrier_speed_1",
+        "statue_excavation",
+        "statue_foundation",
+        "statue_pedestal",
+        "statue_monument",
+    } <= keys
     for image_key in sorted(keys):
         path = research_asset_path(image_key)
         assert path.is_file(), f"missing placeholder file: {path}"
@@ -54,7 +64,17 @@ def _assert_nonempty_surface(surf) -> None:
 
 @pytest.mark.parametrize(
     "image_key",
-    ["technology_1", "technology_2", "technology_3", "technology_4", "carrier_speed_1"],
+    [
+        "technology_1",
+        "technology_2",
+        "technology_3",
+        "technology_4",
+        "carrier_speed_1",
+        "statue_excavation",
+        "statue_foundation",
+        "statue_pedestal",
+        "statue_monument",
+    ],
 )
 def test_research_image_resolves_for_configured_keys(image_key: str) -> None:
     clear_research_asset_caches()

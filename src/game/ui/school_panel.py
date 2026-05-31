@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import pygame
 
 from game.assets import hire_ui_icon, worker_ui_icon
+from game.ui.building_panel import draw_upgrade_cost_tooltip
 from game.ui.worker_labels import (
     WORKER_LABEL as _WORKER_LABEL,
     building_worker_status_line,
@@ -234,6 +235,7 @@ class SchoolPanel:
                     layout.upgrade.centery - label.get_height() // 2,
                 ),
             )
+            draw_upgrade_cost_tooltip(surface, school, layout.upgrade)
         pygame.draw.rect(surface, (140, 48, 52), layout.demolish, border_radius=6)
         d = font.render("Demolish", True, (255, 240, 240))
         surface.blit(d, (layout.demolish.centerx - d.get_width() // 2, layout.demolish.centery - d.get_height() // 2))

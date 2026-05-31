@@ -5,6 +5,10 @@ from __future__ import annotations
 import pygame
 
 from game.assets import building_sprite, resource_icon
+from game.config import CONSTRUCTION_REQUIREMENTS
+from game.research_config import RESEARCH_BY_ID
+from game.resource_catalog import resource_display_label
+from game.statue_research import statue_stage_research_id
 
 BAR_HEIGHT = 96
 # Distinct from other user events; carries `building_type: str` (e.g. `"LUMBER_CAMP"`).
@@ -26,6 +30,12 @@ _FOOD_BUTTONS: tuple[tuple[str, str, str], ...] = (
 # Backward-compat for tests importing previous flat menu tuple.
 _BUTTONS = _RESOURCE_BUTTONS
 
+_TOOLTIP_PAD = 8
+_TOOLTIP_GAP = 4
+_TOOLTIP_BG = (22, 26, 34)
+_TOOLTIP_BORDER = (72, 78, 92)
+_TOOLTIP_TEXT = (220, 224, 232)
+
 
 def _button_rects(surface: pygame.Surface, count: int) -> list[pygame.Rect]:
     w, h = surface.get_width(), surface.get_height()
@@ -34,19 +44,115 @@ def _button_rects(surface: pygame.Surface, count: int) -> list[pygame.Rect]:
     return [pygame.Rect(i * col_w, y0, col_w, BAR_HEIGHT) for i in range(count)]
 
 
+def _building_entries_for_menu(menu: str) -> tuple[tuple[str, str], ...]:
+    if menu == "resource":
+        return tuple((tag, label) for _asset, label, tag in _RESOURCE_BUTTONS)
+    if menu == "food":
+        return tuple((tag, label) for _asset, label, tag in _FOOD_BUTTONS)
+    if menu == "social":
+        return (
+            ("SCHOOL", "School"),
+            ("HOUSE", "House"),
+            ("CANTEEN", "Canteen"),
+            ("RESTAURANT", "Restaurant"),
+            ("LABORATORY", "Laboratory"),
+            ("STATUE", "Statue"),
+        )
+    if menu == "processing":
+        return (
+            ("SAWMILL", "Sawmill"),
+            ("MILL", "Mill"),
+            ("BAKERY", "Bakery"),
+            ("CHICKEN_FARM", "Chicken Farm"),
+            ("COW_FARM", "Cow Farm"),
+            ("WINERY", "Winery"),
+        )
+    return ()
+
+
+def _hovered_building_tag(surface: pygame.Surface, pos: tuple[int, int] | None) -> str | None:
+    if pos is None:
+        return None
+    menu = BottomBar._menu
+    entries = _building_entries_for_menu(menu)
+    if not entries:
+        return None
+    x, y = pos
+    if y < surface.get_height() - BAR_HEIGHT:
+        return None
+    rects = _button_rects(surface, len(entries) + 1)
+    for rect, (tag, _label) in zip(rects[1:], entries):
+        if rect.collidepoint(x, y):
+            return tag
+    return None
+
+
+def _construction_cost_lines(building_tag: str) -> tuple[str, ...]:
+    spec = CONSTRUCTION_REQUIREMENTS.get(building_tag, {}).get(1)
+    if spec is None:
+        lines = ["Cost: unavailable"]
+    else:
+        items = [(resource, amount) for resource, amount in sorted(spec.cost.items()) if int(amount) > 0]
+        if not items:
+            lines = ["Cost: Free"]
+        else:
+            lines = ["Cost:"]
+            for resource, amount in items:
+                lines.append(f"{resource_display_label(resource)}: {int(amount)}")
+    if building_tag == "STATUE":
+        research_id = statue_stage_research_id(1)
+        if research_id is not None:
+            research = RESEARCH_BY_ID.get(research_id)
+            name = research.name if research is not None else research_id
+            lines.append(f"Requires research: {name}")
+    return tuple(lines)
+
+
+def _draw_building_cost_tooltip(
+    surface: pygame.Surface,
+    hover_pos: tuple[int, int] | None,
+) -> pygame.Rect | None:
+    tag = _hovered_building_tag(surface, hover_pos)
+    if tag is None or hover_pos is None:
+        return None
+    font = pygame.font.Font(None, 18)
+    line_surfaces = [font.render(line, True, _TOOLTIP_TEXT) for line in _construction_cost_lines(tag)]
+    max_w = max(surf.get_width() for surf in line_surfaces)
+    total_h = sum(surf.get_height() for surf in line_surfaces) + _TOOLTIP_GAP * (len(line_surfaces) - 1)
+    box_w = max_w + _TOOLTIP_PAD * 2
+    box_h = total_h + _TOOLTIP_PAD * 2
+    x = max(4, min(hover_pos[0] + 12, surface.get_width() - box_w - 4))
+    y = max(4, surface.get_height() - BAR_HEIGHT - box_h - 8)
+    box = pygame.Rect(x, y, box_w, box_h)
+    pygame.draw.rect(surface, _TOOLTIP_BG, box, border_radius=4)
+    pygame.draw.rect(surface, _TOOLTIP_BORDER, box, width=1, border_radius=4)
+    line_y = box.top + _TOOLTIP_PAD
+    for surf in line_surfaces:
+        surface.blit(surf, (box.left + _TOOLTIP_PAD, line_y))
+        line_y += surf.get_height() + _TOOLTIP_GAP
+    return box
+
+
 class BottomBar:
     """Category-driven build strip with submenu navigation."""
     _menu: str = "main"  # main | resource | processing | dev
 
     @staticmethod
-    def draw(surface: pygame.Surface) -> None:
+    def back_to_main() -> bool:
+        """Return from a submenu to the main build menu."""
+        if BottomBar._menu == "main":
+            return False
+        BottomBar._menu = "main"
+        return True
+
+    @staticmethod
+    def draw(surface: pygame.Surface, hover_pos: tuple[int, int] | None = None) -> None:
         w, h = surface.get_width(), surface.get_height()
         y0 = h - BAR_HEIGHT
         pygame.draw.rect(surface, (26, 28, 34), (0, y0, w, BAR_HEIGHT))
         pygame.draw.line(surface, (48, 52, 60), (0, y0), (w, y0))
 
         font = pygame.font.Font(None, 22)
-        small_font = pygame.font.Font(None, 18)
         menu = BottomBar._menu
         if menu == "main":
             entries: tuple[tuple[str, str], ...] = (
@@ -64,6 +170,7 @@ class BottomBar:
                     text,
                     (btn.centerx - text.get_width() // 2, btn.centery - text.get_height() // 2),
                 )
+            _draw_building_cost_tooltip(surface, hover_pos)
             return
 
         if menu == "food":
@@ -83,6 +190,7 @@ class BottomBar:
                 surface.blit(spr, (btn.centerx - spr.get_width() // 2, btn.bottom - 42))
                 text = font.render(label, True, (220, 222, 230))
                 surface.blit(text, (btn.centerx - text.get_width() // 2, btn.top + 10))
+            _draw_building_cost_tooltip(surface, hover_pos)
             return
 
         if menu == "social":
@@ -93,6 +201,7 @@ class BottomBar:
                 ("canteen", "Canteen"),
                 ("restaurant", "Restaurant"),
                 ("laboratory", "Laboratory"),
+                ("statue", "Statue"),
             )
             rects = _button_rects(surface, len(entries))
             for rect, (key, label) in zip(rects, entries):
@@ -115,6 +224,10 @@ class BottomBar:
                 elif key == "laboratory":
                     spr = pygame.transform.smoothscale(building_sprite("laboratory", 1), (40, 32))
                     surface.blit(spr, (btn.centerx - spr.get_width() // 2, btn.bottom - 40))
+                elif key == "statue":
+                    spr = pygame.transform.smoothscale(building_sprite("statue", 4), (40, 32))
+                    surface.blit(spr, (btn.centerx - spr.get_width() // 2, btn.bottom - 40))
+            _draw_building_cost_tooltip(surface, hover_pos)
             return
 
         if menu == "processing":
@@ -147,6 +260,7 @@ class BottomBar:
                 spr = pygame.transform.smoothscale(building_sprite(asset_key, 1), (40, 32))
                 btn = rects[idx].inflate(-6, -10)
                 surface.blit(spr, (btn.centerx - spr.get_width() // 2, btn.bottom - 40))
+            _draw_building_cost_tooltip(surface, hover_pos)
             return
 
         if menu == "dev":
@@ -161,6 +275,7 @@ class BottomBar:
                     resource_key = {"tree": "wood", "stone": "stone", "iron": "iron"}[key]
                     icon = pygame.transform.smoothscale(resource_icon(resource_key), (20, 20))
                     surface.blit(icon, (btn.centerx - 10, btn.bottom - 28))
+            _draw_building_cost_tooltip(surface, hover_pos)
             return
 
         # resource submenu
@@ -189,8 +304,7 @@ class BottomBar:
             tx = sx + spr.get_width() + 8
             ty_name = inner.top + 8
             surface.blit(name_s, (tx, ty_name))
-            free_s = small_font.render("Free", True, (150, 210, 150))
-            surface.blit(free_s, (tx, ty_name + name_s.get_height() + 4))
+        _draw_building_cost_tooltip(surface, hover_pos)
 
     @staticmethod
     def handle_click(surface: pygame.Surface, pos: tuple[int, int]) -> None:
@@ -216,7 +330,7 @@ class BottomBar:
             return
 
         if menu == "social":
-            entries = ("back", "school", "house", "canteen", "restaurant", "laboratory")
+            entries = ("back", "school", "house", "canteen", "restaurant", "laboratory", "statue")
             for rect, key in zip(_button_rects(surface, len(entries)), entries):
                 if not rect.collidepoint(pos):
                     continue
@@ -232,6 +346,8 @@ class BottomBar:
                     pygame.event.post(pygame.event.Event(BUILD_MENU_SELECT, building_type="RESTAURANT"))
                 elif key == "laboratory":
                     pygame.event.post(pygame.event.Event(BUILD_MENU_SELECT, building_type="LABORATORY"))
+                elif key == "statue":
+                    pygame.event.post(pygame.event.Event(BUILD_MENU_SELECT, building_type="STATUE"))
                 return
             return
 

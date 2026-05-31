@@ -16,7 +16,7 @@ from game.buildings.vineyard import Vineyard
 from game.camera import Camera
 from game.input import TOP_BAR_HEIGHT, GameInput, screen_to_grid
 from game.render import Renderer
-from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT
+from game.ui.bottom_bar import BAR_HEIGHT, BUILD_MENU_SELECT, BottomBar
 from game.ui.building_panel import BuildingPanel
 from game.ui.construction_panel import ConstructionPanel
 from game.ui.chicken_farm_panel import ChickenFarmPanel
@@ -966,6 +966,29 @@ def test_top_bar_boundary_click_is_treated_as_map() -> None:
     placement.select("LUMBER_CAMP")
     inp.handle(surface, pygame.event.Event(pygame.MOUSEMOTION, pos=(100, TOP_BAR_HEIGHT), rel=(0, 0)))
     assert placement.hover_grid is not None
+
+
+def test_right_click_cancels_pending_building_before_returning_build_menu_to_main() -> None:
+    surface = pygame.Surface((1280, 720))
+    world = World()
+    registry = BuildingRegistry(world)
+    camera = Camera()
+    placement = PlacementController(world, registry, camera)
+    inp = GameInput(world, registry, placement, WorkerManager(), camera)
+    BottomBar._menu = "social"  # noqa: SLF001
+    placement.select("LUMBER_CAMP")
+
+    pos = (400, 400)
+    inp.handle(surface, pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_RIGHT, pos=pos))
+    inp.handle(surface, pygame.event.Event(pygame.MOUSEBUTTONUP, button=pygame.BUTTON_RIGHT, pos=pos))
+
+    assert placement.has_pending is False
+    assert BottomBar._menu == "social"  # noqa: SLF001
+
+    inp.handle(surface, pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_RIGHT, pos=pos))
+    inp.handle(surface, pygame.event.Event(pygame.MOUSEBUTTONUP, button=pygame.BUTTON_RIGHT, pos=pos))
+
+    assert BottomBar._menu == "main"  # noqa: SLF001
 
 
 def test_population_button_opens_population_panel() -> None:

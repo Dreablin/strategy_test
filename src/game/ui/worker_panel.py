@@ -36,6 +36,7 @@ _BUILDING_LABEL: dict[str, str] = {
     "WINERY": "Winery",
     "RESTAURANT": "Restaurant",
     "LABORATORY": "Laboratory",
+    "STATUE": "Statue",
 }
 
 _RESOURCE_LABEL: dict[str, str] = {
@@ -96,7 +97,7 @@ def _building_name(building) -> str:
 
 
 def _move_speed_line(worker: Worker) -> str:
-    speed = worker.characteristics.move_speed_mult
+    speed = worker.effective_move_speed_mult()
     return f"Move speed: {speed:.2f}x ({worker.effective_travel_ms()} ms/tile)"
 
 

@@ -99,3 +99,16 @@ def test_worker_panel_body_lines_include_effective_move_speed() -> None:
 
     assert "1.20x" in speed
     assert f"{expected_travel_ms} ms/tile" in speed
+
+
+def test_worker_panel_body_lines_include_zero_satiety_move_penalty() -> None:
+    worker = Worker("CARRIER", stand_tile=near_town_hall_tile())
+    worker.characteristics.add_permanent(("test", "speed"), "move_speed_mult", 0.20)
+    worker.satiety = 0
+
+    lines = WorkerPanel.body_lines(worker)
+    speed = _find_move_speed_line(lines)
+    expected_travel_ms = int(round(WORKER_TILE_TRAVEL_MS / 0.60))
+
+    assert "0.60x" in speed
+    assert f"{expected_travel_ms} ms/tile" in speed

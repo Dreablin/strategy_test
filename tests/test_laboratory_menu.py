@@ -21,7 +21,7 @@ def test_social_menu_click_laboratory_emits_event() -> None:
 
     from game.ui.bottom_bar import _button_rects
 
-    entries = ("back", "school", "house", "canteen", "restaurant", "laboratory")
+    entries = ("back", "school", "house", "canteen", "restaurant", "laboratory", "statue")
     rects = _button_rects(surface, len(entries))
     laboratory_rect = rects[5]
     center = laboratory_rect.center

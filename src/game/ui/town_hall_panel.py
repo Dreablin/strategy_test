@@ -8,7 +8,7 @@ import pygame
 
 from game.assets import resource_icon
 from game.buildings.town_hall import TownHall
-from game.ui.building_panel import BuildingPanel
+from game.ui.building_panel import BuildingPanel, draw_upgrade_cost_tooltip
 
 _PANEL_PAD = 16
 _BTN_H = 32
@@ -106,11 +106,12 @@ class TownHallPanel:
             bg = (64, 110, 168) if layout.upgrade_enabled else (52, 56, 64)
             fg = (240, 242, 250) if layout.upgrade_enabled else (130, 134, 142)
             pygame.draw.rect(surface, bg, layout.upgrade, border_radius=6)
-            text = font.render("Upgrade Town Hall — Free", True, fg)
+            text = font.render("Upgrade Town Hall", True, fg)
             surface.blit(
                 text,
                 (layout.upgrade.centerx - text.get_width() // 2, layout.upgrade.centery - text.get_height() // 2),
             )
+            draw_upgrade_cost_tooltip(surface, town_hall, layout.upgrade)
 
         # Secondary storage panel (warehouse overview).
         sf = layout.storage_frame

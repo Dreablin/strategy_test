@@ -21,6 +21,28 @@ def test_elite_meal_has_display_label() -> None:
     assert label == "Elite meal"
 
 
+def test_wood_display_label_en() -> None:
+    assert resource_display_label("wood") == "Wood"
+
+
+def test_simple_meal_display_label_en() -> None:
+    assert resource_display_label("simple_meal") == "Simple meal"
+
+
+def test_unknown_resource_falls_back_to_title_case() -> None:
+    assert resource_display_label("mystery_ore") == "Mystery Ore"
+
+
+def test_wood_display_label_ru(use_locale) -> None:
+    with use_locale("ru"):
+        assert resource_display_label("wood") == "Дерево"
+
+
+def test_elite_meal_display_label_ru(use_locale) -> None:
+    with use_locale("ru"):
+        assert resource_display_label("elite_meal") == "Изысканная еда"
+
+
 def test_elite_meal_not_in_warehouse_keys() -> None:
     assert "elite_meal" not in TOWN_HALL_WAREHOUSE_KEYS
 

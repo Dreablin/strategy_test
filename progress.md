@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 29 - Localization EN/RU (**in progress**)
-- **Next Task:** T445 - Migrate resource display labels (`resource.<id>`) — `src/game/resource_catalog.py`
-- **Last Completed:** T444 - Seed shared/common locale keys (`ui.*`)
-- **Total Progress:** 444 / 468 (Phase 29: 6 / 30 done)
+- **Next Task:** T446 - Migrate worker display labels (`worker.<TYPE>`) — `src/game/ui/worker_labels.py`
+- **Last Completed:** T445 - Migrate resource display labels (`resource.<id>`) — `src/game/resource_catalog.py`
+- **Total Progress:** 445 / 468 (Phase 29: 7 / 30 done)
 
 > **Archive:** Phase 28 task details (T387-T438) are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -76,13 +76,13 @@ Each task runs in a fresh context. Do not assume prior memory; read this block, 
   - Apply `ui.window.caption` in `main.py` (replace the literal in `pygame.display.set_caption(...)` with `i18n.t("ui.window.caption")`).
   - Verify: `pytest -q tests/test_i18n_schema.py`; smoke `python -c "import game.main"`; then `pytest -q`.
   - Acceptance: both files contain all listed keys with non-empty values; caption uses i18n.
-- [~] **T445**: Migrate resource display labels (`resource.<id>`) — `src/game/resource_catalog.py`.
+- [x] **T445**: Migrate resource display labels (`resource.<id>`) — `src/game/resource_catalog.py`.
   - Replace the body of `resource_display_label` and `_DISPLAY_LABEL_OVERRIDES` with an i18n lookup: `t(f"resource.{key}")`, where `key` is the lowercased resource id; keep current fallback (`key.replace("_"," ").title()`) when the locale has no entry.
   - Add `resource.*` keys to both locales for every id in `TOWN_HALL_WAREHOUSE_KEYS` plus `simple_meal`, `elite_meal`, `water` (en values: current Title-Case; `Simple meal`, `Elite meal`).
   - Update/extend `tests/test_elite_meal_resource.py`; cover `wood`, `simple_meal`, `elite_meal`, and an unknown id fallback, with a `ru` smoke using the harness.
   - Verify: `pytest -q tests/test_elite_meal_resource.py`; then `pytest -q`.
   - Acceptance: labels come from locales; ids unchanged; tests pass `en`+`ru`.
-- [ ] **T446**: Migrate worker display labels (`worker.<TYPE>`) — `src/game/ui/worker_labels.py`.
+- [~] **T446**: Migrate worker display labels (`worker.<TYPE>`) — `src/game/ui/worker_labels.py`.
   - Replace `WORKER_LABEL` dict usage in `worker_display_label` with `t(f"worker.{key}")`, keeping the `.title()` fallback. Keep `building_worker_status_line` format but route the `Worker`/`Worker (label)` words through `ui.*`/`worker.*` keys.
   - Add `worker.<TYPE>` keys to both locales for every type in `WORKER_LABEL` (all 15 listed).
   - Update `tests/test_winemaker_display.py` and `tests/test_scientist_display.py`; add a parametrized test covering every `HIRABLE_WORKERS` type in `en` and `ru`.

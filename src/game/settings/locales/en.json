@@ -1,5 +1,7 @@
 {
   "ui.button.start": "Start",
   "resource.wood": "Wood",
-  "research.1.name": "Technology I"
+  "research.1.name": "Technology I",
+  "ui.test.en_only_fallback": "English only",
+  "ui.test.labeled_count": "{name}: {count}"
 }

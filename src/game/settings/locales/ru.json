@@ -1,5 +1,6 @@
 {
   "ui.button.start": "Начать",
   "resource.wood": "Дерево",
-  "research.1.name": "Технология I"
+  "research.1.name": "Технология I",
+  "ui.test.labeled_count": "{name}: {count}"
 }

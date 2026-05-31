@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 29 - Localization EN/RU (**in progress**)
-- **Next Task:** T440 - Add failing loader tests for `game.i18n` (RED)
-- **Last Completed:** T439 - Define i18n key schema and contract (design + tiny validation test)
-- **Total Progress:** 439 / 468 (Phase 29: 1 / 30 done)
+- **Next Task:** T441 - Implement `game.i18n` loader + current-locale selection (GREEN)
+- **Last Completed:** T440 - Add failing loader tests for `game.i18n` (RED)
+- **Total Progress:** 440 / 468 (Phase 29: 2 / 30 done)
 
 > **Archive:** Phase 28 task details (T387-T438) are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -46,12 +46,12 @@ Each task runs in a fresh context. Do not assume prior memory; read this block, 
   - Add `tests/test_i18n_schema.py` that loads both files as JSON, asserts they parse, and asserts the sample keys exist in both.
   - Verify: `pytest -q tests/test_i18n_schema.py`; `ruff check src tests`; then `pytest -q`.
   - Acceptance: schema doc exists, both locale files parse, sample-key test passes.
-- [~] **T440**: Add failing loader tests for `game.i18n` (RED).
+- [x] **T440**: Add failing loader tests for `game.i18n` (RED).
   - Create `tests/test_i18n_loader.py` covering: load default locale (`en`), load explicit locale (`ru`), `t("ui.button.start")` returns the English string, `t(<key only in en>)` from `ru` falls back to English, `t(<missing key>)` returns the key id, and `{param}` substitution via `t("x.y", name="Дерево")`.
   - These tests import `from game import i18n` which does not exist yet, so they must fail (RED). Do not implement the module in this task.
   - Verify: `pytest -q tests/test_i18n_loader.py` and confirm it fails for the expected (import/attribute) reason, not a syntax error in the test.
   - Acceptance: `test_i18n_loader.py` exists and is RED; the rest of the suite is unaffected (`pytest -q` shows only these new failures).
-- [ ] **T441**: Implement `game.i18n` loader + current-locale selection (GREEN).
+- [~] **T441**: Implement `game.i18n` loader + current-locale selection (GREEN).
   - Create `src/game/i18n.py` with: `t(key: str, **params) -> str`, `set_locale(code: str)`, `get_locale() -> str`, and a loader that reads `src/game/settings/locales/<code>.json`.
   - Default locale comes from a new optional `"locale"` key in `game_settings.json` (add `"locale": "en"`), defaulting to `en` when absent.
   - Fallback chain: requested locale → `en` → return key id. `{param}` substitution via `str.format(**params)`; on `KeyError`/missing param, return the unformatted template (do not crash).

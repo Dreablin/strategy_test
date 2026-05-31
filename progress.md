@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 29 - Localization EN/RU (**in progress**)
-- **Next Task:** T461 - Externalize statue stage names from statue.json
-- **Last Completed:** T460 - Localize research screen + tooltip + start button
-- **Total Progress:** 460 / 468 (Phase 29: 22 / 30 done)
+- **Next Task:** T462 - Localize lock reasons / requirement messages shown in UI
+- **Last Completed:** T461 - Externalize statue stage names
+- **Total Progress:** 461 / 468 (Phase 29: 23 / 30 done)
 
 > **Archive:** Phase 28 task details (T387-T438) are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -169,7 +169,7 @@ Each task runs in a fresh context. Do not assume prior memory; read this block, 
   - Update tests (find via `rg -l "research_screen\|research_tile_tooltip\|research_start_button\|research_tile" tests`).
   - Verify: run those test files; then `pytest -q`.
   - Acceptance: research screen, tooltip, and start-button tests pass.
-- [~] **T461**: Externalize statue stage names from `src/game/settings/buildings/statue.json` (`statue.stage.<n>`).
+- [x] **T461**: Externalize statue stage names from `src/game/settings/buildings/statue.json` (`statue.stage.<n>`).
   - Move `stage_names` (`1:Excavation`, `2:Foundation`, `3:Pedestal`, `4:Statue`) to `statue.stage.1..4` locale keys. Keep `footprint`, `levels`, costs, `build_time_ms` in JSON.
   - Update `Statue.stage_name` (`src/game/buildings/statue.py`) to resolve via i18n, keeping the `Stage {n}` fallback.
   - Update `tests/test_statue.py`; assert English stage names and a `ru` stage-name smoke.

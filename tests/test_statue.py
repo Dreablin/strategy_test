@@ -88,12 +88,24 @@ def test_statue_upgrade_requires_next_stage_research_when_bound() -> None:
 def test_statue_has_four_named_stages() -> None:
     statue = Statue(level=1, grid_pos=(4, 4))
     assert statue.max_level() == 4
-    assert statue.stage_name(1) == "Excavation"
-    assert statue.stage_name(2) == "Foundation"
-    assert statue.stage_name(3) == "Pedestal"
-    assert statue.stage_name(4) == "Statue"
-    assert statue.next_stage_name() == "Foundation"
-    assert _upgrade_label(statue) == i18n.t("ui.statue.start_stage", stage="Foundation")
+    assert statue.stage_name(1) == i18n.t("statue.stage.1")
+    assert statue.stage_name(2) == i18n.t("statue.stage.2")
+    assert statue.stage_name(3) == i18n.t("statue.stage.3")
+    assert statue.stage_name(4) == i18n.t("statue.stage.4")
+    assert statue.next_stage_name() == i18n.t("statue.stage.2")
+    assert _upgrade_label(statue) == i18n.t(
+        "ui.statue.start_stage",
+        stage=i18n.t("statue.stage.2"),
+    )
+
+
+def test_statue_stage_names_ru(use_locale) -> None:
+    statue = Statue(level=1, grid_pos=(4, 4))
+    with use_locale("ru"):
+        assert statue.stage_name(1) == "Раскопки"
+        assert statue.stage_name(2) == "Фундамент"
+        assert statue.stage_name(3) == "Постамент"
+        assert statue.stage_name(4) == "Статуя"
 
 
 def test_statue_unique_and_not_demolishable() -> None:
@@ -196,7 +208,10 @@ def test_construction_panel_statue_stage_toggle_and_no_demolish() -> None:
     )
     layout = ConstructionPanel.layout(surface, statue)
 
-    assert ConstructionPanel.title_line(statue) == i18n.t("ui.construction.building_stage", stage="Foundation")
+    assert ConstructionPanel.title_line(statue) == i18n.t(
+        "ui.construction.building_stage",
+        stage=i18n.t("statue.stage.2"),
+    )
     assert layout.demolish is None
     assert layout.toggle is not None
     assert ConstructionPanel.click_action(surface, layout.toggle.center, statue) == "toggle_construction_deliveries"

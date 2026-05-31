@@ -1,12 +1,6 @@
 {
   "building_type": "STATUE",
   "footprint": [3, 3],
-  "stage_names": {
-    "1": "Excavation",
-    "2": "Foundation",
-    "3": "Pedestal",
-    "4": "Statue"
-  },
   "asset_defaults": {
     "scale": 1.0,
     "anchor_norm": [0.5, 1.0],

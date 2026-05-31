@@ -186,13 +186,22 @@ def test_statue_panel_disables_unresearched_next_stage() -> None:
 
 def test_statue_upgrade_tooltip_shows_next_stage_research() -> None:
     statue = Statue(level=1, grid_pos=(4, 4))
-    assert "Requires research: Foundation Engineering" in _upgrade_cost_lines(statue)
+    assert i18n.t(
+        "ui.common.requires_research",
+        name=i18n.t("research.statue_foundation.name"),
+    ) in _upgrade_cost_lines(statue)
 
     statue.level = 2
-    assert "Requires research: Pedestal Masonry" in _upgrade_cost_lines(statue)
+    assert i18n.t(
+        "ui.common.requires_research",
+        name=i18n.t("research.statue_pedestal.name"),
+    ) in _upgrade_cost_lines(statue)
 
     statue.level = 3
-    assert "Requires research: Monument Assembly" in _upgrade_cost_lines(statue)
+    assert i18n.t(
+        "ui.common.requires_research",
+        name=i18n.t("research.statue_monument.name"),
+    ) in _upgrade_cost_lines(statue)
 
 
 def test_construction_panel_statue_stage_toggle_and_no_demolish() -> None:

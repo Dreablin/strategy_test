@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
+from game.lock_reasons import lock_reason_invalid_cost, lock_reason_invalid_points
 from game.research_config import RESEARCH_BY_ID, ResearchDefinition
 from game.research_eligibility import (
     research_config_lock_reason,
@@ -39,17 +40,17 @@ def test_valid_definition_has_no_lock_reason() -> None:
 
 def test_empty_resource_cost_is_not_startable() -> None:
     bad = _sample_definition(resource_cost={})
-    assert research_config_lock_reason(bad) == "Research resource cost is not configured"
+    assert research_config_lock_reason(bad) == lock_reason_invalid_cost()
 
 
 def test_non_positive_point_requirement_is_not_startable() -> None:
     bad = _sample_definition(required_points=0)
-    assert research_config_lock_reason(bad) == "Research point requirement is invalid"
+    assert research_config_lock_reason(bad) == lock_reason_invalid_points()
 
 
 def test_non_positive_resource_amount_is_not_startable() -> None:
     bad = _sample_definition(resource_cost={"wood": 0})
-    assert research_config_lock_reason(bad) == "Research resource cost is not configured"
+    assert research_config_lock_reason(bad) == lock_reason_invalid_cost()
 
 
 def test_eligibility_uses_config_lock_reason_for_invalid_entry() -> None:

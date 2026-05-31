@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pygame
 
+from game.lock_reasons import lock_reason_requires_laboratory_level
 from game.research_eligibility import research_ui_eligibility
 from game.research_state import ResearchState
 from game.ui.research_screen import ResearchScreen
@@ -83,4 +84,4 @@ def test_game_input_draw_panel_wires_eligibility() -> None:
         registry=registry,
     )
     assert can_start["1"] is True
-    assert lock_reasons["2"] == "Requires Laboratory level 3"
+    assert lock_reasons["2"] == lock_reason_requires_laboratory_level(3)

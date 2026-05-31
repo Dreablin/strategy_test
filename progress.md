@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 29 - Localization EN/RU (**in progress**)
-- **Next Task:** T462 - Localize lock reasons / requirement messages shown in UI
-- **Last Completed:** T461 - Externalize statue stage names
-- **Total Progress:** 461 / 468 (Phase 29: 23 / 30 done)
+- **Next Task:** T463 - Enforce Russian locale completeness
+- **Last Completed:** T462 - Localize lock reasons / requirement messages
+- **Total Progress:** 462 / 468 (Phase 29: 24 / 30 done)
 
 > **Archive:** Phase 28 task details (T387-T438) are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -175,7 +175,7 @@ Each task runs in a fresh context. Do not assume prior memory; read this block, 
   - Update `tests/test_statue.py`; assert English stage names and a `ru` stage-name smoke.
   - Verify: `pytest -q tests/test_statue.py`; then `pytest -q`.
   - Acceptance: statue stage names resolve through i18n in both locales.
-- [ ] **T462**: Localize lock reasons / requirement messages shown in UI.
+- [~] **T462**: Localize lock reasons / requirement messages shown in UI.
   - Cover research eligibility reasons, laboratory requirement messages, active-research messages, and statue requirement messages (find sources via `rg -n "requires\|locked\|need\|requirement" src/game`).
   - Route through `ui.lock.*` / `status.*` keys, or keep stable reason ids localized at the UI boundary; record the approach.
   - Update the lock-reason tests (find via `rg -l "lock\|requirement\|eligib" tests`).

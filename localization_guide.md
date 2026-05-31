@@ -29,6 +29,9 @@ Flat keys simplify diffing `en` vs `ru`, completeness checks, and grep-based aud
 | `status.<id>` | `status.ready` | Production / worker status text |
 | `research.<id>.name` / `.desc` / `.effect` | `research.1.name` | Research display copy |
 | `statue.stage.<n>` | `statue.stage.1` | Statue construction stage names (n = 1..4) |
+| `ui.lock.<id>` | `ui.lock.no_laboratory` | Research eligibility / lock messages shown in UI |
+
+**Lock reasons:** eligibility code builds messages via `game.lock_reasons` helpers that call `ui.lock.*` keys. Dependency names reuse localized `research.<id>.name` values.
 
 **Ids and enums never change** — only displayed text moves to locales.
 

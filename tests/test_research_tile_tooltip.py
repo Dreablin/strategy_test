@@ -5,6 +5,7 @@ from __future__ import annotations
 import pygame
 
 from game import i18n
+from game.lock_reasons import lock_reason_no_laboratory
 from game.ui.research_screen import ResearchScreen
 from game.ui.research_screen_layout import compute_content_layout
 from game.ui.research_tile_tooltip import (
@@ -60,13 +61,13 @@ def test_hover_draws_tooltip_on_research_screen() -> None:
     ResearchScreen.draw(
         surface,
         hover_pos=tile.tile_rect.center,
-        research_lock_reasons={"1": "Laboratory required"},
+        research_lock_reasons={"1": lock_reason_no_laboratory()},
     )
     tooltip_rect = draw_research_tooltip_at_hover(
         surface,
         content.tiles,
         tile.tile_rect.center,
-        lock_reasons={"1": "Laboratory required"},
+        lock_reasons={"1": lock_reason_no_laboratory()},
     )
     assert tooltip_rect is not None
     px = surface.get_at(tooltip_rect.center)

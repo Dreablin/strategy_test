@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 29 - Localization EN/RU (**in progress**)
-- **Next Task:** T467 - Finalize localization docs
-- **Last Completed:** T466 - Update tests to use i18n keys
-- **Total Progress:** 466 / 468 (Phase 29: 28 / 30 done)
+- **Next Task:** T468 - Close Phase 29
+- **Last Completed:** T467 - Finalize localization docs
+- **Total Progress:** 467 / 468 (Phase 29: 29 / 30 done)
 
 > **Archive:** Phase 28 task details (T387-T438) are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -200,7 +200,7 @@ Each task runs in a fresh context. Do not assume prior memory; read this block, 
   - Sweep the suite for assertions on raw English text that should be key-based or locale-controlled; convert them to assert via `t(key)` or under an explicit `en` harness block.
   - Verify: `pytest -q` (default `en` locale) passes fully.
   - Acceptance: full suite green; no brittle English-literal assertions remain for migrated modules.
-- [ ] **T467**: Finalize localization docs.
+- [~] **T467**: Finalize localization docs.
   - Complete `localization_guide.md`: locale folder, flat dotted-key naming, `{param}` syntax, fallback behavior, how to add a new language, and how tests switch locale (T442 harness).
   - Cross-link from `building_extension_guide.md`, `worker_extension_guide.md`, and `research_extension_guide.md` that new player-facing strings must go through `game.i18n` keys.
   - Verify: `python -c "import game.i18n"`; then `pytest -q`.

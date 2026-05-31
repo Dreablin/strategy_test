@@ -98,6 +98,11 @@ transport tasks.
    - Route draw and click handling from `input.py`.
    - Panels must absorb clicks across their full frame and must not duplicate
      the same local stock with two counters.
+   - **Player-facing copy:** add `building.<TYPE>.name` and
+     `building.<TYPE>.desc` to every locale file under
+     `src/game/settings/locales/`. Render through `building_display_name()` /
+     `building_description()` or `i18n.t()` — never hard-code titles in panel
+     modules. See **`localization_guide.md`**.
 
 6. Add production and workers only in the right layer.
 

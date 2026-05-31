@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 29 - Localization EN/RU (**in progress**)
-- **Next Task:** T453 - Localize population panel — `src/game/ui/population_panel.py`
-- **Last Completed:** T452 - Localize worker panel — `src/game/ui/worker_panel.py`
-- **Total Progress:** 452 / 468 (Phase 29: 14 / 30 done)
+- **Next Task:** T454 - Externalize production/worker status strings — `src/game/worker_status.py`
+- **Last Completed:** T453 - Localize population panel — `src/game/ui/population_panel.py`
+- **Total Progress:** 453 / 468 (Phase 29: 15 / 30 done)
 
 > **Archive:** Phase 28 task details (T387-T438) are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -123,12 +123,12 @@ Each task runs in a fresh context. Do not assume prior memory; read this block, 
   - Update the worker-panel test (find via `rg -l worker_panel tests`); add a `ru` smoke for one worker.
   - Verify: run the worker-panel test file; then `pytest -q`.
   - Acceptance: worker-panel tests pass; one `ru` smoke included.
-- [~] **T453**: Localize population panel — `src/game/ui/population_panel.py`.
+- [x] **T453**: Localize population panel — `src/game/ui/population_panel.py`.
   - Route title, filters, worker rows, assignment/task detail labels, and any empty-state text through `ui.*`/`status.*`/`worker.*` keys (note the local `"sowing": "Sowing"` style map at the top of the module).
   - Update the population-panel test (find via `rg -l population_panel tests`); ensure click/scroll behavior tests do not regress.
   - Verify: run the population-panel test file; then `pytest -q`.
   - Acceptance: population-panel tests pass; interaction behavior unchanged.
-- [ ] **T454**: Externalize production/worker status strings (`status.<id>`) — `src/game/worker_status.py`.
+- [~] **T454**: Externalize production/worker status strings (`status.<id>`) — `src/game/worker_status.py`.
   - This module returns ~25 distinct human-readable strings (`Ready`, `Resting`, `Processing`, `No worker`, `Inactive`, `Output full`, `Storage full`, `Under construction`, `No wood/wheat/flour/water/chicken/bread/grain/grapes`, `Missing inputs`, `Moving`, `Sowing`, `Harvesting`, `Mining`, `On the way`, `Gathering`, `Depositing`, `At resource`, `At camp`, `Waiting target`, `No fields in radius`, `No ripe vineyards in range`, `Unknown`, etc.).
   - Decide a stable status-id scheme: keep the functions returning stable English ids OR introduce `status.<id>` keys and localize at the panel boundary. Prefer adding `status.<snake_id>` locale keys and a single `localized_status(s)` helper so panels render localized text while tests can still assert ids.
   - Map every returned string to a `status.*` key in both locales.

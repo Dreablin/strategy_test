@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 29 - Localization EN/RU (**in progress**)
-- **Next Task:** T442 - Add a locale-switch test harness (used by all later `ru`-smoke tests)
-- **Last Completed:** T441 - Implement `game.i18n` loader + current-locale selection (GREEN)
-- **Total Progress:** 441 / 468 (Phase 29: 3 / 30 done)
+- **Next Task:** T443 - Centralize font creation and bundle a Cyrillic-capable font
+- **Last Completed:** T442 - Add a locale-switch test harness (used by all later `ru`-smoke tests)
+- **Total Progress:** 442 / 468 (Phase 29: 4 / 30 done)
 
 > **Archive:** Phase 28 task details (T387-T438) are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -58,12 +58,12 @@ Each task runs in a fresh context. Do not assume prior memory; read this block, 
   - Make all `test_i18n_loader.py` tests from T440 pass.
   - Verify: `pytest -q tests/test_i18n_loader.py tests/test_i18n_schema.py`; `ruff check src tests`; then `pytest -q`.
   - Acceptance: loader tests are GREEN and full suite passes.
-- [~] **T442**: Add a locale-switch test harness (used by all later `ru`-smoke tests).
+- [x] **T442**: Add a locale-switch test harness (used by all later `ru`-smoke tests).
   - Add a pytest fixture/context manager in `tests/conftest.py` (e.g. `use_locale`) that calls `i18n.set_locale(code)` and restores the previous locale on exit, so no global locale state leaks between tests.
   - Add `tests/test_i18n_harness.py` proving the same key returns English then Russian inside two isolated `use_locale` blocks, and that the locale is restored to `en` afterward.
   - Verify: `pytest -q tests/test_i18n_harness.py`; then `pytest -q`.
   - Acceptance: harness exists, isolation test passes, no other test changes behavior.
-- [ ] **T443**: Centralize font creation and bundle a Cyrillic-capable font.
+- [~] **T443**: Centralize font creation and bundle a Cyrillic-capable font.
   - Create `src/game/ui/fonts.py` with a cached helper `ui_font(size: int) -> pygame.font.Font` that loads one bundled TTF by path.
   - Add a Unicode TTF with full Cyrillic coverage under `assets/fonts/` (e.g. DejaVuSans). Load it relative to the package, falling back to `pygame.font.Font(None, size)` only if the file is missing.
   - Replace every `pygame.font.Font(None, size)` call in `src/game/ui/*.py`, `src/game/render.py`, and `src/game/assets.py` with `ui_font(size)`. (Use `rg "Font\(None" src` to find all sites.)

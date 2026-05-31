@@ -10,9 +10,6 @@ import pytest
 _REQUIRED_ENTRY_KEYS = frozenset(
     {
         "id",
-        "name",
-        "description",
-        "effect_text",
         "tier",
         "column",
         "dependencies",
@@ -52,9 +49,6 @@ def test_technology_entry_has_required_fields(tech_id: str) -> None:
     entry = next(r for r in settings["researches"] if r["id"] == tech_id)
     missing = _REQUIRED_ENTRY_KEYS - entry.keys()
     assert not missing, f"Technology {tech_id} missing keys: {sorted(missing)}"
-    assert isinstance(entry["name"], str) and entry["name"]
-    assert isinstance(entry["description"], str) and entry["description"]
-    assert isinstance(entry["effect_text"], str) and entry["effect_text"]
     assert isinstance(entry["tier"], int)
     assert isinstance(entry["column"], int)
     assert isinstance(entry["dependencies"], list)

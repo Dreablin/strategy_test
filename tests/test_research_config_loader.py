@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from game import i18n
 from game.research_config import (
     RESEARCH_BY_ID,
     RESEARCH_DEFINITIONS,
@@ -36,7 +37,25 @@ def test_technology_entries_are_accessible_by_id() -> None:
         assert entry.resource_cost
         assert entry.required_points > 0
         assert entry.image_key
-        assert entry.effect_text
+        assert entry.name == i18n.t(f"research.{tech_id}.name")
+        assert entry.effect_text == i18n.t(f"research.{tech_id}.effect")
+
+
+def test_all_research_definitions_resolve_locale_copy() -> None:
+    for entry in RESEARCH_DEFINITIONS:
+        assert entry.name == i18n.t(f"research.{entry.id}.name")
+        assert entry.description == i18n.t(f"research.{entry.id}.desc")
+        assert entry.effect_text == i18n.t(f"research.{entry.id}.effect")
+        assert entry.name.strip()
+        assert entry.description.strip()
+        assert entry.effect_text.strip()
+
+
+def test_research_copy_ru_locale(use_locale) -> None:
+    with use_locale("ru"):
+        entry = next(e for e in load_research_definitions() if e.id == "1")
+        assert entry.name == "Технология I"
+        assert "1-го уровня" in entry.effect_text
 
 
 def _write_config(tmp_path: Path, researches: list[dict]) -> Path:
@@ -188,15 +207,12 @@ def test_load_rejects_empty_image_key(tmp_path: Path) -> None:
         load_research_definitions(path)
 
 
-def test_load_rejects_empty_effect_text(tmp_path: Path) -> None:
+def test_load_rejects_missing_locale_copy_without_json_fallback(tmp_path: Path) -> None:
     path = _write_config(
         tmp_path,
         [
             {
                 "id": "x",
-                "name": "X",
-                "description": "X",
-                "effect_text": "",
                 "tier": 1,
                 "column": 0,
                 "dependencies": [],
@@ -206,7 +222,7 @@ def test_load_rejects_empty_effect_text(tmp_path: Path) -> None:
             },
         ],
     )
-    with pytest.raises(ValueError, match="effect_text must be a non-empty string"):
+    with pytest.raises(ValueError, match="missing locale key"):
         load_research_definitions(path)
 
 

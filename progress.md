@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 29 - Localization EN/RU (**in progress**)
-- **Next Task:** T459 - Externalize research copy from `research.json`
-- **Last Completed:** T458 - Localize school panel
-- **Total Progress:** 458 / 468 (Phase 29: 20 / 30 done)
+- **Next Task:** T460 - Localize research screen + tooltip + start button
+- **Last Completed:** T459 - Externalize research copy from research.json
+- **Total Progress:** 459 / 468 (Phase 29: 21 / 30 done)
 
 > **Archive:** Phase 28 task details (T387-T438) are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -157,7 +157,7 @@ Each task runs in a fresh context. Do not assume prior memory; read this block, 
   - Update `tests/test_laboratory_menu.py` / school-panel tests (find via `rg -l school_panel tests`); assert Basic/Advanced tab labels in `en` and `ru`.
   - Verify: run the school-panel test file; then `pytest -q`.
   - Acceptance: school-panel tests pass for tab labels in both locales.
-- [ ] **T459**: Externalize research copy from `src/game/settings/research.json` (`research.<id>.*`).
+- [x] **T459**: Externalize research copy from `src/game/settings/research.json` (`research.<id>.*`).
   - Move each research's `name`, `description`, `effect_text` into `research.<id>.name/.desc/.effect` locale keys (ids include `1`, `carrier_speed_1`, `statue_excavation`, etc.). Keep ids, `resource_cost`, `required_points`, `tier`, `column`, `dependencies`, `image_key`, `worker_effects` in `research.json`.
   - Update `research_config.py`/loaders to read display copy from i18n by id; if the JSON still carries `name`/etc., have the loader prefer the locale and treat JSON text as a dev-only fallback (or remove it — record the choice).
   - Update research config tests (find via `rg -l research_config tests`) to validate the balance schema still loads; assert localized `name`/`effect` via i18n.

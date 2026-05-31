@@ -6,6 +6,8 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from game import i18n
+
 _MIN_TIER = 1
 _MAX_TIER = 4
 
@@ -110,6 +112,17 @@ def _parse_worker_effects(raw: object, *, research_id: str) -> dict[str, dict[st
     return result
 
 
+def _resolve_research_copy(research_id: str, suffix: str, raw: object) -> str:
+    """Prefer locale keys ``research.<id>.<suffix>``; JSON text is dev-only fallback."""
+    key = f"research.{research_id}.{suffix}"
+    localized = i18n.t(key)
+    if localized != key:
+        return localized
+    if isinstance(raw, str) and raw.strip():
+        return raw.strip()
+    raise ValueError(f"research {research_id!r}: missing locale key {key!r} and no JSON fallback")
+
+
 def _parse_entry(raw: object) -> ResearchDefinition:
     if not isinstance(raw, dict):
         raise ValueError("each research entry must be an object")
@@ -117,15 +130,9 @@ def _parse_entry(raw: object) -> ResearchDefinition:
     if not research_id:
         raise ValueError("research id must be a non-empty string")
 
-    name = raw.get("name")
-    description = raw.get("description")
-    effect_text = raw.get("effect_text")
-    if not isinstance(name, str) or not name.strip():
-        raise ValueError(f"research {research_id!r}: name must be a non-empty string")
-    if not isinstance(description, str) or not description.strip():
-        raise ValueError(f"research {research_id!r}: description must be a non-empty string")
-    if not isinstance(effect_text, str) or not effect_text.strip():
-        raise ValueError(f"research {research_id!r}: effect_text must be a non-empty string")
+    name = _resolve_research_copy(research_id, "name", raw.get("name"))
+    description = _resolve_research_copy(research_id, "desc", raw.get("description"))
+    effect_text = _resolve_research_copy(research_id, "effect", raw.get("effect_text"))
 
     tier = raw.get("tier")
     if not isinstance(tier, int) or isinstance(tier, bool):
@@ -153,9 +160,9 @@ def _parse_entry(raw: object) -> ResearchDefinition:
 
     return ResearchDefinition(
         id=research_id,
-        name=name.strip(),
-        description=description.strip(),
-        effect_text=effect_text.strip(),
+        name=name,
+        description=description,
+        effect_text=effect_text,
         tier=tier,
         column=column,
         dependencies=_parse_dependencies(raw.get("dependencies"), research_id=research_id),

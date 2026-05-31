@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 29 - Localization EN/RU (**in progress**)
-- **Next Task:** T449 - Localize top bar — `src/game/ui/top_bar.py`
-- **Last Completed:** T448 - Localize bottom build menu + cost tooltip — `src/game/ui/bottom_bar.py`
-- **Total Progress:** 448 / 468 (Phase 29: 10 / 30 done)
+- **Next Task:** T450 - Localize base building panel actions + Town Hall panel
+- **Last Completed:** T449 - Localize top bar — `src/game/ui/top_bar.py`
+- **Total Progress:** 449 / 468 (Phase 29: 11 / 30 done)
 
 > **Archive:** Phase 28 task details (T387-T438) are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -101,13 +101,13 @@ Each task runs in a fresh context. Do not assume prior memory; read this block, 
   - Update `tests/test_bottom_bar_menu.py`; assert English defaults and a `ru` lookup smoke.
   - Verify: `pytest -q tests/test_bottom_bar_menu.py`; then `pytest -q`.
   - Acceptance: bottom-bar labels/tooltips come from locales; tests pass.
-- [~] **T449**: Localize top bar — `src/game/ui/top_bar.py`.
+- [x] **T449**: Localize top bar — `src/game/ui/top_bar.py`.
   - Replace `_RESEARCH_BTN_LABEL = "Research"` with `t("ui.topbar.research")`; template the population label `"{current} (max {max})"` and the deliveries label `"Deliveries: {n} (in progress {k})"` via i18n templates with `{param}` placeholders.
   - Add `ui.topbar.*` keys (research button, population template, deliveries template) to both locales.
   - Update the top-bar layout test (find via `rg "TopBar" tests`); assert layout still computes and `{param}` substitution is exercised in `en` and `ru`.
   - Verify: run the top-bar test file; then `pytest -q`.
   - Acceptance: top-bar text from locales; layout tests pass; templates tested.
-- [ ] **T450**: Localize base building panel actions + Town Hall panel.
+- [~] **T450**: Localize base building panel actions + Town Hall panel.
   - In `building_panel.py`: route `_upgrade_label` (`Start stage: {stage}`, `Upgrade to Lv {n}`), `_upgrade_cost_lines` words, demolish/close/status/storage words, and the statue stage upgrade text through `ui.*`/`building.*`/`statue.*` keys.
   - In `src/game/ui/town_hall_panel.py`: route the panel title and warehouse resource labels through `building.TOWN_HALL.name` / `resource.<id>`.
   - Update `tests/test_building_panel.py` and `tests/test_town_hall_panel.py`; cover upgrade label for a normal building and the statue stage label.

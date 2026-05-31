@@ -6,14 +6,33 @@ from dataclasses import dataclass
 
 import pygame
 
-from game import dev_asset_reload
+from game import dev_asset_reload, i18n
 from game.assets import population_icon
 from game.ui.fonts import ui_font
 
 _BAR_HEIGHT = 48
 _RESEARCH_BTN_W = 96
-_RESEARCH_BTN_LABEL = "Research"
 _RESEARCH_GAP = 18
+
+
+def _population_label(current_population: int, max_population: int) -> str:
+    return i18n.t(
+        "ui.topbar.population",
+        current=int(current_population),
+        max=int(max_population),
+    )
+
+
+def _delivery_label(delivery_queue_size: int, active_delivery_count: int) -> str:
+    return i18n.t(
+        "ui.topbar.deliveries",
+        n=max(0, int(delivery_queue_size)),
+        k=max(0, int(active_delivery_count)),
+    )
+
+
+def _research_button_label() -> str:
+    return i18n.t("ui.topbar.research")
 
 
 def research_button_visible(registry: object | None) -> bool:
@@ -56,7 +75,7 @@ class TopBar:
         icon_x = 10
         icon_y = (_BAR_HEIGHT - icon.get_height()) // 2
         icon_rect = pygame.Rect(icon_x, icon_y, icon.get_width(), icon.get_height())
-        label = f"{current_population} (max {max_population})"
+        label = _population_label(current_population, max_population)
         label_pos = (icon_rect.right + 8, (_BAR_HEIGHT - 22) // 2)
         font = ui_font(22)
         label_w, _label_h = font.size(label)
@@ -66,10 +85,7 @@ class TopBar:
             icon.get_width() + 8 + label_w + 12,
             _BAR_HEIGHT - 12,
         )
-        delivery_label = (
-            f"Deliveries: {max(0, int(delivery_queue_size))} "
-            f"(in progress {max(0, int(active_delivery_count))})"
-        )
+        delivery_label = _delivery_label(delivery_queue_size, active_delivery_count)
         delivery_pos = (population_button.right + 18, label_pos[1])
         research_button: pygame.Rect | None = None
         if show_research_button:
@@ -130,7 +146,7 @@ class TopBar:
         if layout.research_button is not None:
             pygame.draw.rect(surface, (42, 48, 58), layout.research_button, border_radius=6)
             pygame.draw.rect(surface, (70, 76, 88), layout.research_button, width=1, border_radius=6)
-            research_surf = font.render(_RESEARCH_BTN_LABEL, True, (228, 230, 238))
+            research_surf = font.render(_research_button_label(), True, (228, 230, 238))
             surface.blit(
                 research_surf,
                 (

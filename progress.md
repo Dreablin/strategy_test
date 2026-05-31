@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 29 - Localization EN/RU (**in progress**)
-- **Next Task:** T441 - Implement `game.i18n` loader + current-locale selection (GREEN)
-- **Last Completed:** T440 - Add failing loader tests for `game.i18n` (RED)
-- **Total Progress:** 440 / 468 (Phase 29: 2 / 30 done)
+- **Next Task:** T442 - Add a locale-switch test harness (used by all later `ru`-smoke tests)
+- **Last Completed:** T441 - Implement `game.i18n` loader + current-locale selection (GREEN)
+- **Total Progress:** 441 / 468 (Phase 29: 3 / 30 done)
 
 > **Archive:** Phase 28 task details (T387-T438) are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -51,14 +51,14 @@ Each task runs in a fresh context. Do not assume prior memory; read this block, 
   - These tests import `from game import i18n` which does not exist yet, so they must fail (RED). Do not implement the module in this task.
   - Verify: `pytest -q tests/test_i18n_loader.py` and confirm it fails for the expected (import/attribute) reason, not a syntax error in the test.
   - Acceptance: `test_i18n_loader.py` exists and is RED; the rest of the suite is unaffected (`pytest -q` shows only these new failures).
-- [~] **T441**: Implement `game.i18n` loader + current-locale selection (GREEN).
+- [x] **T441**: Implement `game.i18n` loader + current-locale selection (GREEN).
   - Create `src/game/i18n.py` with: `t(key: str, **params) -> str`, `set_locale(code: str)`, `get_locale() -> str`, and a loader that reads `src/game/settings/locales/<code>.json`.
   - Default locale comes from a new optional `"locale"` key in `game_settings.json` (add `"locale": "en"`), defaulting to `en` when absent.
   - Fallback chain: requested locale → `en` → return key id. `{param}` substitution via `str.format(**params)`; on `KeyError`/missing param, return the unformatted template (do not crash).
   - Make all `test_i18n_loader.py` tests from T440 pass.
   - Verify: `pytest -q tests/test_i18n_loader.py tests/test_i18n_schema.py`; `ruff check src tests`; then `pytest -q`.
   - Acceptance: loader tests are GREEN and full suite passes.
-- [ ] **T442**: Add a locale-switch test harness (used by all later `ru`-smoke tests).
+- [~] **T442**: Add a locale-switch test harness (used by all later `ru`-smoke tests).
   - Add a pytest fixture/context manager in `tests/conftest.py` (e.g. `use_locale`) that calls `i18n.set_locale(code)` and restores the previous locale on exit, so no global locale state leaks between tests.
   - Add `tests/test_i18n_harness.py` proving the same key returns English then Russian inside two isolated `use_locale` blocks, and that the locale is restored to `en` afterward.
   - Verify: `pytest -q tests/test_i18n_harness.py`; then `pytest -q`.

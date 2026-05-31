@@ -8,6 +8,7 @@ import pygame
 
 from game.assets import resource_icon
 from game.buildings.base import Building
+from game.ui.fonts import ui_font
 
 _PANEL_W = 460
 _PANEL_PAD = 16
@@ -118,9 +119,9 @@ class ConstructionPanel:
         pygame.draw.rect(surface, (36, 40, 52), layout.frame, border_radius=10)
         pygame.draw.rect(surface, (72, 78, 92), layout.frame, width=2, border_radius=10)
 
-        title_font = pygame.font.Font(None, 28)
-        body_font = pygame.font.Font(None, 22)
-        small_font = pygame.font.Font(None, 20)
+        title_font = ui_font(28)
+        body_font = ui_font(22)
+        small_font = ui_font(20)
 
         name = _DISPLAY_NAME.get(building.type_tag, building.type_tag)
         title = title_font.render(f"{name} — {ConstructionPanel.title_line(building)}", True, (238, 240, 248))
@@ -172,7 +173,7 @@ class ConstructionPanel:
             pygame.draw.rect(surface, (224, 194, 80), fill, border_radius=6)
             pygame.draw.rect(surface, (92, 98, 112), bar, width=1, border_radius=6)
 
-        btn_font = pygame.font.Font(None, 24)
+        btn_font = ui_font(24)
         if layout.demolish is not None:
             pygame.draw.rect(surface, (140, 48, 52), layout.demolish, border_radius=6)
             dl = btn_font.render("Demolish", True, (255, 240, 240))

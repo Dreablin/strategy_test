@@ -8,6 +8,7 @@ import pygame
 
 from game.buildings.forester_hut import ForesterHut
 from game.ui.building_panel import BuildingPanel
+from game.ui.fonts import ui_font
 
 _PANEL_PAD = 16
 _BTN_H = 32
@@ -99,7 +100,7 @@ class ForesterHutPanel:
             worker_assigned=worker_assigned,
             production_status=production_status,
         )
-        font = pygame.font.Font(None, 22)
+        font = ui_font(22)
         if layout.demolish is not None:
             pygame.draw.rect(surface, (140, 48, 52), layout.demolish, border_radius=6)
             label = font.render("Demolish", True, (255, 240, 240))

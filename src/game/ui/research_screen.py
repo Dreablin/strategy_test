@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 import pygame
 
+from game.ui.fonts import ui_font
 from game.ui.research_screen_layout import (
     ResearchContentLayout,
     compute_content_layout,
@@ -54,7 +55,7 @@ class ResearchScreen:
     ) -> None:
         pygame.draw.rect(surface, (34, 38, 48), content.content, border_radius=8)
         pygame.draw.rect(surface, (48, 54, 66), content.technology_column, border_radius=6)
-        label_font = pygame.font.Font(None, 20)
+        label_font = ui_font(20)
         tech_label = label_font.render("Technology", True, (190, 196, 208))
         surface.blit(
             tech_label,
@@ -111,7 +112,7 @@ class ResearchScreen:
         pygame.draw.rect(surface, (28, 32, 40), layout.frame)
         pygame.draw.rect(surface, (56, 60, 68), layout.frame, width=2)
 
-        title_font = pygame.font.Font(None, 36)
+        title_font = ui_font(36)
         title = title_font.render(_TITLE, True, (238, 240, 248))
         surface.blit(title, (layout.frame.left + _PAD, layout.frame.top + _PAD))
 

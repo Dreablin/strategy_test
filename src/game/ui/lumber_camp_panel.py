@@ -8,6 +8,7 @@ import pygame
 
 from game.buildings.lumber_camp import LumberCamp
 from game.ui.building_panel import BuildingPanel
+from game.ui.fonts import ui_font
 
 _PANEL_PAD = 16
 _BTN_H = 32
@@ -88,7 +89,7 @@ class LumberCampPanel:
             worker_assigned=worker_assigned,
             production_status=production_status,
         )
-        font = pygame.font.Font(None, 22)
+        font = ui_font(22)
 
         active_bg = (84, 112, 84) if camp.active else (92, 64, 64)
         pygame.draw.rect(surface, active_bg, layout.toggle, border_radius=6)

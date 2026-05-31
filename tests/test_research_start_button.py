@@ -59,5 +59,6 @@ def test_default_eligibility_disables_all_start_buttons() -> None:
     content = compute_content_layout(surface)
     draw_research_tiles(surface, content.tiles)
     tile = content.tiles[0]
-    px = surface.get_at(tile.start_button.center)
+    corner = (tile.start_button.left + 3, tile.start_button.top + 3)
+    px = surface.get_at(corner)
     assert sum(px[:3]) < 200

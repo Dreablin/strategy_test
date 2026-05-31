@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pygame
+from game.ui.fonts import ui_font
 
 _START_LABEL = "Start"
 _ENABLED_BG = (64, 110, 168)
@@ -24,7 +25,7 @@ def draw_research_start_button(
     fg = _ENABLED_FG if enabled else _DISABLED_FG
     pygame.draw.rect(surface, bg, button, border_radius=5)
     pygame.draw.rect(surface, border, button, width=1, border_radius=5)
-    font = pygame.font.Font(None, 20)
+    font = ui_font(20)
     label = font.render(_START_LABEL, True, fg)
     if not enabled:
         label = label.copy()

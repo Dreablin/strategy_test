@@ -10,6 +10,7 @@ from game.buildings.restaurant import Restaurant
 from game.ui.building_panel import BuildingPanel
 from game.worker_dining import dining_eat_duration_ms
 from game.worker_status import production_status_for_building
+from game.ui.fonts import ui_font
 
 
 _PANEL_PAD = 16
@@ -87,7 +88,7 @@ class RestaurantPanel:
     ) -> RestaurantPanelLayout:
         lay = RestaurantPanel.layout(surface, restaurant, worker_assigned=worker_assigned)
         BuildingPanel.draw(surface, restaurant, worker_assigned=worker_assigned, extra_bottom_px=_EXTRA_BOTTOM)
-        font = pygame.font.SysFont(None, 18)
+        font = ui_font(18)
 
         action_tops = [lay.toggle.top]
         if lay.upgrade is not None:
@@ -124,7 +125,7 @@ class RestaurantPanel:
         label = RestaurantPanel.toggle_label(restaurant)
         color = (80, 180, 80) if restaurant.active else (180, 80, 80)
         pygame.draw.rect(surface, color, lay.toggle, border_radius=4)
-        btn_font = pygame.font.SysFont(None, 20)
+        btn_font = ui_font(20)
         btn_text = btn_font.render(label, True, (255, 255, 255))
         surface.blit(btn_text, (lay.toggle.centerx - btn_text.get_width() // 2, lay.toggle.centery - btn_text.get_height() // 2))
         return lay

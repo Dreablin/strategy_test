@@ -9,6 +9,7 @@ from game.config import CONSTRUCTION_REQUIREMENTS
 from game.research_config import RESEARCH_BY_ID
 from game.resource_catalog import resource_display_label
 from game.statue_research import statue_stage_research_id
+from game.ui.fonts import ui_font
 
 BAR_HEIGHT = 96
 # Distinct from other user events; carries `building_type: str` (e.g. `"LUMBER_CAMP"`).
@@ -115,7 +116,7 @@ def _draw_building_cost_tooltip(
     tag = _hovered_building_tag(surface, hover_pos)
     if tag is None or hover_pos is None:
         return None
-    font = pygame.font.Font(None, 18)
+    font = ui_font(18)
     line_surfaces = [font.render(line, True, _TOOLTIP_TEXT) for line in _construction_cost_lines(tag)]
     max_w = max(surf.get_width() for surf in line_surfaces)
     total_h = sum(surf.get_height() for surf in line_surfaces) + _TOOLTIP_GAP * (len(line_surfaces) - 1)
@@ -152,7 +153,7 @@ class BottomBar:
         pygame.draw.rect(surface, (26, 28, 34), (0, y0, w, BAR_HEIGHT))
         pygame.draw.line(surface, (48, 52, 60), (0, y0), (w, y0))
 
-        font = pygame.font.Font(None, 22)
+        font = ui_font(22)
         menu = BottomBar._menu
         if menu == "main":
             entries: tuple[tuple[str, str], ...] = (

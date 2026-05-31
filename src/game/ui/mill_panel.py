@@ -8,6 +8,7 @@ import pygame
 
 from game.buildings.mill import Mill
 from game.ui.building_panel import BuildingPanel
+from game.ui.fonts import ui_font
 
 _PANEL_PAD = 16
 _BTN_H = 32
@@ -103,8 +104,8 @@ class MillPanel:
             worker_assigned=worker_assigned,
             production_status=production_status,
         )
-        font = pygame.font.Font(None, 22)
-        body = pygame.font.Font(None, 20)
+        font = ui_font(22)
+        body = ui_font(20)
 
         details_y = layout.frame.top + _PANEL_PAD + 4 * 26 + 32
         wheat = body.render(

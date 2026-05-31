@@ -12,6 +12,7 @@ from game.research_config import RESEARCH_BY_ID
 from game.resource_catalog import resource_display_label
 from game.statue_research import statue_stage_research_id
 from game.ui.worker_labels import building_worker_status_line
+from game.ui.fonts import ui_font
 _PANEL_W = 420
 _PANEL_PAD = 16
 _ROW = 26
@@ -110,7 +111,7 @@ def draw_upgrade_cost_tooltip(
         hover_pos = pygame.mouse.get_pos()
     if not upgrade_rect.collidepoint(hover_pos):
         return None
-    font = pygame.font.Font(None, 18)
+    font = ui_font(18)
     line_surfaces = [font.render(line, True, _TOOLTIP_TEXT) for line in _upgrade_cost_lines(building)]
     max_w = max(surf.get_width() for surf in line_surfaces)
     total_h = sum(surf.get_height() for surf in line_surfaces) + _TOOLTIP_GAP * (len(line_surfaces) - 1)
@@ -260,9 +261,9 @@ class BuildingPanel:
         pygame.draw.rect(surface, (36, 40, 52), layout.frame, border_radius=10)
         pygame.draw.rect(surface, (72, 78, 92), layout.frame, width=2, border_radius=10)
 
-        title_font = pygame.font.Font(None, 28)
-        body_font = pygame.font.Font(None, 22)
-        btn_font = pygame.font.Font(None, 22)
+        title_font = ui_font(28)
+        body_font = ui_font(22)
+        btn_font = ui_font(22)
 
         name = _DISPLAY_NAME.get(building.type_tag, building.type_tag)
         stage_name = getattr(building, "stage_name", None)

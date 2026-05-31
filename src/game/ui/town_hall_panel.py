@@ -9,6 +9,7 @@ import pygame
 from game.assets import resource_icon
 from game.buildings.town_hall import TownHall
 from game.ui.building_panel import BuildingPanel, draw_upgrade_cost_tooltip
+from game.ui.fonts import ui_font
 
 _PANEL_PAD = 16
 _BTN_H = 32
@@ -99,8 +100,8 @@ class TownHallPanel:
             extra_bottom_px=_EXTRA_BOTTOM,
         )
         layout = TownHallPanel.layout(surface, town_hall, worker_assigned=worker_assigned)
-        font = pygame.font.Font(None, 22)
-        title_font = pygame.font.Font(None, 24)
+        font = ui_font(22)
+        title_font = ui_font(24)
 
         if layout.upgrade is not None:
             bg = (64, 110, 168) if layout.upgrade_enabled else (52, 56, 64)
@@ -138,7 +139,7 @@ class TownHallPanel:
             qty = int(town_hall.warehouse_amount(res_key))
             qty_s = font.render(str(qty), True, (236, 240, 246))
             surface.blit(qty_s, (cell.left + 34, cell.top + 10))
-            label_s = pygame.font.Font(None, 18).render(res_label, True, (170, 176, 188))
+            label_s = ui_font(18).render(res_label, True, (170, 176, 188))
             surface.blit(label_s, (cell.left + 8, cell.bottom - label_s.get_height() - 8))
 
 

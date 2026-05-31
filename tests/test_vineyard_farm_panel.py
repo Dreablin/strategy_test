@@ -87,7 +87,11 @@ def test_draw_leaves_grape_text_above_demolish_at_level_10() -> None:
     )
     layout = VineyardFarmPanel.layout(surface, farm, worker_assigned=True, production_status="Resting")
     grape_y = VineyardFarmPanel._grape_label_y(layout)
-    x = layout.frame.left + 16 + 40
-    y = grape_y + 10
-    px = surface.get_at((x, y))
-    assert px != (36, 40, 52, 255)
+    panel_bg = (36, 40, 52, 255)
+    text_found = False
+    for x in range(layout.frame.left + 16, layout.frame.right - 16):
+        px = surface.get_at((x, grape_y + 10))
+        if px != panel_bg:
+            text_found = True
+            break
+    assert text_found

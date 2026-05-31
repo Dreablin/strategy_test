@@ -8,6 +8,7 @@ import pygame
 
 from game.assets import hire_ui_icon, worker_ui_icon
 from game.ui.building_panel import draw_upgrade_cost_tooltip
+from game.ui.fonts import ui_font
 from game.ui.worker_labels import (
     WORKER_LABEL as _WORKER_LABEL,
     building_worker_status_line,
@@ -178,9 +179,9 @@ class SchoolPanel:
 
         pygame.draw.rect(surface, (36, 40, 52), layout.frame, border_radius=10)
         pygame.draw.rect(surface, (72, 78, 92), layout.frame, width=2, border_radius=10)
-        title_font = pygame.font.Font(None, 28)
-        font = pygame.font.Font(None, 22)
-        small_font = pygame.font.Font(None, 18)
+        title_font = ui_font(28)
+        font = ui_font(22)
+        small_font = ui_font(18)
         title = title_font.render(f"School — Lv {school.level}", True, (238, 240, 248))
         surface.blit(title, (layout.frame.left + _PANEL_PAD, layout.frame.top + _PANEL_PAD))
         pygame.draw.line(

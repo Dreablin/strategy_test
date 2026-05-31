@@ -9,6 +9,7 @@ import pygame
 from game.assets import worker_ui_icon
 from game.ui.worker_labels import WORKER_LABEL as _WORKER_LABEL
 from game.worker_models import Worker
+from game.ui.fonts import ui_font
 
 _PANEL_W = 560
 _PANEL_PAD = 16
@@ -210,9 +211,9 @@ class PopulationPanel:
         pygame.draw.rect(surface, (36, 40, 52), layout.frame, border_radius=10)
         pygame.draw.rect(surface, (72, 78, 92), layout.frame, width=2, border_radius=10)
 
-        title_font = pygame.font.Font(None, 28)
-        body_font = pygame.font.Font(None, 22)
-        small_font = pygame.font.Font(None, 20)
+        title_font = ui_font(28)
+        body_font = ui_font(22)
+        small_font = ui_font(20)
         title = title_font.render(f"Population - {len(workers)}", True, (238, 240, 248))
         surface.blit(title, (layout.frame.left + _PANEL_PAD, layout.frame.top + _PANEL_PAD))
 

@@ -10,6 +10,7 @@ from game.resource_catalog import resource_display_label
 from game.ui.worker_labels import WORKER_LABEL as _WORKER_LABEL
 from game.worker_models import Worker
 from game.worker_satiety import MAX_WORKER_SATIETY, clamp_worker_satiety
+from game.ui.fonts import ui_font
 
 _PANEL_W = 420
 _PANEL_PAD = 16
@@ -161,8 +162,8 @@ class WorkerPanel:
         pygame.draw.rect(surface, (36, 40, 52), layout.frame, border_radius=10)
         pygame.draw.rect(surface, (72, 78, 92), layout.frame, width=2, border_radius=10)
 
-        title_font = pygame.font.Font(None, 28)
-        body_font = pygame.font.Font(None, 22)
+        title_font = ui_font(28)
+        body_font = ui_font(22)
         title = title_font.render(_label(worker.type_tag, _WORKER_LABEL), True, (238, 240, 248))
         surface.blit(title, (layout.frame.left + _PANEL_PAD, layout.frame.top + _PANEL_PAD))
 

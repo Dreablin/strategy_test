@@ -8,6 +8,7 @@ import pygame
 
 from game import dev_asset_reload
 from game.assets import population_icon
+from game.ui.fonts import ui_font
 
 _BAR_HEIGHT = 48
 _RESEARCH_BTN_W = 96
@@ -57,7 +58,7 @@ class TopBar:
         icon_rect = pygame.Rect(icon_x, icon_y, icon.get_width(), icon.get_height())
         label = f"{current_population} (max {max_population})"
         label_pos = (icon_rect.right + 8, (_BAR_HEIGHT - 22) // 2)
-        font = pygame.font.Font(None, 22)
+        font = ui_font(22)
         label_w, _label_h = font.size(label)
         population_button = pygame.Rect(
             icon_rect.left - 6,
@@ -116,7 +117,7 @@ class TopBar:
             (0, _BAR_HEIGHT - 1),
             (layout.bar_rect.width, _BAR_HEIGHT - 1),
         )
-        font = pygame.font.Font(None, 22)
+        font = ui_font(22)
         pygame.draw.rect(surface, (42, 48, 58), layout.population_button, border_radius=6)
         pygame.draw.rect(surface, (70, 76, 88), layout.population_button, width=1, border_radius=6)
         icon = population_icon()

@@ -12,6 +12,7 @@ from game.assets import worker_ui_icon
 from game.buildings.laboratory import Laboratory
 from game.research_state import ResearchState
 from game.ui.building_panel import BuildingPanel, BuildingPanelLayout, draw_upgrade_cost_tooltip
+from game.ui.fonts import ui_font
 from game.ui.laboratory_panel_research import (
     SECTION_PAD,
     draw_research_storage_section,
@@ -257,7 +258,7 @@ class LaboratoryPanel:
             ),
         )
         if layout.upgrade is not None and not layout.upgrade_enabled:
-            btn_font = pygame.font.Font(None, 22)
+            btn_font = ui_font(22)
             pygame.draw.rect(surface, (52, 56, 64), layout.upgrade, border_radius=6)
             label = btn_font.render(
                 f"Upgrade to Lv {laboratory.level + 1}",
@@ -280,7 +281,7 @@ class LaboratoryPanel:
                 research_state=research_state,
                 section_top=layout.research_section.top,
             )
-        body = pygame.font.Font(None, 20)
+        body = ui_font(20)
         active: tuple[Worker, ...] = ()
         if worker_manager is not None and not laboratory.is_under_construction:
             active = worker_manager.laboratory_research_contributing_scientists(laboratory)
@@ -308,7 +309,7 @@ class LaboratoryPanel:
                     ),
                 )
                 label = "Sci"
-            text = pygame.font.Font(None, 15).render(label, True, (220, 224, 232))
+            text = ui_font(15).render(label, True, (220, 224, 232))
             surface.blit(
                 text,
                 (tile.centerx - text.get_width() // 2, tile.bottom - text.get_height() - 4),

@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 29 - Localization EN/RU (**in progress**)
-- **Next Task:** T443 - Centralize font creation and bundle a Cyrillic-capable font
-- **Last Completed:** T442 - Add a locale-switch test harness (used by all later `ru`-smoke tests)
-- **Total Progress:** 442 / 468 (Phase 29: 4 / 30 done)
+- **Next Task:** T444 - Seed shared/common locale keys (`ui.*`)
+- **Last Completed:** T443 - Centralize font creation and bundle a Cyrillic-capable font
+- **Total Progress:** 443 / 468 (Phase 29: 5 / 30 done)
 
 > **Archive:** Phase 28 task details (T387-T438) are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -63,7 +63,7 @@ Each task runs in a fresh context. Do not assume prior memory; read this block, 
   - Add `tests/test_i18n_harness.py` proving the same key returns English then Russian inside two isolated `use_locale` blocks, and that the locale is restored to `en` afterward.
   - Verify: `pytest -q tests/test_i18n_harness.py`; then `pytest -q`.
   - Acceptance: harness exists, isolation test passes, no other test changes behavior.
-- [~] **T443**: Centralize font creation and bundle a Cyrillic-capable font.
+- [x] **T443**: Centralize font creation and bundle a Cyrillic-capable font.
   - Create `src/game/ui/fonts.py` with a cached helper `ui_font(size: int) -> pygame.font.Font` that loads one bundled TTF by path.
   - Add a Unicode TTF with full Cyrillic coverage under `assets/fonts/` (e.g. DejaVuSans). Load it relative to the package, falling back to `pygame.font.Font(None, size)` only if the file is missing.
   - Replace every `pygame.font.Font(None, size)` call in `src/game/ui/*.py`, `src/game/render.py`, and `src/game/assets.py` with `ui_font(size)`. (Use `rg "Font\(None" src` to find all sites.)
@@ -71,7 +71,7 @@ Each task runs in a fresh context. Do not assume prior memory; read this block, 
   - Add `tests/test_ui_fonts.py`: `ui_font(22).render("Дерево", True, (255,255,255))` returns a surface with `get_width() > 0`, and confirm no `Font(None` remains via the test or a documented allowlist.
   - Verify: `pytest -q tests/test_ui_fonts.py`; `ruff check src tests`; then `pytest -q`.
   - Acceptance: Cyrillic renders to a non-empty surface; all panels use `ui_font`; full suite passes.
-- [ ] **T444**: Seed shared/common locale keys (`ui.*`).
+- [~] **T444**: Seed shared/common locale keys (`ui.*`).
   - Add to both locale files: `ui.button.{start,upgrade,demolish,close,back}`, `ui.common.{active,inactive,cost,status,storage,requirements,free,unavailable}`, and `ui.window.caption` (en: `Isometric Strategy`). Provide Russian values for all.
   - Apply `ui.window.caption` in `main.py` (replace the literal in `pygame.display.set_caption(...)` with `i18n.t("ui.window.caption")`).
   - Verify: `pytest -q tests/test_i18n_schema.py`; smoke `python -c "import game.main"`; then `pytest -q`.

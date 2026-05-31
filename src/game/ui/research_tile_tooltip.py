@@ -10,6 +10,7 @@ import pygame
 from game.research_config import RESEARCH_BY_ID, ResearchDefinition
 from game.resource_catalog import resource_display_label
 from game.ui.research_tile_layout import ResearchTileLayout
+from game.ui.fonts import ui_font
 
 _PAD = 8
 _LINE_GAP = 2
@@ -104,7 +105,7 @@ def draw_research_tile_tooltip(
     info: ResearchTileTooltipInfo,
 ) -> pygame.Rect:
     """Draw tooltip near ``anchor``; return the tooltip background rect."""
-    font = pygame.font.Font(None, _FONT_SIZE)
+    font = ui_font(_FONT_SIZE)
     lines = format_research_tooltip_lines(info)
     line_surfaces = [font.render(line, True, _LOCK if line.startswith("Locked:") else _TEXT) for line in lines]
     box = _tooltip_rect_for_lines(surface, anchor, line_surfaces)

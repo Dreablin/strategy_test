@@ -11,6 +11,7 @@ from game.research_config import RESEARCH_BY_ID
 from game.research_state import ResearchState
 from game.ui.research_start_button import draw_research_start_button
 from game.ui.research_tile_layout import ResearchTileLayout
+from game.ui.fonts import ui_font
 from game.ui.research_tile_visual import (
     research_tile_image_alpha,
     research_tile_is_in_progress,
@@ -26,7 +27,7 @@ def draw_research_tiles(
     research_can_start: Mapping[str, bool] | None = None,
 ) -> None:
     eligibility = research_can_start if research_can_start is not None else {}
-    title_font = pygame.font.Font(None, 18)
+    title_font = ui_font(18)
     for tile in tiles:
         entry = RESEARCH_BY_ID[tile.research_id]
         image = research_image_for_id(entry.id, size=tile.image_rect.width)

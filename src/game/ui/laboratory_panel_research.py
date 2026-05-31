@@ -9,6 +9,7 @@ from game.research_assets import research_image_for_id
 from game.research_config import RESEARCH_BY_ID
 from game.research_state import ResearchState
 from game.resource_catalog import resource_display_label
+from game.ui.fonts import ui_font
 
 _IMAGE_SIZE = 48
 _LINE_H = 20
@@ -92,10 +93,10 @@ def draw_research_storage_section(
     image = research_image_for_id(active_id, size=_IMAGE_SIZE)
     image_rect = pygame.Rect(left, y, _IMAGE_SIZE, _IMAGE_SIZE)
     surface.blit(image, image_rect.topleft)
-    title_font = pygame.font.Font(None, 20)
+    title_font = ui_font(20)
     title = title_font.render("Active research", True, (190, 196, 208))
     surface.blit(title, (image_rect.right + 10, y + 4))
-    body = pygame.font.Font(None, 20)
+    body = ui_font(20)
     line_y = image_rect.bottom + _SECTION_GAP
     bar_rect = pygame.Rect(left, line_y, content_width, _PROGRESS_BAR_H)
     pygame.draw.rect(surface, (52, 58, 66), bar_rect, border_radius=4)

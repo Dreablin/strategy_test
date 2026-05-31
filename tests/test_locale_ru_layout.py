@@ -124,7 +124,6 @@ def test_building_panel_ru_text_fits(use_locale) -> None:
 
 
 def test_worker_panel_ru_body_lines_fit(use_locale) -> None:
-    surface = pygame.Surface(_SURFACE)
     th = TownHall(level=1, grid_pos=town_hall_origin_tile())
     vf = VineyardFarm(level=2, grid_pos=near_town_hall_tile(12, 8))
     worker = Worker("CARRIER", stand_tile=near_town_hall_tile())

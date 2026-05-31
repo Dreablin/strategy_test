@@ -24,7 +24,7 @@ def test_iron_mine_panel_draws_progress_bar_for_active_mining() -> None:
         mine,
         worker_assigned=True,
         worker_status="assigned",
-        production_status="Mining",
+        production_status="mining",
         now_ms=23_500,
     )
 

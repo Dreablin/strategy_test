@@ -2,6 +2,7 @@
 
 import pygame
 
+from game import i18n
 from game.buildings.farm import Farm
 from game.buildings.iron_mine import IronMine
 from game.buildings.lumber_camp import LumberCamp
@@ -22,9 +23,9 @@ def test_stone_mine_toggle_label_reflects_active_state() -> None:
     mine = StoneMine(level=1, grid_pos=(10, 10))
 
     mine.set_active(True)
-    assert StoneMinePanel.toggle_label(mine) == "Active"
+    assert StoneMinePanel.toggle_label(mine) == i18n.t("ui.common.active")
     mine.set_active(False)
-    assert StoneMinePanel.toggle_label(mine) == "Inactive"
+    assert StoneMinePanel.toggle_label(mine) == i18n.t("ui.common.inactive")
 
 
 def test_stone_mine_click_toggle_returns_toggle_action() -> None:

@@ -8,6 +8,7 @@ import pygame
 
 from game.buildings.mill import Mill
 from game.ui.building_panel import BuildingPanel
+from game.ui.panel_i18n import active_toggle_label, blocked_line, flow_line
 from game.ui.fonts import ui_font
 
 _PANEL_PAD = 16
@@ -32,7 +33,7 @@ class MillPanel:
 
     @staticmethod
     def toggle_label(mill: Mill) -> str:
-        return "Active" if mill.active else "Inactive"
+        return active_toggle_label(mill.active)
 
     @staticmethod
     def blocked_reason(mill: Mill, *, production_status: str | None) -> str:
@@ -109,19 +110,29 @@ class MillPanel:
 
         details_y = layout.frame.top + _PANEL_PAD + 4 * 26 + 32
         wheat = body.render(
-            f"Input wheat: {mill.input_amount()} / {mill.input_capacity()}",
+            flow_line(
+                role_key="ui.panel.input",
+                resource_key="wheat",
+                amount=mill.input_amount(),
+                capacity=mill.input_capacity(),
+            ),
             True,
             (200, 204, 214),
         )
         surface.blit(wheat, (layout.frame.left + _PANEL_PAD, details_y))
         flour = body.render(
-            f"Output flour: {mill.output_amount()} / {mill.output_capacity()}",
+            flow_line(
+                role_key="ui.panel.output",
+                resource_key="flour",
+                amount=mill.output_amount(),
+                capacity=mill.output_capacity(),
+            ),
             True,
             (200, 204, 214),
         )
         surface.blit(flour, (layout.frame.left + _PANEL_PAD, details_y + 22))
         reason = MillPanel.blocked_reason(mill, production_status=production_status)
-        reason_text = body.render(f"Blocked: {reason}", True, (200, 204, 214))
+        reason_text = body.render(blocked_line(reason), True, (200, 204, 214))
         surface.blit(reason_text, (layout.frame.left + _PANEL_PAD, details_y + 44))
 
         bar_y = details_y + 68

@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 29 - Localization EN/RU (**in progress**)
-- **Next Task:** T455 - Localize raw + processing building panels
-- **Last Completed:** T454 - Externalize production/worker status strings — `src/game/worker_status.py`
-- **Total Progress:** 454 / 468 (Phase 29: 16 / 30 done)
+- **Next Task:** T456 - Localize Laboratory panels — `src/game/ui/laboratory_panel.py` + `laboratory_panel_research.py`
+- **Last Completed:** T455 - Localize raw + processing building panels
+- **Total Progress:** 455 / 468 (Phase 29: 17 / 30 done)
 
 > **Archive:** Phase 28 task details (T387-T438) are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -135,13 +135,13 @@ Each task runs in a fresh context. Do not assume prior memory; read this block, 
   - Update the status-helper test (find via `rg -l worker_status tests`); assert localized output for a few representative statuses in `en`+`ru`.
   - Verify: run the status test file; then `pytest -q`.
   - Acceptance: every status string has a locale key; tests assert consistent ids/output.
-- [~] **T455**: Localize raw + processing building panels.
+- [x] **T455**: Localize raw + processing building panels.
   - Files: `lumber_camp_panel.py`, `stone_mine_panel.py`, `iron_mine_panel.py`, `forester_hut_panel.py`, `well_panel.py`, `sawmill_panel.py`, `mill_panel.py`, `bakery_panel.py`, `winery_panel.py`.
   - Route their visible text — `Active`/`Inactive` toggles, `Demolish`, storage lines like `Grapes: {n} / {m}` / `Wine: {n} / {m}`, and any status text — through `ui.*`/`status.*`/`resource.*` keys. Resource/amount labels reuse `resource.<id>`.
   - Update the relevant panel tests (find via `rg -l "sawmill\|winery\|forester\|well_panel\|mill_panel\|bakery" tests`).
   - Verify: run those test files; then `pytest -q`.
   - Acceptance: no hard-coded visible English remains in these modules except ids/constants; tests pass.
-- [ ] **T456**: Localize Laboratory panels — `src/game/ui/laboratory_panel.py` + `laboratory_panel_research.py`.
+- [~] **T456**: Localize Laboratory panels — `src/game/ui/laboratory_panel.py` + `laboratory_panel_research.py`.
   - Route `Scientists: {n} / {m}`, `Upgrade to Lv {n}`, slot labels `Empty`/`Sci`, `Active`/`Inactive`, `Active research`, and the research points line (`{current} / {required}`) through `ui.*`/`status.*`/`building.LABORATORY.*` keys.
   - Update `tests/test_laboratory_panel.py` and `tests/test_laboratory_labels.py`; add a `ru` smoke for the scientists line.
   - Verify: `pytest -q tests/test_laboratory_panel.py tests/test_laboratory_labels.py`; then `pytest -q`.

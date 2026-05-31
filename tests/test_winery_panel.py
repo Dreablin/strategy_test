@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pygame
 
+from game import i18n
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
 from game.buildings.winery import Winery
@@ -116,6 +117,6 @@ def test_winery_panel_click_toggle_active() -> None:
 
 def test_winery_panel_toggle_label() -> None:
     winery = _make_winery()
-    assert WineryPanel.toggle_label(winery) == "Active"
+    assert WineryPanel.toggle_label(winery) == i18n.t("ui.common.active")
     winery.set_active(False)
-    assert WineryPanel.toggle_label(winery) == "Inactive"
+    assert WineryPanel.toggle_label(winery) == i18n.t("ui.common.inactive")

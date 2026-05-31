@@ -8,6 +8,7 @@ import pygame
 
 from game.buildings.bakery import Bakery
 from game.ui.building_panel import BuildingPanel
+from game.ui.panel_i18n import active_toggle_label, blocked_line, flow_line
 from game.ui.fonts import ui_font
 
 _PANEL_PAD = 16
@@ -32,7 +33,7 @@ class BakeryPanel:
 
     @staticmethod
     def toggle_label(bakery: Bakery) -> str:
-        return "Active" if bakery.active else "Inactive"
+        return active_toggle_label(bakery.active)
 
     @staticmethod
     def blocked_reason(bakery: Bakery, *, worker_status: str, production_status: str | None) -> str:
@@ -111,19 +112,34 @@ class BakeryPanel:
 
         details_y = layout.frame.top + _PANEL_PAD + 4 * 26 + 32
         flour = body.render(
-            f"Input flour: {bakery.input_amount()} / {bakery.input_capacity()}",
+            flow_line(
+                role_key="ui.panel.input",
+                resource_key="flour",
+                amount=bakery.input_amount(),
+                capacity=bakery.input_capacity(),
+            ),
             True,
             (200, 204, 214),
         )
         surface.blit(flour, (layout.frame.left + _PANEL_PAD, details_y))
         water = body.render(
-            f"Input water: {bakery.water_amount()} / {bakery.water_capacity()}",
+            flow_line(
+                role_key="ui.panel.input",
+                resource_key="water",
+                amount=bakery.water_amount(),
+                capacity=bakery.water_capacity(),
+            ),
             True,
             (200, 204, 214),
         )
         surface.blit(water, (layout.frame.left + _PANEL_PAD, details_y + 22))
         bread = body.render(
-            f"Output bread: {bakery.output_amount()} / {bakery.output_capacity()}",
+            flow_line(
+                role_key="ui.panel.output",
+                resource_key="bread",
+                amount=bakery.output_amount(),
+                capacity=bakery.output_capacity(),
+            ),
             True,
             (200, 204, 214),
         )
@@ -133,7 +149,7 @@ class BakeryPanel:
             worker_status=worker_status,
             production_status=production_status,
         )
-        reason_text = body.render(f"Blocked: {reason}", True, (200, 204, 214))
+        reason_text = body.render(blocked_line(reason), True, (200, 204, 214))
         surface.blit(reason_text, (layout.frame.left + _PANEL_PAD, details_y + 66))
 
         bar_y = details_y + 90

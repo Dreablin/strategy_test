@@ -8,6 +8,7 @@ import pygame
 
 from game.buildings.stone_mine import StoneMine
 from game.ui.building_panel import BuildingPanel
+from game.ui.panel_i18n import active_toggle_label
 from game.ui.fonts import ui_font
 
 _PANEL_PAD = 16
@@ -32,7 +33,7 @@ class StoneMinePanel:
 
     @staticmethod
     def toggle_label(mine: StoneMine) -> str:
-        return "Active" if mine.active else "Inactive"
+        return active_toggle_label(mine.active)
 
     @staticmethod
     def layout(

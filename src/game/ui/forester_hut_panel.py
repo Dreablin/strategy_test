@@ -6,8 +6,10 @@ from dataclasses import dataclass
 
 import pygame
 
+from game import i18n
 from game.buildings.forester_hut import ForesterHut
 from game.ui.building_panel import BuildingPanel
+from game.ui.panel_i18n import active_toggle_label
 from game.ui.fonts import ui_font
 
 _PANEL_PAD = 16
@@ -33,7 +35,7 @@ class ForesterHutPanel:
 
     @staticmethod
     def toggle_label(hut: ForesterHut) -> str:
-        return "Active" if hut.active else "Inactive"
+        return active_toggle_label(hut.active)
 
     @staticmethod
     def layout(
@@ -103,7 +105,7 @@ class ForesterHutPanel:
         font = ui_font(22)
         if layout.demolish is not None:
             pygame.draw.rect(surface, (140, 48, 52), layout.demolish, border_radius=6)
-            label = font.render("Demolish", True, (255, 240, 240))
+            label = font.render(i18n.t("ui.button.demolish"), True, (255, 240, 240))
             surface.blit(
                 label,
                 (

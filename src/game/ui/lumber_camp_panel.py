@@ -8,6 +8,7 @@ import pygame
 
 from game.buildings.lumber_camp import LumberCamp
 from game.ui.building_panel import BuildingPanel
+from game.ui.panel_i18n import active_toggle_label
 from game.ui.fonts import ui_font
 
 _PANEL_PAD = 16
@@ -32,7 +33,7 @@ class LumberCampPanel:
 
     @staticmethod
     def toggle_label(camp: LumberCamp) -> str:
-        return "Active" if camp.active else "Inactive"
+        return active_toggle_label(camp.active)
 
     @staticmethod
     def layout(

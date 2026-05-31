@@ -8,6 +8,8 @@ from game.buildings.town_hall import TownHall
 from game.buildings.well import Well
 from game.ui.building_panel import (
     BuildingPanel,
+    building_description,
+    building_display_name,
     _upgrade_cost_lines,
     _upgrade_label,
     draw_upgrade_cost_tooltip,
@@ -104,3 +106,27 @@ def test_worker_status_line_includes_building_worker_name() -> None:
 
 def test_worker_status_line_omits_name_for_unstaffed_buildings() -> None:
     assert worker_status_line(School(level=1, grid_pos=(4, 4)), "empty") == "Worker: empty"
+
+
+def test_town_hall_localized_name_and_description_en() -> None:
+    assert building_display_name("TOWN_HALL") == "Town Hall"
+    assert building_description("TOWN_HALL") == "The heart of your settlement."
+
+
+def test_laboratory_localized_name_and_description_en() -> None:
+    assert building_display_name("LABORATORY") == "Laboratory"
+    description = building_description("LABORATORY")
+    assert description
+    assert "research" in description.lower()
+    assert "scientist" in description.lower()
+
+
+def test_statue_localized_name_and_description_en() -> None:
+    assert building_display_name("STATUE") == "Statue"
+    assert "four stages" in building_description("STATUE").lower()
+
+
+def test_town_hall_localized_name_ru(use_locale) -> None:
+    with use_locale("ru"):
+        assert building_display_name("TOWN_HALL") == "Ратуша"
+        assert building_description("TOWN_HALL") == "Сердце вашего поселения."

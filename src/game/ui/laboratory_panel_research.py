@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pygame
 
+from game import i18n
 from game.buildings.laboratory import Laboratory
 from game.research_assets import research_image_for_id
 from game.research_config import RESEARCH_BY_ID
@@ -30,7 +31,7 @@ def research_points_display(research_state: ResearchState) -> tuple[int, int]:
 
 def research_points_label(research_state: ResearchState) -> str:
     current, required = research_points_display(research_state)
-    return f"{current} / {required}"
+    return i18n.t("ui.laboratory.research_points", current=int(current), required=int(required))
 
 
 def research_points_fill_ratio(research_state: ResearchState) -> float:
@@ -69,7 +70,12 @@ def research_storage_section_height(
 def research_input_line(laboratory: Laboratory, resource: str) -> str:
     amount = laboratory.research_input_amount(resource)
     capacity = laboratory.research_input_capacity(resource)
-    return f"{resource_display_label(resource)}: {amount} / {capacity}"
+    return i18n.t(
+        "ui.panel.amount_line",
+        label=resource_display_label(resource),
+        amount=int(amount),
+        capacity=int(capacity),
+    )
 
 
 def draw_research_storage_section(
@@ -94,7 +100,7 @@ def draw_research_storage_section(
     image_rect = pygame.Rect(left, y, _IMAGE_SIZE, _IMAGE_SIZE)
     surface.blit(image, image_rect.topleft)
     title_font = ui_font(20)
-    title = title_font.render("Active research", True, (190, 196, 208))
+    title = title_font.render(i18n.t("ui.laboratory.active_research"), True, (190, 196, 208))
     surface.blit(title, (image_rect.right + 10, y + 4))
     body = ui_font(20)
     line_y = image_rect.bottom + _SECTION_GAP

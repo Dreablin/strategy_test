@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pygame
 
+from game import i18n
 from game.buildings.laboratory import Laboratory
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
@@ -46,7 +47,9 @@ def test_laboratory_panel_supports_building() -> None:
 def test_scientist_slot_states_reflect_active_count() -> None:
     assert scientist_slot_states(3, ()) == (False, False, False)
     assert scientist_slot_states(3, [object(), object()]) == (True, True, False)
-    assert scientist_slots_summary(active_count=2, capacity=5) == "Scientists: 2 / 5"
+    assert scientist_slots_summary(active_count=2, capacity=5) == i18n.t(
+        "ui.laboratory.scientists", active=2, capacity=5
+    )
 
 
 def test_layout_has_one_tile_per_scientist_slot() -> None:

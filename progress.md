@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 29 - Localization EN/RU (**in progress**)
-- **Next Task:** T456 - Localize Laboratory panels — `src/game/ui/laboratory_panel.py` + `laboratory_panel_research.py`
-- **Last Completed:** T455 - Localize raw + processing building panels
-- **Total Progress:** 455 / 468 (Phase 29: 17 / 30 done)
+- **Next Task:** T457 - Localize food/dining panels
+- **Last Completed:** T456 - Localize Laboratory panels
+- **Total Progress:** 456 / 468 (Phase 29: 18 / 30 done)
 
 > **Archive:** Phase 28 task details (T387-T438) are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -141,12 +141,12 @@ Each task runs in a fresh context. Do not assume prior memory; read this block, 
   - Update the relevant panel tests (find via `rg -l "sawmill\|winery\|forester\|well_panel\|mill_panel\|bakery" tests`).
   - Verify: run those test files; then `pytest -q`.
   - Acceptance: no hard-coded visible English remains in these modules except ids/constants; tests pass.
-- [~] **T456**: Localize Laboratory panels — `src/game/ui/laboratory_panel.py` + `laboratory_panel_research.py`.
+- [x] **T456**: Localize Laboratory panels — `src/game/ui/laboratory_panel.py` + `laboratory_panel_research.py`.
   - Route `Scientists: {n} / {m}`, `Upgrade to Lv {n}`, slot labels `Empty`/`Sci`, `Active`/`Inactive`, `Active research`, and the research points line (`{current} / {required}`) through `ui.*`/`status.*`/`building.LABORATORY.*` keys.
   - Update `tests/test_laboratory_panel.py` and `tests/test_laboratory_labels.py`; add a `ru` smoke for the scientists line.
   - Verify: `pytest -q tests/test_laboratory_panel.py tests/test_laboratory_labels.py`; then `pytest -q`.
   - Acceptance: laboratory panel tests pass with localized text.
-- [ ] **T457**: Localize food/dining panels.
+- [~] **T457**: Localize food/dining panels.
   - Files: `farm`-related panel, `vineyard_farm_panel.py`, `canteen_panel.py`, `restaurant_panel.py`, `chicken_farm_panel.py`, `cow_farm_panel.py`.
   - Route dining slot/status text, blocked reasons, and meal/resource labels through `status.*`/`resource.*`/`ui.*` keys. Meal labels reuse `resource.simple_meal` / `resource.elite_meal`.
   - Update the relevant panel tests (find via `rg -l "canteen\|restaurant\|chicken_farm\|cow_farm\|vineyard_farm" tests`).

@@ -32,8 +32,9 @@ def main() -> int:
     town_hall = registry.place(TownHall, town_hall_origin_tile())
     bootstrap_starting_warehouse(town_hall, TOWN_HALL_STARTING_WAREHOUSE)
     camera = Camera()
-    placement = PlacementController(world, registry, camera)
     research_state = ResearchState()
+    registry.bind_research_state(research_state)
+    placement = PlacementController(world, registry, camera)
     worker_manager = WorkerManager(
         registry,
         now_ms_fn=pygame.time.get_ticks,
@@ -99,7 +100,7 @@ def main() -> int:
                 active_delivery_count=worker_manager.active_transport_count(),
                 show_research_button=research_button_visible(registry),
             )
-            BottomBar.draw(screen)
+            BottomBar.draw(screen, hover_pos=pygame.mouse.get_pos())
             placement.draw(screen, camera)
             game_input.draw_panel(screen)
             pygame.display.flip()

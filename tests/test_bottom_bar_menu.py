@@ -7,6 +7,9 @@ from game.ui.bottom_bar import (
     BottomBar,
     _FOOD_BUTTONS,
     _RESOURCE_BUTTONS,
+    _button_rects,
+    _construction_cost_lines,
+    _hovered_building_tag,
 )
 
 
@@ -47,6 +50,14 @@ def test_bottom_bar_main_can_open_food_menu_and_go_back() -> None:
     assert not any(e.type == BUILD_MENU_SELECT for e in pygame.event.get())
 
 
+def test_bottom_bar_back_to_main_returns_from_submenu() -> None:
+    BottomBar._menu = "social"  # noqa: SLF001
+
+    assert BottomBar.back_to_main() is True
+    assert BottomBar._menu == "main"  # noqa: SLF001
+    assert BottomBar.back_to_main() is False
+
+
 def test_bottom_bar_posts_selected_food_building_event() -> None:
     surface = pygame.Surface((1200, 720))
     BottomBar._menu = "food"  # noqa: SLF001
@@ -64,8 +75,6 @@ def test_bottom_bar_processing_menu_posts_winery_event() -> None:
     BottomBar._menu = "processing"  # noqa: SLF001
     pygame.event.clear()
 
-    from game.ui.bottom_bar import _button_rects
-
     rects = _button_rects(surface, 7)
     winery_center = rects[6].center
     BottomBar.handle_click(surface, winery_center)
@@ -73,3 +82,52 @@ def test_bottom_bar_processing_menu_posts_winery_event() -> None:
     events = [e for e in pygame.event.get() if e.type == BUILD_MENU_SELECT]
     assert events
     assert events[-1].building_type == "WINERY"
+
+
+def test_bottom_bar_hover_detects_building_button() -> None:
+    surface = pygame.Surface((1200, 720))
+    BottomBar._menu = "resource"  # noqa: SLF001
+    rects = _button_rects(surface, 6)
+
+    assert _hovered_building_tag(surface, rects[1].center) == "LUMBER_CAMP"
+    assert _hovered_building_tag(surface, rects[0].center) is None
+
+
+def test_bottom_bar_cost_tooltip_uses_construction_requirements() -> None:
+    lines = _construction_cost_lines("LUMBER_CAMP")
+    assert lines[0] == "Cost:"
+    assert any(line.startswith("Wood:") for line in lines)
+
+
+def test_bottom_bar_statue_tooltip_shows_excavation_research_requirement() -> None:
+    lines = _construction_cost_lines("STATUE")
+
+    assert "Requires research: Excavation Plans" in lines
+
+
+def test_bottom_bar_statue_menu_uses_final_stage_sprite(monkeypatch) -> None:
+    surface = pygame.Surface((1200, 720))
+    BottomBar._menu = "social"  # noqa: SLF001
+    calls: list[tuple[str, int]] = []
+
+    def fake_building_sprite(asset_key: str, level: int):
+        calls.append((asset_key, level))
+        return pygame.Surface((40, 32), pygame.SRCALPHA)
+
+    monkeypatch.setattr("game.ui.bottom_bar.building_sprite", fake_building_sprite)
+
+    BottomBar.draw(surface)
+
+    assert ("statue", 4) in calls
+    assert ("statue", 1) not in calls
+
+
+def test_bottom_bar_draws_cost_tooltip_on_building_hover() -> None:
+    surface = pygame.Surface((1200, 720))
+    surface.fill((10, 12, 16))
+    BottomBar._menu = "resource"  # noqa: SLF001
+    hover = _button_rects(surface, 6)[1].center
+
+    BottomBar.draw(surface, hover_pos=hover)
+
+    assert surface.get_at((hover[0] + 18, surface.get_height() - 118))[:3] != (10, 12, 16)

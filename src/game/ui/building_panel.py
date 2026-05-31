@@ -7,12 +7,21 @@ from dataclasses import dataclass
 import pygame
 
 from game.buildings.base import Building
+from game.config import CONSTRUCTION_REQUIREMENTS
+from game.research_config import RESEARCH_BY_ID
+from game.resource_catalog import resource_display_label
+from game.statue_research import statue_stage_research_id
 from game.ui.worker_labels import building_worker_status_line
 _PANEL_W = 420
 _PANEL_PAD = 16
 _ROW = 26
 _BTN_H = 36
 _CLOSE = 28
+_TOOLTIP_PAD = 8
+_TOOLTIP_GAP = 4
+_TOOLTIP_BG = (22, 26, 34)
+_TOOLTIP_BORDER = (72, 78, 92)
+_TOOLTIP_TEXT = (220, 224, 232)
 
 _DISPLAY_NAME: dict[str, str] = {
     "TOWN_HALL": "Town Hall",
@@ -31,6 +40,7 @@ _DISPLAY_NAME: dict[str, str] = {
     "WINERY": "Winery",
     "RESTAURANT": "Restaurant",
     "LABORATORY": "Laboratory",
+    "STATUE": "Statue",
 }
 
 _DESCRIPTION: dict[str, str] = {
@@ -51,12 +61,75 @@ _DESCRIPTION: dict[str, str] = {
     "WINERY": "Winemaker converts grapes into wine; carriers export wine to the Town Hall.",
     "RESTAURANT": "Cook prepares elite meals from bread, wine, and beef for advanced workers.",
     "LABORATORY": "Scientists conduct research and unlock technologies.",
+    "STATUE": "Final mission monument built in four stages.",
 }
 
 def _upgrade_label(building: Building) -> str:
+    next_stage_name = getattr(building, "next_stage_name", None)
+    if callable(next_stage_name):
+        stage = next_stage_name()
+        if stage:
+            return f"Start stage: {stage}"
     nxt = building.level + 1
     _ = building
-    return f"Upgrade to Lv {nxt} — Free"
+    return f"Upgrade to Lv {nxt}"
+
+
+def _upgrade_cost_lines(building: Building) -> tuple[str, ...]:
+    nxt = int(building.level) + 1
+    spec = CONSTRUCTION_REQUIREMENTS.get(building.type_tag, {}).get(nxt)
+    if spec is None:
+        lines = ["Upgrade cost: unavailable"]
+    else:
+        items = [(resource, amount) for resource, amount in sorted(spec.cost.items()) if int(amount) > 0]
+        if not items:
+            lines = ["Upgrade cost: Free"]
+        else:
+            lines = ["Upgrade cost:"]
+            for resource, amount in items:
+                lines.append(f"{resource_display_label(resource)}: {int(amount)}")
+    if building.type_tag == "STATUE":
+        research_id = statue_stage_research_id(nxt)
+        if research_id is not None:
+            research = RESEARCH_BY_ID.get(research_id)
+            name = research.name if research is not None else research_id
+            lines.append(f"Requires research: {name}")
+    return tuple(lines)
+
+
+def draw_upgrade_cost_tooltip(
+    surface: pygame.Surface,
+    building: Building,
+    upgrade_rect: pygame.Rect | None,
+    *,
+    hover_pos: tuple[int, int] | None = None,
+) -> pygame.Rect | None:
+    if upgrade_rect is None:
+        return None
+    if hover_pos is None:
+        hover_pos = pygame.mouse.get_pos()
+    if not upgrade_rect.collidepoint(hover_pos):
+        return None
+    font = pygame.font.Font(None, 18)
+    line_surfaces = [font.render(line, True, _TOOLTIP_TEXT) for line in _upgrade_cost_lines(building)]
+    max_w = max(surf.get_width() for surf in line_surfaces)
+    total_h = sum(surf.get_height() for surf in line_surfaces) + _TOOLTIP_GAP * (len(line_surfaces) - 1)
+    box_w = max_w + _TOOLTIP_PAD * 2
+    box_h = total_h + _TOOLTIP_PAD * 2
+    x = upgrade_rect.right + 8
+    if x + box_w > surface.get_width() - 4:
+        x = max(4, upgrade_rect.left - box_w - 8)
+    y = upgrade_rect.top
+    if y + box_h > surface.get_height() - 4:
+        y = max(4, surface.get_height() - box_h - 4)
+    box = pygame.Rect(x, y, box_w, box_h)
+    pygame.draw.rect(surface, _TOOLTIP_BG, box, border_radius=4)
+    pygame.draw.rect(surface, _TOOLTIP_BORDER, box, width=1, border_radius=4)
+    line_y = box.top + _TOOLTIP_PAD
+    for surf in line_surfaces:
+        surface.blit(surf, (box.left + _TOOLTIP_PAD, line_y))
+        line_y += surf.get_height() + _TOOLTIP_GAP
+    return box
 
 
 def worker_status_line(building: Building, worker_status: str) -> str:
@@ -87,6 +160,7 @@ class BuildingPanel:
         show_upgrade: bool | None = None,
         show_demolish: bool = True,
         extra_bottom_px: int = 0,
+        upgrade_enabled_override: bool | None = None,
     ) -> BuildingPanelLayout:
         sw, sh = surface.get_size()
         cls = type(building)
@@ -95,6 +169,8 @@ class BuildingPanel:
             show_upgrade = building.level < max_lv
         can_upgrade = bool(show_upgrade and building.level < max_lv)
         upgrade_enabled = can_upgrade
+        if upgrade_enabled_override is not None:
+            upgrade_enabled = bool(can_upgrade and upgrade_enabled_override)
 
         has_storage_row = hasattr(building, "storage_capacity") and hasattr(building, "stored")
         has_status_row = production_status is not None
@@ -165,6 +241,7 @@ class BuildingPanel:
         show_upgrade: bool | None = None,
         show_demolish: bool = True,
         extra_bottom_px: int = 0,
+        upgrade_enabled_override: bool | None = None,
     ) -> None:
         layout = BuildingPanel.layout(
             surface,
@@ -174,6 +251,7 @@ class BuildingPanel:
             show_upgrade=show_upgrade,
             show_demolish=show_demolish,
             extra_bottom_px=extra_bottom_px,
+            upgrade_enabled_override=upgrade_enabled_override,
         )
         dim = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
         dim.fill((10, 12, 16, 170))
@@ -187,7 +265,12 @@ class BuildingPanel:
         btn_font = pygame.font.Font(None, 22)
 
         name = _DISPLAY_NAME.get(building.type_tag, building.type_tag)
-        title = title_font.render(f"{name} — Lv {building.level}", True, (238, 240, 248))
+        stage_name = getattr(building, "stage_name", None)
+        if callable(stage_name):
+            title_text = f"{name} - {stage_name()}"
+        else:
+            title_text = f"{name} - Lv {building.level}"
+        title = title_font.render(title_text, True, (238, 240, 248))
         surface.blit(title, (layout.frame.left + _PANEL_PAD, layout.frame.top + _PANEL_PAD))
 
         pygame.draw.line(
@@ -258,6 +341,7 @@ class BuildingPanel:
                     layout.demolish.centery - dl.get_height() // 2,
                 ),
             )
+        draw_upgrade_cost_tooltip(surface, building, layout.upgrade)
 
     @staticmethod
     def click_action(
@@ -270,6 +354,7 @@ class BuildingPanel:
         show_upgrade: bool | None = None,
         show_demolish: bool = True,
         extra_bottom_px: int = 0,
+        upgrade_enabled_override: bool | None = None,
     ) -> str | None:
         """Return ``\"close\"``, ``\"upgrade\"``, ``\"demolish\"``, or ``None``."""
         layout = BuildingPanel.layout(
@@ -280,6 +365,7 @@ class BuildingPanel:
             show_upgrade=show_upgrade,
             show_demolish=show_demolish,
             extra_bottom_px=extra_bottom_px,
+            upgrade_enabled_override=upgrade_enabled_override,
         )
         x, y = pos
         if layout.close.collidepoint(x, y):

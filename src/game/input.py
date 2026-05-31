@@ -19,6 +19,7 @@ from game.buildings.stone_mine import StoneMine
 from game.buildings.registry import BuildingRegistry
 from game.buildings.school import School
 from game.buildings.sawmill import Sawmill
+from game.buildings.statue import Statue
 from game.buildings.town_hall import TownHall
 from game.buildings.vineyard_farm import VineyardFarm
 from game.buildings.well import Well
@@ -46,6 +47,7 @@ from game.ui.mill_panel import MillPanel
 from game.ui.stone_mine_panel import StoneMinePanel
 from game.ui.school_panel import SchoolPanel
 from game.ui.sawmill_panel import SawmillPanel
+from game.ui.statue_panel import StatuePanel
 from game.ui.placement import PlacementController
 from game.ui.population_panel import PopulationPanel
 from game.ui.research_screen import ResearchScreen
@@ -130,6 +132,7 @@ class GameInput:
         self._worker_manager = worker_manager
         self._camera = camera
         self._research_state = research_state if research_state is not None else ResearchState()
+        self._registry.bind_research_state(self._research_state)
         self._panel: Building | None = None
         self._worker_panel: Worker | None = None
         self._population_filter: str | None = None
@@ -311,11 +314,15 @@ class GameInput:
             return
         if event.type == pygame.MOUSEBUTTONUP and event.button == pygame.BUTTON_RIGHT:
             if not self._rmb_dragging:
-                self._placement.cancel()
-                self._panel = None
-                self._worker_panel = None
-                self._population_panel_open = False
-                self._research_screen_open = False
+                if self._placement.has_pending:
+                    self._placement.cancel()
+                elif BottomBar.back_to_main():
+                    pass
+                else:
+                    self._panel = None
+                    self._worker_panel = None
+                    self._population_panel_open = False
+                    self._research_screen_open = False
             self._rmb_down = False
             self._rmb_dragging = False
             return
@@ -594,6 +601,10 @@ class GameInput:
                 research_state=self._research_state,
             )
             return
+        if StatuePanel.supports_building(self._panel):
+            assert isinstance(self._panel, Statue)
+            StatuePanel.draw(surface, self._panel, research_state=self._research_state)
+            return
         if WineryPanel.supports_building(self._panel):
             assert isinstance(self._panel, Winery)
             worker_status = self._panel_worker_status()
@@ -696,6 +707,11 @@ class GameInput:
                         self._registry.demolish(b, self._worker_manager)
                         self._panel = None
                         self._sync_assignments()
+                    elif action == "toggle_active" and self._panel is not None:
+                        self._panel.set_active(not self._panel.active)
+                    elif action == "toggle_construction_deliveries" and self._panel is not None:
+                        enabled = bool(getattr(self._panel, "construction_deliveries_enabled", True))
+                        self._panel.set_construction_deliveries_enabled(not enabled)
                     return
                 self._panel = None
                 return
@@ -1131,6 +1147,22 @@ class GameInput:
                         self._registry.demolish(b, self._worker_manager)
                         self._panel = None
                         self._sync_assignments()
+                    return
+            if StatuePanel.supports_building(self._panel):
+                assert isinstance(self._panel, Statue)
+                layout = StatuePanel.layout(surface, self._panel, research_state=self._research_state)
+                if layout.frame.collidepoint(pos):
+                    action = StatuePanel.click_action(
+                        surface,
+                        pos,
+                        self._panel,
+                        research_state=self._research_state,
+                    )
+                    if action == "close":
+                        self._panel = None
+                    elif action == "upgrade" and self._panel is not None:
+                        if self._registry.upgrade_building(self._panel):
+                            self._sync_assignments()
                     return
             if WineryPanel.supports_building(self._panel):
                 assert isinstance(self._panel, Winery)

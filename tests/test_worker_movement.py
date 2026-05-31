@@ -93,3 +93,36 @@ def test_move_speed_multiplier_applies_per_tile_for_multi_segment_path() -> None
     w.update(now_ms=2 * effective_ms)
     assert w.current_tile == (3, 1)
     assert w.state == "working"
+
+
+def test_zero_satiety_halves_move_speed() -> None:
+    w = Worker("LUMBERJACK", stand_tile=(1, 1))
+    w.satiety = 0
+    effective_ms = config.WORKER_TILE_TRAVEL_MS * 2
+    w.start_move([(1, 1), (2, 1)], started_ms=0)
+
+    w.update(now_ms=effective_ms - 1)
+    assert w.current_tile == (1, 1)
+    assert w.state == "moving"
+
+    w.update(now_ms=effective_ms)
+    assert w.current_tile == (2, 1)
+    assert w.state == "working"
+
+
+def test_zero_satiety_halves_move_speed_after_bonuses() -> None:
+    w = Worker("LUMBERJACK", stand_tile=(1, 1))
+    w.characteristics.add_permanent(("test", "speed"), "move_speed_mult", 0.20)
+    w.satiety = 0
+    effective_ms = int(round(config.WORKER_TILE_TRAVEL_MS / 0.60))
+    w.start_move([(1, 1), (2, 1)], started_ms=0)
+
+    assert w.effective_move_speed_mult() == pytest.approx(0.60)
+
+    w.update(now_ms=effective_ms - 1)
+    assert w.current_tile == (1, 1)
+    assert w.state == "moving"
+
+    w.update(now_ms=effective_ms)
+    assert w.current_tile == (2, 1)
+    assert w.state == "working"

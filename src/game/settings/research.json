@@ -38,6 +38,21 @@
       }
     },
     {
+      "id": "statue_excavation",
+      "name": "Excavation Plans",
+      "description": "Surveying and earthworks plans for the monument pit.",
+      "effect_text": "Unlocks Statue stage: Excavation.",
+      "tier": 1,
+      "column": 1,
+      "dependencies": ["1"],
+      "resource_cost": {
+        "wood": 10,
+        "stone": 5
+      },
+      "required_points": 5000,
+      "image_key": "statue_excavation"
+    },
+    {
       "id": "2",
       "name": "Technology II",
       "description": "Intermediate methods building on the first technology tier.",
@@ -51,6 +66,21 @@
       },
       "required_points": 10000,
       "image_key": "technology_2"
+    },
+    {
+      "id": "statue_foundation",
+      "name": "Foundation Engineering",
+      "description": "Load-bearing plans for the monument foundation.",
+      "effect_text": "Unlocks Statue stage: Foundation.",
+      "tier": 2,
+      "column": 1,
+      "dependencies": ["2", "statue_excavation"],
+      "resource_cost": {
+        "boards": 10,
+        "stone": 10
+      },
+      "required_points": 10000,
+      "image_key": "statue_foundation"
     },
     {
       "id": "3",
@@ -69,6 +99,22 @@
       "image_key": "technology_3"
     },
     {
+      "id": "statue_pedestal",
+      "name": "Pedestal Masonry",
+      "description": "Reinforced stonework methods for the monument pedestal.",
+      "effect_text": "Unlocks Statue stage: Pedestal.",
+      "tier": 3,
+      "column": 1,
+      "dependencies": ["3", "statue_foundation"],
+      "resource_cost": {
+        "boards": 10,
+        "stone": 20,
+        "iron": 5
+      },
+      "required_points": 20000,
+      "image_key": "statue_pedestal"
+    },
+    {
       "id": "4",
       "name": "Technology IV",
       "description": "Peak laboratory mastery for the fourth technology tier.",
@@ -83,6 +129,22 @@
       },
       "required_points": 40000,
       "image_key": "technology_4"
+    },
+    {
+      "id": "statue_monument",
+      "name": "Monument Assembly",
+      "description": "Final lift, fastening, and finishing plans for the completed statue.",
+      "effect_text": "Unlocks Statue stage: Statue.",
+      "tier": 4,
+      "column": 1,
+      "dependencies": ["4", "statue_pedestal"],
+      "resource_cost": {
+        "boards": 10,
+        "stone": 20,
+        "iron": 10
+      },
+      "required_points": 40000,
+      "image_key": "statue_monument"
     }
   ]
 }

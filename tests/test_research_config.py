@@ -82,3 +82,22 @@ def test_technology_ids_are_unique() -> None:
     settings = _research_settings()
     ids = [entry["id"] for entry in settings["researches"]]
     assert len(ids) == len(set(ids))
+
+
+def test_statue_stage_researches_are_first_regular_column_chain() -> None:
+    settings = _research_settings()
+    by_id = {entry["id"]: entry for entry in settings["researches"]}
+    expected = [
+        ("statue_excavation", 1, ["1"]),
+        ("statue_foundation", 2, ["2", "statue_excavation"]),
+        ("statue_pedestal", 3, ["3", "statue_foundation"]),
+        ("statue_monument", 4, ["4", "statue_pedestal"]),
+    ]
+    for research_id, tier, dependencies in expected:
+        entry = by_id[research_id]
+        assert entry["tier"] == tier
+        assert entry["column"] == 1
+        assert entry["dependencies"] == dependencies
+        assert entry["image_key"] == research_id
+        assert entry["resource_cost"]
+        assert entry["required_points"] > 0

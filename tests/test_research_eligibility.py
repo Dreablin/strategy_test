@@ -257,3 +257,30 @@ def test_research_1_has_no_dependency_gate() -> None:
         has_completed_laboratory=True,
         laboratory_level=1,
     ).can_start
+
+
+def test_statue_foundation_requires_excavation_research() -> None:
+    state = ResearchState()
+    for research_id in ("1", "2"):
+        state.start_research(research_id)
+        state.mark_research_completed(research_id)
+
+    blocked = research_start_eligibility(
+        "statue_foundation",
+        research_state=state,
+        has_completed_laboratory=True,
+        laboratory_level=3,
+    )
+
+    assert blocked.can_start is False
+    assert blocked.lock_reason == "Requires Excavation Plans"
+
+    state.start_research("statue_excavation")
+    state.mark_research_completed("statue_excavation")
+    allowed = research_start_eligibility(
+        "statue_foundation",
+        research_state=state,
+        has_completed_laboratory=True,
+        laboratory_level=3,
+    )
+    assert allowed.can_start is True

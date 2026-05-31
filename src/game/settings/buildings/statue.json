@@ -1,0 +1,21 @@
+{
+  "building_type": "STATUE",
+  "footprint": [3, 3],
+  "stage_names": {
+    "1": "Excavation",
+    "2": "Foundation",
+    "3": "Pedestal",
+    "4": "Statue"
+  },
+  "asset_defaults": {
+    "scale": 1.0,
+    "anchor_norm": [0.5, 1.0],
+    "offset_px": [0, 0]
+  },
+  "levels": {
+    "1": {"cost": {"wood": 10, "stone": 10}, "build_time_ms": 30000},
+    "2": {"cost": {"boards": 10, "stone": 10}, "build_time_ms": 50000},
+    "3": {"cost": {"boards": 10, "stone": 60, "iron": 10}, "build_time_ms": 100000},
+    "4": {"cost": {"boards": 10, "stone": 20, "iron": 1}, "build_time_ms": 100000}
+  }
+}

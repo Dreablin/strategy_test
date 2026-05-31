@@ -7,6 +7,8 @@ from pathlib import Path
 import pygame
 import pytest
 
+from game import i18n
+
 from game.assets import building_sprite, building_sprite_anchor, building_sprite_construction
 from game.buildings.registry import BuildingRegistry
 from game.buildings.statue import Statue
@@ -91,7 +93,7 @@ def test_statue_has_four_named_stages() -> None:
     assert statue.stage_name(3) == "Pedestal"
     assert statue.stage_name(4) == "Statue"
     assert statue.next_stage_name() == "Foundation"
-    assert _upgrade_label(statue) == "Start stage: Foundation"
+    assert _upgrade_label(statue) == i18n.t("ui.statue.start_stage", stage="Foundation")
 
 
 def test_statue_unique_and_not_demolishable() -> None:

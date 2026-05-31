@@ -2,6 +2,7 @@
 
 import pygame
 
+from game import i18n
 from game.buildings.town_hall import TownHall
 from game.resource_catalog import is_town_hall_warehouse_resource, resource_display_label
 from game.ui import town_hall_panel
@@ -72,11 +73,11 @@ def test_town_hall_storage_rows_include_bread_beef_hide_and_grapes() -> None:
     assert "hide" in keys
     assert "grapes" in keys
     beef_idx = keys.index("beef")
-    assert town_hall_panel._STORAGE_ROWS[beef_idx][1] == "Beef"  # noqa: SLF001
+    assert town_hall_panel._STORAGE_ROWS[beef_idx][1] == resource_display_label("beef")  # noqa: SLF001
     hide_idx = keys.index("hide")
-    assert town_hall_panel._STORAGE_ROWS[hide_idx][1] == "Hide"  # noqa: SLF001
+    assert town_hall_panel._STORAGE_ROWS[hide_idx][1] == resource_display_label("hide")  # noqa: SLF001
     grapes_idx = keys.index("grapes")
-    assert town_hall_panel._STORAGE_ROWS[grapes_idx][1] == "Grapes"  # noqa: SLF001
+    assert town_hall_panel._STORAGE_ROWS[grapes_idx][1] == resource_display_label("grapes")  # noqa: SLF001
 
 
 def test_beef_is_warehouse_resource_with_display_label() -> None:
@@ -139,7 +140,7 @@ def test_town_hall_storage_rows_include_wine() -> None:
     keys = [key for key, _label in town_hall_panel._STORAGE_ROWS]  # noqa: SLF001
     assert "wine" in keys
     wine_idx = keys.index("wine")
-    assert town_hall_panel._STORAGE_ROWS[wine_idx][1] == "Wine"  # noqa: SLF001
+    assert town_hall_panel._STORAGE_ROWS[wine_idx][1] == resource_display_label("wine")  # noqa: SLF001
 
 
 def test_town_hall_warehouse_wine_default_zero_and_round_trip() -> None:
@@ -161,6 +162,12 @@ def test_town_hall_panel_draw_includes_wine_cell_with_quantity() -> None:
     after = surface.subsurface(layout.storage_frame).copy()
     assert before.get_bytesize() == after.get_bytesize()
     assert before.get_buffer().raw != after.get_buffer().raw
+
+
+def test_town_hall_warehouse_title_ru(use_locale) -> None:
+    with use_locale("ru"):
+        assert i18n.t("ui.building.town_hall_warehouse") == "Склад"
+        assert resource_display_label("beef") == "Говядина"
 
 
 def test_town_hall_upgrade_button_is_enabled_without_cost_checks() -> None:

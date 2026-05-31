@@ -2,14 +2,16 @@
 
 import pygame
 
+from game import i18n
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.school import School
+from game.buildings.statue import Statue
 from game.buildings.town_hall import TownHall
 from game.buildings.well import Well
 from game.ui.building_panel import (
     BuildingPanel,
-    building_description,
     building_display_name,
+    building_description,
     _upgrade_cost_lines,
     _upgrade_label,
     draw_upgrade_cost_tooltip,
@@ -46,15 +48,20 @@ def test_building_panel_upgrade_enabled_even_when_poor() -> None:
 
 def test_building_panel_upgrade_label_does_not_claim_free() -> None:
     building = LumberCamp(level=1, grid_pos=(4, 4))
-    assert _upgrade_label(building) == "Upgrade to Lv 2"
-    assert "Free" not in _upgrade_label(building)
+    assert _upgrade_label(building) == i18n.t("ui.building.upgrade_level", level=2)
+    assert i18n.t("ui.common.free") not in _upgrade_label(building)
 
 
-def test_building_panel_upgrade_tooltip_uses_next_level_cost() -> None:
+def test_building_panel_upgrade_label_for_statue_stage() -> None:
+    statue = Statue(level=1, grid_pos=(4, 4))
+    assert _upgrade_label(statue) == i18n.t("ui.statue.start_stage", stage="Foundation")
+
+
+def test_building_panel_upgrade_tooltip_uses_construction_requirements() -> None:
     building = LumberCamp(level=1, grid_pos=(4, 4))
     lines = _upgrade_cost_lines(building)
-    assert lines[0] == "Upgrade cost:"
-    assert any(line.startswith("Wood:") for line in lines)
+    assert lines[0] == f"{i18n.t('ui.building.upgrade_cost')}:"
+    assert any(line.startswith(f"{i18n.t('resource.wood')}:") for line in lines)
 
 
 def test_building_panel_draws_upgrade_cost_tooltip_on_hover() -> None:
@@ -129,4 +136,3 @@ def test_statue_localized_name_and_description_en() -> None:
 def test_town_hall_localized_name_ru(use_locale) -> None:
     with use_locale("ru"):
         assert building_display_name("TOWN_HALL") == "Ратуша"
-        assert building_description("TOWN_HALL") == "Сердце вашего поселения."

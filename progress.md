@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 29 - Localization EN/RU (**in progress**)
-- **Next Task:** T450 - Localize base building panel actions + Town Hall panel
-- **Last Completed:** T449 - Localize top bar — `src/game/ui/top_bar.py`
-- **Total Progress:** 449 / 468 (Phase 29: 11 / 30 done)
+- **Next Task:** T451 - Localize construction panel — `src/game/ui/construction_panel.py`
+- **Last Completed:** T450 - Localize base building panel actions + Town Hall panel
+- **Total Progress:** 450 / 468 (Phase 29: 12 / 30 done)
 
 > **Archive:** Phase 28 task details (T387-T438) are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -107,13 +107,13 @@ Each task runs in a fresh context. Do not assume prior memory; read this block, 
   - Update the top-bar layout test (find via `rg "TopBar" tests`); assert layout still computes and `{param}` substitution is exercised in `en` and `ru`.
   - Verify: run the top-bar test file; then `pytest -q`.
   - Acceptance: top-bar text from locales; layout tests pass; templates tested.
-- [~] **T450**: Localize base building panel actions + Town Hall panel.
+- [x] **T450**: Localize base building panel actions + Town Hall panel.
   - In `building_panel.py`: route `_upgrade_label` (`Start stage: {stage}`, `Upgrade to Lv {n}`), `_upgrade_cost_lines` words, demolish/close/status/storage words, and the statue stage upgrade text through `ui.*`/`building.*`/`statue.*` keys.
   - In `src/game/ui/town_hall_panel.py`: route the panel title and warehouse resource labels through `building.TOWN_HALL.name` / `resource.<id>`.
   - Update `tests/test_building_panel.py` and `tests/test_town_hall_panel.py`; cover upgrade label for a normal building and the statue stage label.
   - Verify: `pytest -q tests/test_building_panel.py tests/test_town_hall_panel.py`; then `pytest -q`.
   - Acceptance: building-panel, town-hall-panel, and statue-panel tests pass with localized text.
-- [ ] **T451**: Localize construction panel — `src/game/ui/construction_panel.py`.
+- [~] **T451**: Localize construction panel — `src/game/ui/construction_panel.py`.
   - Route title line, requirements header, delivered counters, builder state, progress, demolish, active/inactive, and the statue delivery toggle through `ui.*`/`status.*`/`statue.*` keys; keep numeric `{n}/{m}` formats.
   - Update `tests/test_*construction*` (find via `rg -l construction tests`); cover a regular building and statue construction in `en`, plus one `ru` smoke.
   - Verify: run those test files; then `pytest -q`.

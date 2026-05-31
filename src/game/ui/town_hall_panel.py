@@ -6,8 +6,10 @@ from dataclasses import dataclass
 
 import pygame
 
+from game import i18n
 from game.assets import resource_icon
 from game.buildings.town_hall import TownHall
+from game.resource_catalog import resource_display_label
 from game.ui.building_panel import BuildingPanel, draw_upgrade_cost_tooltip
 from game.ui.fonts import ui_font
 
@@ -17,20 +19,22 @@ _GAP = 8
 _EXTRA_BOTTOM = _BTN_H + _GAP
 _STORAGE_GAP = 12
 _STORAGE_PANEL_W = 300
-_STORAGE_ROWS: tuple[tuple[str, str], ...] = (
-    ("wood", "Wood"),
-    ("boards", "Boards"),
-    ("stone", "Stone"),
-    ("iron", "Iron"),
-    ("wheat", "Wheat"),
-    ("flour", "Flour"),
-    ("bread", "Bread"),
-    ("chicken", "Chicken"),
-    ("beef", "Beef"),
-    ("hide", "Hide"),
-    ("grapes", "Grapes"),
-    ("wine", "Wine"),
+_STORAGE_ROW_KEYS: tuple[str, ...] = (
+    "wood",
+    "boards",
+    "stone",
+    "iron",
+    "wheat",
+    "flour",
+    "bread",
+    "chicken",
+    "beef",
+    "hide",
+    "grapes",
+    "wine",
 )
+# Backward-compat alias for tests that only read resource keys.
+_STORAGE_ROWS = tuple((key, resource_display_label(key)) for key in _STORAGE_ROW_KEYS)
 
 
 @dataclass(frozen=True, slots=True)
@@ -107,18 +111,17 @@ class TownHallPanel:
             bg = (64, 110, 168) if layout.upgrade_enabled else (52, 56, 64)
             fg = (240, 242, 250) if layout.upgrade_enabled else (130, 134, 142)
             pygame.draw.rect(surface, bg, layout.upgrade, border_radius=6)
-            text = font.render("Upgrade Town Hall", True, fg)
+            text = font.render(i18n.t("ui.building.upgrade_town_hall"), True, fg)
             surface.blit(
                 text,
                 (layout.upgrade.centerx - text.get_width() // 2, layout.upgrade.centery - text.get_height() // 2),
             )
             draw_upgrade_cost_tooltip(surface, town_hall, layout.upgrade)
 
-        # Secondary storage panel (warehouse overview).
         sf = layout.storage_frame
         pygame.draw.rect(surface, (36, 40, 52), sf, border_radius=10)
         pygame.draw.rect(surface, (72, 78, 92), sf, width=2, border_radius=10)
-        title = title_font.render("Warehouse", True, (238, 240, 248))
+        title = title_font.render(i18n.t("ui.building.town_hall_warehouse"), True, (238, 240, 248))
         surface.blit(title, (sf.left + _PANEL_PAD, sf.top + _PANEL_PAD))
         cols = 4
         cell_gap = 8
@@ -126,7 +129,7 @@ class TownHallPanel:
         cell_w = max(1, (inner_w - cell_gap * (cols - 1)) // cols)
         cell_h = 72
         start_y = sf.top + _PANEL_PAD + 32
-        for idx, (res_key, res_label) in enumerate(_STORAGE_ROWS):
+        for idx, res_key in enumerate(_STORAGE_ROW_KEYS):
             row = idx // cols
             col = idx % cols
             x = sf.left + _PANEL_PAD + col * (cell_w + cell_gap)
@@ -139,9 +142,9 @@ class TownHallPanel:
             qty = int(town_hall.warehouse_amount(res_key))
             qty_s = font.render(str(qty), True, (236, 240, 246))
             surface.blit(qty_s, (cell.left + 34, cell.top + 10))
+            res_label = resource_display_label(res_key)
             label_s = ui_font(18).render(res_label, True, (170, 176, 188))
             surface.blit(label_s, (cell.left + 8, cell.bottom - label_s.get_height() - 8))
-
 
     @staticmethod
     def click_action(

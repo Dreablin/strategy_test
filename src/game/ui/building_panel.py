@@ -49,23 +49,23 @@ def _upgrade_label(building: Building) -> str:
     if callable(next_stage_name):
         stage = next_stage_name()
         if stage:
-            return f"Start stage: {stage}"
+            return i18n.t("ui.statue.start_stage", stage=stage)
     nxt = building.level + 1
-    _ = building
-    return f"Upgrade to Lv {nxt}"
+    return i18n.t("ui.building.upgrade_level", level=nxt)
 
 
 def _upgrade_cost_lines(building: Building) -> tuple[str, ...]:
+    upgrade_cost = i18n.t("ui.building.upgrade_cost")
     nxt = int(building.level) + 1
     spec = CONSTRUCTION_REQUIREMENTS.get(building.type_tag, {}).get(nxt)
     if spec is None:
-        lines = ["Upgrade cost: unavailable"]
+        lines = [f"{upgrade_cost}: {i18n.t('ui.common.unavailable')}"]
     else:
         items = [(resource, amount) for resource, amount in sorted(spec.cost.items()) if int(amount) > 0]
         if not items:
-            lines = ["Upgrade cost: Free"]
+            lines = [f"{upgrade_cost}: {i18n.t('ui.common.free')}"]
         else:
-            lines = ["Upgrade cost:"]
+            lines = [f"{upgrade_cost}:"]
             for resource, amount in items:
                 lines.append(f"{resource_display_label(resource)}: {int(amount)}")
     if building.type_tag == "STATUE":
@@ -73,7 +73,7 @@ def _upgrade_cost_lines(building: Building) -> tuple[str, ...]:
         if research_id is not None:
             research = RESEARCH_BY_ID.get(research_id)
             name = research.name if research is not None else research_id
-            lines.append(f"Requires research: {name}")
+            lines.append(i18n.t("ui.common.requires_research", name=name))
     return tuple(lines)
 
 
@@ -293,7 +293,11 @@ class BuildingPanel:
         if production_status is not None:
             y += _ROW
             surface.blit(
-                body_font.render(f"Status: {production_status}", True, (200, 204, 214)),
+                body_font.render(
+                    i18n.t("ui.common.status_line", status=production_status),
+                    True,
+                    (200, 204, 214),
+                ),
                 (layout.frame.left + _PANEL_PAD, y),
             )
 
@@ -313,7 +317,7 @@ class BuildingPanel:
 
         if layout.demolish is not None:
             pygame.draw.rect(surface, (140, 48, 52), layout.demolish, border_radius=6)
-            dl = btn_font.render("Demolish", True, (255, 240, 240))
+            dl = btn_font.render(i18n.t("ui.button.demolish"), True, (255, 240, 240))
             surface.blit(
                 dl,
                 (
@@ -360,4 +364,4 @@ class BuildingPanel:
     def storage_line(building: Building) -> str:
         stored = int(getattr(building, "stored"))
         capacity = int(building.storage_capacity())
-        return f"Storage: {stored} / {capacity}"
+        return i18n.t("ui.common.storage_line", stored=stored, capacity=capacity)

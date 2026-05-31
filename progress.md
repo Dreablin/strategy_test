@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 29 - Localization EN/RU (**in progress**)
-- **Next Task:** T444 - Seed shared/common locale keys (`ui.*`)
-- **Last Completed:** T443 - Centralize font creation and bundle a Cyrillic-capable font
-- **Total Progress:** 443 / 468 (Phase 29: 5 / 30 done)
+- **Next Task:** T445 - Migrate resource display labels (`resource.<id>`) — `src/game/resource_catalog.py`
+- **Last Completed:** T444 - Seed shared/common locale keys (`ui.*`)
+- **Total Progress:** 444 / 468 (Phase 29: 6 / 30 done)
 
 > **Archive:** Phase 28 task details (T387-T438) are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -71,12 +71,12 @@ Each task runs in a fresh context. Do not assume prior memory; read this block, 
   - Add `tests/test_ui_fonts.py`: `ui_font(22).render("Дерево", True, (255,255,255))` returns a surface with `get_width() > 0`, and confirm no `Font(None` remains via the test or a documented allowlist.
   - Verify: `pytest -q tests/test_ui_fonts.py`; `ruff check src tests`; then `pytest -q`.
   - Acceptance: Cyrillic renders to a non-empty surface; all panels use `ui_font`; full suite passes.
-- [~] **T444**: Seed shared/common locale keys (`ui.*`).
+- [x] **T444**: Seed shared/common locale keys (`ui.*`).
   - Add to both locale files: `ui.button.{start,upgrade,demolish,close,back}`, `ui.common.{active,inactive,cost,status,storage,requirements,free,unavailable}`, and `ui.window.caption` (en: `Isometric Strategy`). Provide Russian values for all.
   - Apply `ui.window.caption` in `main.py` (replace the literal in `pygame.display.set_caption(...)` with `i18n.t("ui.window.caption")`).
   - Verify: `pytest -q tests/test_i18n_schema.py`; smoke `python -c "import game.main"`; then `pytest -q`.
   - Acceptance: both files contain all listed keys with non-empty values; caption uses i18n.
-- [ ] **T445**: Migrate resource display labels (`resource.<id>`) — `src/game/resource_catalog.py`.
+- [~] **T445**: Migrate resource display labels (`resource.<id>`) — `src/game/resource_catalog.py`.
   - Replace the body of `resource_display_label` and `_DISPLAY_LABEL_OVERRIDES` with an i18n lookup: `t(f"resource.{key}")`, where `key` is the lowercased resource id; keep current fallback (`key.replace("_"," ").title()`) when the locale has no entry.
   - Add `resource.*` keys to both locales for every id in `TOWN_HALL_WAREHOUSE_KEYS` plus `simple_meal`, `elite_meal`, `water` (en values: current Title-Case; `Simple meal`, `Elite meal`).
   - Update/extend `tests/test_elite_meal_resource.py`; cover `wood`, `simple_meal`, `elite_meal`, and an unknown id fallback, with a `ru` smoke using the harness.

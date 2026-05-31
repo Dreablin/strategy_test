@@ -1,5 +1,18 @@
 {
   "ui.button.start": "Начать",
+  "ui.button.upgrade": "Улучшить",
+  "ui.button.demolish": "Снести",
+  "ui.button.close": "Закрыть",
+  "ui.button.back": "Назад",
+  "ui.common.active": "Активно",
+  "ui.common.inactive": "Неактивно",
+  "ui.common.cost": "Стоимость",
+  "ui.common.status": "Статус",
+  "ui.common.storage": "Склад",
+  "ui.common.requirements": "Требования",
+  "ui.common.free": "Бесплатно",
+  "ui.common.unavailable": "Недоступно",
+  "ui.window.caption": "Изометрическая стратегия",
   "resource.wood": "Дерево",
   "research.1.name": "Технология I",
   "ui.test.labeled_count": "{name}: {count}"

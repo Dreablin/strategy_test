@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 29 - Localization EN/RU (**in progress**)
-- **Next Task:** T463 - Enforce Russian locale completeness
-- **Last Completed:** T462 - Localize lock reasons / requirement messages
-- **Total Progress:** 462 / 468 (Phase 29: 24 / 30 done)
+- **Next Task:** T464 - Audit remaining player-facing literals in `src/game`
+- **Last Completed:** T463 - Enforce Russian locale completeness
+- **Total Progress:** 463 / 468 (Phase 29: 25 / 30 done)
 
 > **Archive:** Phase 28 task details (T387-T438) are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -175,18 +175,18 @@ Each task runs in a fresh context. Do not assume prior memory; read this block, 
   - Update `tests/test_statue.py`; assert English stage names and a `ru` stage-name smoke.
   - Verify: `pytest -q tests/test_statue.py`; then `pytest -q`.
   - Acceptance: statue stage names resolve through i18n in both locales.
-- [~] **T462**: Localize lock reasons / requirement messages shown in UI.
+- [x] **T462**: Localize lock reasons / requirement messages shown in UI.
   - Cover research eligibility reasons, laboratory requirement messages, active-research messages, and statue requirement messages (find sources via `rg -n "requires\|locked\|need\|requirement" src/game`).
   - Route through `ui.lock.*` / `status.*` keys, or keep stable reason ids localized at the UI boundary; record the approach.
   - Update the lock-reason tests (find via `rg -l "lock\|requirement\|eligib" tests`).
   - Verify: run those test files; then `pytest -q`.
   - Acceptance: lock/requirement messages compare localized strings or stable reason ids in tests.
-- [ ] **T463**: Enforce Russian locale completeness.
+- [x] **T463**: Enforce Russian locale completeness.
   - Add `tests/test_locale_completeness.py` that loads `en.json` and `ru.json` and asserts identical key sets, no missing values, and no empty/whitespace-only strings.
   - Fill any `ru` gaps the test surfaces.
   - Verify: `pytest -q tests/test_locale_completeness.py`; then `pytest -q`.
   - Acceptance: `en` and `ru` key sets match exactly; no empty values.
-- [ ] **T464**: Audit remaining player-facing literals in `src/game`.
+- [~] **T464**: Audit remaining player-facing literals in `src/game`.
   - Use `rg` to find remaining quoted human text in `src/game/ui`, `src/game/render.py`, `worker_status.py`, and runtime modules (e.g. `rg -n "\"[A-Z][a-z].*\"" src/game/ui`).
   - Migrate any genuine UI strings missed by earlier tasks; document a short allowlist (dev-only text like `dev_asset_reload.py`, ids/enums, log strings) in `localization_guide.md`.
   - Verify: `pytest -q`.

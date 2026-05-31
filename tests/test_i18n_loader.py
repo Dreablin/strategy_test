@@ -26,7 +26,12 @@ def test_t_returns_english_string_in_default_locale() -> None:
 def test_t_falls_back_to_english_from_ru_for_en_only_key() -> None:
     i18n.set_locale("ru")
     try:
-        assert i18n.t("ui.test.en_only_fallback") == "English only"
+        ru_catalog = i18n._loaded["ru"]
+        saved = ru_catalog.pop("ui.test.en_only_fallback")
+        try:
+            assert i18n.t("ui.test.en_only_fallback") == "English only"
+        finally:
+            ru_catalog["ui.test.en_only_fallback"] = saved
     finally:
         i18n.set_locale("en")
 

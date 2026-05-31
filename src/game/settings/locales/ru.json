@@ -251,5 +251,6 @@
   "status.worker.waiting_for_meal": "Ожидает еду",
   "status.worker.working": "Работает",
   "status.worker.working_field": "Ожидает работу",
+  "ui.test.en_only_fallback": "Только английский",
   "ui.test.labeled_count": "{name}: {count}"
 }

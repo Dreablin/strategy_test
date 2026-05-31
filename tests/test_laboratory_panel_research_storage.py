@@ -25,7 +25,7 @@ def test_no_research_section_without_active_research() -> None:
         surface,
         laboratory,
         worker_assigned=False,
-        production_status="No worker",
+        production_status="no_worker",
         worker_manager=workers,
         research_state=ResearchState(),
     )
@@ -53,7 +53,7 @@ def test_panel_draws_input_rows_with_delivered_amounts() -> None:
         surface,
         laboratory,
         worker_assigned=False,
-        production_status="No worker",
+        production_status="no_worker",
         worker_manager=workers,
         research_state=state,
     )
@@ -74,7 +74,7 @@ def test_research_and_scientist_content_stays_above_action_buttons() -> None:
         surface,
         laboratory,
         worker_assigned=False,
-        production_status="No worker",
+        production_status="no_worker",
         worker_manager=workers,
         research_state=state,
     )

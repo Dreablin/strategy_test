@@ -198,7 +198,7 @@ def test_well_reports_generic_storage_and_production_status() -> None:
     workers.add_worker(waterman)
 
     assert workers.worker_status_for_building(well) == "assigned"
-    assert workers.production_status_for_building(well) == "Processing"
+    assert workers.production_status_for_building(well) == "processing"
     assert well.processing_progress(10_000) == 0.5
 
 
@@ -230,7 +230,7 @@ def test_second_carrier_can_take_water_from_well_while_first_carries_to_bakery()
 
     assert first.carrying == "water"
     assert workers.worker_status_for_building(well) == "empty"
-    assert workers.production_status_for_building(well) == "No worker"
+    assert workers.production_status_for_building(well) == "no_worker"
 
     workers.update(now_ms + 500)
 

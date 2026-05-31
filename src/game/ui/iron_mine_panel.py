@@ -30,8 +30,8 @@ class IronMinePanel:
 
     @staticmethod
     def blocked_reason(mine: IronMine, *, production_status: str | None) -> str:
-        status = (production_status or "").strip().lower()
-        if status == "no worker":
+        status = (production_status or "").strip()
+        if status == "no_worker":
             return "no worker"
         if status == "resting":
             return "resting"

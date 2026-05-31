@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from game import i18n
 from game.worker_hiring import HIRABLE_WORKERS, worker_compatible_building_types
+from game.worker_status import localized_status
 
 
 def worker_display_label(worker_type: str) -> str:
@@ -26,6 +27,7 @@ def building_worker_display_label(building_type: str) -> str | None:
 def building_worker_status_line(building_type: str, worker_status: str) -> str:
     label = building_worker_display_label(building_type)
     worker_word = i18n.t("ui.common.worker")
+    status_label = localized_status(worker_status)
     if label is None:
-        return f"{worker_word}: {worker_status}"
-    return f"{worker_word} ({label}): {worker_status}"
+        return f"{worker_word}: {status_label}"
+    return f"{worker_word} ({label}): {status_label}"

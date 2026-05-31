@@ -53,7 +53,7 @@ def test_cow_farm_panel_storage_line_texts() -> None:
 def test_cow_farm_panel_storage_block_clears_upgrade_and_demolish() -> None:
     surface = pygame.Surface((1280, 720))
     farm = CowFarm(level=1, grid_pos=(10, 10))
-    layout = CowFarmPanel.layout(surface, farm, worker_assigned=False, production_status="No worker")
+    layout = CowFarmPanel.layout(surface, farm, worker_assigned=False, production_status="no_worker")
     sy = CowFarmPanel.storage_block_top(layout.frame.top)
     # Four storage lines, blocked line, progress bar (see cow_farm_panel layout constants).
     detail_bottom_approx = sy + 4 * 22 + 22 + 24 + 12 + 4
@@ -64,7 +64,7 @@ def test_cow_farm_panel_storage_block_clears_upgrade_and_demolish() -> None:
 def test_cow_farm_panel_storage_block_clears_demolish_at_max_level() -> None:
     surface = pygame.Surface((1280, 720))
     farm = CowFarm(level=CowFarm.max_level(), grid_pos=(10, 10))
-    layout = CowFarmPanel.layout(surface, farm, worker_assigned=False, production_status="No worker")
+    layout = CowFarmPanel.layout(surface, farm, worker_assigned=False, production_status="no_worker")
     sy = CowFarmPanel.storage_block_top(layout.frame.top)
     detail_bottom_approx = sy + 4 * 22 + 22 + 24 + 12 + 4
     assert layout.upgrade is None and layout.demolish is not None
@@ -73,23 +73,23 @@ def test_cow_farm_panel_storage_block_clears_demolish_at_max_level() -> None:
 
 def test_cow_farm_panel_blocked_reason_hints() -> None:
     farm = CowFarm(level=1, grid_pos=(10, 10))
-    assert CowFarmPanel.blocked_reason(farm, worker_status="empty", production_status="No worker") == "no worker"
+    assert CowFarmPanel.blocked_reason(farm, worker_status="empty", production_status="no_worker") == "no worker"
     farm.set_active(False)
-    assert CowFarmPanel.blocked_reason(farm, worker_status="assigned", production_status="Inactive") == "inactive"
+    assert CowFarmPanel.blocked_reason(farm, worker_status="assigned", production_status="inactive") == "inactive"
     farm.set_active(True)
     farm.add_wheat_in(3)
     farm.add_water_in(3)
     farm.add_beef_out(farm.beef_capacity())
-    assert CowFarmPanel.blocked_reason(farm, worker_status="assigned", production_status="Output full") == "output full"
+    assert CowFarmPanel.blocked_reason(farm, worker_status="assigned", production_status="output_full") == "output full"
     farm.take_beef_out(farm.beef_capacity())
-    assert CowFarmPanel.blocked_reason(farm, worker_status="assigned", production_status="Processing") == "running"
+    assert CowFarmPanel.blocked_reason(farm, worker_status="assigned", production_status="processing") == "running"
     farm.take_wheat_in(3)
-    assert CowFarmPanel.blocked_reason(farm, worker_status="assigned", production_status="Ready") == "no wheat"
+    assert CowFarmPanel.blocked_reason(farm, worker_status="assigned", production_status="ready") == "no wheat"
     farm.add_wheat_in(3)
     farm.take_water_in(3)
-    assert CowFarmPanel.blocked_reason(farm, worker_status="assigned", production_status="Ready") == "no water"
+    assert CowFarmPanel.blocked_reason(farm, worker_status="assigned", production_status="ready") == "no water"
     farm.add_water_in(3)
-    assert CowFarmPanel.blocked_reason(farm, worker_status="assigned", production_status="Resting") == "resting"
+    assert CowFarmPanel.blocked_reason(farm, worker_status="assigned", production_status="resting") == "resting"
 
 
 def test_cow_farm_panel_progress_bar_shows_mid_cycle_fill() -> None:
@@ -102,10 +102,10 @@ def test_cow_farm_panel_progress_bar_shows_mid_cycle_fill() -> None:
         farm,
         worker_assigned=True,
         worker_status="assigned",
-        production_status="Processing",
+        production_status="processing",
         now_ms=now_ms,
     )
-    layout = CowFarmPanel.layout(surface, farm, worker_assigned=True, production_status="Processing")
+    layout = CowFarmPanel.layout(surface, farm, worker_assigned=True, production_status="processing")
     sy = CowFarmPanel.storage_block_top(layout.frame.top)
     bar_y = sy + 4 * 22 + 24
     sample_x = layout.frame.left + 16 + 80

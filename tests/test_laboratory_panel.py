@@ -56,7 +56,7 @@ def test_layout_has_one_tile_per_scientist_slot() -> None:
         surface,
         laboratory,
         worker_assigned=False,
-        production_status="No worker",
+        production_status="no_worker",
         worker_manager=workers,
     )
     assert len(layout.scientist_tiles) == laboratory.scientist_slot_capacity() == 2
@@ -75,7 +75,7 @@ def test_layout_marks_filled_slots_when_scientists_active() -> None:
         surface,
         laboratory,
         worker_assigned=True,
-        production_status="Ready",
+        production_status="ready",
         worker_manager=workers,
     )
     assert layout.scientist_slot_states == (True, True, False)
@@ -93,7 +93,7 @@ def test_layout_does_not_mark_walking_scientist_as_inside() -> None:
         surface,
         laboratory,
         worker_assigned=True,
-        production_status="On the way",
+        production_status="on_the_way",
         worker_manager=workers,
     )
 
@@ -113,7 +113,7 @@ def test_draw_distinguishes_assigned_and_empty_slot_pixels() -> None:
         surface,
         laboratory,
         worker_assigned=True,
-        production_status="Ready",
+        production_status="ready",
         worker_manager=workers,
     )
     assigned_tile = layout.scientist_tiles[0]
@@ -131,7 +131,7 @@ def test_panel_close_and_demolish_clicks() -> None:
         surface,
         laboratory,
         worker_assigned=False,
-        production_status="No worker",
+        production_status="no_worker",
         worker_manager=workers,
     )
     assert (
@@ -164,7 +164,7 @@ def test_laboratory_panel_toggle_click_and_label_pixels() -> None:
         surface,
         laboratory,
         worker_assigned=False,
-        production_status="Ready",
+        production_status="ready",
         worker_manager=workers,
     )
 
@@ -174,7 +174,7 @@ def test_laboratory_panel_toggle_click_and_label_pixels() -> None:
             layout.toggle.center,
             laboratory,
             worker_assigned=False,
-            production_status="Ready",
+            production_status="ready",
             worker_manager=workers,
         )
         == "toggle_active"
@@ -185,7 +185,7 @@ def test_laboratory_panel_toggle_click_and_label_pixels() -> None:
         surface,
         laboratory,
         worker_assigned=False,
-        production_status="Inactive",
+        production_status="inactive",
         worker_manager=workers,
     )
     assert surface.get_at(drawn.toggle.center)[:3] != (0, 0, 0)
@@ -198,7 +198,7 @@ def test_click_inside_scientist_tile_does_not_close_panel() -> None:
         surface,
         laboratory,
         worker_assigned=False,
-        production_status="No worker",
+        production_status="no_worker",
         worker_manager=workers,
     )
     assert (
@@ -223,7 +223,7 @@ def test_laboratory_upgrade_disabled_while_research_active() -> None:
         surface,
         laboratory,
         worker_assigned=False,
-        production_status="Ready",
+        production_status="ready",
         worker_manager=workers,
         research_state=state,
     )
@@ -236,7 +236,7 @@ def test_laboratory_upgrade_disabled_while_research_active() -> None:
             layout.upgrade.center,
             laboratory,
             worker_assigned=False,
-            production_status="Ready",
+            production_status="ready",
             worker_manager=workers,
             research_state=state,
         )
@@ -259,7 +259,7 @@ def test_laboratory_upgrade_reenabled_after_research_completes() -> None:
         surface,
         laboratory,
         worker_assigned=False,
-        production_status="Ready",
+        production_status="ready",
         worker_manager=workers,
         research_state=state,
     )
@@ -272,7 +272,7 @@ def test_laboratory_upgrade_reenabled_after_research_completes() -> None:
             layout.upgrade.center,
             laboratory,
             worker_assigned=False,
-            production_status="Ready",
+            production_status="ready",
             worker_manager=workers,
             research_state=state,
         )

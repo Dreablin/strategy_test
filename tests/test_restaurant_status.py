@@ -24,7 +24,7 @@ def _setup():
 def test_restaurant_status_no_worker() -> None:
     restaurant, workers = _setup()
     status = production_status_for_building(workers, restaurant)
-    assert status == "No worker"
+    assert status == "no_worker"
 
 
 def test_restaurant_status_inactive() -> None:
@@ -34,7 +34,7 @@ def test_restaurant_status_inactive() -> None:
     workers.reassign_all()
     restaurant.set_active(False)
     status = production_status_for_building(workers, restaurant)
-    assert status == "Inactive"
+    assert status == "inactive"
 
 
 def test_restaurant_status_missing_inputs() -> None:
@@ -43,7 +43,7 @@ def test_restaurant_status_missing_inputs() -> None:
     assert cook is not None
     workers.reassign_all()
     status = production_status_for_building(workers, restaurant)
-    assert status == "Missing inputs"
+    assert status == "missing_inputs"
 
 
 def test_restaurant_status_output_full() -> None:
@@ -56,7 +56,7 @@ def test_restaurant_status_output_full() -> None:
     restaurant.add_local_storage("wine", 1)
     restaurant.add_local_storage("beef", 1)
     status = production_status_for_building(workers, restaurant)
-    assert status == "Output full"
+    assert status == "output_full"
 
 
 def test_restaurant_status_processing() -> None:
@@ -69,7 +69,7 @@ def test_restaurant_status_processing() -> None:
     restaurant.add_local_storage("beef", 1)
     cook.state = "processing"
     status = production_status_for_building(workers, restaurant)
-    assert status == "Processing"
+    assert status == "processing"
 
 
 def test_restaurant_status_resting() -> None:
@@ -82,4 +82,4 @@ def test_restaurant_status_resting() -> None:
     restaurant.add_local_storage("beef", 1)
     cook.state = "resting"
     status = production_status_for_building(workers, restaurant)
-    assert status == "Resting"
+    assert status == "resting"

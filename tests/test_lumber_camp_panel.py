@@ -88,7 +88,7 @@ def test_lumber_camp_level_10_demolish_does_not_overlap_active_toggle() -> None:
     surface = pygame.Surface((1280, 720))
     camp = LumberCamp(level=10, grid_pos=(10, 10))
 
-    layout = LumberCampPanel.layout(surface, camp, worker_assigned=False, production_status="Resting")
+    layout = LumberCampPanel.layout(surface, camp, worker_assigned=False, production_status="resting")
 
     assert layout.upgrade is None
     assert layout.demolish is not None
@@ -99,7 +99,7 @@ def test_lumber_camp_level_10_demolish_does_not_overlap_active_toggle() -> None:
             layout.demolish.center,
             camp,
             worker_assigned=False,
-            production_status="Resting",
+            production_status="resting",
         )
         == "demolish"
     )
@@ -109,7 +109,7 @@ def test_lumber_camp_level_10_demolish_does_not_overlap_active_toggle() -> None:
             layout.toggle.center,
             camp,
             worker_assigned=False,
-            production_status="Resting",
+            production_status="resting",
         )
         == "toggle_active"
     )

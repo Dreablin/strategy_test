@@ -154,12 +154,12 @@ def test_production_status_matches_staffed_processor_pattern() -> None:
     well.processing_started_ms = 3_000
     well.processing_duration_ms = WELL_CYCLE_MS
 
-    assert workers.production_status_for_building(well) == "Processing"
+    assert workers.production_status_for_building(well) == "processing"
 
     well.processing_started_ms = 0
     waterman.state = "resting"
-    assert workers.production_status_for_building(well) == "Resting"
+    assert workers.production_status_for_building(well) == "resting"
 
     waterman.state = "working"
     well.add_water_in(well.water_capacity())
-    assert workers.production_status_for_building(well) == "Output full"
+    assert workers.production_status_for_building(well) == "output_full"

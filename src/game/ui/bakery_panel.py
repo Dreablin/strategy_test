@@ -36,10 +36,10 @@ class BakeryPanel:
 
     @staticmethod
     def blocked_reason(bakery: Bakery, *, worker_status: str, production_status: str | None) -> str:
-        status = (production_status or "").strip().lower()
+        status = (production_status or "").strip()
         if not bakery.active:
             return "inactive"
-        if worker_status == "empty" or status == "no worker":
+        if worker_status == "empty" or status == "no_worker":
             return "no worker"
         if status == "resting":
             return "resting"

@@ -100,19 +100,29 @@ def test_layout_grows_when_production_status_line_is_present() -> None:
         surface,
         building,
         worker_assigned=True,
-        production_status="Resting",
+        production_status="resting",
     )
 
     assert with_status.frame.height > without_status.frame.height
 
 
 def test_worker_status_line_includes_building_worker_name() -> None:
-    assert worker_status_line(Well(level=2, grid_pos=(4, 4)), "assigned") == "Worker (Waterman): assigned"
-    assert worker_status_line(LumberCamp(level=1, grid_pos=(4, 4)), "on the way") == "Worker (Lumberjack): on the way"
+    from game.worker_status import localized_status
+
+    assert worker_status_line(Well(level=2, grid_pos=(4, 4)), "assigned") == (
+        f"{i18n.t('ui.common.worker')} ({i18n.t('worker.WATERMAN')}): {localized_status('assigned')}"
+    )
+    assert worker_status_line(LumberCamp(level=1, grid_pos=(4, 4)), "on_the_way") == (
+        f"{i18n.t('ui.common.worker')} ({i18n.t('worker.LUMBERJACK')}): {localized_status('on_the_way')}"
+    )
 
 
 def test_worker_status_line_omits_name_for_unstaffed_buildings() -> None:
-    assert worker_status_line(School(level=1, grid_pos=(4, 4)), "empty") == "Worker: empty"
+    from game.worker_status import localized_status
+
+    assert worker_status_line(School(level=1, grid_pos=(4, 4)), "empty") == (
+        f"{i18n.t('ui.common.worker')}: {localized_status('empty')}"
+    )
 
 
 def test_town_hall_localized_name_and_description_en() -> None:

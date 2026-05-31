@@ -36,10 +36,10 @@ class MillPanel:
 
     @staticmethod
     def blocked_reason(mill: Mill, *, production_status: str | None) -> str:
-        status = (production_status or "").strip().lower()
+        status = (production_status or "").strip()
         if not mill.active:
             return "inactive"
-        if status == "no worker":
+        if status == "no_worker":
             return "no worker"
         if status == "processing":
             return "running"

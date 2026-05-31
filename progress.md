@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 29 - Localization EN/RU (**in progress**)
-- **Next Task:** T454 - Externalize production/worker status strings — `src/game/worker_status.py`
-- **Last Completed:** T453 - Localize population panel — `src/game/ui/population_panel.py`
-- **Total Progress:** 453 / 468 (Phase 29: 15 / 30 done)
+- **Next Task:** T455 - Localize raw + processing building panels
+- **Last Completed:** T454 - Externalize production/worker status strings — `src/game/worker_status.py`
+- **Total Progress:** 454 / 468 (Phase 29: 16 / 30 done)
 
 > **Archive:** Phase 28 task details (T387-T438) are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -128,14 +128,14 @@ Each task runs in a fresh context. Do not assume prior memory; read this block, 
   - Update the population-panel test (find via `rg -l population_panel tests`); ensure click/scroll behavior tests do not regress.
   - Verify: run the population-panel test file; then `pytest -q`.
   - Acceptance: population-panel tests pass; interaction behavior unchanged.
-- [~] **T454**: Externalize production/worker status strings (`status.<id>`) — `src/game/worker_status.py`.
+- [x] **T454**: Externalize production/worker status strings (`status.<id>`) — `src/game/worker_status.py`.
   - This module returns ~25 distinct human-readable strings (`Ready`, `Resting`, `Processing`, `No worker`, `Inactive`, `Output full`, `Storage full`, `Under construction`, `No wood/wheat/flour/water/chicken/bread/grain/grapes`, `Missing inputs`, `Moving`, `Sowing`, `Harvesting`, `Mining`, `On the way`, `Gathering`, `Depositing`, `At resource`, `At camp`, `Waiting target`, `No fields in radius`, `No ripe vineyards in range`, `Unknown`, etc.).
   - Decide a stable status-id scheme: keep the functions returning stable English ids OR introduce `status.<id>` keys and localize at the panel boundary. Prefer adding `status.<snake_id>` locale keys and a single `localized_status(s)` helper so panels render localized text while tests can still assert ids.
   - Map every returned string to a `status.*` key in both locales.
   - Update the status-helper test (find via `rg -l worker_status tests`); assert localized output for a few representative statuses in `en`+`ru`.
   - Verify: run the status test file; then `pytest -q`.
   - Acceptance: every status string has a locale key; tests assert consistent ids/output.
-- [ ] **T455**: Localize raw + processing building panels.
+- [~] **T455**: Localize raw + processing building panels.
   - Files: `lumber_camp_panel.py`, `stone_mine_panel.py`, `iron_mine_panel.py`, `forester_hut_panel.py`, `well_panel.py`, `sawmill_panel.py`, `mill_panel.py`, `bakery_panel.py`, `winery_panel.py`.
   - Route their visible text — `Active`/`Inactive` toggles, `Demolish`, storage lines like `Grapes: {n} / {m}` / `Wine: {n} / {m}`, and any status text — through `ui.*`/`status.*`/`resource.*` keys. Resource/amount labels reuse `resource.<id>`.
   - Update the relevant panel tests (find via `rg -l "sawmill\|winery\|forester\|well_panel\|mill_panel\|bakery" tests`).

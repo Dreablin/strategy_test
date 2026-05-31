@@ -67,10 +67,10 @@ class CanteenPanel:
         worker_status: str,
         production_status: str | None,
     ) -> str:
-        status = (production_status or "").strip().lower()
+        status = (production_status or "").strip()
         if not canteen.active:
             return "inactive"
-        if worker_status == "empty" or status == "no worker":
+        if worker_status == "empty" or status == "no_worker":
             return "no worker"
         if status == "resting":
             return "resting"

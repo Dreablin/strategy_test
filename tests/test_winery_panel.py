@@ -51,7 +51,7 @@ def test_winery_panel_details_do_not_overlap_action_buttons() -> None:
         surface,
         winery,
         worker_assigned=True,
-        production_status="Processing",
+        production_status="processing",
     )
     details_top = WineryPanel.details_top(layout)
     details_bottom = details_top + 22 * 3 + 4 + 12

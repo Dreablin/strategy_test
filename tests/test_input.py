@@ -467,7 +467,7 @@ def test_under_construction_click_outside_panel_does_not_hit_hidden_sawmill_butt
         surface,
         sawmill,
         worker_assigned=False,
-        production_status="Under construction",
+        production_status="under_construction",
     ).demolish.center
     assert not ConstructionPanel.layout(surface, sawmill).frame.collidepoint(hidden_demolish_center)
     inp.handle(surface, pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=hidden_demolish_center))
@@ -506,7 +506,7 @@ def test_sawmill_panel_toggle_click_toggles_active() -> None:
     placement = PlacementController(world, registry, camera)
     inp = GameInput(world, registry, placement, WorkerManager(registry), camera)
     inp._panel = sawmill  # noqa: SLF001
-    layout = SawmillPanel.layout(surface, sawmill, worker_assigned=False, production_status="No worker")
+    layout = SawmillPanel.layout(surface, sawmill, worker_assigned=False, production_status="no_worker")
     inp.handle(
         surface,
         pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=layout.toggle.center),
@@ -544,7 +544,7 @@ def test_mill_panel_toggle_click_toggles_active() -> None:
     placement = PlacementController(world, registry, camera)
     inp = GameInput(world, registry, placement, WorkerManager(registry), camera)
     inp._panel = mill  # noqa: SLF001
-    layout = MillPanel.layout(surface, mill, worker_assigned=False, production_status="No wheat")
+    layout = MillPanel.layout(surface, mill, worker_assigned=False, production_status="no_wheat")
     inp.handle(
         surface,
         pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=pygame.BUTTON_LEFT, pos=layout.toggle.center),
@@ -888,7 +888,7 @@ def test_well_panel_upgrade_click_starts_upgrade_construction() -> None:
     workers = WorkerManager(registry)
     inp = GameInput(world, registry, placement, workers, camera)
     inp._panel = well  # noqa: SLF001
-    layout = WellPanel.layout(surface, well, worker_assigned=False, production_status="No worker")
+    layout = WellPanel.layout(surface, well, worker_assigned=False, production_status="no_worker")
     assert layout.upgrade is not None
 
     inp.handle(

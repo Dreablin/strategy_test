@@ -14,14 +14,14 @@ def test_vineyard_farm_panel_supports_building_toggle_and_close_clicks() -> None
     assert VineyardFarmPanel.supports_building(farm) is True
     assert VineyardFarmPanel.supports_building(object()) is False
 
-    layout = VineyardFarmPanel.layout(surface, farm, worker_assigned=False, production_status="Ready")
+    layout = VineyardFarmPanel.layout(surface, farm, worker_assigned=False, production_status="ready")
     assert layout.frame.contains(layout.toggle)
     assert VineyardFarmPanel.click_action(
         surface,
         layout.toggle.center,
         farm,
         worker_assigned=False,
-        production_status="Ready",
+        production_status="ready",
     ) == "toggle_active"
     assert (
         VineyardFarmPanel.click_action(
@@ -29,7 +29,7 @@ def test_vineyard_farm_panel_supports_building_toggle_and_close_clicks() -> None
             layout.close.center,
             farm,
             worker_assigned=False,
-            production_status="Ready",
+            production_status="ready",
         )
         == "close"
     )
@@ -43,10 +43,10 @@ def test_vineyard_farm_panel_draw_covers_toggle_region() -> None:
         farm,
         worker_assigned=True,
         worker_status="resting",
-        production_status="Resting",
+        production_status="resting",
         now_ms=0,
     )
-    layout = VineyardFarmPanel.layout(surface, farm, worker_assigned=True, production_status="Resting")
+    layout = VineyardFarmPanel.layout(surface, farm, worker_assigned=True, production_status="resting")
     px = surface.get_at((layout.toggle.centerx, layout.toggle.centery))
     assert px[0] > 30 or px[1] > 30 or px[2] > 30
 
@@ -63,7 +63,7 @@ def test_max_level_panel_grape_row_clear_of_demolish_and_toggle() -> None:
     surface = pygame.Surface((1280, 720))
     farm = VineyardFarm(level=10, grid_pos=(0, 0))
     farm.construction_site = None
-    layout = VineyardFarmPanel.layout(surface, farm, worker_assigned=True, production_status="Ready")
+    layout = VineyardFarmPanel.layout(surface, farm, worker_assigned=True, production_status="ready")
     assert layout.upgrade is None
     assert layout.demolish is not None
     grape_y = VineyardFarmPanel._grape_label_y(layout)
@@ -82,10 +82,10 @@ def test_draw_leaves_grape_text_above_demolish_at_level_10() -> None:
         farm,
         worker_assigned=True,
         worker_status="resting",
-        production_status="Resting",
+        production_status="resting",
         now_ms=0,
     )
-    layout = VineyardFarmPanel.layout(surface, farm, worker_assigned=True, production_status="Resting")
+    layout = VineyardFarmPanel.layout(surface, farm, worker_assigned=True, production_status="resting")
     grape_y = VineyardFarmPanel._grape_label_y(layout)
     panel_bg = (36, 40, 52, 255)
     text_found = False

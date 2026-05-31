@@ -50,7 +50,7 @@ def test_panel_draws_progress_bar_fill() -> None:
         surface,
         laboratory,
         worker_assigned=False,
-        production_status="No worker",
+        production_status="no_worker",
         worker_manager=workers,
         research_state=state,
     )

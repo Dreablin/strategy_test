@@ -73,7 +73,7 @@ def test_under_construction_shows_no_active_scientists_in_status() -> None:
     assert registry.upgrade_building(laboratory)
 
     assert worker_status_for_building(workers, laboratory) == "empty"
-    assert production_status_for_building(workers, laboratory) == "Under construction"
+    assert production_status_for_building(workers, laboratory) == "under_construction"
 
 
 def test_scientists_not_reassigned_to_laboratory_under_construction() -> None:
@@ -111,7 +111,7 @@ def test_assigned_scientist_reports_on_the_way_until_inside_laboratory() -> None
     assert scientist.assigned_building is laboratory
     assert workers.laboratory_active_scientist_count(laboratory) == 1
     assert workers.laboratory_research_contributing_scientist_count(laboratory) == 0
-    assert worker_status_for_building(workers, laboratory) == "on the way"
+    assert worker_status_for_building(workers, laboratory) == "on_the_way"
 
     workers.assign_to_building(scientist, laboratory)
     assert workers.laboratory_research_contributing_scientist_count(laboratory) == 1

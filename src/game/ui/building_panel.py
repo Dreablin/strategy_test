@@ -12,6 +12,7 @@ from game.config import CONSTRUCTION_REQUIREMENTS
 from game.research_config import RESEARCH_BY_ID
 from game.resource_catalog import resource_display_label
 from game.statue_research import statue_stage_research_id
+from game.worker_status import localized_status
 from game.ui.worker_labels import building_worker_status_line
 from game.ui.fonts import ui_font
 _PANEL_W = 420
@@ -272,7 +273,7 @@ class BuildingPanel:
         desc = building_description(building.type_tag)
         surface.blit(body_font.render(desc, True, (200, 204, 214)), (layout.frame.left + _PANEL_PAD, y))
         y += _ROW
-        allowed_worker_status = {"empty", "on the way", "assigned"}
+        allowed_worker_status = {"empty", "on_the_way", "assigned"}
         if building.type_tag in {"FARM", "VINEYARD_FARM"}:
             allowed_worker_status = allowed_worker_status | {
                 "moving",
@@ -294,7 +295,7 @@ class BuildingPanel:
             y += _ROW
             surface.blit(
                 body_font.render(
-                    i18n.t("ui.common.status_line", status=production_status),
+                    i18n.t("ui.common.status_line", status=localized_status(production_status)),
                     True,
                     (200, 204, 214),
                 ),

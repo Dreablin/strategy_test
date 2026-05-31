@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import pygame
 
 from game import i18n
-from game.ui.fonts import ui_font
+from game.ui.fonts import render_fitted_ui_text, ui_font
 from game.ui.research_screen_layout import (
     ResearchContentLayout,
     compute_content_layout,
@@ -68,7 +68,13 @@ class ResearchScreen:
         pygame.draw.rect(surface, (34, 38, 48), content.content, border_radius=8)
         pygame.draw.rect(surface, (48, 54, 66), content.technology_column, border_radius=6)
         label_font = ui_font(20)
-        tech_label = label_font.render(ResearchScreen.technology_label(), True, (190, 196, 208))
+        tech_max = max(1, content.technology_column.width - 20)
+        tech_label = render_fitted_ui_text(
+            ResearchScreen.technology_label(),
+            tech_max,
+            sizes=(20, 18, 16),
+            color=(190, 196, 208),
+        )
         surface.blit(
             tech_label,
             (
@@ -124,8 +130,12 @@ class ResearchScreen:
         pygame.draw.rect(surface, (28, 32, 40), layout.frame)
         pygame.draw.rect(surface, (56, 60, 68), layout.frame, width=2)
 
-        title_font = ui_font(36)
-        title = title_font.render(ResearchScreen.screen_title(), True, (238, 240, 248))
+        title_max = max(1, layout.close.left - layout.frame.left - _PAD - 4)
+        title = render_fitted_ui_text(
+            ResearchScreen.screen_title(),
+            title_max,
+            sizes=(36, 32, 28, 24),
+        )
         surface.blit(title, (layout.frame.left + _PAD, layout.frame.top + _PAD))
 
         ResearchScreen._draw_content(

@@ -14,7 +14,7 @@ from game.resource_catalog import resource_display_label
 from game.statue_research import statue_stage_research_id
 from game.worker_status import localized_status
 from game.ui.worker_labels import building_worker_status_line
-from game.ui.fonts import ui_font
+from game.ui.fonts import render_fitted_ui_text, ui_font
 _PANEL_W = 420
 _PANEL_PAD = 16
 _ROW = 26
@@ -241,7 +241,6 @@ class BuildingPanel:
         pygame.draw.rect(surface, (36, 40, 52), layout.frame, border_radius=10)
         pygame.draw.rect(surface, (72, 78, 92), layout.frame, width=2, border_radius=10)
 
-        title_font = ui_font(28)
         body_font = ui_font(22)
         btn_font = ui_font(22)
 
@@ -251,7 +250,8 @@ class BuildingPanel:
             title_text = i18n.t("ui.building.panel_title_stage", name=name, stage=stage_name())
         else:
             title_text = i18n.t("ui.building.panel_title", name=name, level=building.level)
-        title = title_font.render(title_text, True, (238, 240, 248))
+        title_max = layout.close.left - layout.frame.left - _PANEL_PAD - 4
+        title = render_fitted_ui_text(title_text, title_max)
         surface.blit(title, (layout.frame.left + _PANEL_PAD, layout.frame.top + _PANEL_PAD))
 
         pygame.draw.line(

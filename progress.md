@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 29 - Localization EN/RU (**in progress**)
-- **Next Task:** T465 - Verify layout with Russian text
-- **Last Completed:** T464 - Audit remaining player-facing UI literals
-- **Total Progress:** 464 / 468 (Phase 29: 26 / 30 done)
+- **Next Task:** T466 - Update tests that still assume English literals
+- **Last Completed:** T465 - Verify RU layout fits panel bounds
+- **Total Progress:** 465 / 468 (Phase 29: 27 / 30 done)
 
 > **Archive:** Phase 28 task details (T387-T438) are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -191,7 +191,7 @@ Each task runs in a fresh context. Do not assume prior memory; read this block, 
   - Migrate any genuine UI strings missed by earlier tasks; document a short allowlist (dev-only text like `dev_asset_reload.py`, ids/enums, log strings) in `localization_guide.md`.
   - Verify: `pytest -q`.
   - Acceptance: documented allowlist exists; no obvious UI strings remain outside locale files.
-- [ ] **T465**: Verify layout with Russian text.
+- [x] **T465**: Verify layout with Russian text.
   - Add headless render smoke checks under the `ru` locale (via T442 harness) for: bottom bar, building panel, worker panel, research screen, construction panel. Assert text surfaces fit within their target rects (no overflow beyond panel bounds).
   - Adjust widths/wrapping only where overflow is detected; do not restyle otherwise.
   - Verify: run the new layout test(s); then `pytest -q`.

@@ -15,3 +15,18 @@ def ui_font(size: int) -> pygame.font.Font:
     if _FONT_PATH.is_file():
         return pygame.font.Font(str(_FONT_PATH), size)
     return pygame.font.Font(None, size)
+
+
+def render_fitted_ui_text(
+    text: str,
+    max_width: int,
+    *,
+    sizes: tuple[int, ...] = (28, 24, 22, 20, 18, 16),
+    color: tuple[int, int, int] = (238, 240, 248),
+) -> pygame.Surface:
+    """Render UI text, stepping down font size until it fits ``max_width``."""
+    for size in sizes:
+        surf = ui_font(size).render(text, True, color)
+        if surf.get_width() <= max_width:
+            return surf
+    return surf

@@ -88,6 +88,16 @@ def _dev_menu_entries() -> tuple[tuple[str, str], ...]:
     )
 
 
+def _fit_bar_label(text: str, max_width: int, color: tuple[int, int, int] = (220, 222, 230)) -> pygame.Surface:
+    """Render bottom-bar label text, stepping down font size until it fits."""
+    for size in (22, 20, 18, 16):
+        font = ui_font(size)
+        surf = font.render(text, True, color)
+        if surf.get_width() <= max_width:
+            return surf
+    return surf
+
+
 def _button_rects(surface: pygame.Surface, count: int) -> list[pygame.Rect]:
     w, h = surface.get_width(), surface.get_height()
     y0 = h - BAR_HEIGHT
@@ -190,14 +200,13 @@ class BottomBar:
         pygame.draw.rect(surface, (26, 28, 34), (0, y0, w, BAR_HEIGHT))
         pygame.draw.line(surface, (48, 52, 60), (0, y0), (w, y0))
 
-        font = ui_font(22)
         menu = BottomBar._menu
         if menu == "main":
             entries = _main_menu_entries()
             for rect, (_key, label) in zip(_button_rects(surface, len(entries)), entries):
                 btn = rect.inflate(-6, -10)
                 pygame.draw.rect(surface, (36, 40, 48), btn, border_radius=6)
-                text = font.render(label, True, (220, 222, 230))
+                text = _fit_bar_label(label, btn.width)
                 surface.blit(
                     text,
                     (btn.centerx - text.get_width() // 2, btn.centery - text.get_height() // 2),
@@ -212,7 +221,7 @@ class BottomBar:
                 btn = rect.inflate(-6, -10)
                 pygame.draw.rect(surface, (36, 40, 48), btn, border_radius=6)
                 if tag == "":
-                    text = font.render(label, True, (220, 222, 230))
+                    text = _fit_bar_label(label, btn.width)
                     surface.blit(
                         text,
                         (btn.centerx - text.get_width() // 2, btn.centery - text.get_height() // 2),
@@ -220,7 +229,7 @@ class BottomBar:
                     continue
                 spr = pygame.transform.smoothscale(building_sprite(asset_key, 1), (44, 34))
                 surface.blit(spr, (btn.centerx - spr.get_width() // 2, btn.bottom - 42))
-                text = font.render(label, True, (220, 222, 230))
+                text = _fit_bar_label(label, btn.width)
                 surface.blit(text, (btn.centerx - text.get_width() // 2, btn.top + 10))
             _draw_building_cost_tooltip(surface, hover_pos)
             return
@@ -241,7 +250,7 @@ class BottomBar:
             for rect, (key, label) in zip(rects, entries):
                 btn = rect.inflate(-6, -10)
                 pygame.draw.rect(surface, (36, 40, 48), btn, border_radius=6)
-                text = font.render(label, True, (220, 222, 230))
+                text = _fit_bar_label(label, btn.width)
                 surface.blit(text, (btn.centerx - text.get_width() // 2, btn.top + 10))
                 asset_key = social_assets.get(key.upper())
                 if asset_key is not None:
@@ -267,7 +276,7 @@ class BottomBar:
             for rect, (asset_key, label) in zip(rects, entries):
                 btn = rect.inflate(-6, -10)
                 pygame.draw.rect(surface, (36, 40, 48), btn, border_radius=6)
-                text = font.render(label, True, (220, 222, 230))
+                text = _fit_bar_label(label, btn.width)
                 surface.blit(
                     text,
                     (btn.centerx - text.get_width() // 2, btn.centery - text.get_height() // 2),
@@ -284,7 +293,7 @@ class BottomBar:
             for rect, (key, label) in zip(rects, entries):
                 btn = rect.inflate(-6, -10)
                 pygame.draw.rect(surface, (36, 40, 48), btn, border_radius=6)
-                text = font.render(label, True, (220, 222, 230))
+                text = _fit_bar_label(label, btn.width)
                 surface.blit(text, (btn.centerx - text.get_width() // 2, btn.top + 10))
                 if key in {"tree", "stone", "iron"}:
                     resource_key = {"tree": "wood", "stone": "stone", "iron": "iron"}[key]
@@ -300,7 +309,7 @@ class BottomBar:
             btn = rect.inflate(-6, -10)
             pygame.draw.rect(surface, (36, 40, 48), btn, border_radius=6)
             if tag == "":
-                text = font.render(label, True, (220, 222, 230))
+                text = _fit_bar_label(label, btn.width)
                 surface.blit(
                     text,
                     (btn.centerx - text.get_width() // 2, btn.centery - text.get_height() // 2),
@@ -314,9 +323,8 @@ class BottomBar:
             sx = inner.left + 8
             sy = inner.centery - spr.get_height() // 2
             surface.blit(spr, (sx, sy))
-            fg = (220, 222, 230)
-            name_s = font.render(label, True, fg)
             tx = sx + spr.get_width() + 8
+            name_s = _fit_bar_label(label, max(1, inner.right - tx))
             ty_name = inner.top + 8
             surface.blit(name_s, (tx, ty_name))
         _draw_building_cost_tooltip(surface, hover_pos)

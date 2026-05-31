@@ -11,7 +11,7 @@ from game.assets import resource_icon
 from game.buildings.base import Building
 from game.resource_catalog import resource_display_label
 from game.ui.building_panel import building_display_name
-from game.ui.fonts import ui_font
+from game.ui.fonts import render_fitted_ui_text, ui_font
 
 _PANEL_W = 460
 _PANEL_PAD = 16
@@ -115,12 +115,13 @@ class ConstructionPanel:
         pygame.draw.rect(surface, (36, 40, 52), layout.frame, border_radius=10)
         pygame.draw.rect(surface, (72, 78, 92), layout.frame, width=2, border_radius=10)
 
-        title_font = ui_font(28)
         body_font = ui_font(22)
         small_font = ui_font(20)
 
         name = building_display_name(building.type_tag)
-        title = title_font.render(f"{name} — {ConstructionPanel.title_line(building)}", True, (238, 240, 248))
+        title_text = f"{name} — {ConstructionPanel.title_line(building)}"
+        title_max = layout.close.left - layout.frame.left - _PANEL_PAD - 4
+        title = render_fitted_ui_text(title_text, title_max)
         surface.blit(title, (layout.frame.left + _PANEL_PAD, layout.frame.top + _PANEL_PAD))
 
         pygame.draw.line(

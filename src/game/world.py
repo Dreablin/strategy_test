@@ -798,7 +798,13 @@ class World:
                     self._occupied[ty][tx] = False
                     tile = (tx, ty)
                     self._occupied_tiles.discard(tile)
-                    self._blocked_tiles.discard(tile)
+                    if (
+                        tile not in self._tree_tiles
+                        and tile not in self._stone_tiles
+                        and tile not in self._iron_blocking_tiles
+                        and tile not in self._gold_blocking_tiles
+                    ):
+                        self._blocked_tiles.discard(tile)
 
     def _plant_tree_grove(
         self,

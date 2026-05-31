@@ -6,8 +6,11 @@ from dataclasses import dataclass
 
 import pygame
 
+from game import i18n
 from game.assets import resource_icon
 from game.buildings.base import Building
+from game.resource_catalog import resource_display_label
+from game.ui.building_panel import building_display_name
 from game.ui.fonts import ui_font
 
 _PANEL_W = 460
@@ -16,23 +19,6 @@ _ROW = 26
 _CLOSE = 28
 _BAR_H = 16
 _BTN_H = 36
-
-_DISPLAY_NAME: dict[str, str] = {
-    "TOWN_HALL": "Town Hall",
-    "LUMBER_CAMP": "Lumber Camp",
-    "STONE_MINE": "Stone Mine",
-    "IRON_MINE": "Iron Mine",
-    "FARM": "Farm",
-    "FORESTER_HUT": "Forester Hut",
-    "SCHOOL": "School",
-    "HOUSE": "House",
-    "BAKERY": "Bakery",
-    "CANTEEN": "Canteen",
-    "WELL": "Well",
-    "VINEYARD": "Vineyard",
-    "LABORATORY": "Laboratory",
-    "STATUE": "Statue",
-}
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,24 +73,34 @@ class ConstructionPanel:
     def title_line(building: Building) -> str:
         site = building.construction_site
         if site is None:
-            return "Under Construction"
+            return i18n.t("ui.construction.under_construction")
         current_stage = getattr(building, "current_construction_stage_name", None)
         if callable(current_stage):
-            return f"Building: {current_stage()}"
+            return i18n.t("ui.construction.building_stage", stage=current_stage())
         if int(site.target_level) > int(building.level):
-            return f"Upgrading to Lv {int(site.target_level)}"
-        return "Under Construction"
+            return i18n.t("ui.construction.upgrading_to", level=int(site.target_level))
+        return i18n.t("ui.construction.under_construction")
 
     @staticmethod
     def builder_status(building: Building) -> str:
         site = building.construction_site
         if site is None:
-            return "Waiting for resources"
+            return i18n.t("status.construction.waiting_resources")
         if not site.is_fully_supplied():
-            return "Waiting for resources"
+            return i18n.t("status.construction.waiting_resources")
         if not site.is_building():
-            return "Waiting for builder"
-        return "Building..."
+            return i18n.t("status.construction.waiting_builder")
+        return i18n.t("status.construction.building")
+
+    @staticmethod
+    def resource_delivery_line(resource: str, delivered: int, required: int) -> str:
+        label = resource_display_label(resource)
+        return i18n.t(
+            "ui.construction.delivered",
+            label=label,
+            delivered=int(delivered),
+            required=int(required),
+        )
 
     @staticmethod
     def draw(surface: pygame.Surface, building: Building, *, now_ms: int) -> None:
@@ -123,7 +119,7 @@ class ConstructionPanel:
         body_font = ui_font(22)
         small_font = ui_font(20)
 
-        name = _DISPLAY_NAME.get(building.type_tag, building.type_tag)
+        name = building_display_name(building.type_tag)
         title = title_font.render(f"{name} — {ConstructionPanel.title_line(building)}", True, (238, 240, 248))
         surface.blit(title, (layout.frame.left + _PANEL_PAD, layout.frame.top + _PANEL_PAD))
 
@@ -143,18 +139,20 @@ class ConstructionPanel:
         )
 
         y = layout.frame.top + _PANEL_PAD + _ROW + 6
-        surface.blit(body_font.render("Requirements:", True, (205, 210, 220)), (layout.frame.left + _PANEL_PAD, y))
+        requirements = i18n.t("ui.common.requirements")
+        surface.blit(body_font.render(f"{requirements}:", True, (205, 210, 220)), (layout.frame.left + _PANEL_PAD, y))
         y += _ROW
         for resource, required in site.required_resources.items():
             delivered = int(site.delivered_resources.get(resource, 0))
             icon = pygame.transform.smoothscale(resource_icon(resource), (18, 18))
             surface.blit(icon, (layout.frame.left + _PANEL_PAD, y + 3))
-            line = f"{resource.capitalize()}: {delivered}/{int(required)}"
+            line = ConstructionPanel.resource_delivery_line(resource, delivered, int(required))
             surface.blit(small_font.render(line, True, (205, 210, 220)), (layout.frame.left + _PANEL_PAD + 24, y))
             y += _ROW
 
+        builder_line = i18n.t("ui.construction.builder", status=ConstructionPanel.builder_status(building))
         surface.blit(
-            body_font.render(f"Builder: {ConstructionPanel.builder_status(building)}", True, (205, 210, 220)),
+            body_font.render(builder_line, True, (205, 210, 220)),
             (layout.frame.left + _PANEL_PAD, y),
         )
         y += _ROW
@@ -162,7 +160,7 @@ class ConstructionPanel:
             progress = max(0.0, min(1.0, site.build_progress(int(now_ms))))
             pct = int(round(progress * 100))
             surface.blit(
-                body_font.render(f"Progress: {pct}%", True, (205, 210, 220)),
+                body_font.render(i18n.t("ui.construction.progress", pct=pct), True, (205, 210, 220)),
                 (layout.frame.left + _PANEL_PAD, y),
             )
             y += _ROW
@@ -176,7 +174,7 @@ class ConstructionPanel:
         btn_font = ui_font(24)
         if layout.demolish is not None:
             pygame.draw.rect(surface, (140, 48, 52), layout.demolish, border_radius=6)
-            dl = btn_font.render("Demolish", True, (255, 240, 240))
+            dl = btn_font.render(i18n.t("ui.button.demolish"), True, (255, 240, 240))
             surface.blit(
                 dl,
                 (
@@ -188,11 +186,8 @@ class ConstructionPanel:
             enabled = bool(getattr(building, "construction_deliveries_enabled", True))
             bg = (84, 112, 84) if enabled else (92, 64, 64)
             pygame.draw.rect(surface, bg, layout.toggle, border_radius=6)
-            label = btn_font.render(
-                "Deliveries Active" if enabled else "Deliveries Paused",
-                True,
-                (240, 242, 250),
-            )
+            toggle_key = "ui.statue.deliveries_active" if enabled else "ui.statue.deliveries_paused"
+            label = btn_font.render(i18n.t(toggle_key), True, (240, 242, 250))
             surface.blit(
                 label,
                 (

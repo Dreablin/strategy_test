@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 29 - Localization EN/RU (**in progress**)
-- **Next Task:** T451 - Localize construction panel — `src/game/ui/construction_panel.py`
-- **Last Completed:** T450 - Localize base building panel actions + Town Hall panel
-- **Total Progress:** 450 / 468 (Phase 29: 12 / 30 done)
+- **Next Task:** T452 - Localize worker panel — `src/game/ui/worker_panel.py`
+- **Last Completed:** T451 - Localize construction panel — `src/game/ui/construction_panel.py`
+- **Total Progress:** 451 / 468 (Phase 29: 13 / 30 done)
 
 > **Archive:** Phase 28 task details (T387-T438) are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -113,12 +113,12 @@ Each task runs in a fresh context. Do not assume prior memory; read this block, 
   - Update `tests/test_building_panel.py` and `tests/test_town_hall_panel.py`; cover upgrade label for a normal building and the statue stage label.
   - Verify: `pytest -q tests/test_building_panel.py tests/test_town_hall_panel.py`; then `pytest -q`.
   - Acceptance: building-panel, town-hall-panel, and statue-panel tests pass with localized text.
-- [~] **T451**: Localize construction panel — `src/game/ui/construction_panel.py`.
+- [x] **T451**: Localize construction panel — `src/game/ui/construction_panel.py`.
   - Route title line, requirements header, delivered counters, builder state, progress, demolish, active/inactive, and the statue delivery toggle through `ui.*`/`status.*`/`statue.*` keys; keep numeric `{n}/{m}` formats.
   - Update `tests/test_*construction*` (find via `rg -l construction tests`); cover a regular building and statue construction in `en`, plus one `ru` smoke.
   - Verify: run those test files; then `pytest -q`.
   - Acceptance: construction-panel tests pass for regular + statue.
-- [ ] **T452**: Localize worker panel — `src/game/ui/worker_panel.py`.
+- [~] **T452**: Localize worker panel — `src/game/ui/worker_panel.py`.
   - Route state labels, satiety, movement speed, assignment, carrying, task, from/to, returning, and resource names through `status.*`/`ui.*`/`resource.*`/`worker.*` keys.
   - Update the worker-panel test (find via `rg -l worker_panel tests`); add a `ru` smoke for one worker.
   - Verify: run the worker-panel test file; then `pytest -q`.

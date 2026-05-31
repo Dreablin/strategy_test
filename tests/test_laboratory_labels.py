@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from game.ui.building_panel import building_description, building_display_name
-from game.ui.construction_panel import _DISPLAY_NAME as CONSTRUCTION_DISPLAY_NAME
 from game.ui.population_panel import _BUILDING_LABEL as POPULATION_BUILDING_LABEL
 from game.ui.worker_panel import _BUILDING_LABEL as WORKER_BUILDING_LABEL
 
@@ -17,7 +16,7 @@ def test_laboratory_building_panel_display_name_and_description() -> None:
 
 
 def test_laboratory_construction_panel_display_name() -> None:
-    assert CONSTRUCTION_DISPLAY_NAME["LABORATORY"] == "Laboratory"
+    assert building_display_name("LABORATORY") == "Laboratory"
 
 
 def test_laboratory_worker_and_population_panel_labels() -> None:

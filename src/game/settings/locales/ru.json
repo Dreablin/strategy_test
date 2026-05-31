@@ -20,6 +20,14 @@
   "ui.common.unavailable": "Недоступно",
   "ui.common.requires_research": "Требуется исследование: {name}",
   "ui.common.worker": "Рабочий",
+  "ui.construction.under_construction": "Строительство",
+  "ui.construction.building_stage": "Строительство: {stage}",
+  "ui.construction.upgrading_to": "Улучшение до ур. {level}",
+  "ui.construction.builder": "Строитель: {status}",
+  "ui.construction.progress": "Прогресс: {pct}%",
+  "ui.construction.delivered": "{label}: {delivered}/{required}",
+  "ui.statue.deliveries_active": "Поставки активны",
+  "ui.statue.deliveries_paused": "Поставки приостановлены",
   "ui.window.caption": "Изометрическая стратегия",
   "ui.statue.start_stage": "Начать этап: {stage}",
   "ui.topbar.research": "Исследования",
@@ -96,5 +104,8 @@
   "building.HOUSE.name": "Дом",
   "building.SAWMILL.name": "Лесопилка",
   "research.1.name": "Технология I",
+  "status.construction.waiting_resources": "Ожидание ресурсов",
+  "status.construction.waiting_builder": "Ожидание строителя",
+  "status.construction.building": "Строительство...",
   "ui.test.labeled_count": "{name}: {count}"
 }

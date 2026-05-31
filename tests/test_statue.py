@@ -196,7 +196,7 @@ def test_construction_panel_statue_stage_toggle_and_no_demolish() -> None:
     )
     layout = ConstructionPanel.layout(surface, statue)
 
-    assert ConstructionPanel.title_line(statue) == "Building: Foundation"
+    assert ConstructionPanel.title_line(statue) == i18n.t("ui.construction.building_stage", stage="Foundation")
     assert layout.demolish is None
     assert layout.toggle is not None
     assert ConstructionPanel.click_action(surface, layout.toggle.center, statue) == "toggle_construction_deliveries"

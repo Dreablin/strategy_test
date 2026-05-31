@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import pygame
 
 from game.resource_catalog import resource_display_label
-from game.ui.worker_labels import WORKER_LABEL as _WORKER_LABEL
+from game.ui.worker_labels import worker_display_label
 from game.worker_models import Worker
 from game.worker_satiety import MAX_WORKER_SATIETY, clamp_worker_satiety
 from game.ui.fonts import ui_font
@@ -164,7 +164,7 @@ class WorkerPanel:
 
         title_font = ui_font(28)
         body_font = ui_font(22)
-        title = title_font.render(_label(worker.type_tag, _WORKER_LABEL), True, (238, 240, 248))
+        title = title_font.render(worker_display_label(worker.type_tag), True, (238, 240, 248))
         surface.blit(title, (layout.frame.left + _PANEL_PAD, layout.frame.top + _PANEL_PAD))
 
         pygame.draw.line(

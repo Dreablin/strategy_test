@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 29 - Localization EN/RU (**in progress**)
-- **Next Task:** T446 - Migrate worker display labels (`worker.<TYPE>`) — `src/game/ui/worker_labels.py`
-- **Last Completed:** T445 - Migrate resource display labels (`resource.<id>`) — `src/game/resource_catalog.py`
-- **Total Progress:** 445 / 468 (Phase 29: 7 / 30 done)
+- **Next Task:** T447 - Migrate building names + descriptions (`building.<TYPE>.name/.desc`) — `src/game/ui/building_panel.py`
+- **Last Completed:** T446 - Migrate worker display labels (`worker.<TYPE>`) — `src/game/ui/worker_labels.py`
+- **Total Progress:** 446 / 468 (Phase 29: 8 / 30 done)
 
 > **Archive:** Phase 28 task details (T387-T438) are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -82,13 +82,13 @@ Each task runs in a fresh context. Do not assume prior memory; read this block, 
   - Update/extend `tests/test_elite_meal_resource.py`; cover `wood`, `simple_meal`, `elite_meal`, and an unknown id fallback, with a `ru` smoke using the harness.
   - Verify: `pytest -q tests/test_elite_meal_resource.py`; then `pytest -q`.
   - Acceptance: labels come from locales; ids unchanged; tests pass `en`+`ru`.
-- [~] **T446**: Migrate worker display labels (`worker.<TYPE>`) — `src/game/ui/worker_labels.py`.
+- [x] **T446**: Migrate worker display labels (`worker.<TYPE>`) — `src/game/ui/worker_labels.py`.
   - Replace `WORKER_LABEL` dict usage in `worker_display_label` with `t(f"worker.{key}")`, keeping the `.title()` fallback. Keep `building_worker_status_line` format but route the `Worker`/`Worker (label)` words through `ui.*`/`worker.*` keys.
   - Add `worker.<TYPE>` keys to both locales for every type in `WORKER_LABEL` (all 15 listed).
   - Update `tests/test_winemaker_display.py` and `tests/test_scientist_display.py`; add a parametrized test covering every `HIRABLE_WORKERS` type in `en` and `ru`.
   - Verify: `pytest -q tests/test_winemaker_display.py tests/test_scientist_display.py`; then `pytest -q`.
   - Acceptance: every worker type has localized labels in both locales; tests pass.
-- [ ] **T447**: Migrate building names + descriptions (`building.<TYPE>.name/.desc`) — `src/game/ui/building_panel.py`.
+- [~] **T447**: Migrate building names + descriptions (`building.<TYPE>.name/.desc`) — `src/game/ui/building_panel.py`.
   - Replace `_DISPLAY_NAME` and `_DESCRIPTION` lookups with `t(f"building.{tag}.name")` / `t(f"building.{tag}.desc")`.
   - Add `building.<TYPE>.name` and `.desc` keys for every registered building type (the 17 names in `_DISPLAY_NAME` plus `MILL`, which has a description but no name entry — add a `MILL` name). Use existing English strings verbatim.
   - Update `tests/test_building_panel.py`; assert localized name/desc for at least `TOWN_HALL`, `LABORATORY`, `STATUE` in `en` and one `ru` smoke.

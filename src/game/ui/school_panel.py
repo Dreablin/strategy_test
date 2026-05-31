@@ -10,8 +10,8 @@ from game.assets import hire_ui_icon, worker_ui_icon
 from game.ui.building_panel import draw_upgrade_cost_tooltip
 from game.ui.fonts import ui_font
 from game.ui.worker_labels import (
-    WORKER_LABEL as _WORKER_LABEL,
     building_worker_status_line,
+    worker_display_label,
 )
 from game.buildings.school import SCHOOL_TRAINING_MS, School
 from game.worker_tiers import worker_tier
@@ -262,7 +262,7 @@ class SchoolPanel:
             hire_x = rect.right - hire_icon.get_width() - 8
             hire_y = rect.top + 8
             surface.blit(hire_icon, (hire_x, hire_y))
-            label = _WORKER_LABEL.get(worker_type, worker_type.title())
+            label = worker_display_label(worker_type)
             label_text = small_font.render(label, True, fg)
             label_x = rect.centerx - label_text.get_width() // 2
             surface.blit(label_text, (label_x, rect.bottom - label_text.get_height() - 8))

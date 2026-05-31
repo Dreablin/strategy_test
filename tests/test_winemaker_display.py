@@ -5,9 +5,8 @@ from __future__ import annotations
 import pygame
 
 from game.assets import hire_ui_icon, worker_ui_icon
-from game.ui.population_panel import _WORKER_LABEL as POP_WORKER_LABEL  # noqa: N811
-from game.ui.population_panel import _FILTER_WORKER_TYPES  # noqa: F401
-from game.ui.worker_panel import _WORKER_LABEL as WP_WORKER_LABEL  # noqa: N811
+from game.ui.population_panel import _FILTER_WORKER_TYPES
+from game.ui.worker_labels import worker_display_label
 
 
 def test_winemaker_worker_ui_icon_returns_surface() -> None:
@@ -24,14 +23,13 @@ def test_winemaker_hire_ui_icon_returns_surface() -> None:
     assert icon.get_height() == 20
 
 
-def test_winemaker_in_population_panel_labels() -> None:
-    assert "WINEMAKER" in POP_WORKER_LABEL
-    assert POP_WORKER_LABEL["WINEMAKER"] == "Winemaker"
+def test_winemaker_display_label_en() -> None:
+    assert worker_display_label("WINEMAKER") == "Winemaker"
 
 
-def test_winemaker_in_worker_panel_labels() -> None:
-    assert "WINEMAKER" in WP_WORKER_LABEL
-    assert WP_WORKER_LABEL["WINEMAKER"] == "Winemaker"
+def test_winemaker_display_label_ru(use_locale) -> None:
+    with use_locale("ru"):
+        assert worker_display_label("WINEMAKER") == "Винодел"
 
 
 def test_winemaker_in_population_filter_worker_types() -> None:

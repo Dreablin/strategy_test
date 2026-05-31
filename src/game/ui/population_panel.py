@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import pygame
 
 from game.assets import worker_ui_icon
-from game.ui.worker_labels import WORKER_LABEL as _WORKER_LABEL
+from game.ui.worker_labels import worker_display_label
 from game.worker_models import Worker
 from game.ui.fonts import ui_font
 
@@ -125,7 +125,7 @@ def _building_name(building) -> str:
 
 def worker_summary(worker: Worker) -> tuple[str, str, str]:
     """Return title, task line, detail line for a population row."""
-    title = _label(worker.type_tag, _WORKER_LABEL)
+    title = worker_display_label(worker.type_tag)
     task = worker.transport_task
     if task is not None:
         resource = _label(task.resource, _RESOURCE_LABEL)

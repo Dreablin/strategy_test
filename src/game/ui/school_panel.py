@@ -7,7 +7,8 @@ from dataclasses import dataclass
 import pygame
 
 from game.assets import hire_ui_icon, worker_ui_icon
-from game.ui.building_panel import draw_upgrade_cost_tooltip
+from game import i18n
+from game.ui.building_panel import building_display_name, draw_upgrade_cost_tooltip
 from game.ui.fonts import ui_font
 from game.ui.worker_labels import (
     building_worker_status_line,
@@ -79,6 +80,22 @@ class SchoolPanel:
     @staticmethod
     def supports_building(building) -> bool:
         return isinstance(building, School)
+
+    @staticmethod
+    def panel_title(school: School) -> str:
+        return i18n.t(
+            "ui.school.panel_title",
+            name=building_display_name("SCHOOL"),
+            level=school.level,
+        )
+
+    @staticmethod
+    def queue_title() -> str:
+        return i18n.t("ui.school.queue")
+
+    @staticmethod
+    def tab_label(tier: str) -> str:
+        return i18n.t(f"ui.school.tab.{tier}")
 
     @staticmethod
     def layout(
@@ -182,7 +199,7 @@ class SchoolPanel:
         title_font = ui_font(28)
         font = ui_font(22)
         small_font = ui_font(18)
-        title = title_font.render(f"School — Lv {school.level}", True, (238, 240, 248))
+        title = title_font.render(SchoolPanel.panel_title(school), True, (238, 240, 248))
         surface.blit(title, (layout.frame.left + _PANEL_PAD, layout.frame.top + _PANEL_PAD))
         pygame.draw.line(
             surface,
@@ -207,7 +224,7 @@ class SchoolPanel:
             ),
             (layout.frame.left + _PANEL_PAD, layout.frame.top + _PANEL_PAD + 52),
         )
-        queue_title = font.render("Queue", True, (220, 228, 236))
+        queue_title = font.render(SchoolPanel.queue_title(), True, (220, 228, 236))
         surface.blit(queue_title, (layout.queue_slots[0].left, layout.queue_slots[0].top - _SECTION_TITLE_GAP + 6))
         queue = school.training_queue()
         for idx, slot in enumerate(layout.queue_slots):
@@ -228,7 +245,7 @@ class SchoolPanel:
             bg = (64, 110, 168) if layout.upgrade_enabled else (52, 56, 64)
             fg = (240, 242, 250) if layout.upgrade_enabled else (130, 134, 142)
             pygame.draw.rect(surface, bg, layout.upgrade, border_radius=6)
-            label = font.render("Upgrade", True, fg)
+            label = font.render(i18n.t("ui.button.upgrade"), True, fg)
             surface.blit(
                 label,
                 (
@@ -238,15 +255,14 @@ class SchoolPanel:
             )
             draw_upgrade_cost_tooltip(surface, school, layout.upgrade)
         pygame.draw.rect(surface, (140, 48, 52), layout.demolish, border_radius=6)
-        d = font.render("Demolish", True, (255, 240, 240))
+        d = font.render(i18n.t("ui.button.demolish"), True, (255, 240, 240))
         surface.blit(d, (layout.demolish.centerx - d.get_width() // 2, layout.demolish.centery - d.get_height() // 2))
-        tab_labels = {"basic": "Basic", "advanced": "Advanced"}
         for tab_tier, tab_rect in layout.tabs:
             active = tab_tier == layout.active_tier
             tab_bg = (64, 110, 168) if active else (52, 56, 64)
             tab_fg = (240, 242, 250) if active else (160, 164, 174)
             pygame.draw.rect(surface, tab_bg, tab_rect, border_radius=5)
-            tab_text = font.render(tab_labels.get(tab_tier, tab_tier.title()), True, tab_fg)
+            tab_text = font.render(SchoolPanel.tab_label(tab_tier), True, tab_fg)
             surface.blit(tab_text, (tab_rect.centerx - tab_text.get_width() // 2, tab_rect.centery - tab_text.get_height() // 2))
         for worker_type, rect in layout.hire_buttons:
             enabled = layout.hire_enabled.get(worker_type, False)

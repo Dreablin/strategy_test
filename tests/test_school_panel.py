@@ -2,6 +2,7 @@
 
 import pygame
 
+from game import i18n
 from game.buildings.school import SCHOOL_QUEUE_CAPACITY, SCHOOL_TRAINING_MS
 from game.buildings.school import School
 from game.buildings.town_hall import TownHall
@@ -12,6 +13,28 @@ from game.ui.placement import PlacementController
 from game.ui.school_panel import SchoolPanel
 from game.workers import WorkerManager
 from game.world import World
+
+
+def test_school_panel_tab_labels_en() -> None:
+    assert SchoolPanel.tab_label("basic") == "Basic"
+    assert SchoolPanel.tab_label("advanced") == "Advanced"
+    assert SchoolPanel.queue_title() == "Queue"
+
+
+def test_school_panel_tab_labels_ru(use_locale) -> None:
+    with use_locale("ru"):
+        assert SchoolPanel.tab_label("basic") == "Базовые"
+        assert SchoolPanel.tab_label("advanced") == "Продвинутые"
+        assert SchoolPanel.queue_title() == "Очередь"
+
+
+def test_school_panel_title_uses_locale() -> None:
+    school = School(level=2, grid_pos=(10, 10))
+    assert SchoolPanel.panel_title(school) == i18n.t(
+        "ui.school.panel_title",
+        name=i18n.t("building.SCHOOL.name"),
+        level=2,
+    )
 
 
 def test_school_panel_hire_click_returns_worker_action() -> None:

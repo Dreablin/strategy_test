@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 29 - Localization EN/RU (**in progress**)
-- **Next Task:** T458 - Localize school panel — `src/game/ui/school_panel.py`
-- **Last Completed:** T457 - Localize food/dining panels
-- **Total Progress:** 457 / 468 (Phase 29: 19 / 30 done)
+- **Next Task:** T459 - Externalize research copy from `research.json`
+- **Last Completed:** T458 - Localize school panel
+- **Total Progress:** 458 / 468 (Phase 29: 20 / 30 done)
 
 > **Archive:** Phase 28 task details (T387-T438) are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -152,7 +152,7 @@ Each task runs in a fresh context. Do not assume prior memory; read this block, 
   - Update the relevant panel tests (find via `rg -l "canteen\|restaurant\|chicken_farm\|cow_farm\|vineyard_farm" tests`).
   - Verify: run those test files; then `pytest -q`.
   - Acceptance: relevant panel tests pass; meal/resource labels come from locale paths.
-- [~] **T458**: Localize school panel — `src/game/ui/school_panel.py`.
+- [x] **T458**: Localize school panel — `src/game/ui/school_panel.py`.
   - Route title, queue, Basic/Advanced tab labels, hire/cancel labels, worker labels (reuse `worker.<TYPE>`), and upgrade/demolish through `ui.*`/`worker.*` keys.
   - Update `tests/test_laboratory_menu.py` / school-panel tests (find via `rg -l school_panel tests`); assert Basic/Advanced tab labels in `en` and `ru`.
   - Verify: run the school-panel test file; then `pytest -q`.

@@ -12,6 +12,7 @@ from game.ui.bottom_bar import (
     _construction_cost_lines,
     _hovered_building_tag,
     _labeled_menu_buttons,
+    _main_menu_entries,
 )
 from game.ui.building_panel import building_display_name
 
@@ -37,6 +38,12 @@ def test_bottom_bar_food_menu_contains_food_buildings() -> None:
         "VINEYARD_FARM",
         "VINEYARD",
     }
+
+
+def test_bottom_bar_main_menu_categories_use_locale(use_locale) -> None:
+    with use_locale("ru"):
+        labels = [label for _key, label in _main_menu_entries()]
+        assert labels == ["Ресурсы", "Еда", "Общество", "Переработка", "Отладка"]
 
 
 def test_bottom_bar_main_can_open_food_menu_and_go_back() -> None:
@@ -105,7 +112,7 @@ def test_bottom_bar_cost_tooltip_uses_construction_requirements() -> None:
 def test_bottom_bar_statue_tooltip_shows_excavation_research_requirement() -> None:
     lines = _construction_cost_lines("STATUE")
 
-    assert i18n.t("ui.common.requires_research", name="Excavation Plans") in lines
+    assert i18n.t("ui.common.requires_research", name=i18n.t("research.statue_excavation.name")) in lines
 
 
 def test_bottom_bar_building_labels_use_locale_names_en() -> None:

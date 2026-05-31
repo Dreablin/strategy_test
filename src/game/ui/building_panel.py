@@ -248,9 +248,9 @@ class BuildingPanel:
         name = building_display_name(building.type_tag)
         stage_name = getattr(building, "stage_name", None)
         if callable(stage_name):
-            title_text = f"{name} - {stage_name()}"
+            title_text = i18n.t("ui.building.panel_title_stage", name=name, stage=stage_name())
         else:
-            title_text = f"{name} - Lv {building.level}"
+            title_text = i18n.t("ui.building.panel_title", name=name, level=building.level)
         title = title_font.render(title_text, True, (238, 240, 248))
         surface.blit(title, (layout.frame.left + _PANEL_PAD, layout.frame.top + _PANEL_PAD))
 

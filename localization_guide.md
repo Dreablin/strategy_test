@@ -71,3 +71,19 @@ Do not re-introduce raw literals in UI modules once migrated.
 - Locale switching in tests: use the `use_locale` harness in `tests/conftest.py` (T442)
 
 Default test locale is `en` unless a test explicitly switches via the harness.
+
+## Literal allowlist (T464 audit)
+
+The following are **intentionally not** in locale JSON. Do not migrate them without a product reason.
+
+| Location | What stays English / internal | Why |
+|----------|------------------------------|-----|
+| `src/game/dev_asset_reload.py` | `"Reload"` button label | Dev-only hot-reload tool; module is removable |
+| UI click/action return values | `"close"`, `"upgrade"`, `"hire:CARRIER"`, menu keys `"resource"` / `"food"` | Internal action tokens, not rendered copy |
+| `canteen_panel.py` | `diner.type_tag[:3]` abbreviations | Compact row tags; full worker names use `worker.*` elsewhere |
+| Building / worker type tags | `LUMBER_CAMP`, `CARRIER`, … | Stable ids; display names come from `building.*` / `worker.*` keys |
+| `ValueError` / `assert` messages | Exception text in loaders and registries | Developer diagnostics, not player UI |
+| Docstrings and module `__doc__` | English prose | Not shown in-game |
+| Log / debug strings | Any `print` or future logging | Not player-facing |
+
+When adding new UI copy, default to a new `ui.*`, `resource.*`, `building.*`, or `status.*` key rather than expanding this list.

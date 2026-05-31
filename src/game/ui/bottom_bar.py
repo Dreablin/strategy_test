@@ -69,6 +69,25 @@ def _back_button_label() -> str:
     return i18n.t("ui.button.back")
 
 
+def _main_menu_entries() -> tuple[tuple[str, str], ...]:
+    return (
+        ("resource", i18n.t("ui.bottom_bar.category.resource")),
+        ("food", i18n.t("ui.bottom_bar.category.food")),
+        ("social", i18n.t("ui.bottom_bar.category.social")),
+        ("processing", i18n.t("ui.bottom_bar.category.processing")),
+        ("dev", i18n.t("ui.bottom_bar.category.dev")),
+    )
+
+
+def _dev_menu_entries() -> tuple[tuple[str, str], ...]:
+    return (
+        ("back", _back_button_label()),
+        ("tree", i18n.t("ui.bottom_bar.dev.tree")),
+        ("stone", i18n.t("ui.bottom_bar.dev.stone")),
+        ("iron", i18n.t("ui.bottom_bar.dev.iron")),
+    )
+
+
 def _button_rects(surface: pygame.Surface, count: int) -> list[pygame.Rect]:
     w, h = surface.get_width(), surface.get_height()
     y0 = h - BAR_HEIGHT
@@ -174,13 +193,7 @@ class BottomBar:
         font = ui_font(22)
         menu = BottomBar._menu
         if menu == "main":
-            entries: tuple[tuple[str, str], ...] = (
-                ("resource", "Resource"),
-                ("food", "Food"),
-                ("social", "Social"),
-                ("processing", "Processing"),
-                ("dev", "Dev"),
-            )
+            entries = _main_menu_entries()
             for rect, (_key, label) in zip(_button_rects(surface, len(entries)), entries):
                 btn = rect.inflate(-6, -10)
                 pygame.draw.rect(surface, (36, 40, 48), btn, border_radius=6)
@@ -266,7 +279,7 @@ class BottomBar:
             return
 
         if menu == "dev":
-            entries = (("back", _back_button_label()), ("tree", "Tree"), ("stone", "Stone"), ("iron", "Iron"))
+            entries = _dev_menu_entries()
             rects = _button_rects(surface, len(entries))
             for rect, (key, label) in zip(rects, entries):
                 btn = rect.inflate(-6, -10)

@@ -3,9 +3,9 @@
 ## Current Status
 
 - **Phase:** 29 - Localization EN/RU (**in progress**)
-- **Next Task:** T464 - Audit remaining player-facing literals in `src/game`
-- **Last Completed:** T463 - Enforce Russian locale completeness
-- **Total Progress:** 463 / 468 (Phase 29: 25 / 30 done)
+- **Next Task:** T465 - Verify layout with Russian text
+- **Last Completed:** T464 - Audit remaining player-facing UI literals
+- **Total Progress:** 464 / 468 (Phase 29: 26 / 30 done)
 
 > **Archive:** Phase 28 task details (T387-T438) are in **`progress_archive.md`**. Do **not** re-run completed tasks.
 
@@ -186,7 +186,7 @@ Each task runs in a fresh context. Do not assume prior memory; read this block, 
   - Fill any `ru` gaps the test surfaces.
   - Verify: `pytest -q tests/test_locale_completeness.py`; then `pytest -q`.
   - Acceptance: `en` and `ru` key sets match exactly; no empty values.
-- [~] **T464**: Audit remaining player-facing literals in `src/game`.
+- [x] **T464**: Audit remaining player-facing literals in `src/game`.
   - Use `rg` to find remaining quoted human text in `src/game/ui`, `src/game/render.py`, `worker_status.py`, and runtime modules (e.g. `rg -n "\"[A-Z][a-z].*\"" src/game/ui`).
   - Migrate any genuine UI strings missed by earlier tasks; document a short allowlist (dev-only text like `dev_asset_reload.py`, ids/enums, log strings) in `localization_guide.md`.
   - Verify: `pytest -q`.

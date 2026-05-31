@@ -139,8 +139,10 @@ class ConstructionPanel:
         )
 
         y = layout.frame.top + _PANEL_PAD + _ROW + 6
-        requirements = i18n.t("ui.common.requirements")
-        surface.blit(body_font.render(f"{requirements}:", True, (205, 210, 220)), (layout.frame.left + _PANEL_PAD, y))
+        surface.blit(
+            body_font.render(i18n.t("ui.common.requirements_colon"), True, (205, 210, 220)),
+            (layout.frame.left + _PANEL_PAD, y),
+        )
         y += _ROW
         for resource, required in site.required_resources.items():
             delivered = int(site.delivered_resources.get(resource, 0))

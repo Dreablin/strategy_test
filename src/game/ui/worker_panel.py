@@ -6,127 +6,99 @@ from dataclasses import dataclass
 
 import pygame
 
+from game import i18n
 from game.resource_catalog import resource_display_label
-from game.ui.worker_labels import WORKER_LABEL as _WORKER_LABEL
+from game.ui.building_panel import building_display_name
+from game.ui.worker_labels import worker_display_label
 from game.worker_models import Worker
 from game.worker_satiety import MAX_WORKER_SATIETY, clamp_worker_satiety
+from game.ui.fonts import ui_font
 
 _PANEL_W = 420
 _PANEL_PAD = 16
 _ROW = 26
 _CLOSE = 28
 
-_BUILDING_LABEL: dict[str, str] = {
-    "TOWN_HALL": "Town Hall",
-    "LUMBER_CAMP": "Lumber Camp",
-    "STONE_MINE": "Stone Mine",
-    "IRON_MINE": "Iron Mine",
-    "FARM": "Farm",
-    "FORESTER_HUT": "Forester Hut",
-    "SAWMILL": "Sawmill",
-    "MILL": "Mill",
-    "BAKERY": "Bakery",
-    "CHICKEN_FARM": "Chicken Farm",
-    "COW_FARM": "Cow Farm",
-    "VINEYARD_FARM": "Vineyard Farm",
-    "VINEYARD": "Vineyard",
-    "SCHOOL": "School",
-    "WELL": "Well",
-    "CANTEEN": "Canteen",
-    "WINERY": "Winery",
-    "RESTAURANT": "Restaurant",
-    "LABORATORY": "Laboratory",
-    "STATUE": "Statue",
-}
 
-_RESOURCE_LABEL: dict[str, str] = {
-    "wood": "Wood",
-    "stone": "Stone",
-    "iron": "Iron",
-    "boards": "Boards",
-    "wheat": "Wheat",
-    "flour": "Flour",
-    "bread": "Bread",
-    "chicken": "Chicken",
-    "beef": "Beef",
-    "hide": "Hide",
-    "grapes": "Grapes",
-    "water": "Water",
-}
+def _localized_state(state: str) -> str:
+    key = f"status.worker.{state}"
+    label = i18n.t(key)
+    if label != key:
+        return label
+    return state
 
-_PURPOSE_LABEL: dict[str, str] = {
-    "generic": "Transport",
-    "construction": "Construction delivery",
-    "return": "Return to Town Hall",
-}
 
-_STATE_LABEL: dict[str, str] = {
-    "going_to_canteen": "Going to canteen",
-    "waiting_for_meal": "Waiting for meal",
-    "eating": "Eating",
-    "going_to_field": "Going to field",
-    "going_to_vineyard": "Going to vineyard",
-    "arrived_vineyard": "At vineyard",
-    "harvesting_grapes": "Harvesting grapes",
-    "vineyard_harvest_anim_done": "Storing grapes",
-    "working_field": "Waiting for work",
-    "sowing": "Sowing",
-    "harvesting": "Harvesting",
-    "returning": "Returning",
-    "arrived_camp": "At farm",
-}
+def _localized_purpose(purpose: str) -> str:
+    key = f"status.worker.purpose.{purpose}"
+    label = i18n.t(key)
+    if label != key:
+        return label
+    return purpose
+
+
+def _none_label() -> str:
+    return i18n.t("ui.common.none")
+
+
+def _building_name(building) -> str:
+    if building is None:
+        return _none_label()
+    tag = str(getattr(building, "type_tag", ""))
+    if not tag:
+        return _none_label()
+    return building_display_name(tag)
+
+
+def _resource_name(value: str | None) -> str:
+    if value is None:
+        return _none_label()
+    return resource_display_label(value)
+
+
+def _move_speed_line(worker: Worker) -> str:
+    speed = worker.effective_move_speed_mult()
+    return i18n.t(
+        "ui.worker.move_speed",
+        mult=f"{speed:.2f}",
+        travel_ms=worker.effective_travel_ms(),
+    )
+
+
+def _worker_lines(worker: Worker) -> list[str]:
+    sat = clamp_worker_satiety(int(getattr(worker, "satiety", 0)))
+    state = _localized_state(str(worker.state))
+    lines = [
+        i18n.t("ui.worker.state", state=state),
+        i18n.t("ui.worker.satiety", current=sat, max=MAX_WORKER_SATIETY),
+        _move_speed_line(worker),
+        i18n.t(
+            "ui.worker.assigned",
+            building=_building_name(worker.assigned_building),
+        ),
+        i18n.t("ui.worker.carrying", resource=_resource_name(worker.carrying)),
+    ]
+    task = worker.transport_task
+    if task is None:
+        lines.append(i18n.t("ui.worker.task", task=_none_label()))
+        return lines
+
+    lines.extend(
+        [
+            i18n.t("ui.worker.task", task=_localized_purpose(task.purpose)),
+            i18n.t("ui.worker.resource", resource=_resource_name(task.resource)),
+            i18n.t("ui.worker.from", building=_building_name(task.source)),
+            i18n.t("ui.worker.to", building=_building_name(task.target)),
+        ]
+    )
+    if task.returning_to_town_hall:
+        lines.append(i18n.t("ui.worker.returning_yes"))
+    return lines
 
 
 @dataclass(frozen=True, slots=True)
 class WorkerPanelLayout:
     frame: pygame.Rect
     close: pygame.Rect
-
-
-def _label(value: str | None, labels: dict[str, str]) -> str:
-    if value is None:
-        return "none"
-    if value in labels:
-        return labels[value]
-    return resource_display_label(value)
-
-
-def _building_name(building) -> str:
-    tag = str(getattr(building, "type_tag", ""))
-    return _label(tag, _BUILDING_LABEL)
-
-
-def _move_speed_line(worker: Worker) -> str:
-    speed = worker.effective_move_speed_mult()
-    return f"Move speed: {speed:.2f}x ({worker.effective_travel_ms()} ms/tile)"
-
-
-def _worker_lines(worker: Worker) -> list[str]:
-    sat = clamp_worker_satiety(int(getattr(worker, "satiety", 0)))
-    state = _STATE_LABEL.get(str(worker.state), str(worker.state))
-    lines = [
-        f"State: {state}",
-        f"Satiety: {sat}/{MAX_WORKER_SATIETY}",
-        _move_speed_line(worker),
-        f"Assigned: {_building_name(worker.assigned_building) if worker.assigned_building is not None else 'none'}",
-        f"Carrying: {_label(worker.carrying, _RESOURCE_LABEL)}",
-    ]
-    task = worker.transport_task
-    if task is None:
-        lines.append("Task: none")
-        return lines
-
-    lines.extend(
-        [
-            f"Task: {_label(task.purpose, _PURPOSE_LABEL)}",
-            f"Resource: {_label(task.resource, _RESOURCE_LABEL)}",
-            f"From: {_building_name(task.source)}",
-            f"To: {_building_name(task.target)}",
-        ]
-    )
-    if task.returning_to_town_hall:
-        lines.append("Returning: yes")
-    return lines
 
 
 class WorkerPanel:
@@ -161,9 +133,9 @@ class WorkerPanel:
         pygame.draw.rect(surface, (36, 40, 52), layout.frame, border_radius=10)
         pygame.draw.rect(surface, (72, 78, 92), layout.frame, width=2, border_radius=10)
 
-        title_font = pygame.font.Font(None, 28)
-        body_font = pygame.font.Font(None, 22)
-        title = title_font.render(_label(worker.type_tag, _WORKER_LABEL), True, (238, 240, 248))
+        title_font = ui_font(28)
+        body_font = ui_font(22)
+        title = title_font.render(worker_display_label(worker.type_tag), True, (238, 240, 248))
         surface.blit(title, (layout.frame.left + _PANEL_PAD, layout.frame.top + _PANEL_PAD))
 
         pygame.draw.line(

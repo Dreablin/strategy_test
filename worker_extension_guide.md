@@ -43,6 +43,10 @@ to the focused worker module that matches the worker's behavior.
      assignment. Do not add a separate hard-coded speed formula.
    - Add school UI/icon data where school hiring controls are built.
    - Add or verify worker assets and asset loading tests.
+   - **Display label:** add `worker.<WORKER_TYPE>` to every locale file and use
+     `worker_display_label()` in panels — do not hard-code worker names in UI.
+     Status strings shown to the player belong in `status.*` keys via
+     `worker_status.localized_status()`. See **`localization_guide.md`**.
 
 2. Decide the runtime category.
 
@@ -210,6 +214,7 @@ Use focused tests first, then run the full suite.
 - Transport tests when local storage, direct delivery, water, or inbound counts
   are involved.
 - Panel/status/progress tests when the player-visible state changes.
+- Assert UI copy via `i18n.t(key)` or locale helpers — see **`localization_guide.md`**.
 - Asset tests for new worker/building sprites and JSON metadata.
 
 Before marking a task done, run:

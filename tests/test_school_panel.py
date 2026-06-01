@@ -2,16 +2,40 @@
 
 import pygame
 
+from game import i18n
 from game.buildings.school import SCHOOL_QUEUE_CAPACITY, SCHOOL_TRAINING_MS
 from game.buildings.school import School
 from game.buildings.town_hall import TownHall
 from game.buildings.registry import BuildingRegistry
 from game.config import town_hall_origin_tile
 from game.input import GameInput
+from game.ui import school_panel
 from game.ui.placement import PlacementController
 from game.ui.school_panel import SchoolPanel
 from game.workers import WorkerManager
 from game.world import World
+
+
+def test_school_panel_tab_labels_en() -> None:
+    assert SchoolPanel.tab_label("basic") == i18n.t("ui.school.tab.basic")
+    assert SchoolPanel.tab_label("advanced") == i18n.t("ui.school.tab.advanced")
+    assert SchoolPanel.queue_title() == i18n.t("ui.school.queue")
+
+
+def test_school_panel_tab_labels_ru(use_locale) -> None:
+    with use_locale("ru"):
+        assert SchoolPanel.tab_label("basic") == i18n.t("ui.school.tab.basic")
+        assert SchoolPanel.tab_label("advanced") == i18n.t("ui.school.tab.advanced")
+        assert SchoolPanel.queue_title() == i18n.t("ui.school.queue")
+
+
+def test_school_panel_title_uses_locale() -> None:
+    school = School(level=2, grid_pos=(10, 10))
+    assert SchoolPanel.panel_title(school) == i18n.t(
+        "ui.school.panel_title",
+        name=i18n.t("building.SCHOOL.name"),
+        level=2,
+    )
 
 
 def test_school_panel_hire_click_returns_worker_action() -> None:
@@ -101,6 +125,23 @@ def test_school_panel_draws_yellow_progress_for_active_training_slot() -> None:
             found_yellow = True
             break
     assert found_yellow
+
+
+def test_school_panel_upgrade_tooltip_draws_above_action_buttons(monkeypatch) -> None:
+    surface = pygame.Surface((900, 700))
+    school = School(level=1, grid_pos=(10, 10))
+    layout = SchoolPanel.layout(surface, school, worker_assigned=False)
+    marker = layout.demolish.center
+
+    def fake_tooltip(surface, building, upgrade_rect, *, hover_pos=None):
+        surface.set_at(marker, (20, 240, 40))
+        return pygame.Rect(marker[0], marker[1], 1, 1)
+
+    monkeypatch.setattr(school_panel, "draw_upgrade_cost_tooltip", fake_tooltip)
+
+    SchoolPanel.draw(surface, school, worker_assigned=False)
+
+    assert surface.get_at(marker)[:3] == (20, 240, 40)
 
 
 def test_school_panel_clicking_queue_slot_returns_cancel_action() -> None:

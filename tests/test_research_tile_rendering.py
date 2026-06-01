@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pygame
 
+from game import i18n
 from game.research_config import RESEARCH_BY_ID, RESEARCH_DEFINITIONS
 from game.research_technology_chain import TECHNOLOGY_IDS
 from game.ui.research_screen import ResearchScreen
@@ -76,4 +77,4 @@ def test_draw_renders_title_text_pixels() -> None:
     row_bg = surface.get_at((row.technology_slot.right + 60, row.row_rect.centery))
     title_pixel = surface.get_at((tile.title_rect.centerx, tile.title_rect.centery))
     assert title_pixel[:3] != row_bg[:3]
-    assert entry.name.startswith("Technology")
+    assert entry.name == i18n.t("research.2.name")

@@ -8,10 +8,13 @@ from typing import Any
 
 import pygame
 
+from game import i18n
 from game.assets import worker_ui_icon
 from game.buildings.laboratory import Laboratory
 from game.research_state import ResearchState
 from game.ui.building_panel import BuildingPanel, BuildingPanelLayout, draw_upgrade_cost_tooltip
+from game.ui.panel_i18n import active_toggle_label
+from game.ui.fonts import ui_font
 from game.ui.laboratory_panel_research import (
     SECTION_PAD,
     draw_research_storage_section,
@@ -39,7 +42,12 @@ def scientist_slot_states(capacity: int, active_scientists: Sequence[Worker]) ->
 
 
 def scientist_slots_summary(*, active_count: int, capacity: int) -> str:
-    return f"Scientists: {active_count} / {capacity}"
+    return i18n.t("ui.laboratory.scientists", active=int(active_count), capacity=int(capacity))
+
+
+def scientist_slot_label(*, assigned: bool) -> str:
+    key = "ui.laboratory.slot_sci" if assigned else "ui.laboratory.slot_empty"
+    return i18n.t(key)
 
 
 def _scientist_section_px(slot_capacity: int) -> int:
@@ -257,10 +265,10 @@ class LaboratoryPanel:
             ),
         )
         if layout.upgrade is not None and not layout.upgrade_enabled:
-            btn_font = pygame.font.Font(None, 22)
+            btn_font = ui_font(22)
             pygame.draw.rect(surface, (52, 56, 64), layout.upgrade, border_radius=6)
             label = btn_font.render(
-                f"Upgrade to Lv {laboratory.level + 1}",
+                i18n.t("ui.building.upgrade_level", level=laboratory.level + 1),
                 True,
                 (130, 134, 142),
             )
@@ -280,7 +288,7 @@ class LaboratoryPanel:
                 research_state=research_state,
                 section_top=layout.research_section.top,
             )
-        body = pygame.font.Font(None, 20)
+        body = ui_font(20)
         active: tuple[Worker, ...] = ()
         if worker_manager is not None and not laboratory.is_under_construction:
             active = worker_manager.laboratory_research_contributing_scientists(laboratory)
@@ -296,7 +304,7 @@ class LaboratoryPanel:
             bg = (74, 84, 96) if assigned else (52, 58, 66)
             pygame.draw.rect(surface, bg, tile, border_radius=4)
             pygame.draw.rect(surface, (116, 124, 136), tile, width=1, border_radius=4)
-            label = "Empty" if not assigned else "Sci"
+            label = scientist_slot_label(assigned=assigned)
             if assigned and index < len(active):
                 scientist = active[index]
                 icon = worker_ui_icon(scientist.type_tag, size=20)
@@ -307,15 +315,14 @@ class LaboratoryPanel:
                         tile.top + 4,
                     ),
                 )
-                label = "Sci"
-            text = pygame.font.Font(None, 15).render(label, True, (220, 224, 232))
+            text = ui_font(15).render(label, True, (220, 224, 232))
             surface.blit(
                 text,
                 (tile.centerx - text.get_width() // 2, tile.bottom - text.get_height() - 4),
             )
         active_bg = (84, 112, 84) if laboratory.active else (92, 64, 64)
         pygame.draw.rect(surface, active_bg, layout.toggle, border_radius=6)
-        toggle_label = body.render("Active" if laboratory.active else "Inactive", True, (240, 242, 250))
+        toggle_label = body.render(active_toggle_label(laboratory.active), True, (240, 242, 250))
         surface.blit(
             toggle_label,
             (

@@ -8,6 +8,8 @@ import pygame
 
 from game.buildings.sawmill import Sawmill
 from game.ui.building_panel import BuildingPanel
+from game.ui.panel_i18n import active_toggle_label, blocked_line, flow_line
+from game.ui.fonts import ui_font
 
 _PANEL_PAD = 16
 _BTN_H = 32
@@ -31,16 +33,16 @@ class SawmillPanel:
 
     @staticmethod
     def toggle_label(sawmill: Sawmill) -> str:
-        return "Active" if sawmill.active else "Inactive"
+        return active_toggle_label(sawmill.active)
 
     @staticmethod
     def blocked_reason(
         sawmill: Sawmill, *, worker_status: str, production_status: str | None
     ) -> str:
-        status = (production_status or "").strip().lower()
+        status = (production_status or "").strip()
         if not sawmill.active:
             return "inactive"
-        if worker_status == "empty" or status == "no worker":
+        if worker_status == "empty" or status == "no_worker":
             return "no worker"
         if status == "resting":
             return "resting"
@@ -105,18 +107,28 @@ class SawmillPanel:
             worker_assigned=worker_assigned,
             production_status=production_status,
         )
-        font = pygame.font.Font(None, 22)
-        body = pygame.font.Font(None, 20)
+        font = ui_font(22)
+        body = ui_font(20)
 
         details_y = layout.frame.top + _PANEL_PAD + 4 * 26 + 32
         io = body.render(
-            f"Input wood: {sawmill.input_amount()} / {sawmill.input_capacity()}",
+            flow_line(
+                role_key="ui.panel.input",
+                resource_key="wood",
+                amount=sawmill.input_amount(),
+                capacity=sawmill.input_capacity(),
+            ),
             True,
             (200, 204, 214),
         )
         surface.blit(io, (layout.frame.left + _PANEL_PAD, details_y))
         out = body.render(
-            f"Output boards: {sawmill.output_amount()} / {sawmill.output_capacity()}",
+            flow_line(
+                role_key="ui.panel.output",
+                resource_key="boards",
+                amount=sawmill.output_amount(),
+                capacity=sawmill.output_capacity(),
+            ),
             True,
             (200, 204, 214),
         )
@@ -124,7 +136,7 @@ class SawmillPanel:
         reason = SawmillPanel.blocked_reason(
             sawmill, worker_status=worker_status, production_status=production_status
         )
-        reason_text = body.render(f"Blocked: {reason}", True, (200, 204, 214))
+        reason_text = body.render(blocked_line(reason), True, (200, 204, 214))
         surface.blit(reason_text, (layout.frame.left + _PANEL_PAD, details_y + 44))
 
         bar_y = details_y + 68

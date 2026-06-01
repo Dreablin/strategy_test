@@ -8,6 +8,10 @@ from game.buildings.laboratory import Laboratory
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
 from game.config import near_town_hall_tile, town_hall_origin_tile
+from game.lock_reasons import (
+    lock_reason_active_research,
+    lock_reason_requires_laboratory_level,
+)
 from game.research_config import RESEARCH_BY_ID
 from game.research_start import ResearchStartError, try_start_active_research
 from game.research_state import ResearchState
@@ -32,32 +36,35 @@ def test_try_start_sets_active_research_id() -> None:
     assert state.has_active_research()
 
 
-def test_try_start_rejects_ineligible_research() -> None:
+def test_try_start_rejects_ineligible_research(use_locale) -> None:
     state = ResearchState()
     registry = _registry(laboratory_level=1)
-    with pytest.raises(ResearchStartError, match="Laboratory level 3") as exc:
-        try_start_active_research("2", research_state=state, registry=registry)
-    assert exc.value.lock_reason == "Requires Laboratory level 3"
+    with use_locale("en"):
+        with pytest.raises(ResearchStartError, match="Laboratory level 3") as exc:
+            try_start_active_research("2", research_state=state, registry=registry)
+        assert exc.value.lock_reason == lock_reason_requires_laboratory_level(3)
     assert state.active_research_id() is None
 
 
-def test_try_start_rejects_second_active_research() -> None:
+def test_try_start_rejects_second_active_research(use_locale) -> None:
     state = ResearchState()
     registry = _registry(laboratory_level=10)
-    try_start_active_research("1", research_state=state, registry=registry)
-    with pytest.raises(ResearchStartError, match="in progress") as exc:
-        try_start_active_research("2", research_state=state, registry=registry)
-    assert exc.value.lock_reason == "Another research is in progress"
+    with use_locale("en"):
+        try_start_active_research("1", research_state=state, registry=registry)
+        with pytest.raises(ResearchStartError, match="in progress") as exc:
+            try_start_active_research("2", research_state=state, registry=registry)
+        assert exc.value.lock_reason == lock_reason_active_research()
     assert state.active_research_id() == "1"
 
 
-def test_try_start_rejects_completed_research() -> None:
+def test_try_start_rejects_completed_research(use_locale) -> None:
     state = ResearchState()
     registry = _registry(laboratory_level=10)
-    try_start_active_research("1", research_state=state, registry=registry)
-    state.mark_research_completed("1")
-    with pytest.raises(ResearchStartError, match="Already completed"):
+    with use_locale("en"):
         try_start_active_research("1", research_state=state, registry=registry)
+        state.mark_research_completed("1")
+        with pytest.raises(ResearchStartError, match="Already completed"):
+            try_start_active_research("1", research_state=state, registry=registry)
     assert state.active_research_id() is None
 
 

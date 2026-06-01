@@ -6,35 +6,33 @@ from dataclasses import dataclass
 
 from game.buildings.laboratory import Laboratory
 from game.laboratory_visibility import has_completed_laboratory
+from game.lock_reasons import (
+    lock_reason_active_research,
+    lock_reason_already_completed,
+    lock_reason_invalid_cost,
+    lock_reason_invalid_points,
+    lock_reason_no_laboratory,
+    lock_reason_requires_laboratory_level,
+    lock_reason_requires_research,
+    lock_reason_unknown_research,
+)
 from game.research_config import RESEARCH_BY_ID, RESEARCH_DEFINITIONS, ResearchDefinition
 from game.research_state import ResearchState
 
 _LABORATORY_TAG = "LABORATORY"
-_REASON_NO_LABORATORY = "Laboratory required"
-_REASON_COMPLETED = "Already completed"
-_REASON_ACTIVE = "Another research is in progress"
-_REASON_INVALID_COST = "Research resource cost is not configured"
-_REASON_INVALID_POINTS = "Research point requirement is invalid"
-
-
-def _dependency_lock_reason(missing_dependency_ids: tuple[str, ...]) -> str:
-    names = [RESEARCH_BY_ID[dep_id].name for dep_id in missing_dependency_ids]
-    if len(names) == 1:
-        return f"Requires {names[0]}"
-    return "Requires " + ", ".join(names)
 
 
 def research_config_lock_reason(definition: ResearchDefinition) -> str | None:
     """Defensive validity check for cost shape and point requirement."""
     if definition.required_points <= 0:
-        return _REASON_INVALID_POINTS
+        return lock_reason_invalid_points()
     if not definition.resource_cost:
-        return _REASON_INVALID_COST
+        return lock_reason_invalid_cost()
     for resource, amount in definition.resource_cost.items():
         if not str(resource).strip():
-            return _REASON_INVALID_COST
+            return lock_reason_invalid_cost()
         if amount <= 0:
-            return _REASON_INVALID_COST
+            return lock_reason_invalid_cost()
     return None
 
 
@@ -65,10 +63,6 @@ def completed_laboratory_level(registry: object) -> int | None:
     return None
 
 
-def _tier_lock_reason(required_level: int) -> str:
-    return f"Requires Laboratory level {required_level}"
-
-
 def laboratory_unlocks_research_tier(laboratory_level: int, research_tier: int) -> bool:
     """Whether a Laboratory at ``laboratory_level`` unlocks researches in ``research_tier``."""
     return Laboratory(level=laboratory_level).unlocks_technology_tier(research_tier)
@@ -84,13 +78,13 @@ def research_start_eligibility(
     """Eligibility including base gates and Laboratory tier unlock level."""
     key = str(research_id)
     if key not in RESEARCH_BY_ID:
-        return ResearchStartEligibility(False, f"Unknown research {key!r}")
+        return ResearchStartEligibility(False, lock_reason_unknown_research(key))
     if not has_completed_laboratory:
-        return ResearchStartEligibility(False, _REASON_NO_LABORATORY)
+        return ResearchStartEligibility(False, lock_reason_no_laboratory())
     if research_state.is_completed(key):
-        return ResearchStartEligibility(False, _REASON_COMPLETED)
+        return ResearchStartEligibility(False, lock_reason_already_completed())
     if research_state.has_active_research():
-        return ResearchStartEligibility(False, _REASON_ACTIVE)
+        return ResearchStartEligibility(False, lock_reason_active_research())
     definition = RESEARCH_BY_ID[key]
     config_reason = research_config_lock_reason(definition)
     if config_reason is not None:
@@ -99,10 +93,10 @@ def research_start_eligibility(
         lab = Laboratory(level=laboratory_level)
         if not lab.unlocks_technology_tier(definition.tier):
             required = lab.technology_tier_unlock_level(definition.tier)
-            return ResearchStartEligibility(False, _tier_lock_reason(required))
+            return ResearchStartEligibility(False, lock_reason_requires_laboratory_level(required))
     missing_deps = missing_research_dependencies(key, research_state=research_state)
     if missing_deps:
-        return ResearchStartEligibility(False, _dependency_lock_reason(missing_deps))
+        return ResearchStartEligibility(False, lock_reason_requires_research(missing_deps))
     return ResearchStartEligibility(True, None)
 
 

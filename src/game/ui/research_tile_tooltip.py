@@ -7,9 +7,11 @@ from dataclasses import dataclass
 
 import pygame
 
+from game import i18n
 from game.research_config import RESEARCH_BY_ID, ResearchDefinition
 from game.resource_catalog import resource_display_label
 from game.ui.research_tile_layout import ResearchTileLayout
+from game.ui.fonts import ui_font
 
 _PAD = 8
 _LINE_GAP = 2
@@ -57,15 +59,19 @@ def format_research_tooltip_lines(info: ResearchTileTooltipInfo) -> tuple[str, .
         f"{resource_display_label(res)} {amount}"
         for res, amount in sorted(info.resource_cost.items())
     ]
-    cost_line = "Cost: " + (", ".join(cost_parts) if cost_parts else "none")
-    points_line = f"Points: {info.required_points}"
-    if info.dependency_labels:
-        deps_line = "Requires: " + ", ".join(info.dependency_labels)
-    else:
-        deps_line = "Requires: none"
-    lines: list[str] = [cost_line, points_line, deps_line, f"Effect: {info.effect_text}"]
+    items = ", ".join(cost_parts) if cost_parts else i18n.t("ui.common.none")
+    cost_line = i18n.t("ui.research.cost_line", items=items)
+    points_line = i18n.t("ui.research.points_line", points=info.required_points)
+    dep_items = ", ".join(info.dependency_labels) if info.dependency_labels else i18n.t("ui.common.none")
+    requires_line = i18n.t("ui.research.requires_line", items=dep_items)
+    lines: list[str] = [
+        cost_line,
+        points_line,
+        requires_line,
+        i18n.t("ui.research.effect_line", effect=info.effect_text),
+    ]
     if info.lock_reason:
-        lines.append(f"Locked: {info.lock_reason}")
+        lines.append(i18n.t("ui.research.locked_line", reason=info.lock_reason))
     return tuple(lines)
 
 
@@ -104,9 +110,16 @@ def draw_research_tile_tooltip(
     info: ResearchTileTooltipInfo,
 ) -> pygame.Rect:
     """Draw tooltip near ``anchor``; return the tooltip background rect."""
-    font = pygame.font.Font(None, _FONT_SIZE)
+    font = ui_font(_FONT_SIZE)
     lines = format_research_tooltip_lines(info)
-    line_surfaces = [font.render(line, True, _LOCK if line.startswith("Locked:") else _TEXT) for line in lines]
+    lock_line = (
+        i18n.t("ui.research.locked_line", reason=info.lock_reason)
+        if info.lock_reason
+        else None
+    )
+    line_surfaces = [
+        font.render(line, True, _LOCK if line == lock_line else _TEXT) for line in lines
+    ]
     box = _tooltip_rect_for_lines(surface, anchor, line_surfaces)
     pygame.draw.rect(surface, _BG, box, border_radius=4)
     pygame.draw.rect(surface, _BORDER, box, width=1, border_radius=4)

@@ -30,6 +30,7 @@ updates here when implementation touchpoints change.
 | What | Where |
 |------|--------|
 | Research definitions | `src/game/settings/research.json` |
+| Research display copy | `src/game/settings/locales/{en,ru}.json` — keys `research.<id>.name`, `.desc`, `.effect` |
 | Loader / `RESEARCH_BY_ID` | `src/game/research_config.py` |
 | Completed worker effects | `worker_effects.by_type` in research JSON + `src/game/research_effects.py` |
 | Laboratory balance | `src/game/settings/buildings/laboratory.json` |
@@ -40,10 +41,12 @@ updates here when implementation touchpoints change.
 
 ### Adding a research entry
 
-1. Add an object to `research.json` `researches` with: `id`, `name`,
-   `description`, `effect_text`, `tier` (1–4), `column`, `dependencies`,
-   `resource_cost`, `required_points`, `image_key`.
-   `effect_text` is the player-facing tooltip line after `Effect:`.
+1. Add an object to `research.json` `researches` with: `id`, `tier` (1–4),
+   `column`, `dependencies`, `resource_cost`, `required_points`, `image_key`.
+   **Do not** put `name`, `description`, or `effect_text` in JSON — those are
+   resolved at load time from locale keys `research.<id>.name`, `.desc`, and
+   `.effect` in `src/game/settings/locales/`. Add matching keys to **every**
+   locale file when introducing a new research id.
    Optional worker-characteristic effects belong under:
    `"worker_effects": {"by_type": {"CARRIER": {"move_speed_mult": 0.1}}}`.
    Supported stat keys are the same worker characteristic keys used by building
@@ -58,6 +61,8 @@ updates here when implementation touchpoints change.
    `laboratory.json` (not in research JSON).
 5. For non-Technology researches, use `dependencies` only—do not add Python
    chain tables. Eligibility uses `research_eligibility.missing_research_dependencies`.
+6. Lock/eligibility messages use `game.lock_reasons` and `ui.lock.*` locale keys.
+   See **`localization_guide.md`**.
 
 ## Domain Runtime (no UI)
 

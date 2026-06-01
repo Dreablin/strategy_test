@@ -8,6 +8,8 @@ import pygame
 
 from game.buildings.iron_mine import IronMine
 from game.ui.building_panel import BuildingPanel
+from game.ui.panel_i18n import blocked_line
+from game.ui.fonts import ui_font
 
 _PANEL_PAD = 16
 _EXTRA_BOTTOM = 72
@@ -29,8 +31,8 @@ class IronMinePanel:
 
     @staticmethod
     def blocked_reason(mine: IronMine, *, production_status: str | None) -> str:
-        status = (production_status or "").strip().lower()
-        if status == "no worker":
+        status = (production_status or "").strip()
+        if status == "no_worker":
             return "no worker"
         if status == "resting":
             return "resting"
@@ -88,11 +90,11 @@ class IronMinePanel:
             worker_assigned=worker_assigned,
             production_status=production_status,
         )
-        body = pygame.font.Font(None, 20)
+        body = ui_font(20)
 
         details_y = layout.frame.top + _PANEL_PAD + 4 * 26 + 32
         reason = IronMinePanel.blocked_reason(mine, production_status=production_status)
-        reason_text = body.render(f"Blocked: {reason}", True, (200, 204, 214))
+        reason_text = body.render(blocked_line(reason), True, (200, 204, 214))
         surface.blit(reason_text, (layout.frame.left + _PANEL_PAD, details_y))
 
         bar_y = details_y + 26

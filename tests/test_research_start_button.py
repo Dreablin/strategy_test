@@ -4,9 +4,19 @@ from __future__ import annotations
 
 import pygame
 
+from game import i18n
 from game.ui.research_screen_layout import compute_content_layout
-from game.ui.research_start_button import draw_research_start_button
+from game.ui.research_start_button import draw_research_start_button, start_button_label
 from game.ui.research_tiles import draw_research_tiles
+
+
+def test_start_button_label_uses_locale() -> None:
+    assert start_button_label() == i18n.t("ui.button.start")
+
+
+def test_start_button_label_ru(use_locale) -> None:
+    with use_locale("ru"):
+        assert start_button_label() == i18n.t("ui.button.start")
 
 
 def test_start_button_is_below_title_with_gap() -> None:
@@ -59,5 +69,6 @@ def test_default_eligibility_disables_all_start_buttons() -> None:
     content = compute_content_layout(surface)
     draw_research_tiles(surface, content.tiles)
     tile = content.tiles[0]
-    px = surface.get_at(tile.start_button.center)
+    corner = (tile.start_button.left + 3, tile.start_button.top + 3)
+    px = surface.get_at(corner)
     assert sum(px[:3]) < 200

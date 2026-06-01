@@ -6,6 +6,7 @@ from game.buildings.laboratory import Laboratory
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
 from game.config import near_town_hall_tile, town_hall_origin_tile
+from game.lock_reasons import lock_reason_requires_laboratory_level
 from game.research_completion import try_complete_active_research
 from game.research_config import RESEARCH_BY_ID
 from game.research_start import try_start_active_research
@@ -62,7 +63,7 @@ def test_completing_technology_1_unlocks_2_only_when_laboratory_level_permits() 
     ) is None
     blocked = technology_start_eligibility("2", research_state=state, registry=registry)
     assert blocked.can_start is False
-    assert blocked.lock_reason == "Requires Laboratory level 3"
+    assert blocked.lock_reason == lock_reason_requires_laboratory_level(3)
 
     registry, laboratory = _registry(laboratory_level=3)
     state = ResearchState()
@@ -84,7 +85,7 @@ def test_completing_chain_through_technology_3_at_level_6() -> None:
     assert technologies_unlocked_for_start(research_state=state, registry=registry) == ("3",)
     blocked = technology_start_eligibility("4", research_state=state, registry=registry)
     assert blocked.can_start is False
-    assert blocked.lock_reason == "Requires Laboratory level 9"
+    assert blocked.lock_reason == lock_reason_requires_laboratory_level(9)
 
 
 def test_full_technology_chain_unlocks_through_level_9() -> None:

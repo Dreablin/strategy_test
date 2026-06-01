@@ -992,7 +992,7 @@ def test_worker_status_for_building_reports_on_the_way_then_assigned() -> None:
     wm.add_worker(w)
     wm.reassign_all()
 
-    assert wm.worker_status_for_building(camp) == "on the way"
+    assert wm.worker_status_for_building(camp) == "on_the_way"
     wm.update(120_000)
     assert wm.worker_status_for_building(camp) == "assigned"
 
@@ -1013,20 +1013,20 @@ def test_worker_status_for_building_reports_on_the_way_for_stonecutter_resource_
     wm.assign_to_building(w, mine)
     w.start_move([(mx - 2, my), (mx - 1, my)], started_ms=0, move_state="going_to_stone")
 
-    assert wm.worker_status_for_building(mine) == "on the way"
+    assert wm.worker_status_for_building(mine) == "on_the_way"
 
 
 def test_production_status_for_building_no_worker_and_storage_full() -> None:
     camp = LumberCamp(level=1, grid_pos=(10, 10))
     wm = WorkerManager()
 
-    assert wm.production_status_for_building(camp) == "No worker"
+    assert wm.production_status_for_building(camp) == "no_worker"
 
     w = Worker("LUMBERJACK")
     wm.add_worker(w)
     wm.assign_to_building(w, camp)
     camp.add_to_storage(camp.storage_capacity())
-    assert wm.production_status_for_building(camp) == "Storage full"
+    assert wm.production_status_for_building(camp) == "storage_full"
 
 
 def test_production_status_for_building_resting_and_gathering_states() -> None:
@@ -1039,13 +1039,13 @@ def test_production_status_for_building_resting_and_gathering_states() -> None:
 
     w.state = "working"
     w.camp_wait_until_ms = 3000
-    assert wm.production_status_for_building(camp) == "Resting"
+    assert wm.production_status_for_building(camp) == "resting"
 
     w.state = "chopping"
-    assert wm.production_status_for_building(camp) == "Gathering"
+    assert wm.production_status_for_building(camp) == "gathering"
 
     w.state = "returning"
-    assert wm.production_status_for_building(camp) == "On the way"
+    assert wm.production_status_for_building(camp) == "on_the_way"
 
 
 def test_farm_production_status_reports_worker_action_states_and_hints() -> None:
@@ -1064,21 +1064,21 @@ def test_farm_production_status_reports_worker_action_states_and_hints() -> None
     wm.assign_to_building(farmer, farm)
 
     farmer.state = "moving"
-    assert wm.production_status_for_building(farm) == "Moving"
+    assert wm.production_status_for_building(farm) == "moving"
     farmer.state = "sowing"
-    assert wm.production_status_for_building(farm) == "Sowing"
+    assert wm.production_status_for_building(farm) == "sowing"
     farmer.state = "harvesting"
-    assert wm.production_status_for_building(farm) == "Harvesting"
+    assert wm.production_status_for_building(farm) == "harvesting"
 
     farm.stored = farm.storage_capacity()
-    assert wm.production_status_for_building(farm) == "Storage full"
+    assert wm.production_status_for_building(farm) == "storage_full"
 
     farm.stored = 0
     wm._write_field_phase(field, WHEAT_PHASE_2)  # noqa: SLF001
     farmer.state = "working_field"
-    assert wm.production_status_for_building(farm) == "No fields in radius"
+    assert wm.production_status_for_building(farm) == "no_fields_in_radius"
     wm._write_field_phase(field, "EMPTY")  # noqa: SLF001
-    assert wm.production_status_for_building(farm) == "Resting"
+    assert wm.production_status_for_building(farm) == "resting"
 
 
 def test_farm_worker_status_reports_farm_specific_states() -> None:
@@ -1107,23 +1107,23 @@ def test_farm_worker_status_reports_farm_specific_states() -> None:
 def test_production_status_for_sawmill_blocked_reason_states() -> None:
     sawmill = Sawmill(level=1, grid_pos=(10, 10))
     wm = WorkerManager()
-    assert wm.production_status_for_building(sawmill) == "No worker"
+    assert wm.production_status_for_building(sawmill) == "no_worker"
 
     worker = Worker("SAWYER")
     wm.add_worker(worker)
     wm.assign_to_building(worker, sawmill)
     sawmill.set_active(False)
-    assert wm.production_status_for_building(sawmill) == "Inactive"
+    assert wm.production_status_for_building(sawmill) == "inactive"
 
     sawmill.set_active(True)
-    assert wm.production_status_for_building(sawmill) == "No wood"
+    assert wm.production_status_for_building(sawmill) == "no_wood"
     sawmill.add_wood_in(1)
     sawmill.add_boards_out(sawmill.output_capacity())
-    assert wm.production_status_for_building(sawmill) == "Output full"
+    assert wm.production_status_for_building(sawmill) == "output_full"
 
     sawmill.take_boards_out(sawmill.output_capacity())
     worker.state = "resting"
-    assert wm.production_status_for_building(sawmill) == "Resting"
+    assert wm.production_status_for_building(sawmill) == "resting"
 
 
 def test_worker_status_for_under_construction_reports_resting_or_empty() -> None:
@@ -1157,13 +1157,13 @@ def test_production_status_for_under_construction_is_explicit() -> None:
         target_level=2,
     )
     wm = WorkerManager()
-    assert wm.production_status_for_building(camp) == "Under construction"
+    assert wm.production_status_for_building(camp) == "under_construction"
 
     worker = Worker("LUMBERJACK")
     wm.add_worker(worker)
     wm.assign_to_building(worker, camp)
     worker.state = "resting"
-    assert wm.production_status_for_building(camp) == "Under construction"
+    assert wm.production_status_for_building(camp) == "under_construction"
 
 
 def test_demolish_moving_worker_becomes_idle_at_current_tile() -> None:

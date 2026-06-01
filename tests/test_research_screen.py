@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pygame
 
+from game import i18n
 from game.buildings.laboratory import Laboratory
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
@@ -34,6 +35,19 @@ def _input_with_completed_laboratory() -> tuple[GameInput, pygame.Surface, Build
     return inp, surface, registry
 
 
+def test_research_screen_labels_en() -> None:
+    assert ResearchScreen.screen_title() == i18n.t("ui.research.title")
+    assert ResearchScreen.technology_label() == i18n.t("ui.research.technology")
+    assert ResearchScreen.tier_label(2) == i18n.t("ui.research.tier", tier=2)
+
+
+def test_research_screen_labels_ru(use_locale) -> None:
+    with use_locale("ru"):
+        assert ResearchScreen.screen_title() == i18n.t("ui.research.title")
+        assert ResearchScreen.technology_label() == i18n.t("ui.research.technology")
+        assert ResearchScreen.tier_label(2) == i18n.t("ui.research.tier", tier=2)
+
+
 def test_research_screen_layout_covers_surface() -> None:
     surface = pygame.Surface((800, 600))
     layout = ResearchScreen.layout(surface)
@@ -45,10 +59,13 @@ def test_research_screen_layout_covers_surface() -> None:
 def test_research_screen_draw_smoke() -> None:
     surface = pygame.Surface((800, 600))
     ResearchScreen.draw(surface)
-    title_x = 20
-    title_y = 20
-    pixel = surface.get_at((title_x, title_y))
-    assert pixel[:3] != (28, 32, 40)
+    bg = (28, 32, 40)
+    title_region = pygame.Rect(16, 16, 200, 44)
+    assert any(
+        surface.get_at((x, y))[:3] != bg
+        for y in range(title_region.top, title_region.bottom)
+        for x in range(title_region.left, title_region.right)
+    )
 
 
 def test_research_screen_close_click() -> None:

@@ -8,6 +8,8 @@ import pygame
 
 from game.buildings.vineyard_farm import VineyardFarm
 from game.ui.building_panel import BuildingPanel
+from game.ui.panel_i18n import active_toggle_label, resource_amount_line
+from game.ui.fonts import ui_font
 
 _PANEL_PAD = 16
 _BTN_H = 32
@@ -33,7 +35,11 @@ class VineyardFarmPanel:
 
     @staticmethod
     def grape_storage_line(farm: VineyardFarm) -> str:
-        return f"Grapes: {farm.grapes_amount()} / {farm.grapes_capacity()}"
+        return resource_amount_line("grapes", farm.grapes_amount(), farm.grapes_capacity())
+
+    @staticmethod
+    def toggle_label(farm: VineyardFarm) -> str:
+        return active_toggle_label(farm.active)
 
     @staticmethod
     def _grape_label_y(layout: VineyardFarmPanelLayout) -> int:
@@ -45,10 +51,6 @@ class VineyardFarmPanel:
         else:
             anchor_top = layout.toggle.top
         return anchor_top - _ROW - 8
-
-    @staticmethod
-    def toggle_label(farm: VineyardFarm) -> str:
-        return "Active" if farm.active else "Inactive"
 
     @staticmethod
     def layout(
@@ -106,13 +108,13 @@ class VineyardFarmPanel:
             worker_assigned=worker_assigned,
             production_status=production_status,
         )
-        body_font = pygame.font.Font(None, 22)
+        body_font = ui_font(22)
         grape_y = VineyardFarmPanel._grape_label_y(layout)
         surface.blit(
             body_font.render(VineyardFarmPanel.grape_storage_line(farm), True, (200, 204, 214)),
             (layout.frame.left + _PANEL_PAD, grape_y),
         )
-        font = pygame.font.Font(None, 22)
+        font = ui_font(22)
         active_bg = (84, 112, 84) if farm.active else (92, 64, 64)
         pygame.draw.rect(surface, active_bg, layout.toggle, border_radius=6)
         label = font.render(VineyardFarmPanel.toggle_label(farm), True, (240, 242, 250))

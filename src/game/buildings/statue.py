@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import ClassVar
 
 from game.buildings.base import Building
-from game.config import building_setting
+from game import i18n
 
 
 class Statue(Building):
@@ -26,11 +26,10 @@ class Statue(Building):
 
     def stage_name(self, level: int | None = None) -> str:
         stage_level = int(self.level if level is None else level)
-        names = building_setting(self.type_tag, "stage_names")
-        if isinstance(names, dict):
-            value = names.get(str(stage_level))
-            if isinstance(value, str) and value.strip():
-                return value.strip()
+        key = f"statue.stage.{stage_level}"
+        localized = i18n.t(key)
+        if localized != key:
+            return localized
         return f"Stage {stage_level}"
 
     def next_stage_name(self) -> str | None:

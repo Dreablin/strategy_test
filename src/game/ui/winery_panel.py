@@ -8,6 +8,8 @@ import pygame
 
 from game.buildings.winery import Winery
 from game.ui.building_panel import BuildingPanel
+from game.ui.panel_i18n import active_toggle_label, production_line, resource_amount_line
+from game.ui.fonts import ui_font
 
 _PANEL_PAD = 16
 _BTN_H = 32
@@ -35,12 +37,20 @@ class WineryPanel:
 
     @staticmethod
     def toggle_label(winery: Winery) -> str:
-        return "Active" if winery.active else "Inactive"
+        return active_toggle_label(winery.active)
 
     @staticmethod
     def storage_lines(winery: Winery) -> tuple[str, str]:
-        grapes_line = f"Grapes: {winery.input_amount()} / {winery.input_capacity()}"
-        wine_line = f"Wine: {winery.output_amount()} / {winery.output_capacity()}"
+        grapes_line = resource_amount_line(
+            "grapes",
+            winery.input_amount(),
+            winery.input_capacity(),
+        )
+        wine_line = resource_amount_line(
+            "wine",
+            winery.output_amount(),
+            winery.output_capacity(),
+        )
         return grapes_line, wine_line
 
     @staticmethod
@@ -106,7 +116,7 @@ class WineryPanel:
             worker_assigned=worker_assigned,
             production_status=production_status,
         )
-        font = pygame.font.Font(None, 22)
+        font = ui_font(22)
 
         grapes_line, wine_line = WineryPanel.storage_lines(winery)
         y = WineryPanel.details_top(layout)
@@ -115,8 +125,8 @@ class WineryPanel:
         surface.blit(font.render(wine_line, True, (200, 204, 214)), (layout.frame.left + _PANEL_PAD, y))
         y += _ROW_H
 
-        status_text = production_status or "Idle"
-        surface.blit(font.render(f"Production: {status_text}", True, (200, 204, 214)), (layout.frame.left + _PANEL_PAD, y))
+        status_text = production_line(production_status)
+        surface.blit(font.render(status_text, True, (200, 204, 214)), (layout.frame.left + _PANEL_PAD, y))
         y += _ROW_H + 4
 
         bar_rect = pygame.Rect(layout.frame.left + _PANEL_PAD, y, layout.frame.width - _PANEL_PAD * 2, _BAR_H)

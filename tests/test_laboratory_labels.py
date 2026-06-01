@@ -2,24 +2,33 @@
 
 from __future__ import annotations
 
-from game.ui.building_panel import _DESCRIPTION, _DISPLAY_NAME as BUILDING_DISPLAY_NAME
-from game.ui.construction_panel import _DISPLAY_NAME as CONSTRUCTION_DISPLAY_NAME
-from game.ui.population_panel import _BUILDING_LABEL as POPULATION_BUILDING_LABEL
-from game.ui.worker_panel import _BUILDING_LABEL as WORKER_BUILDING_LABEL
+from game import i18n
+from game.ui.building_panel import building_description, building_display_name
+from game.ui.laboratory_panel import scientist_slots_summary
 
 
-def test_laboratory_building_panel_display_name_and_description() -> None:
-    assert BUILDING_DISPLAY_NAME["LABORATORY"] == "Laboratory"
-    description = _DESCRIPTION["LABORATORY"]
-    assert description
-    assert "research" in description.lower()
-    assert "scientist" in description.lower()
+def test_laboratory_building_panel_display_name_and_description(use_locale) -> None:
+    with use_locale("en"):
+        assert building_display_name("LABORATORY") == i18n.t("building.LABORATORY.name")
+        description = building_description("LABORATORY")
+        assert description == i18n.t("building.LABORATORY.desc")
+        assert "research" in description.lower()
+        assert "scientist" in description.lower()
 
 
 def test_laboratory_construction_panel_display_name() -> None:
-    assert CONSTRUCTION_DISPLAY_NAME["LABORATORY"] == "Laboratory"
+    assert building_display_name("LABORATORY") == i18n.t("building.LABORATORY.name")
 
 
 def test_laboratory_worker_and_population_panel_labels() -> None:
-    assert WORKER_BUILDING_LABEL["LABORATORY"] == "Laboratory"
-    assert POPULATION_BUILDING_LABEL["LABORATORY"] == "Laboratory"
+    assert building_display_name("LABORATORY") == i18n.t("building.LABORATORY.name")
+
+
+def test_laboratory_scientists_summary_ru(use_locale) -> None:
+    with use_locale("ru"):
+        assert scientist_slots_summary(active_count=2, capacity=5) == i18n.t(
+            "ui.laboratory.scientists",
+            active=2,
+            capacity=5,
+        )
+        assert i18n.t("ui.laboratory.active_research") != "ui.laboratory.active_research"

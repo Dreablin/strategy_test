@@ -2,11 +2,19 @@
 
 from __future__ import annotations
 
+from game import i18n
 from game.buildings.laboratory import Laboratory
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
 from game.config import near_town_hall_tile, town_hall_origin_tile
 from game.laboratory_visibility import has_completed_laboratory
+from game.lock_reasons import (
+    lock_reason_active_research,
+    lock_reason_already_completed,
+    lock_reason_no_laboratory,
+    lock_reason_requires_laboratory_level,
+    lock_reason_requires_research,
+)
 from game.research_eligibility import (
     research_can_start_map,
     research_lock_reasons,
@@ -32,7 +40,7 @@ def test_requires_completed_laboratory() -> None:
     state = ResearchState()
     result = research_start_eligibility("1", research_state=state, has_completed_laboratory=False)
     assert result.can_start is False
-    assert result.lock_reason == "Laboratory required"
+    assert result.lock_reason == lock_reason_no_laboratory()
 
 
 def test_eligible_when_laboratory_exists_and_no_blockers() -> None:
@@ -58,7 +66,7 @@ def test_completed_research_cannot_start() -> None:
         laboratory_level=1,
     )
     assert result.can_start is False
-    assert result.lock_reason == "Already completed"
+    assert result.lock_reason == lock_reason_already_completed()
 
 
 def test_active_research_blocks_all_starts() -> None:
@@ -72,7 +80,7 @@ def test_active_research_blocks_all_starts() -> None:
             laboratory_level=10,
         )
         assert result.can_start is False
-        assert result.lock_reason == "Another research is in progress"
+        assert result.lock_reason == lock_reason_active_research()
 
 
 def test_registry_helper_uses_laboratory_presence() -> None:
@@ -96,8 +104,8 @@ def test_lock_reasons_and_can_start_map() -> None:
         has_completed_laboratory=True,
         laboratory_level=10,
     )
-    assert reasons["1"] == "Another research is in progress"
-    assert reasons["2"] == "Another research is in progress"
+    assert reasons["1"] == lock_reason_active_research()
+    assert reasons["2"] == lock_reason_active_research()
     can_start = research_can_start_map(
         research_state=state,
         has_completed_laboratory=True,
@@ -116,7 +124,7 @@ def test_tier_gates_at_laboratory_level_1() -> None:
         "2", research_state=state, has_completed_laboratory=True, laboratory_level=1
     )
     assert blocked.can_start is False
-    assert blocked.lock_reason == "Requires Laboratory level 3"
+    assert blocked.lock_reason == lock_reason_requires_laboratory_level(3)
 
 
 def test_tier_gates_at_laboratory_level_3() -> None:
@@ -130,7 +138,7 @@ def test_tier_gates_at_laboratory_level_3() -> None:
         "3", research_state=state, has_completed_laboratory=True, laboratory_level=3
     )
     assert blocked.can_start is False
-    assert blocked.lock_reason == "Requires Laboratory level 6"
+    assert blocked.lock_reason == lock_reason_requires_laboratory_level(6)
 
 
 def test_tier_gates_at_laboratory_level_6() -> None:
@@ -145,7 +153,7 @@ def test_tier_gates_at_laboratory_level_6() -> None:
         "4", research_state=state, has_completed_laboratory=True, laboratory_level=6
     )
     assert blocked.can_start is False
-    assert blocked.lock_reason == "Requires Laboratory level 9"
+    assert blocked.lock_reason == lock_reason_requires_laboratory_level(9)
 
 
 def test_tier_gates_at_laboratory_level_9() -> None:
@@ -171,7 +179,7 @@ def test_registry_tier_gate_uses_placed_laboratory_level() -> None:
     ).can_start
     blocked = research_start_eligibility_for_registry("2", research_state=state, registry=registry)
     assert blocked.can_start is False
-    assert blocked.lock_reason == "Requires Laboratory level 3"
+    assert blocked.lock_reason == lock_reason_requires_laboratory_level(3)
     assert RESEARCH_BY_ID["2"].tier == 2
 
 
@@ -184,7 +192,7 @@ def test_dependency_blocks_research_2_without_research_1() -> None:
         laboratory_level=3,
     )
     assert blocked.can_start is False
-    assert blocked.lock_reason == "Requires Technology I"
+    assert blocked.lock_reason == lock_reason_requires_research(("1",))
 
 
 def test_dependency_allows_research_2_after_research_1_completed() -> None:
@@ -210,7 +218,7 @@ def test_carrier_speed_research_requires_technology_1() -> None:
         laboratory_level=1,
     )
     assert blocked.can_start is False
-    assert blocked.lock_reason == "Requires Technology I"
+    assert blocked.lock_reason == lock_reason_requires_research(("1",))
 
     state.start_research("1")
     state.mark_research_completed("1")
@@ -232,7 +240,7 @@ def test_dependency_blocks_research_4_without_prior_tech_chain() -> None:
         laboratory_level=9,
     )
     assert blocked.can_start is False
-    assert blocked.lock_reason == "Requires Technology III"
+    assert blocked.lock_reason == lock_reason_requires_research(("3",))
 
 
 def test_dependency_allows_research_4_when_chain_completed() -> None:
@@ -273,7 +281,7 @@ def test_statue_foundation_requires_excavation_research() -> None:
     )
 
     assert blocked.can_start is False
-    assert blocked.lock_reason == "Requires Excavation Plans"
+    assert blocked.lock_reason == lock_reason_requires_research(("statue_excavation",))
 
     state.start_research("statue_excavation")
     state.mark_research_completed("statue_excavation")
@@ -284,3 +292,12 @@ def test_statue_foundation_requires_excavation_research() -> None:
         laboratory_level=3,
     )
     assert allowed.can_start is True
+
+
+def test_lock_reasons_ru_locale(use_locale) -> None:
+    with use_locale("ru"):
+        assert lock_reason_no_laboratory() == i18n.t("ui.lock.no_laboratory")
+        assert lock_reason_requires_research(("1",)) == i18n.t(
+            "ui.lock.requires_research_one",
+            name=i18n.t("research.1.name"),
+        )

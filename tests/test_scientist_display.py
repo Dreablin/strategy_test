@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import pygame
 
+from game import i18n
 from game.assets import hire_ui_icon, worker_ui_icon
 from game.ui.population_panel import _FILTER_WORKER_TYPES
-from game.ui.population_panel import _WORKER_LABEL as POP_WORKER_LABEL  # noqa: N811
-from game.ui.worker_panel import _WORKER_LABEL as WP_WORKER_LABEL  # noqa: N811
+from game.ui.worker_labels import worker_display_label
 
 
 def test_scientist_worker_ui_icon_returns_surface() -> None:
@@ -24,14 +24,13 @@ def test_scientist_hire_ui_icon_returns_surface() -> None:
     assert icon.get_height() == 20
 
 
-def test_scientist_in_population_panel_labels() -> None:
-    assert "SCIENTIST" in POP_WORKER_LABEL
-    assert POP_WORKER_LABEL["SCIENTIST"] == "Scientist"
+def test_scientist_display_label_en() -> None:
+    assert worker_display_label("SCIENTIST") == i18n.t("worker.SCIENTIST")
 
 
-def test_scientist_in_worker_panel_labels() -> None:
-    assert "SCIENTIST" in WP_WORKER_LABEL
-    assert WP_WORKER_LABEL["SCIENTIST"] == "Scientist"
+def test_scientist_display_label_ru(use_locale) -> None:
+    with use_locale("ru"):
+        assert worker_display_label("SCIENTIST") == i18n.t("worker.SCIENTIST")
 
 
 def test_scientist_in_population_filter_worker_types() -> None:

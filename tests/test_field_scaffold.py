@@ -33,7 +33,7 @@ def test_field_contract_footprint_and_level_cap() -> None:
 
 
 def test_field_is_placeable_from_food_menu() -> None:
-    assert any(tag == "FIELD" for (_asset, _label, tag) in _FOOD_BUTTONS)
+    assert any(tag == "FIELD" for (_asset, tag) in _FOOD_BUTTONS)
 
 
 def test_registry_places_field_and_keeps_tile_walkable_for_pathing() -> None:

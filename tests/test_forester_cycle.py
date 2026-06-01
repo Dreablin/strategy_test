@@ -151,7 +151,7 @@ def test_forester_hut_ui_worker_status_reports_detailed_states() -> None:
     workers.reassign_all()
 
     # On assignment path to hut.
-    assert workers.worker_status_for_building(hut) == "on the way"
+    assert workers.worker_status_for_building(hut) == "on_the_way"
 
     # Wait until cycle starts from hut.
     while forester.state not in {"going_to_plant_tile", "arrived_plant_tile", "planting"}:
@@ -159,7 +159,7 @@ def test_forester_hut_ui_worker_status_reports_detailed_states() -> None:
         workers.update(now_ms[0])
 
     if forester.state == "going_to_plant_tile":
-        assert workers.worker_status_for_building(hut) == "going to plant"
+        assert workers.worker_status_for_building(hut) == "going_to_plant"
 
     while forester.state != "planting":
         now_ms[0] += 5_000
@@ -167,4 +167,4 @@ def test_forester_hut_ui_worker_status_reports_detailed_states() -> None:
     assert workers.worker_status_for_building(hut) == "planting"
 
     workers.update(now_ms[0] + 5_000)
-    assert workers.worker_status_for_building(hut) in {"returning", "path blocked", "resting", "ready"}
+    assert workers.worker_status_for_building(hut) in {"returning", "path_blocked", "resting", "ready"}

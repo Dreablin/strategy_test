@@ -7,6 +7,7 @@ from pathlib import Path
 import pygame
 
 from game.config import TILE_H, TILE_W
+from game.ui.fonts import ui_font
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _ASSETS_ROOT = _PROJECT_ROOT / "assets"
@@ -561,7 +562,7 @@ def _procedural_building_sprite(b_type: str, level: int) -> pygame.Surface:
         (body.centerx - 6, body.top - 6, 12, 8),
         border_radius=2,
     )
-    font = pygame.font.Font(None, 12)
+    font = ui_font(12)
     txt = font.render(str(lvl), True, (20, 20, 20))
     surf.blit(txt, (body.right - txt.get_width() - 4, body.top + 2))
     return surf

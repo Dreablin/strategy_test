@@ -8,8 +8,10 @@ import pygame
 
 from game.buildings.restaurant import Restaurant
 from game.ui.building_panel import BuildingPanel
+from game.ui.panel_i18n import active_toggle_label, production_line, resource_amount_line
 from game.worker_dining import dining_eat_duration_ms
 from game.worker_status import production_status_for_building
+from game.ui.fonts import ui_font
 
 
 _PANEL_PAD = 16
@@ -41,16 +43,20 @@ class RestaurantPanel:
 
     @staticmethod
     def toggle_label(restaurant: Restaurant) -> str:
-        return "Active" if restaurant.active else "Inactive"
+        return active_toggle_label(restaurant.active)
 
     @staticmethod
     def storage_lines(restaurant: Restaurant) -> dict[str, str]:
         cap = restaurant.local_storage_capacity("bread")
         return {
-            "bread": f"Bread: {restaurant.local_storage_amount('bread')} / {cap}",
-            "wine": f"Wine: {restaurant.local_storage_amount('wine')} / {cap}",
-            "beef": f"Beef: {restaurant.local_storage_amount('beef')} / {cap}",
-            "elite_meal": f"Elite meal: {restaurant.output_amount()} / {restaurant.output_capacity()}",
+            "bread": resource_amount_line("bread", restaurant.local_storage_amount("bread"), cap),
+            "wine": resource_amount_line("wine", restaurant.local_storage_amount("wine"), cap),
+            "beef": resource_amount_line("beef", restaurant.local_storage_amount("beef"), cap),
+            "elite_meal": resource_amount_line(
+                "elite_meal",
+                restaurant.output_amount(),
+                restaurant.output_capacity(),
+            ),
         }
 
     @staticmethod
@@ -87,7 +93,7 @@ class RestaurantPanel:
     ) -> RestaurantPanelLayout:
         lay = RestaurantPanel.layout(surface, restaurant, worker_assigned=worker_assigned)
         BuildingPanel.draw(surface, restaurant, worker_assigned=worker_assigned, extra_bottom_px=_EXTRA_BOTTOM)
-        font = pygame.font.SysFont(None, 18)
+        font = ui_font(18)
 
         action_tops = [lay.toggle.top]
         if lay.upgrade is not None:
@@ -106,7 +112,7 @@ class RestaurantPanel:
         status = ""
         if worker_manager is not None:
             status = production_status_for_building(worker_manager, restaurant)
-        status_text = font.render(f"Status: {status}", True, (200, 200, 210))
+        status_text = font.render(production_line(status), True, (200, 200, 210))
         surface.blit(status_text, (lay.frame.left + _PANEL_PAD, y))
         y += _ROW_H
 
@@ -124,7 +130,7 @@ class RestaurantPanel:
         label = RestaurantPanel.toggle_label(restaurant)
         color = (80, 180, 80) if restaurant.active else (180, 80, 80)
         pygame.draw.rect(surface, color, lay.toggle, border_radius=4)
-        btn_font = pygame.font.SysFont(None, 20)
+        btn_font = ui_font(20)
         btn_text = btn_font.render(label, True, (255, 255, 255))
         surface.blit(btn_text, (lay.toggle.centerx - btn_text.get_width() // 2, lay.toggle.centery - btn_text.get_height() // 2))
         return lay

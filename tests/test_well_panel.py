@@ -17,9 +17,9 @@ def test_well_panel_draws_storage_progress_and_toggle() -> None:
         well,
         worker_assigned=True,
         worker_status="assigned",
-        production_status="Processing",
+        production_status="processing",
         now_ms=10_000,
     )
 
-    layout = WellPanel.layout(surface, well, worker_assigned=True, production_status="Processing")
+    layout = WellPanel.layout(surface, well, worker_assigned=True, production_status="processing")
     assert surface.get_at((layout.frame.left + 40, layout.frame.top + 150)) != (0, 0, 0, 255)

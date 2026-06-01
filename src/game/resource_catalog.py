@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from game import i18n
+
 TOWN_HALL_WAREHOUSE_KEYS: frozenset[str] = frozenset(
     (
         "wood",
@@ -24,11 +26,6 @@ ELITE_MEAL_KEY = "elite_meal"
 
 LOCAL_ONLY_MEAL_KEYS: frozenset[str] = frozenset((SIMPLE_MEAL_KEY, ELITE_MEAL_KEY))
 
-_DISPLAY_LABEL_OVERRIDES: dict[str, str] = {
-    SIMPLE_MEAL_KEY: "Simple meal",
-    ELITE_MEAL_KEY: "Elite meal",
-}
-
 
 def is_town_hall_warehouse_resource(resource: str) -> bool:
     return str(resource).lower() in TOWN_HALL_WAREHOUSE_KEYS
@@ -44,6 +41,8 @@ def is_local_only_meal(resource: str) -> bool:
 
 def resource_display_label(resource: str) -> str:
     key = str(resource).lower()
-    if key in _DISPLAY_LABEL_OVERRIDES:
-        return _DISPLAY_LABEL_OVERRIDES[key]
+    locale_key = f"resource.{key}"
+    label = i18n.t(locale_key)
+    if label != locale_key:
+        return label
     return key.replace("_", " ").title()

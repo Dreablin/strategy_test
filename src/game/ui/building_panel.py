@@ -6,12 +6,15 @@ from dataclasses import dataclass
 
 import pygame
 
+from game import i18n
 from game.buildings.base import Building
 from game.config import CONSTRUCTION_REQUIREMENTS
 from game.research_config import RESEARCH_BY_ID
 from game.resource_catalog import resource_display_label
 from game.statue_research import statue_stage_research_id
+from game.worker_status import localized_status
 from game.ui.worker_labels import building_worker_status_line
+from game.ui.fonts import render_fitted_ui_text, ui_font
 _PANEL_W = 420
 _PANEL_PAD = 16
 _ROW = 26
@@ -23,69 +26,47 @@ _TOOLTIP_BG = (22, 26, 34)
 _TOOLTIP_BORDER = (72, 78, 92)
 _TOOLTIP_TEXT = (220, 224, 232)
 
-_DISPLAY_NAME: dict[str, str] = {
-    "TOWN_HALL": "Town Hall",
-    "LUMBER_CAMP": "Lumber Camp",
-    "STONE_MINE": "Stone Mine",
-    "IRON_MINE": "Iron Mine",
-    "FARM": "Farm",
-    "FORESTER_HUT": "Forester Hut",
-    "BAKERY": "Bakery",
-    "CHICKEN_FARM": "Chicken Farm",
-    "COW_FARM": "Cow Farm",
-    "VINEYARD_FARM": "Vineyard Farm",
-    "VINEYARD": "Vineyard",
-    "CANTEEN": "Canteen",
-    "WELL": "Well",
-    "WINERY": "Winery",
-    "RESTAURANT": "Restaurant",
-    "LABORATORY": "Laboratory",
-    "STATUE": "Statue",
-}
 
-_DESCRIPTION: dict[str, str] = {
-    "TOWN_HALL": "The heart of your settlement.",
-    "LUMBER_CAMP": "Lumberjack chops trees for wood.",
-    "STONE_MINE": "Stonecutter quarries stone.",
-    "IRON_MINE": "Miner digs for iron.",
-    "FARM": "Farmer grows wheat.",
-    "FORESTER_HUT": "Forester plants new trees around the hut.",
-    "MILL": "Processes wheat into flour.",
-    "BAKERY": "Bakes flour and water into bread.",
-    "CHICKEN_FARM": "Raises chickens from grain and water.",
-    "COW_FARM": "Herder raises cattle using wheat and water; produces beef and hide.",
-    "VINEYARD_FARM": "Farmer harvests ripe vineyard plots nearby; carriers move grapes to the Town Hall.",
-    "VINEYARD": "Grapes ripen here in stages; a farmer at a Vineyard Farm can harvest nearby ripe plots.",
-    "CANTEEN": "Cook prepares simple meals from chicken, bread, and water.",
-    "WELL": "Produces water into local storage.",
-    "WINERY": "Winemaker converts grapes into wine; carriers export wine to the Town Hall.",
-    "RESTAURANT": "Cook prepares elite meals from bread, wine, and beef for advanced workers.",
-    "LABORATORY": "Scientists conduct research and unlock technologies.",
-    "STATUE": "Final mission monument built in four stages.",
-}
+def building_display_name(type_tag: str) -> str:
+    tag = str(type_tag).upper()
+    locale_key = f"building.{tag}.name"
+    label = i18n.t(locale_key)
+    if label != locale_key:
+        return label
+    return tag.replace("_", " ").title()
+
+
+def building_description(type_tag: str) -> str:
+    tag = str(type_tag).upper()
+    locale_key = f"building.{tag}.desc"
+    label = i18n.t(locale_key)
+    if label != locale_key:
+        return label
+    return ""
+
 
 def _upgrade_label(building: Building) -> str:
     next_stage_name = getattr(building, "next_stage_name", None)
     if callable(next_stage_name):
         stage = next_stage_name()
         if stage:
-            return f"Start stage: {stage}"
+            return i18n.t("ui.statue.start_stage", stage=stage)
     nxt = building.level + 1
-    _ = building
-    return f"Upgrade to Lv {nxt}"
+    return i18n.t("ui.building.upgrade_level", level=nxt)
 
 
 def _upgrade_cost_lines(building: Building) -> tuple[str, ...]:
+    upgrade_cost = i18n.t("ui.building.upgrade_cost")
     nxt = int(building.level) + 1
     spec = CONSTRUCTION_REQUIREMENTS.get(building.type_tag, {}).get(nxt)
     if spec is None:
-        lines = ["Upgrade cost: unavailable"]
+        lines = [f"{upgrade_cost}: {i18n.t('ui.common.unavailable')}"]
     else:
         items = [(resource, amount) for resource, amount in sorted(spec.cost.items()) if int(amount) > 0]
         if not items:
-            lines = ["Upgrade cost: Free"]
+            lines = [f"{upgrade_cost}: {i18n.t('ui.common.free')}"]
         else:
-            lines = ["Upgrade cost:"]
+            lines = [f"{upgrade_cost}:"]
             for resource, amount in items:
                 lines.append(f"{resource_display_label(resource)}: {int(amount)}")
     if building.type_tag == "STATUE":
@@ -93,7 +74,7 @@ def _upgrade_cost_lines(building: Building) -> tuple[str, ...]:
         if research_id is not None:
             research = RESEARCH_BY_ID.get(research_id)
             name = research.name if research is not None else research_id
-            lines.append(f"Requires research: {name}")
+            lines.append(i18n.t("ui.common.requires_research", name=name))
     return tuple(lines)
 
 
@@ -110,7 +91,7 @@ def draw_upgrade_cost_tooltip(
         hover_pos = pygame.mouse.get_pos()
     if not upgrade_rect.collidepoint(hover_pos):
         return None
-    font = pygame.font.Font(None, 18)
+    font = ui_font(18)
     line_surfaces = [font.render(line, True, _TOOLTIP_TEXT) for line in _upgrade_cost_lines(building)]
     max_w = max(surf.get_width() for surf in line_surfaces)
     total_h = sum(surf.get_height() for surf in line_surfaces) + _TOOLTIP_GAP * (len(line_surfaces) - 1)
@@ -260,17 +241,17 @@ class BuildingPanel:
         pygame.draw.rect(surface, (36, 40, 52), layout.frame, border_radius=10)
         pygame.draw.rect(surface, (72, 78, 92), layout.frame, width=2, border_radius=10)
 
-        title_font = pygame.font.Font(None, 28)
-        body_font = pygame.font.Font(None, 22)
-        btn_font = pygame.font.Font(None, 22)
+        body_font = ui_font(22)
+        btn_font = ui_font(22)
 
-        name = _DISPLAY_NAME.get(building.type_tag, building.type_tag)
+        name = building_display_name(building.type_tag)
         stage_name = getattr(building, "stage_name", None)
         if callable(stage_name):
-            title_text = f"{name} - {stage_name()}"
+            title_text = i18n.t("ui.building.panel_title_stage", name=name, stage=stage_name())
         else:
-            title_text = f"{name} - Lv {building.level}"
-        title = title_font.render(title_text, True, (238, 240, 248))
+            title_text = i18n.t("ui.building.panel_title", name=name, level=building.level)
+        title_max = layout.close.left - layout.frame.left - _PANEL_PAD - 4
+        title = render_fitted_ui_text(title_text, title_max)
         surface.blit(title, (layout.frame.left + _PANEL_PAD, layout.frame.top + _PANEL_PAD))
 
         pygame.draw.line(
@@ -289,10 +270,10 @@ class BuildingPanel:
         )
 
         y = layout.frame.top + _PANEL_PAD + _ROW + 6
-        desc = _DESCRIPTION.get(building.type_tag, "")
+        desc = building_description(building.type_tag)
         surface.blit(body_font.render(desc, True, (200, 204, 214)), (layout.frame.left + _PANEL_PAD, y))
         y += _ROW
-        allowed_worker_status = {"empty", "on the way", "assigned"}
+        allowed_worker_status = {"empty", "on_the_way", "assigned"}
         if building.type_tag in {"FARM", "VINEYARD_FARM"}:
             allowed_worker_status = allowed_worker_status | {
                 "moving",
@@ -313,7 +294,11 @@ class BuildingPanel:
         if production_status is not None:
             y += _ROW
             surface.blit(
-                body_font.render(f"Status: {production_status}", True, (200, 204, 214)),
+                body_font.render(
+                    i18n.t("ui.common.status_line", status=localized_status(production_status)),
+                    True,
+                    (200, 204, 214),
+                ),
                 (layout.frame.left + _PANEL_PAD, y),
             )
 
@@ -333,7 +318,7 @@ class BuildingPanel:
 
         if layout.demolish is not None:
             pygame.draw.rect(surface, (140, 48, 52), layout.demolish, border_radius=6)
-            dl = btn_font.render("Demolish", True, (255, 240, 240))
+            dl = btn_font.render(i18n.t("ui.button.demolish"), True, (255, 240, 240))
             surface.blit(
                 dl,
                 (
@@ -380,4 +365,4 @@ class BuildingPanel:
     def storage_line(building: Building) -> str:
         stored = int(getattr(building, "stored"))
         capacity = int(building.storage_capacity())
-        return f"Storage: {stored} / {capacity}"
+        return i18n.t("ui.common.storage_line", stored=stored, capacity=capacity)

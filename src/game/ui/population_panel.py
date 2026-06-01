@@ -6,9 +6,13 @@ from dataclasses import dataclass
 
 import pygame
 
+from game import i18n
 from game.assets import worker_ui_icon
-from game.ui.worker_labels import WORKER_LABEL as _WORKER_LABEL
+from game.resource_catalog import resource_display_label
+from game.ui.building_panel import building_display_name
+from game.ui.worker_labels import worker_display_label
 from game.worker_models import Worker
+from game.ui.fonts import ui_font
 
 _PANEL_W = 560
 _PANEL_PAD = 16
@@ -37,68 +41,78 @@ _FILTER_WORKER_TYPES: tuple[str, ...] = (
     "SCIENTIST",
 )
 
-_BUILDING_LABEL: dict[str, str] = {
-    "TOWN_HALL": "Town Hall",
-    "LUMBER_CAMP": "Lumber Camp",
-    "STONE_MINE": "Stone Mine",
-    "IRON_MINE": "Iron Mine",
-    "FARM": "Farm",
-    "FORESTER_HUT": "Forester Hut",
-    "SAWMILL": "Sawmill",
-    "MILL": "Mill",
-    "BAKERY": "Bakery",
-    "CHICKEN_FARM": "Chicken Farm",
-    "COW_FARM": "Cow Farm",
-    "VINEYARD_FARM": "Vineyard Farm",
-    "VINEYARD": "Vineyard",
-    "SCHOOL": "School",
-    "WELL": "Well",
-    "CANTEEN": "Canteen",
-    "WINERY": "Winery",
-    "RESTAURANT": "Restaurant",
-    "LABORATORY": "Laboratory",
-    "STATUE": "Statue",
-}
 
-_RESOURCE_LABEL: dict[str, str] = {
-    "wood": "wood",
-    "stone": "stone",
-    "iron": "iron",
-    "boards": "boards",
-    "wheat": "wheat",
-    "flour": "flour",
-    "bread": "bread",
-    "chicken": "chicken",
-    "beef": "beef",
-    "hide": "hide",
-    "grapes": "grapes",
-    "water": "water",
-}
+def _localized_state(state: str) -> str:
+    key = f"status.worker.{state}"
+    label = i18n.t(key)
+    if label != key:
+        return label
+    return state.replace("_", " ").title()
 
-_STATE_LABEL: dict[str, str] = {
-    "idle": "Idle",
-    "working": "Working",
-    "resting": "Resting",
-    "moving": "Moving",
-    "building": "Building",
-    "going_to_tree": "Going to tree",
-    "going_to_stone": "Going to stone",
-    "going_to_plant_tile": "Going to plant",
-    "going_to_field": "Going to field",
-    "going_to_vineyard": "Going to vineyard",
-    "returning": "Returning",
-    "sowing": "Sowing",
-    "harvesting": "Harvesting",
-    "harvesting_grapes": "Harvesting grapes",
-    "arrived_vineyard": "At vineyard",
-    "vineyard_harvest_anim_done": "Storing grapes",
-    "going_to_canteen": "Going to canteen",
-    "waiting_for_meal": "Waiting for meal",
-    "eating": "Eating",
-    "carrier_moving_to_source": "Going to pickup",
-    "carrier_loading": "Loading",
-    "carrier_unloading": "Unloading",
-}
+
+def _none_label() -> str:
+    return i18n.t("ui.common.none")
+
+
+def _building_name(building) -> str:
+    if building is None:
+        return _none_label()
+    tag = str(getattr(building, "type_tag", ""))
+    if not tag:
+        return _none_label()
+    return building_display_name(tag)
+
+
+def _resource_name(value: str | None) -> str:
+    if value is None:
+        return _none_label()
+    return resource_display_label(value)
+
+
+def _transport_action(worker: Worker, task) -> str:
+    if task.returning_to_town_hall:
+        return i18n.t("ui.population.action.returning")
+    if worker.carrying:
+        return i18n.t("ui.population.action.carrying")
+    return i18n.t("ui.population.action.fetching")
+
+
+def worker_summary(worker: Worker) -> tuple[str, str, str]:
+    """Return title, task line, detail line for a population row."""
+    title = worker_display_label(worker.type_tag)
+    task = worker.transport_task
+    if task is not None:
+        resource = _resource_name(task.resource)
+        task_line = i18n.t(
+            "ui.population.transport_task",
+            action=_transport_action(worker, task),
+            resource=resource,
+        )
+        detail = i18n.t(
+            "ui.population.route",
+            source=_building_name(task.source),
+            target=_building_name(task.target),
+        )
+        return title, task_line, detail
+
+    state = _localized_state(str(worker.state))
+    assigned = _building_name(worker.assigned_building)
+    task_line = state
+    if worker.carrying is not None:
+        detail = i18n.t(
+            "ui.population.assigned_carrying",
+            building=assigned,
+            resource=_resource_name(worker.carrying),
+        )
+    else:
+        detail = i18n.t("ui.worker.assigned", building=assigned)
+    return title, task_line, detail
+
+
+def _filtered_workers(workers: tuple[Worker, ...], worker_filter: str | None) -> tuple[Worker, ...]:
+    if worker_filter is None:
+        return workers
+    return tuple(worker for worker in workers if worker.type_tag == worker_filter)
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,45 +122,6 @@ class PopulationPanelLayout:
     filters: tuple[tuple[str | None, pygame.Rect], ...]
     content: pygame.Rect
     max_scroll: int
-
-
-def _label(value: str | None, labels: dict[str, str]) -> str:
-    if value is None:
-        return "none"
-    return labels.get(value, value.replace("_", " ").title())
-
-
-def _building_name(building) -> str:
-    if building is None:
-        return "none"
-    return _label(str(getattr(building, "type_tag", "")), _BUILDING_LABEL)
-
-
-def worker_summary(worker: Worker) -> tuple[str, str, str]:
-    """Return title, task line, detail line for a population row."""
-    title = _label(worker.type_tag, _WORKER_LABEL)
-    task = worker.transport_task
-    if task is not None:
-        resource = _label(task.resource, _RESOURCE_LABEL)
-        action = "Returning" if task.returning_to_town_hall else "Carrying" if worker.carrying else "Fetching"
-        task_line = f"{action} {resource}"
-        detail = f"{_building_name(task.source)} -> {_building_name(task.target)}"
-        return title, task_line, detail
-
-    state = _label(worker.state, _STATE_LABEL)
-    assigned = _building_name(worker.assigned_building)
-    carrying = _label(worker.carrying, _RESOURCE_LABEL)
-    task_line = state
-    detail = f"Assigned: {assigned}"
-    if worker.carrying is not None:
-        detail = f"{detail} | Carrying: {carrying}"
-    return title, task_line, detail
-
-
-def _filtered_workers(workers: tuple[Worker, ...], worker_filter: str | None) -> tuple[Worker, ...]:
-    if worker_filter is None:
-        return workers
-    return tuple(worker for worker in workers if worker.type_tag == worker_filter)
 
 
 class PopulationPanel:
@@ -210,10 +185,10 @@ class PopulationPanel:
         pygame.draw.rect(surface, (36, 40, 52), layout.frame, border_radius=10)
         pygame.draw.rect(surface, (72, 78, 92), layout.frame, width=2, border_radius=10)
 
-        title_font = pygame.font.Font(None, 28)
-        body_font = pygame.font.Font(None, 22)
-        small_font = pygame.font.Font(None, 20)
-        title = title_font.render(f"Population - {len(workers)}", True, (238, 240, 248))
+        title_font = ui_font(28)
+        body_font = ui_font(22)
+        small_font = ui_font(20)
+        title = title_font.render(i18n.t("ui.population.title", count=len(workers)), True, (238, 240, 248))
         surface.blit(title, (layout.frame.left + _PANEL_PAD, layout.frame.top + _PANEL_PAD))
 
         pygame.draw.line(surface, (200, 82, 82), (layout.close.left + 6, layout.close.top + 6), (layout.close.right - 7, layout.close.bottom - 7), 2)
@@ -225,7 +200,7 @@ class PopulationPanel:
             pygame.draw.rect(surface, bg, rect, border_radius=6)
             pygame.draw.rect(surface, (92, 102, 120), rect, width=1, border_radius=6)
             if worker_type is None:
-                text = small_font.render("All", True, (238, 240, 248))
+                text = small_font.render(i18n.t("ui.population.filter_all"), True, (238, 240, 248))
                 surface.blit(text, (rect.centerx - text.get_width() // 2, rect.centery - text.get_height() // 2))
             else:
                 icon = worker_ui_icon(worker_type, size=26)

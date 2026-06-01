@@ -28,7 +28,7 @@ def _registry_with_cow_farm() -> tuple[BuildingRegistry, CowFarm]:
 def test_cow_farm_production_status_no_worker() -> None:
     registry, farm = _registry_with_cow_farm()
     mgr = WorkerManager(registry, now_ms_fn=lambda: 0)
-    assert production_status_for_building(mgr, farm) == "No worker"
+    assert production_status_for_building(mgr, farm) == "no_worker"
 
 
 def test_cow_farm_production_status_inactive() -> None:
@@ -40,7 +40,7 @@ def test_cow_farm_production_status_inactive() -> None:
     herder = Worker("ANIMAL_HERDER")
     mgr.add_worker(herder)
     mgr.assign_to_building(herder, farm)
-    assert production_status_for_building(mgr, farm) == "Inactive"
+    assert production_status_for_building(mgr, farm) == "inactive"
 
 
 def test_cow_farm_production_status_resting() -> None:
@@ -52,7 +52,7 @@ def test_cow_farm_production_status_resting() -> None:
     mgr.add_worker(herder)
     mgr.assign_to_building(herder, farm)
     herder.state = "resting"
-    assert production_status_for_building(mgr, farm) == "Resting"
+    assert production_status_for_building(mgr, farm) == "resting"
 
 
 def test_cow_farm_production_status_output_full() -> None:
@@ -65,7 +65,7 @@ def test_cow_farm_production_status_output_full() -> None:
     herder = Worker("ANIMAL_HERDER")
     mgr.add_worker(herder)
     mgr.assign_to_building(herder, farm)
-    assert production_status_for_building(mgr, farm) == "Output full"
+    assert production_status_for_building(mgr, farm) == "output_full"
 
 
 def test_cow_farm_production_status_no_wheat() -> None:
@@ -75,7 +75,7 @@ def test_cow_farm_production_status_no_wheat() -> None:
     herder = Worker("ANIMAL_HERDER")
     mgr.add_worker(herder)
     mgr.assign_to_building(herder, farm)
-    assert production_status_for_building(mgr, farm) == "No wheat"
+    assert production_status_for_building(mgr, farm) == "no_wheat"
 
 
 def test_cow_farm_production_status_no_water() -> None:
@@ -85,7 +85,7 @@ def test_cow_farm_production_status_no_water() -> None:
     herder = Worker("ANIMAL_HERDER")
     mgr.add_worker(herder)
     mgr.assign_to_building(herder, farm)
-    assert production_status_for_building(mgr, farm) == "No water"
+    assert production_status_for_building(mgr, farm) == "no_water"
 
 
 def test_cow_farm_production_status_processing() -> None:
@@ -98,7 +98,7 @@ def test_cow_farm_production_status_processing() -> None:
     mgr.assign_to_building(herder, farm)
     herder.current_tile = building_center_tile(farm)
     herder.state = "processing"
-    assert production_status_for_building(mgr, farm) == "Processing"
+    assert production_status_for_building(mgr, farm) == "processing"
 
 
 def test_cow_farm_production_status_ready() -> None:
@@ -110,4 +110,4 @@ def test_cow_farm_production_status_ready() -> None:
     mgr.add_worker(herder)
     mgr.assign_to_building(herder, farm)
     herder.state = "working"
-    assert production_status_for_building(mgr, farm) == "Ready"
+    assert production_status_for_building(mgr, farm) == "ready"

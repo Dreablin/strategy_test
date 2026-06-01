@@ -77,35 +77,35 @@ def test_vineyard_farm_production_status_reports_worker_action_states_and_hints(
     wm.assign_to_building(farmer, vf)
 
     farmer.state = "moving"
-    assert wm.production_status_for_building(vf) == "Moving"
+    assert wm.production_status_for_building(vf) == "moving"
     farmer.state = "going_to_vineyard"
-    assert wm.production_status_for_building(vf) == "Moving"
+    assert wm.production_status_for_building(vf) == "moving"
     farmer.state = "returning"
-    assert wm.production_status_for_building(vf) == "Moving"
+    assert wm.production_status_for_building(vf) == "moving"
     farmer.state = "harvesting_grapes"
-    assert wm.production_status_for_building(vf) == "Harvesting"
+    assert wm.production_status_for_building(vf) == "harvesting"
     farmer.state = "vineyard_harvest_anim_done"
-    assert wm.production_status_for_building(vf) == "Harvesting"
+    assert wm.production_status_for_building(vf) == "harvesting"
 
     vf.grapes_in = vf.grapes_capacity()
     farmer.state = "resting"
-    assert wm.production_status_for_building(vf) == "Storage full"
+    assert wm.production_status_for_building(vf) == "storage_full"
 
     vf.grapes_in = 0
     plot.set_growth_stage(1, now_ms=0)
     farmer.state = "working_field"
-    assert wm.production_status_for_building(vf) == "No ripe vineyards in range"
+    assert wm.production_status_for_building(vf) == "no_ripe_vineyards_in_range"
     plot.set_growth_stage(4, now_ms=0)
-    assert wm.production_status_for_building(vf) == "Resting"
+    assert wm.production_status_for_building(vf) == "resting"
 
     farmer.state = "working"
     farmer.camp_wait_until_ms = 9_999
-    assert wm.production_status_for_building(vf) == "Resting"
+    assert wm.production_status_for_building(vf) == "resting"
     farmer.camp_wait_until_ms = 0
-    assert wm.production_status_for_building(vf) == "Ready"
+    assert wm.production_status_for_building(vf) == "ready"
 
     vf.set_active(False)
-    assert wm.production_status_for_building(vf) == "Inactive"
+    assert wm.production_status_for_building(vf) == "inactive"
 
 
 def test_vineyard_farm_worker_status_reports_farm_style_buckets() -> None:

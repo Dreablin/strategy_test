@@ -2,7 +2,7 @@
 
 import pygame
 
-from game import dev_asset_reload
+from game import dev_asset_reload, i18n
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall, bootstrap_starting_warehouse
 from game.camera import Camera
@@ -24,7 +24,7 @@ def main() -> int:
     pygame.init()
     clock = pygame.time.Clock()
     screen = pygame.display.set_mode(WINDOW_SIZE, pygame.RESIZABLE)
-    pygame.display.set_caption("Isometric Strategy")
+    pygame.display.set_caption(i18n.t("ui.window.caption"))
 
     world = World()
     registry = BuildingRegistry(world)

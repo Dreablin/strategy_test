@@ -15,7 +15,7 @@ def _forester_hut_cls():
 
 
 def test_forester_hut_exists_in_build_menu_and_placement_registry() -> None:
-    tags = [tag for _, _, tag in _BUTTONS]
+    tags = [tag for _, tag in _BUTTONS]
     assert "FORESTER_HUT" in tags
     assert "FORESTER_HUT" in _TAG_TO_CLASS
 

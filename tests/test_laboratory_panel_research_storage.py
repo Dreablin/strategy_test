@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pygame
 
+from game import i18n
 from game.buildings.registry import BuildingRegistry
 from game.research_config import RESEARCH_BY_ID
 from game.research_start import try_start_active_research
@@ -25,7 +26,7 @@ def test_no_research_section_without_active_research() -> None:
         surface,
         laboratory,
         worker_assigned=False,
-        production_status="No worker",
+        production_status="no_worker",
         worker_manager=workers,
         research_state=ResearchState(),
     )
@@ -45,15 +46,25 @@ def test_panel_draws_input_rows_with_delivered_amounts() -> None:
     registry = _registry_for(laboratory, workers)
     try_start_active_research("1", research_state=state, registry=registry)
     laboratory._research_input_delivered["wood"] = 5  # noqa: SLF001
-    assert research_input_line(laboratory, "wood") == "Wood: 5 / 20"
-    assert research_input_line(laboratory, "boards") == "Boards: 0 / 10"
+    assert research_input_line(laboratory, "wood") == i18n.t(
+        "ui.panel.amount_line",
+        label=i18n.t("resource.wood"),
+        amount=5,
+        capacity=20,
+    )
+    assert research_input_line(laboratory, "boards") == i18n.t(
+        "ui.panel.amount_line",
+        label=i18n.t("resource.boards"),
+        amount=0,
+        capacity=10,
+    )
     surface = pygame.Surface((1280, 720))
     surface.fill((28, 32, 40))
     layout = LaboratoryPanel.draw(
         surface,
         laboratory,
         worker_assigned=False,
-        production_status="No worker",
+        production_status="no_worker",
         worker_manager=workers,
         research_state=state,
     )
@@ -74,7 +85,7 @@ def test_research_and_scientist_content_stays_above_action_buttons() -> None:
         surface,
         laboratory,
         worker_assigned=False,
-        production_status="No worker",
+        production_status="no_worker",
         worker_manager=workers,
         research_state=state,
     )

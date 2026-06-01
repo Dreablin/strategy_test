@@ -2,6 +2,7 @@
 
 import pygame
 
+from game import i18n
 from game.buildings.farm import Farm
 from game.buildings.iron_mine import IronMine
 from game.buildings.lumber_camp import LumberCamp
@@ -22,9 +23,15 @@ def test_lumber_camp_toggle_label_reflects_active_state() -> None:
     camp = LumberCamp(level=1, grid_pos=(10, 10))
 
     camp.set_active(True)
-    assert LumberCampPanel.toggle_label(camp) == "Active"
+    assert LumberCampPanel.toggle_label(camp) == i18n.t("ui.common.active")
     camp.set_active(False)
-    assert LumberCampPanel.toggle_label(camp) == "Inactive"
+    assert LumberCampPanel.toggle_label(camp) == i18n.t("ui.common.inactive")
+
+
+def test_lumber_camp_toggle_label_ru(use_locale) -> None:
+    camp = LumberCamp(level=1, grid_pos=(10, 10))
+    with use_locale("ru"):
+        assert LumberCampPanel.toggle_label(camp) == i18n.t("ui.common.active")
 
 
 def test_lumber_camp_click_toggle_returns_toggle_action() -> None:
@@ -88,7 +95,7 @@ def test_lumber_camp_level_10_demolish_does_not_overlap_active_toggle() -> None:
     surface = pygame.Surface((1280, 720))
     camp = LumberCamp(level=10, grid_pos=(10, 10))
 
-    layout = LumberCampPanel.layout(surface, camp, worker_assigned=False, production_status="Resting")
+    layout = LumberCampPanel.layout(surface, camp, worker_assigned=False, production_status="resting")
 
     assert layout.upgrade is None
     assert layout.demolish is not None
@@ -99,7 +106,7 @@ def test_lumber_camp_level_10_demolish_does_not_overlap_active_toggle() -> None:
             layout.demolish.center,
             camp,
             worker_assigned=False,
-            production_status="Resting",
+            production_status="resting",
         )
         == "demolish"
     )
@@ -109,7 +116,7 @@ def test_lumber_camp_level_10_demolish_does_not_overlap_active_toggle() -> None:
             layout.toggle.center,
             camp,
             worker_assigned=False,
-            production_status="Resting",
+            production_status="resting",
         )
         == "toggle_active"
     )

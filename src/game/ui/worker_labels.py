@@ -2,30 +2,18 @@
 
 from __future__ import annotations
 
+from game import i18n
 from game.worker_hiring import HIRABLE_WORKERS, worker_compatible_building_types
-
-WORKER_LABEL: dict[str, str] = {
-    "CARRIER": "Carrier",
-    "BUILDER": "Builder",
-    "SAWYER": "Sawyer",
-    "MILLER": "Miller",
-    "BAKER": "Baker",
-    "COOK": "Cook",
-    "WATERMAN": "Waterman",
-    "LUMBERJACK": "Lumberjack",
-    "STONECUTTER": "Stonecutter",
-    "MINER": "Miner",
-    "FARMER": "Farmer",
-    "ANIMAL_HERDER": "Herder",
-    "FORESTER": "Forester",
-    "WINEMAKER": "Winemaker",
-    "SCIENTIST": "Scientist",
-}
+from game.worker_status import localized_status
 
 
 def worker_display_label(worker_type: str) -> str:
     key = str(worker_type).upper()
-    return WORKER_LABEL.get(key, key.replace("_", " ").title())
+    locale_key = f"worker.{key}"
+    label = i18n.t(locale_key)
+    if label != locale_key:
+        return label
+    return key.replace("_", " ").title()
 
 
 def building_worker_display_label(building_type: str) -> str | None:
@@ -38,6 +26,8 @@ def building_worker_display_label(building_type: str) -> str | None:
 
 def building_worker_status_line(building_type: str, worker_status: str) -> str:
     label = building_worker_display_label(building_type)
+    worker_word = i18n.t("ui.common.worker")
+    status_label = localized_status(worker_status)
     if label is None:
-        return f"Worker: {worker_status}"
-    return f"Worker ({label}): {worker_status}"
+        return f"{worker_word}: {status_label}"
+    return f"{worker_word} ({label}): {status_label}"

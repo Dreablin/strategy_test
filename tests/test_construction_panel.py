@@ -2,8 +2,10 @@
 
 import pygame
 
+from game import i18n
 from game.buildings.lumber_camp import LumberCamp
 from game.construction import ConstructionSite
+from game.ui.building_panel import building_display_name
 from game.ui.construction_panel import ConstructionPanel
 
 
@@ -33,13 +35,36 @@ def test_construction_panel_builder_status_text_states() -> None:
     camp = LumberCamp(level=1, grid_pos=(10, 10))
 
     camp.construction_site = _site(delivered=0, required=2)
-    assert ConstructionPanel.builder_status(camp) == "Waiting for resources"
+    assert ConstructionPanel.builder_status(camp) == i18n.t("status.construction.waiting_resources")
 
     camp.construction_site = _site(delivered=2, required=2, started_ms=None)
-    assert ConstructionPanel.builder_status(camp) == "Waiting for builder"
+    assert ConstructionPanel.builder_status(camp) == i18n.t("status.construction.waiting_builder")
 
     camp.construction_site = _site(delivered=2, required=2, started_ms=0)
-    assert ConstructionPanel.builder_status(camp) == "Building..."
+    assert ConstructionPanel.builder_status(camp) == i18n.t("status.construction.building")
+
+
+def test_construction_panel_upgrading_title() -> None:
+    camp = LumberCamp(level=1, grid_pos=(10, 10))
+    camp.construction_site = _site(delivered=0, required=2, target_level=2)
+    assert ConstructionPanel.title_line(camp) == i18n.t("ui.construction.upgrading_to", level=2)
+
+
+def test_construction_panel_resource_delivery_line() -> None:
+    assert ConstructionPanel.resource_delivery_line("wood", 1, 3) == i18n.t(
+        "ui.construction.delivered",
+        label=i18n.t("resource.wood"),
+        delivered=1,
+        required=3,
+    )
+
+
+def test_construction_panel_localized_name_ru(use_locale) -> None:
+    with use_locale("ru"):
+        assert building_display_name("LUMBER_CAMP") == i18n.t("building.LUMBER_CAMP.name")
+        camp = LumberCamp(level=1, grid_pos=(0, 0))
+        camp.construction_site = _site(delivered=0, required=1)
+        assert ConstructionPanel.builder_status(camp) == i18n.t("status.construction.waiting_resources")
 
 
 def test_construction_panel_draw_smoke_with_progress_bar() -> None:

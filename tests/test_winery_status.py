@@ -28,7 +28,7 @@ def _setup():
 def test_winery_status_no_worker() -> None:
     winery, workers = _setup()
     status = production_status_for_building(workers, winery)
-    assert status == "No worker"
+    assert status == "no_worker"
 
 
 def test_winery_status_inactive() -> None:
@@ -38,7 +38,7 @@ def test_winery_status_inactive() -> None:
     assert winemaker is not None
     workers.reassign_all()
     status = production_status_for_building(workers, winery)
-    assert status == "Inactive"
+    assert status == "inactive"
 
 
 def test_winery_status_no_grapes() -> None:
@@ -48,7 +48,7 @@ def test_winery_status_no_grapes() -> None:
     workers.reassign_all()
     winemaker.state = "working"
     status = production_status_for_building(workers, winery)
-    assert status == "No grapes"
+    assert status == "no_grapes"
 
 
 def test_winery_status_output_full() -> None:
@@ -60,7 +60,7 @@ def test_winery_status_output_full() -> None:
     winery.add_wine(winery.output_capacity())
     winemaker.state = "working"
     status = production_status_for_building(workers, winery)
-    assert status == "Output full"
+    assert status == "output_full"
 
 
 def test_winery_status_processing() -> None:
@@ -71,7 +71,7 @@ def test_winery_status_processing() -> None:
     winery.add_grapes(winery.recipe_input_count())
     winemaker.state = "processing"
     status = production_status_for_building(workers, winery)
-    assert status == "Processing"
+    assert status == "processing"
 
 
 def test_winery_status_resting() -> None:
@@ -81,4 +81,4 @@ def test_winery_status_resting() -> None:
     workers.reassign_all()
     winemaker.state = "resting"
     status = production_status_for_building(workers, winery)
-    assert status == "Resting"
+    assert status == "resting"

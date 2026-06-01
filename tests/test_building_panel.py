@@ -2,12 +2,16 @@
 
 import pygame
 
+from game import i18n
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.school import School
+from game.buildings.statue import Statue
 from game.buildings.town_hall import TownHall
 from game.buildings.well import Well
 from game.ui.building_panel import (
     BuildingPanel,
+    building_display_name,
+    building_description,
     _upgrade_cost_lines,
     _upgrade_label,
     draw_upgrade_cost_tooltip,
@@ -44,15 +48,23 @@ def test_building_panel_upgrade_enabled_even_when_poor() -> None:
 
 def test_building_panel_upgrade_label_does_not_claim_free() -> None:
     building = LumberCamp(level=1, grid_pos=(4, 4))
-    assert _upgrade_label(building) == "Upgrade to Lv 2"
-    assert "Free" not in _upgrade_label(building)
+    assert _upgrade_label(building) == i18n.t("ui.building.upgrade_level", level=2)
+    assert i18n.t("ui.common.free") not in _upgrade_label(building)
 
 
-def test_building_panel_upgrade_tooltip_uses_next_level_cost() -> None:
+def test_building_panel_upgrade_label_for_statue_stage() -> None:
+    statue = Statue(level=1, grid_pos=(4, 4))
+    assert _upgrade_label(statue) == i18n.t(
+        "ui.statue.start_stage",
+        stage=i18n.t("statue.stage.2"),
+    )
+
+
+def test_building_panel_upgrade_tooltip_uses_construction_requirements() -> None:
     building = LumberCamp(level=1, grid_pos=(4, 4))
     lines = _upgrade_cost_lines(building)
-    assert lines[0] == "Upgrade cost:"
-    assert any(line.startswith("Wood:") for line in lines)
+    assert lines[0] == f"{i18n.t('ui.building.upgrade_cost')}:"
+    assert any(line.startswith(f"{i18n.t('resource.wood')}:") for line in lines)
 
 
 def test_building_panel_draws_upgrade_cost_tooltip_on_hover() -> None:
@@ -91,16 +103,50 @@ def test_layout_grows_when_production_status_line_is_present() -> None:
         surface,
         building,
         worker_assigned=True,
-        production_status="Resting",
+        production_status="resting",
     )
 
     assert with_status.frame.height > without_status.frame.height
 
 
 def test_worker_status_line_includes_building_worker_name() -> None:
-    assert worker_status_line(Well(level=2, grid_pos=(4, 4)), "assigned") == "Worker (Waterman): assigned"
-    assert worker_status_line(LumberCamp(level=1, grid_pos=(4, 4)), "on the way") == "Worker (Lumberjack): on the way"
+    from game.worker_status import localized_status
+
+    assert worker_status_line(Well(level=2, grid_pos=(4, 4)), "assigned") == (
+        f"{i18n.t('ui.common.worker')} ({i18n.t('worker.WATERMAN')}): {localized_status('assigned')}"
+    )
+    assert worker_status_line(LumberCamp(level=1, grid_pos=(4, 4)), "on_the_way") == (
+        f"{i18n.t('ui.common.worker')} ({i18n.t('worker.LUMBERJACK')}): {localized_status('on_the_way')}"
+    )
 
 
 def test_worker_status_line_omits_name_for_unstaffed_buildings() -> None:
-    assert worker_status_line(School(level=1, grid_pos=(4, 4)), "empty") == "Worker: empty"
+    from game.worker_status import localized_status
+
+    assert worker_status_line(School(level=1, grid_pos=(4, 4)), "empty") == (
+        f"{i18n.t('ui.common.worker')}: {localized_status('empty')}"
+    )
+
+
+def test_town_hall_localized_name_and_description_en() -> None:
+    assert building_display_name("TOWN_HALL") == i18n.t("building.TOWN_HALL.name")
+    assert building_description("TOWN_HALL") == i18n.t("building.TOWN_HALL.desc")
+
+
+def test_laboratory_localized_name_and_description_en(use_locale) -> None:
+    with use_locale("en"):
+        assert building_display_name("LABORATORY") == i18n.t("building.LABORATORY.name")
+        description = building_description("LABORATORY")
+        assert description == i18n.t("building.LABORATORY.desc")
+        assert "research" in description.lower()
+        assert "scientist" in description.lower()
+
+
+def test_statue_localized_name_and_description_en() -> None:
+    assert building_display_name("STATUE") == i18n.t("building.STATUE.name")
+    assert building_description("STATUE") == i18n.t("building.STATUE.desc")
+
+
+def test_town_hall_localized_name_ru(use_locale) -> None:
+    with use_locale("ru"):
+        assert building_display_name("TOWN_HALL") == i18n.t("building.TOWN_HALL.name")

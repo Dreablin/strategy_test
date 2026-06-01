@@ -8,6 +8,8 @@ import pygame
 
 from game.buildings.well import Well
 from game.ui.building_panel import BuildingPanel
+from game.ui.panel_i18n import active_toggle_label
+from game.ui.fonts import ui_font
 
 _PANEL_PAD = 16
 _BTN_H = 32
@@ -31,7 +33,7 @@ class WellPanel:
 
     @staticmethod
     def toggle_label(well: Well) -> str:
-        return "Active" if well.active else "Inactive"
+        return active_toggle_label(well.active)
 
     @staticmethod
     def layout(
@@ -88,7 +90,7 @@ class WellPanel:
             production_status=production_status,
         )
 
-        font = pygame.font.Font(None, 22)
+        font = ui_font(22)
         bar_y = layout.frame.top + _PANEL_PAD + 4 * 26 + 30
         bar_bg = pygame.Rect(layout.frame.left + _PANEL_PAD, bar_y, layout.frame.width - _PANEL_PAD * 2, 12)
         pygame.draw.rect(surface, (52, 58, 66), bar_bg, border_radius=4)

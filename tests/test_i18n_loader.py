@@ -5,8 +5,8 @@ from __future__ import annotations
 from game import i18n
 
 
-def test_default_locale_is_english() -> None:
-    assert i18n.get_locale() == "en"
+def test_default_locale_is_russian() -> None:
+    assert i18n.get_locale() == "ru"
 
 
 def test_set_locale_loads_explicit_russian() -> None:
@@ -18,9 +18,9 @@ def test_set_locale_loads_explicit_russian() -> None:
         i18n.set_locale("en")
 
 
-def test_t_returns_english_string_in_default_locale() -> None:
-    assert i18n.get_locale() == "en"
-    assert i18n.t("ui.button.start") == "Start"
+def test_t_returns_russian_string_in_default_locale() -> None:
+    assert i18n.get_locale() == "ru"
+    assert i18n.t("ui.button.start") == "Начать"
 
 
 def test_t_falls_back_to_english_from_ru_for_en_only_key() -> None:

@@ -88,14 +88,59 @@ def _dev_menu_entries() -> tuple[tuple[str, str], ...]:
     )
 
 
-def _fit_bar_label(text: str, max_width: int, color: tuple[int, int, int] = (220, 222, 230)) -> pygame.Surface:
+def _fit_bar_label(
+    text: str,
+    max_width: int,
+    color: tuple[int, int, int] = (220, 222, 230),
+    sizes: tuple[int, ...] = (22, 20, 18, 16),
+) -> pygame.Surface:
     """Render bottom-bar label text, stepping down font size until it fits."""
-    for size in (22, 20, 18, 16):
+    for size in sizes:
         font = ui_font(size)
         surf = font.render(text, True, color)
         if surf.get_width() <= max_width:
             return surf
     return surf
+
+
+def _scale_surface_to_fit(sprite: pygame.Surface, max_width: int, max_height: int) -> pygame.Surface:
+    """Scale a sprite proportionally to occupy as much of the target box as possible."""
+    source_w = max(1, sprite.get_width())
+    source_h = max(1, sprite.get_height())
+    target_w = max(1, max_width)
+    target_h = max(1, max_height)
+    scale = min(target_w / source_w, target_h / source_h)
+    size = (max(1, int(source_w * scale)), max(1, int(source_h * scale)))
+    return pygame.transform.smoothscale(sprite, size)
+
+
+def _draw_building_button(
+    surface: pygame.Surface,
+    btn: pygame.Rect,
+    asset_key: str,
+    label: str,
+    *,
+    level: int = 1,
+) -> None:
+    text = _fit_bar_label(label, max(1, btn.width - 8), sizes=(18, 16, 14, 12))
+    text_y = btn.top + 4
+    surface.blit(text, (btn.centerx - text.get_width() // 2, text_y))
+
+    image_top = text_y + text.get_height() + 2
+    image_area = pygame.Rect(
+        btn.left + 4,
+        image_top,
+        max(1, btn.width - 8),
+        max(1, btn.bottom - image_top - 4),
+    )
+    spr = _scale_surface_to_fit(building_sprite(asset_key, level), image_area.width, image_area.height)
+    surface.blit(
+        spr,
+        (
+            image_area.centerx - spr.get_width() // 2,
+            image_area.centery - spr.get_height() // 2,
+        ),
+    )
 
 
 def _button_rects(surface: pygame.Surface, count: int) -> list[pygame.Rect]:
@@ -227,10 +272,7 @@ class BottomBar:
                         (btn.centerx - text.get_width() // 2, btn.centery - text.get_height() // 2),
                     )
                     continue
-                spr = pygame.transform.smoothscale(building_sprite(asset_key, 1), (44, 34))
-                surface.blit(spr, (btn.centerx - spr.get_width() // 2, btn.bottom - 42))
-                text = _fit_bar_label(label, btn.width)
-                surface.blit(text, (btn.centerx - text.get_width() // 2, btn.top + 10))
+                _draw_building_button(surface, btn, asset_key, label)
             _draw_building_cost_tooltip(surface, hover_pos)
             return
 
@@ -250,13 +292,16 @@ class BottomBar:
             for rect, (key, label) in zip(rects, entries):
                 btn = rect.inflate(-6, -10)
                 pygame.draw.rect(surface, (36, 40, 48), btn, border_radius=6)
-                text = _fit_bar_label(label, btn.width)
-                surface.blit(text, (btn.centerx - text.get_width() // 2, btn.top + 10))
                 asset_key = social_assets.get(key.upper())
-                if asset_key is not None:
-                    level = 4 if asset_key == "statue" else 1
-                    spr = pygame.transform.smoothscale(building_sprite(asset_key, level), (40, 32))
-                    surface.blit(spr, (btn.centerx - spr.get_width() // 2, btn.bottom - 40))
+                if asset_key is None:
+                    text = _fit_bar_label(label, btn.width)
+                    surface.blit(
+                        text,
+                        (btn.centerx - text.get_width() // 2, btn.centery - text.get_height() // 2),
+                    )
+                    continue
+                level = 4 if asset_key == "statue" else 1
+                _draw_building_button(surface, btn, asset_key, label, level=level)
             _draw_building_cost_tooltip(surface, hover_pos)
             return
 
@@ -276,14 +321,14 @@ class BottomBar:
             for rect, (asset_key, label) in zip(rects, entries):
                 btn = rect.inflate(-6, -10)
                 pygame.draw.rect(surface, (36, 40, 48), btn, border_radius=6)
-                text = _fit_bar_label(label, btn.width)
-                surface.blit(
-                    text,
-                    (btn.centerx - text.get_width() // 2, btn.centery - text.get_height() // 2),
-                )
-                if asset_key:
-                    spr = pygame.transform.smoothscale(building_sprite(asset_key, 1), (40, 32))
-                    surface.blit(spr, (btn.centerx - spr.get_width() // 2, btn.bottom - 40))
+                if not asset_key:
+                    text = _fit_bar_label(label, btn.width)
+                    surface.blit(
+                        text,
+                        (btn.centerx - text.get_width() // 2, btn.centery - text.get_height() // 2),
+                    )
+                    continue
+                _draw_building_button(surface, btn, asset_key, label)
             _draw_building_cost_tooltip(surface, hover_pos)
             return
 
@@ -315,18 +360,7 @@ class BottomBar:
                     (btn.centerx - text.get_width() // 2, btn.centery - text.get_height() // 2),
                 )
                 continue
-            inner = rect.inflate(-12, -14)
-            spr = pygame.transform.smoothscale(
-                building_sprite(asset_key, 1),
-                (min(56, inner.width // 3), min(48, inner.height - 28)),
-            )
-            sx = inner.left + 8
-            sy = inner.centery - spr.get_height() // 2
-            surface.blit(spr, (sx, sy))
-            tx = sx + spr.get_width() + 8
-            name_s = _fit_bar_label(label, max(1, inner.right - tx))
-            ty_name = inner.top + 8
-            surface.blit(name_s, (tx, ty_name))
+            _draw_building_button(surface, btn, asset_key, label)
         _draw_building_cost_tooltip(surface, hover_pos)
 
     @staticmethod

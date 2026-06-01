@@ -116,7 +116,6 @@ class TownHallPanel:
                 text,
                 (layout.upgrade.centerx - text.get_width() // 2, layout.upgrade.centery - text.get_height() // 2),
             )
-            draw_upgrade_cost_tooltip(surface, town_hall, layout.upgrade)
 
         sf = layout.storage_frame
         pygame.draw.rect(surface, (36, 40, 52), sf, border_radius=10)
@@ -145,6 +144,7 @@ class TownHallPanel:
             res_label = resource_display_label(res_key)
             label_s = ui_font(18).render(res_label, True, (170, 176, 188))
             surface.blit(label_s, (cell.left + 8, cell.bottom - label_s.get_height() - 8))
+        draw_upgrade_cost_tooltip(surface, town_hall, layout.upgrade)
 
     @staticmethod
     def click_action(

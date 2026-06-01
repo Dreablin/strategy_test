@@ -148,6 +148,28 @@ def test_bottom_bar_statue_menu_uses_final_stage_sprite(monkeypatch) -> None:
     assert ("statue", 1) not in calls
 
 
+def test_bottom_bar_building_buttons_scale_sprites_to_available_height(monkeypatch) -> None:
+    surface = pygame.Surface((1200, 720))
+    BottomBar._menu = "food"  # noqa: SLF001
+    scale_sizes: list[tuple[int, int]] = []
+
+    def fake_building_sprite(asset_key: str, level: int):
+        return pygame.Surface((80, 40), pygame.SRCALPHA)
+
+    def fake_smoothscale(sprite: pygame.Surface, size: tuple[int, int]):
+        scale_sizes.append(size)
+        return pygame.Surface(size, pygame.SRCALPHA)
+
+    monkeypatch.setattr("game.ui.bottom_bar.building_sprite", fake_building_sprite)
+    monkeypatch.setattr(pygame.transform, "smoothscale", fake_smoothscale)
+
+    BottomBar.draw(surface)
+
+    assert scale_sizes
+    assert max(width for width, _height in scale_sizes) > 44
+    assert max(height for _width, height in scale_sizes) >= 56
+
+
 def test_bottom_bar_draws_cost_tooltip_on_building_hover() -> None:
     surface = pygame.Surface((1200, 720))
     surface.fill((10, 12, 16))

@@ -9,6 +9,7 @@ from game.buildings.town_hall import TownHall
 from game.buildings.registry import BuildingRegistry
 from game.config import town_hall_origin_tile
 from game.input import GameInput
+from game.ui import school_panel
 from game.ui.placement import PlacementController
 from game.ui.school_panel import SchoolPanel
 from game.workers import WorkerManager
@@ -124,6 +125,23 @@ def test_school_panel_draws_yellow_progress_for_active_training_slot() -> None:
             found_yellow = True
             break
     assert found_yellow
+
+
+def test_school_panel_upgrade_tooltip_draws_above_action_buttons(monkeypatch) -> None:
+    surface = pygame.Surface((900, 700))
+    school = School(level=1, grid_pos=(10, 10))
+    layout = SchoolPanel.layout(surface, school, worker_assigned=False)
+    marker = layout.demolish.center
+
+    def fake_tooltip(surface, building, upgrade_rect, *, hover_pos=None):
+        surface.set_at(marker, (20, 240, 40))
+        return pygame.Rect(marker[0], marker[1], 1, 1)
+
+    monkeypatch.setattr(school_panel, "draw_upgrade_cost_tooltip", fake_tooltip)
+
+    SchoolPanel.draw(surface, school, worker_assigned=False)
+
+    assert surface.get_at(marker)[:3] == (20, 240, 40)
 
 
 def test_school_panel_clicking_queue_slot_returns_cancel_action() -> None:

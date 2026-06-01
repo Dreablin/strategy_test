@@ -8,12 +8,17 @@ from pathlib import Path
 import pygame
 
 _FONT_PATH = Path(__file__).resolve().parents[3] / "assets" / "fonts" / "DejaVuSans.ttf"
+_TTF_SIZE_SCALE = 0.82
+
+
+def _scaled_ttf_size(size: int) -> int:
+    return max(8, int(round(int(size) * _TTF_SIZE_SCALE)))
 
 
 @lru_cache(maxsize=32)
 def ui_font(size: int) -> pygame.font.Font:
     if _FONT_PATH.is_file():
-        return pygame.font.Font(str(_FONT_PATH), size)
+        return pygame.font.Font(str(_FONT_PATH), _scaled_ttf_size(size))
     return pygame.font.Font(None, size)
 
 

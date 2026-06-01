@@ -133,12 +133,13 @@ def test_town_hall_localized_name_and_description_en() -> None:
     assert building_description("TOWN_HALL") == i18n.t("building.TOWN_HALL.desc")
 
 
-def test_laboratory_localized_name_and_description_en() -> None:
-    assert building_display_name("LABORATORY") == i18n.t("building.LABORATORY.name")
-    description = building_description("LABORATORY")
-    assert description == i18n.t("building.LABORATORY.desc")
-    assert "research" in description.lower()
-    assert "scientist" in description.lower()
+def test_laboratory_localized_name_and_description_en(use_locale) -> None:
+    with use_locale("en"):
+        assert building_display_name("LABORATORY") == i18n.t("building.LABORATORY.name")
+        description = building_description("LABORATORY")
+        assert description == i18n.t("building.LABORATORY.desc")
+        assert "research" in description.lower()
+        assert "scientist" in description.lower()
 
 
 def test_statue_localized_name_and_description_en() -> None:

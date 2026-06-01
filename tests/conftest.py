@@ -12,6 +12,7 @@ import pygame
 import pytest
 
 from game import i18n
+from game.config import SETTINGS
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -45,4 +46,4 @@ def use_locale():
 def _reset_i18n_locale_after_test() -> Iterator[None]:
     """Prevent locale state from leaking between tests."""
     yield
-    i18n.set_locale("en")
+    i18n.set_locale(str(SETTINGS.get("locale", "en")))

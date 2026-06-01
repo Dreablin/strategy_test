@@ -1,5 +1,5 @@
 {
-  "locale": "en",
+  "locale": "ru",
   "timing": {
     "tick_ms": 10000,
     "worker_tile_travel_ms": 300

@@ -253,7 +253,6 @@ class SchoolPanel:
                     layout.upgrade.centery - label.get_height() // 2,
                 ),
             )
-            draw_upgrade_cost_tooltip(surface, school, layout.upgrade)
         pygame.draw.rect(surface, (140, 48, 52), layout.demolish, border_radius=6)
         d = font.render(i18n.t("ui.button.demolish"), True, (255, 240, 240))
         surface.blit(d, (layout.demolish.centerx - d.get_width() // 2, layout.demolish.centery - d.get_height() // 2))
@@ -282,6 +281,7 @@ class SchoolPanel:
             label_text = small_font.render(label, True, fg)
             label_x = rect.centerx - label_text.get_width() // 2
             surface.blit(label_text, (label_x, rect.bottom - label_text.get_height() - 8))
+        draw_upgrade_cost_tooltip(surface, school, layout.upgrade)
 
     @staticmethod
     def click_action(

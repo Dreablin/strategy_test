@@ -107,6 +107,23 @@ def test_town_hall_panel_draw_includes_beef_cell_with_quantity() -> None:
     assert before.get_buffer().raw != after.get_buffer().raw
 
 
+def test_town_hall_upgrade_tooltip_draws_above_storage(monkeypatch) -> None:
+    surface = pygame.Surface((1280, 720))
+    town_hall = TownHall(level=1, grid_pos=(10, 10))
+    layout = TownHallPanel.layout(surface, town_hall, worker_assigned=False)
+    marker = layout.storage_frame.center
+
+    def fake_tooltip(surface, building, upgrade_rect, *, hover_pos=None):
+        surface.set_at(marker, (20, 240, 40))
+        return pygame.Rect(marker[0], marker[1], 1, 1)
+
+    monkeypatch.setattr(town_hall_panel, "draw_upgrade_cost_tooltip", fake_tooltip)
+
+    TownHallPanel.draw(surface, town_hall, worker_assigned=False)
+
+    assert surface.get_at(marker)[:3] == (20, 240, 40)
+
+
 def test_town_hall_panel_draw_includes_hide_cell_with_quantity() -> None:
     surface = pygame.Surface((1280, 720))
     town_hall = TownHall(level=1, grid_pos=(10, 10))

@@ -7,12 +7,13 @@ from game.ui.building_panel import building_description, building_display_name
 from game.ui.laboratory_panel import scientist_slots_summary
 
 
-def test_laboratory_building_panel_display_name_and_description() -> None:
-    assert building_display_name("LABORATORY") == i18n.t("building.LABORATORY.name")
-    description = building_description("LABORATORY")
-    assert description == i18n.t("building.LABORATORY.desc")
-    assert "research" in description.lower()
-    assert "scientist" in description.lower()
+def test_laboratory_building_panel_display_name_and_description(use_locale) -> None:
+    with use_locale("en"):
+        assert building_display_name("LABORATORY") == i18n.t("building.LABORATORY.name")
+        description = building_description("LABORATORY")
+        assert description == i18n.t("building.LABORATORY.desc")
+        assert "research" in description.lower()
+        assert "scientist" in description.lower()
 
 
 def test_laboratory_construction_panel_display_name() -> None:

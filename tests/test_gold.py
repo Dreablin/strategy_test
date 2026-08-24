@@ -16,6 +16,17 @@ def test_world_generates_one_gold_zone_near_map_edge() -> None:
     assert min(center[0], center[1], GRID_SIZE - 1 - center[0], GRID_SIZE - 1 - center[1]) <= 17
 
 
+def test_world_generates_single_gold_zone() -> None:
+    world = World(world_seed=7)
+    center = world._gold_center  # noqa: SLF001
+
+    assert center is not None
+    assert all(
+        max(abs(tile[0] - center[0]), abs(tile[1] - center[1])) <= 6
+        for tile in world.gold_tiles()
+    )
+
+
 def test_gold_deposits_have_blocking_core_and_buildable_fragments() -> None:
     world = World(world_seed=7)
 

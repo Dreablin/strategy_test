@@ -35,7 +35,36 @@
   "world": {
     "tile_w": 64,
     "tile_h": 32,
-    "grid_size": 110
+    "selected_map_size": "medium",
+    "map_sizes": {
+      "small": {
+        "grid_size": 70,
+        "resources": {
+          "stone_center_count": 4,
+          "iron_zone_count": 1,
+          "tree_grove_count": 5,
+          "scatter_tree_fraction": 0.015
+        }
+      },
+      "medium": {
+        "grid_size": 110,
+        "resources": {
+          "stone_center_count": 6,
+          "iron_zone_count": 2,
+          "tree_grove_count": 8,
+          "scatter_tree_fraction": 0.02
+        }
+      },
+      "large": {
+        "grid_size": 220,
+        "resources": {
+          "stone_center_count": 12,
+          "iron_zone_count": 4,
+          "tree_grove_count": 16,
+          "scatter_tree_fraction": 0.02
+        }
+      }
+    }
   },
   "window": {
     "size": [

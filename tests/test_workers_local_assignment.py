@@ -49,18 +49,17 @@ def test_reassign_all_prefers_closest_target_and_bounded_path_calls(monkeypatch)
     wm.add_worker(worker)
 
     calls = {"n": 0}
-    real = workers_mod.find_path_bfs
+    real = workers_mod.find_path_to_any_bfs
 
     def counted(*args, **kwargs):  # noqa: ANN002, ANN003
         calls["n"] += 1
         return real(*args, **kwargs)
 
-    monkeypatch.setattr(workers_mod, "find_path_bfs", counted)
+    monkeypatch.setattr(workers_mod, "find_path_to_any_bfs", counted)
     wm.reassign_all()
 
     assert worker.assigned_building is closest
     nearest_dist = min(_manhattan(worker.current_tile, building_center_tile(camp)) for camp in camps)
     assert _manhattan(worker.current_tile, building_center_tile(worker.assigned_building)) == nearest_dist
 
-    approach_count = len(wm._approach_tiles(closest))  # noqa: SLF001
-    assert calls["n"] <= 2 * approach_count
+    assert calls["n"] <= 2

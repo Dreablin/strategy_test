@@ -1,6 +1,6 @@
 """Failing tests pinning 4-direction BFS requirements (T131)."""
 
-from game.pathfinding import find_path_bfs
+from game.pathfinding import find_path_bfs, find_path_to_any_bfs
 from game.world import World
 
 
@@ -60,3 +60,22 @@ def test_4dir_reachability_and_start_equals_goal() -> None:
     assert path is not None
     assert path[0] == (1, 1)
     assert path[-1] == (1, 4)
+
+
+def test_multi_target_bfs_returns_nearest_reachable_goal() -> None:
+    world = _empty_world()
+    path = find_path_to_any_bfs(world, (0, 0), {(10, 10), (2, 1)}, blocked=set())
+
+    assert path is not None
+    assert path[0] == (0, 0)
+    assert path[-1] == (2, 1)
+    assert len(path) == 4
+
+
+def test_multi_target_bfs_ignores_blocked_goal_candidates() -> None:
+    world = _empty_world()
+    path = find_path_to_any_bfs(world, (0, 0), {(1, 0), (3, 0)}, blocked={(1, 0)})
+
+    assert path is not None
+    assert path[-1] == (3, 0)
+    assert (1, 0) not in path

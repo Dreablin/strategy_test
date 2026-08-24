@@ -6,7 +6,7 @@ import random
 from typing import Any
 
 from game.buildings.base import Building
-from game.pathfinding import find_path_bfs
+from game.pathfinding import find_path_bfs, find_path_to_any_bfs
 from game.worker_constants import (
     CHOP_DURATION_MS,
     FORESTER_PLANT_RADIUS,
@@ -502,14 +502,13 @@ class WorkerGatheringMixin:
             restored_tree = world.tree_at(*worker.current_tile)
             if restored_tree is not None:
                 world._trees.pop(worker.current_tile, None)  # noqa: SLF001
-        best_path: list[tuple[int, int]] | None = None
         try:
-            for tile in self._approach_tiles(worker.assigned_building):
-                path = find_path_bfs(world, worker.current_tile, tile, blocked)
-                if path is None:
-                    continue
-                if best_path is None or len(path) < len(best_path):
-                    best_path = path
+            best_path = find_path_to_any_bfs(
+                world,
+                worker.current_tile,
+                self._approach_tiles(worker.assigned_building),
+                blocked,
+            )
         finally:
             if restored_tree is not None and world.tree_at(*worker.current_tile) is None:
                 world._trees[worker.current_tile] = restored_tree  # noqa: SLF001

@@ -44,7 +44,7 @@ def test_smoke_phase13_paths_calls_and_render() -> None:
 
     calls = {"n": 0}
     steps: list[tuple[tuple[int, int], tuple[int, int]]] = []
-    real = workers_mod.find_path_bfs
+    real = workers_mod.find_path_to_any_bfs
 
     def counted(*args, **kwargs):  # noqa: ANN002, ANN003
         calls["n"] += 1
@@ -53,14 +53,14 @@ def test_smoke_phase13_paths_calls_and_render() -> None:
             steps.extend((a, b) for a, b in zip(path, path[1:]))
         return path
 
-    workers_mod.find_path_bfs = counted
+    workers_mod.find_path_to_any_bfs = counted
     try:
         for _ in range(60_000 // 16):
             now_ms["t"] += 16
             manager.reassign_all()
             manager.update(now_ms["t"])
     finally:
-        workers_mod.find_path_bfs = real
+        workers_mod.find_path_to_any_bfs = real
 
     assert camp is not None and mine is not None
     assert steps, "expected at least one path step recorded"

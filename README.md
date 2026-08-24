@@ -1,7 +1,23 @@
 # Isometric Strategy
 
-A lightweight isometric economy strategy game built with Python + Pygame.
-Start immediately, place buildings, hire workers, and grow resource income.
+A local experiment in fully automated AI-agent development.
+
+This repository is an educational project exploring how far AI coding agents can
+go when working in an autonomous loop with a Spec Driven Development (SDD)
+workflow. The game is a lightweight isometric economy strategy prototype built
+with Python + Pygame, but the main purpose of the repository is to study the
+engineering process: turning specs into implementation, tests, assets, iteration
+notes, and runnable builds.
+
+100% of the code and game assets in this repository were generated
+automatically through the SDD process. Development is still in progress, so the
+project should be read as an active technical experiment rather than a finished
+commercial game.
+
+The goal is to keep the experiment practical and inspectable: a recruiter or
+engineer should be able to review the repository, run the project locally, and
+see a concrete example of AI-assisted autonomous development with tests,
+configuration, UI iteration, and game-domain behavior evolving together.
 
 ## Run without polluting your system
 
@@ -37,18 +53,3 @@ Or run PyInstaller directly:
 - `LMB`: place selected building, or open a building panel.
 - `RMB` / `Esc`: cancel placement or close an open panel.
 - Building panels now include active toggles for camp/mine workflows and live storage counters.
-
-## Gameplay summary
-
-- Start with a Town Hall and initial resources.
-- Build production buildings (Lumber Camp, Stone Mine, Iron Mine, Farm).
-- Hire workers from the Town Hall panel; only staffed buildings produce.
-- Stonecutters run an active mine cycle (walk, mine, return, deposit) and can be toggled on/off per mine.
-- Producing buildings use internal storage caps, so full storage pauses new production until space is freed.
-- Worker move/gather speed gains +5% per building level above 1 while assigned to that building.
-- Every 10 seconds, staffed buildings add `5 x level` of their resource.
-- Upgrade buildings to increase production; demolish to replan your layout.
-
-## Performance
-
-Workers now move only in four directions (N/E/S/W), rendering is bounded to the camera-visible tile range instead of full-grid scans, and worker dispatch uses cached blocked-tile sets; together these changes keep frame cost tied to viewport activity rather than total map area and make maps around 10x the default area practical without changing gameplay rules.

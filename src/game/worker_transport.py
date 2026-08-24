@@ -6,7 +6,7 @@ from typing import Any
 
 from game.buildings.base import Building
 from game.buildings.town_hall import TownHall
-from game.pathfinding import find_path_bfs
+from game.pathfinding import find_path_to_any_bfs
 from game.transport_tasks import (
     _processor_accepts_resource,
     _water_amount,
@@ -358,13 +358,12 @@ class WorkerTransportMixin:
             return False
         blocked = world.blocked_tiles()
         blocked.discard(worker.current_tile)
-        best_path: list[tuple[int, int]] | None = None
-        for tile in self._approach_tiles(building):
-            path = find_path_bfs(world, worker.current_tile, tile, blocked)
-            if path is None:
-                continue
-            if best_path is None or len(path) < len(best_path):
-                best_path = path
+        best_path = find_path_to_any_bfs(
+            world,
+            worker.current_tile,
+            self._approach_tiles(building),
+            blocked,
+        )
         if best_path is None:
             return False
         worker.start_move(best_path, started_ms=now_ms)

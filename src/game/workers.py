@@ -12,7 +12,7 @@ from typing import Any
 from game.buildings.base import Building
 from game.buildings.school import School
 from game.construction import complete_construction
-from game.pathfinding import find_path_bfs
+from game.pathfinding import find_path_to_any_bfs
 from game.transport_tasks import (
     bakery_input_transport_tasks,
     bakery_output_transport_tasks,
@@ -471,13 +471,12 @@ class WorkerManager(
             # Workers may start on an occupied spawn tile (e.g., Town Hall center).
             blocked.discard(worker.current_tile)
             for target in targets:
-                best_path: list[tuple[int, int]] | None = None
-                for tile in self._approach_tiles(target):
-                    path = find_path_bfs(world, worker.current_tile, tile, blocked)
-                    if path is None:
-                        continue
-                    if best_path is None or len(path) < len(best_path):
-                        best_path = path
+                best_path = find_path_to_any_bfs(
+                    world,
+                    worker.current_tile,
+                    self._approach_tiles(target),
+                    blocked,
+                )
                 if best_path is None:
                     continue
                 worker.assigned_building = target

@@ -4,7 +4,7 @@ from game.buildings.iron_mine import IronMine
 from game.buildings.lumber_camp import LumberCamp
 from game.buildings.registry import BuildingRegistry
 from game.buildings.town_hall import TownHall
-from game.config import town_hall_footprint_tiles, town_hall_origin_tile
+from game.config import WORLD_IRON_ZONE_COUNT, town_hall_footprint_tiles, town_hall_origin_tile
 from game.iron import IronDeposit
 from game.world import World
 
@@ -18,9 +18,9 @@ def test_world_generates_two_iron_zones_with_near_and_far_centers() -> None:
     world = World(world_seed=7)
     centers = list(world._iron_centers)  # noqa: SLF001
 
-    assert len(centers) == 2
+    assert len(centers) == WORLD_IRON_ZONE_COUNT
     assert _min_chebyshev_to_town_hall(centers[0]) == 30
-    assert _min_chebyshev_to_town_hall(centers[1]) > 30
+    assert any(_min_chebyshev_to_town_hall(center) > 30 for center in centers[1:])
 
 
 def test_iron_deposits_have_blocking_core_and_buildable_fragments() -> None:

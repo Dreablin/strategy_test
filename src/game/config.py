@@ -77,7 +77,18 @@ SATIETY_DRAIN_PER_GAME_SECOND = int(SETTINGS["workers"]["satiety"]["drain_per_ga
 HUNGER_SATIETY_THRESHOLD = int(SETTINGS["workers"]["satiety"]["hunger_threshold"])
 TILE_W = int(SETTINGS["world"]["tile_w"])
 TILE_H = int(SETTINGS["world"]["tile_h"])
-GRID_SIZE = int(SETTINGS["world"]["grid_size"])
+
+WORLD_MAP_SIZES = dict(SETTINGS["world"]["map_sizes"])
+SELECTED_MAP_SIZE = str(SETTINGS["world"].get("selected_map_size", "medium"))
+if SELECTED_MAP_SIZE not in WORLD_MAP_SIZES:
+    raise ValueError(f"Unknown selected map size: {SELECTED_MAP_SIZE}")
+SELECTED_MAP_SETTINGS = dict(WORLD_MAP_SIZES[SELECTED_MAP_SIZE])
+WORLD_RESOURCE_SETTINGS = dict(SELECTED_MAP_SETTINGS.get("resources", {}))
+GRID_SIZE = int(SELECTED_MAP_SETTINGS["grid_size"])
+WORLD_STONE_CENTER_COUNT = int(WORLD_RESOURCE_SETTINGS["stone_center_count"])
+WORLD_IRON_ZONE_COUNT = int(WORLD_RESOURCE_SETTINGS["iron_zone_count"])
+WORLD_TREE_GROVE_COUNT = int(WORLD_RESOURCE_SETTINGS["tree_grove_count"])
+WORLD_SCATTER_TREE_FRACTION = float(WORLD_RESOURCE_SETTINGS["scatter_tree_fraction"])
 
 
 def building_setting(type_tag: str, *keys: str) -> object:

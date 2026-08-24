@@ -20,10 +20,16 @@ preserving these invariants over literal old phase wording:
   settings, and housing capacity there instead of duplicating those values in
   Python code or `game_settings.json`.
 - Global game-wide settings belong in `game_settings.json`. Examples:
-  window/tile/world sizes, initial Town Hall warehouse, global worker satiety
-  max/drain/hunger threshold, worker tier metadata, and Town Hall level gates
-  for buildings/hiring. Do not move building-specific balance into
+  active `locale`, window/tile/world sizes, initial Town Hall warehouse, global
+  worker satiety max/drain/hunger threshold, worker tier metadata, and Town Hall
+  level gates for buildings/hiring. Do not move building-specific balance into
   `game_settings.json`.
+- All player-facing text is localized through `game.i18n` and locale JSON files
+  under `src/game/settings/locales/`. Never hard-code displayed strings in UI,
+  building, worker, or research code; add a key to **every** locale file and look
+  it up with `i18n.t(key, **params)`. Display copy (names, descriptions, effect
+  text, stage names, status labels) is **not** balance data and must not live in
+  gameplay/balance JSON. See `localization_guide.md` for the full contract.
 - Resources move physically through internal building storages, Town Hall
   warehouse, and carrier transport tasks. Do not reintroduce passive wallet
   production.
@@ -54,8 +60,44 @@ preserving these invariants over literal old phase wording:
 
 ### F-WIN — Window & Lifecycle
 
-- On launch, open one window titled `"Isometric Strategy"` at 1280×720 or larger within monitor bounds. Loop targets 60 FPS.
+- On launch, open one window at 1280×720 or larger within monitor bounds. Loop targets 60 FPS. The window caption is localized via the `ui.window.caption` locale key (English default `"Isometric Strategy"`), not a hard-coded literal.
 - On quit, call `pygame.quit()` and exit cleanly with no background work left running.
+
+### F-I18N — Localization (text & languages)
+
+- **F-I18N-01 (MUST):** Every player-facing string is resolved at render time
+  through `game.i18n.t(key, **params)`. UI, building, worker, research, and status
+  modules must not embed displayed literals; they call `t()` (directly or through
+  helpers like `building_display_name`, `worker_display_label`,
+  `resource_display_label`, and `worker_status.localized_status`).
+- **F-I18N-02 (MUST):** Translations live in one flat JSON file per language under
+  `src/game/settings/locales/<code>.json` (currently `en.json` and `ru.json`).
+  Keys are flat dotted strings (e.g. `ui.button.start`, `resource.wood`,
+  `building.TOWN_HALL.name`, `status.ready`, `research.1.name`,
+  `statue.stage.1`). Values use Python `str.format` `{param}` placeholders. Add
+  new keys to **all** locale files in the same change.
+- **F-I18N-03 (MUST):** The active locale comes from `locale` in
+  `game_settings.json` (default `ru`). `i18n.get_locale()` / `i18n.set_locale(code)`
+  read and switch it at runtime; locale files load lazily and are cached by code.
+- **F-I18N-04 (MUST):** Lookup fallback chain for `t(key)`: active locale → `en`
+  (if active locale is not English and the key is missing/blank) → the raw key id
+  returned unchanged (a loud failure for tests/dev). A missing `{param}` returns
+  the unformatted template instead of raising.
+- **F-I18N-05 (MUST):** Locale files contain **only** display copy. Balance and
+  gameplay data (costs, points, timings, layout columns, dependency ids, footprints,
+  tiers, gates) stay in `game_settings.json` and `src/game/settings/**`. Stable ids
+  and enums (building/worker type tags, resource ids, action tokens) never move to
+  locales; only their displayed text does.
+- **F-I18N-06 (MUST):** All locales must share an identical key set with non-empty
+  values; `tests/test_locale_completeness.py` enforces this. Russian (and other
+  longer-script) copy must fit compact UI controls via the shared fitted-font
+  helpers; `tests/test_locale_ru_layout.py` guards overflow. Tests switch locale
+  with the `use_locale` fixture and reset to the configured locale after each test.
+- **F-I18N-07 (MUST):** UI fonts must be Cyrillic-capable (and generally
+  non-ASCII-capable). UI code uses the shared font helper (`ui_font` /
+  `render_fitted_ui_text` in `src/game/ui/fonts.py`); do not use `pygame.font.Font(None, …)`
+  in UI code. Adding a new language requires no code changes beyond providing its
+  locale JSON (and, if its script is wider, layout smoke tests).
 
 ### F-RES — Resources
 
@@ -113,7 +155,7 @@ preserving these invariants over literal old phase wording:
 
 - **F-BLD-01 (MUST):** Current building types include `TOWN_HALL`, `LUMBER_CAMP`, `STONE_MINE`, `IRON_MINE`, `FARM`, `FIELD`, `FORESTER_HUT`, `SAWMILL`, `MILL`, `BAKERY`, `CANTEEN`, `RESTAURANT`, `WELL`, `SCHOOL`, `HOUSE`, `CHICKEN_FARM`, `COW_FARM`, `VINEYARD_FARM`, `VINEYARD`, `WINERY`, `LABORATORY`, and `STATUE`. Each type must be registered consistently in building class, config/settings, placement map, assets folder mapping, panels where needed, and bottom-bar menu.
 - **F-BLD-02 (MUST):** Standard buildings use a **2×2** footprint unless noted. Exceptions include `TOWN_HALL` as **3×3** and crop/plot tiles such as `FIELD` and `VINEYARD` as **1×1**. If a building has a non-standard footprint, define it through the building class/settings pattern and keep placement, rendering, and tests aligned.
-- **F-BLD-03 (MUST):** Most buildings can reach level **10** when construction requirements exist. Exceptions: `FIELD` and `VINEYARD` are crop/plot-state driven and not upgraded; `TOWN_HALL` is unique, cannot be demolished or built from the menu, and can upgrade levels 1..10. `WELL` follows the same level **1..10** construction/upgrade pattern as other upgradable resource buildings when configured in `well.json`. `STATUE` is the unique mission monument and has exactly four named stages backed by levels 1..4.
+- **F-BLD-03 (MUST):** Most buildings can reach level **10** when construction requirements exist. Exceptions: `FIELD` and `VINEYARD` are crop/plot-state driven and not upgraded; `TOWN_HALL` is unique, cannot be demolished or built from the menu, and can upgrade levels 1..10. `WELL` follows the same level **1..10** construction/upgrade pattern as other upgradable resource buildings when configured in `well.json`. `STATUE` is the unique mission monument and has exactly four named stages backed by levels 1..4; stage names are localized via `statue.stage.<n>` keys (n = 1..4).
 - **F-BLD-04 (MUST):** Placement order creates a construction site, not an instant finished building, for configured buildings. There is no wallet-spend gate at click time, but construction/upgrades require resource delivery and build time through `ConstructionSite`.
 - **F-BLD-05 (MUST):** Each new completed work building starts with **no assigned worker**. `WorkerManager.reassign_all()` may assign an idle compatible worker after construction completes.
 - **F-BLD-06 (MUST):** Production model is defined by **F-PROD** (worker-cycle driven, storage-constrained). Do not use `Building.income()` for active resources.
@@ -167,7 +209,7 @@ preserving these invariants over literal old phase wording:
 - **F-UPG-03 (MUST):** Building level effects for staffed workers come from that building's JSON under `worker_effects.by_level`. Effects apply only while the worker is assigned to that building and are additive with other bonuses.
 - **F-UPG-04 (MUST):** Town Hall is **unique** (single instance, no demolish) **and** may **upgrade** levels 1..10 for tech and housing unlocks; only the no-second-TH rule is absolute.
 - **F-UPG-05 (MUST):** `SCHOOL` cannot be upgraded while its training queue is non-empty. The upgrade button becomes enabled again as soon as the queue empties, whether by completed training or cancellation.
-- **F-UPG-06 (MUST):** `STATUE` uses the normal construction/upgrade machinery internally, but player-facing UI must present its levels as named mission stages rather than generic levels. Its stage names live in `statue.json`.
+- **F-UPG-06 (MUST):** `STATUE` uses the normal construction/upgrade machinery internally, but player-facing UI must present its levels as named mission stages rather than generic levels. Its level balance (cost/build time per level 1..4) lives in `statue.json`; the player-facing stage names are localized via `statue.stage.<n>` keys, not stored in `statue.json`.
 
 ### F-MISSION — Mission Goal
 
@@ -217,7 +259,7 @@ preserving these invariants over literal old phase wording:
 ### F-RESEARCH — Laboratory, Scientist, And Research
 
 - **F-RESEARCH-01 (MUST):** `LABORATORY` is a unique Social building. Only one Laboratory may exist or be under construction at a time. A completed Laboratory unlocks the top-bar Research button; demolishing the last completed Laboratory hides/closes the Research screen.
-- **F-RESEARCH-02 (MUST):** Research definitions are data-driven from `src/game/settings/research.json`. Each research entry defines identity/display text, player-facing effect text, tier row, column position, dependency ids, resource cost, point requirement, and image key. Do not hard-code costs, point requirements, layout columns, effect tooltip copy, or normal dependency chains in Python.
+- **F-RESEARCH-02 (MUST):** Research definitions are data-driven from `src/game/settings/research.json`. Each research entry defines identity (`id`), tier row, column position, dependency ids, resource cost, point requirement, image key, and optional `worker_effects`. Display text (name, description, effect text) is **localized**: it is resolved from locale keys `research.<id>.name` / `.desc` / `.effect`, with any literal text in `research.json` treated only as a dev-only fallback. Do not hard-code costs, point requirements, layout columns, normal dependency chains, or effect tooltip copy in Python; put balance in `research.json` and display copy in the locale files.
 - **F-RESEARCH-03 (MUST):** Technology-tier unlocks are represented as research entries in the same research JSON. Laboratory level gates which technology tiers are startable through `src/game/settings/buildings/laboratory.json`; keep those level gates in the Laboratory settings, not in research JSON or code.
 - **F-RESEARCH-04 (MUST):** Only one research can be active at a time. Player-started research cannot be cancelled through normal UI. Other researches' Start buttons are disabled while a research is active; completed researches cannot be restarted.
 - **F-RESEARCH-05 (MUST):** Starting a research initializes **dynamic local input storage** on the Laboratory matching that research's resource cost. This storage exists only for the active research. The Laboratory panel shows real delivered amounts only; queued or in-flight carrier amounts are planning data and must not be displayed as stored.
@@ -228,7 +270,7 @@ preserving these invariants over literal old phase wording:
 - **F-RESEARCH-10 (MUST):** `SCIENTIST` is an advanced worker trained through the School's Advanced tab. Hungry Scientists use the same dining tier rules as other advanced workers: they go to a reachable `RESTAURANT` only when an unreserved elite meal and diner slot are available, and they stop contributing research while dining.
 - **F-RESEARCH-11 (MUST):** The Laboratory cannot be upgraded while research is active. Starting an upgrade when allowed uses normal construction flow; Scientists are paused/released while the Laboratory is under construction and must walk back before contributing again after completion.
 - **F-RESEARCH-12 (MUST):** Completing a research marks its id completed in `ResearchState`, clears the active research, and clears the Laboratory's dynamic input storage. Demolishing the Laboratory during active research cancels the active research, clears its dynamic input storage, releases Scientists, and invalidates related research deliveries.
-- **F-RESEARCH-13 (MUST):** Research UI is full-screen and driven by the same definitions and `ResearchState`: tier rows, tile images, completed/in-progress visual state, disabled Start buttons, and tooltips with requirements plus `Effect: ...` text from research JSON. Research images are disk-first from `assets/research/<image_key>.png` with procedural fallback.
+- **F-RESEARCH-13 (MUST):** Research UI is full-screen and driven by the same definitions and `ResearchState`: tier rows, tile images, completed/in-progress visual state, disabled Start buttons, and tooltips with requirements plus localized `Effect: ...` copy (from the `research.<id>.effect` locale key). Research images are disk-first from `assets/research/<image_key>.png` with procedural fallback.
 - **F-RESEARCH-14 (MUST):** Completed researches may apply worker-characteristic effects through the explicit `worker_effects.by_type` schema in `research.json`. Effects use the same worker characteristic keys as other worker bonuses and are applied by completed research id. Gameplay effects outside worker characteristics still require an explicit schema/design before implementation; do not hide ad-hoc mutations behind research ids.
 
 ### F-HOUSE — House (social)

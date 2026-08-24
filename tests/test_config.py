@@ -33,12 +33,31 @@ def test_global_config_values_are_loaded_from_game_settings_json() -> None:
     assert config.HUNGER_SATIETY_THRESHOLD == settings["workers"]["satiety"]["hunger_threshold"]
     assert config.TILE_W == settings["world"]["tile_w"]
     assert config.TILE_H == settings["world"]["tile_h"]
-    assert config.GRID_SIZE == settings["world"]["grid_size"]
+    selected = settings["world"]["selected_map_size"]
+    selected_map = settings["world"]["map_sizes"][selected]
+    assert config.SELECTED_MAP_SIZE == selected
+    assert config.GRID_SIZE == selected_map["grid_size"]
+    assert config.WORLD_RESOURCE_SETTINGS == selected_map["resources"]
     assert config.WINDOW_SIZE == tuple(settings["window"]["size"])
     assert config.MAX_LEVEL == settings["levels"]["max_level"]
     assert config.TOWN_HALL_STARTING_WAREHOUSE == settings["warehouse_bootstrap"]["town_hall"]
     assert config.TOWN_HALL_MIN_LEVEL_FOR_BUILDING == settings["gates"]["building_min_town_hall_level"]
     assert config.TOWN_HALL_MIN_LEVEL_FOR_HIRE == settings["gates"]["hire_min_town_hall_level"]
+
+
+def test_world_map_size_presets_are_available_from_game_settings_json() -> None:
+    settings = _game_settings()
+    presets = settings["world"]["map_sizes"]
+
+    assert settings["world"]["selected_map_size"] == "medium"
+    assert set(presets) == {"small", "medium", "large"}
+    assert presets["small"]["grid_size"] == 70
+    assert presets["medium"]["grid_size"] == 110
+    assert presets["large"]["grid_size"] == 220
+    assert presets["small"]["resources"]["stone_center_count"] < presets["medium"]["resources"]["stone_center_count"]
+    assert presets["medium"]["resources"]["stone_center_count"] < presets["large"]["resources"]["stone_center_count"]
+    assert presets["small"]["resources"]["tree_grove_count"] < presets["medium"]["resources"]["tree_grove_count"]
+    assert presets["medium"]["resources"]["tree_grove_count"] < presets["large"]["resources"]["tree_grove_count"]
 
 
 def test_building_settings_helpers_read_per_building_json() -> None:

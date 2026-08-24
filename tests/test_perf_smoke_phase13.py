@@ -64,7 +64,7 @@ def test_phase13_perf_gate_regression(monkeypatch) -> None:
             assert manager.hire("STONECUTTER") is not None
 
         counters = {"path": 0, "occupied": 0, "screen": 0}
-        real_path = workers_mod.find_path_bfs
+        real_path = workers_mod.find_path_to_any_bfs
         real_occupied = world_mod.World.is_occupied
         real_screen = render_mod.world_to_screen
 
@@ -80,7 +80,7 @@ def test_phase13_perf_gate_regression(monkeypatch) -> None:
             counters["screen"] += 1
             return real_screen(gx, gy)
 
-        monkeypatch.setattr(workers_mod, "find_path_bfs", counted_path)
+        monkeypatch.setattr(workers_mod, "find_path_to_any_bfs", counted_path)
         monkeypatch.setattr(world_mod.World, "is_occupied", counted_occupied)
         monkeypatch.setattr(render_mod, "world_to_screen", counted_screen)
 

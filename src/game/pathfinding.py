@@ -78,3 +78,65 @@ def find_path_bfs(
             frontier.append(nxt)
 
     return None
+
+
+def find_path_to_any_bfs(
+    world: World,
+    start: tuple[int, int],
+    goals: set[tuple[int, int]] | list[tuple[int, int]] | tuple[tuple[int, int], ...],
+    blocked: set[tuple[int, int]],
+) -> list[tuple[int, int]] | None:
+    """Return inclusive path to the nearest reachable goal, or ``None``."""
+    goal_set = set(goals)
+    if not goal_set:
+        return None
+    if not world.is_in_grass(*start):
+        return None
+    if start in goal_set:
+        return [start]
+
+    walkable_goals = {
+        goal
+        for goal in goal_set
+        if world.is_in_grass(*goal)
+        and goal not in blocked
+        and not world.is_tree_blocking(*goal)
+        and not world.is_stone_blocking(*goal)
+    }
+    if not walkable_goals:
+        return None
+    if (
+        world.is_tree_blocking(*start)
+        or world.is_stone_blocking(*start)
+        or start in blocked
+    ):
+        return None
+
+    def is_walkable(tile: tuple[int, int]) -> bool:
+        x, y = tile
+        return (
+            world.is_in_grass(x, y)
+            and tile not in blocked
+            and not world.is_tree_blocking(x, y)
+            and not world.is_stone_blocking(x, y)
+        )
+
+    frontier: deque[tuple[int, int]] = deque([start])
+    came_from: dict[tuple[int, int], tuple[int, int] | None] = {start: None}
+
+    while frontier:
+        current = frontier.popleft()
+        if current in walkable_goals:
+            return _reconstruct_path(came_from, current)
+
+        cx, cy = current
+        for dx, dy in _NEIGHBORS_4:
+            nxt = (cx + dx, cy + dy)
+            if nxt in came_from:
+                continue
+            if not is_walkable(nxt):
+                continue
+            came_from[nxt] = current
+            frontier.append(nxt)
+
+    return None

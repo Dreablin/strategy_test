@@ -2,7 +2,13 @@
 
 import pytest
 
-from game.config import GRID_SIZE, town_hall_footprint_tiles
+from game.config import (
+    GRID_SIZE,
+    WORLD_SCATTER_TREE_FRACTION,
+    WORLD_STONE_CENTER_COUNT,
+    WORLD_TREE_GROVE_COUNT,
+    town_hall_footprint_tiles,
+)
 from game.world import World
 
 
@@ -72,7 +78,7 @@ def test_partial_footprint_still_occupied_after_partial_free() -> None:
 
 def test_stone_generation_six_centers_one_on_th_chebyshev_ring_twenty() -> None:
     world = World()
-    assert len(world._stone_centers) == 6  # noqa: SLF001
+    assert len(world._stone_centers) == WORLD_STONE_CENTER_COUNT  # noqa: SLF001
     town_hall_tiles = town_hall_footprint_tiles()
     ring_twenty = [
         (cx, cy)
@@ -120,7 +126,7 @@ def test_stone_generation_is_reproducible_with_explicit_world_seed() -> None:
 def test_tree_generation_ten_grove_centers_including_priority_th_rings() -> None:
     world = World(world_seed=2)
     centers = world._tree_centers  # noqa: SLF001
-    assert len(centers) == 10
+    assert len(centers) == WORLD_TREE_GROVE_COUNT + 2
     town_hall_tiles = town_hall_footprint_tiles()
 
     def min_th(cx: int, cy: int) -> int:
@@ -147,5 +153,5 @@ def test_tree_generation_is_reproducible_with_explicit_world_seed() -> None:
 
 def test_scatter_tree_count_matches_two_percent_floor() -> None:
     world = World()
-    budget = int(GRID_SIZE * GRID_SIZE * 0.02)
+    budget = int(GRID_SIZE * GRID_SIZE * WORLD_SCATTER_TREE_FRACTION)
     assert world._scatter_trees_placed == budget  # noqa: SLF001

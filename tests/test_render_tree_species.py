@@ -20,7 +20,8 @@ def _dot(color: tuple[int, int, int]) -> pygame.Surface:
 def test_draw_trees_chooses_sprite_by_species_and_stage(monkeypatch) -> None:
     world = World(world_seed=0)
     world._trees.clear()  # noqa: SLF001
-    world._trees[(55, 55)] = Tree(stage=TreeStage.ADULT, species=2)  # noqa: SLF001
+    center = (world.width // 2, world.height // 2)
+    world._trees[center] = Tree(stage=TreeStage.ADULT, species=2)  # noqa: SLF001
     surface = pygame.Surface((1280, 720), pygame.SRCALPHA)
 
     calls: list[tuple[int, str]] = []
@@ -42,7 +43,8 @@ def test_draw_trees_chooses_sprite_by_species_and_stage(monkeypatch) -> None:
 def test_species_missing_asset_falls_back_without_crash(monkeypatch) -> None:
     world = World(world_seed=0)
     world._trees.clear()  # noqa: SLF001
-    world._trees[(55, 55)] = Tree(stage=TreeStage.MATURE, species=1)  # noqa: SLF001
+    center = (world.width // 2, world.height // 2)
+    world._trees[center] = Tree(stage=TreeStage.MATURE, species=1)  # noqa: SLF001
     surface = pygame.Surface((1280, 720), pygame.SRCALPHA)
 
     calls: list[tuple[int, str]] = []

@@ -8,7 +8,14 @@ import random
 import secrets
 from typing import Any, cast
 
-from game.config import GRID_SIZE, town_hall_footprint_tiles
+from game.config import (
+    GRID_SIZE,
+    WORLD_IRON_ZONE_COUNT,
+    WORLD_SCATTER_TREE_FRACTION,
+    WORLD_STONE_CENTER_COUNT,
+    WORLD_TREE_GROVE_COUNT,
+    town_hall_footprint_tiles,
+)
 from game.gold import GoldDeposit
 from game.iron import IronDeposit
 from game.stones import Stone
@@ -20,7 +27,7 @@ _GOLD_CORE_RADIUS_MAX = 2
 _GOLD_FRAGMENT_RING_MIN = 2
 _GOLD_FRAGMENT_RING_MAX = 4
 _GOLD_FRAGMENT_PROBABILITY = 0.52
-_IRON_ZONE_COUNT = 2
+_IRON_ZONE_COUNT = WORLD_IRON_ZONE_COUNT
 _IRON_NEAR_TH_RING_CHEB = 30
 _IRON_FAR_MIN_DISTANCE_FROM_TOWN_HALL = 31
 _IRON_CORE_RADIUS_MIN = 1
@@ -28,9 +35,9 @@ _IRON_CORE_RADIUS_MAX = 2
 _IRON_FRAGMENT_RING_MIN = 2
 _IRON_FRAGMENT_RING_MAX = 4
 _IRON_FRAGMENT_PROBABILITY = 0.52
-_STONE_CENTER_COUNT = 6
+_STONE_CENTER_COUNT = WORLD_STONE_CENTER_COUNT
 _STONE_GUARANTEED_TH_RING_CHEB = 20  # one cluster center: min Chebyshev to TH footprint == this
-_TREE_GROVE_COUNT = 8
+_TREE_GROVE_COUNT = WORLD_TREE_GROVE_COUNT
 _STONE_MIN_DISTANCE_FROM_TOWN_HALL = 12
 _TREE_GROVE_RADIUS_MIN = 5
 _TREE_GROVE_RADIUS_MAX = 8
@@ -49,7 +56,7 @@ _PRIORITY_TREE_RING_NEAR = 12  # first bonus grove: min Chebyshev to TH footprin
 _PRIORITY_TREE_RING_FAR = 20  # second bonus grove
 # L∞ disks r≤R do not overlap if center separation > 2R (here R = max grove radius).
 _PRIORITY_TREE_PAIR_MIN_CENTER_SEP = 2 * _TREE_GROVE_RADIUS_MAX + 1
-_SCATTER_TREE_FRACTION = 0.02
+_SCATTER_TREE_FRACTION = WORLD_SCATTER_TREE_FRACTION
 _NEIGHBORS_4: tuple[tuple[int, int], ...] = (
     (0, -1),
     (1, 0),
